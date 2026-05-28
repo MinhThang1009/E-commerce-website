@@ -5,8 +5,9 @@
  * @description Page component của feature admin
  */
 import React, { useState } from 'react';
-import { Search, Pencil, Save, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Pencil, Save, X, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import StatusPill from '../components/StatusPill';
 import { useGetAdminProductsQuery } from '../api/admin-product-api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -85,23 +86,10 @@ const InventoryPage: React.FC = () => {
   const totalPages = Math.ceil((data?.data?.pagination?.totalItems || 0) / 20);
 
   const getStockBadge = (stock: number) => {
-    if (stock === 0)
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-          {t('inventory.outOfStock')}
-        </span>
-      );
+    if (stock === 0) return <StatusPill variant="error" label={t('inventory.outOfStock')} />;
     if (stock <= LOW_STOCK_THRESHOLD)
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-          {t('inventory.lowStock')}
-        </span>
-      );
-    return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-        {t('inventory.inStock')}
-      </span>
-    );
+      return <StatusPill variant="warning" label={t('inventory.lowStock')} />;
+    return <StatusPill variant="success" label={t('inventory.inStock')} />;
   };
 
   const handleEdit = (productId: number, stock: number, variantId?: number) => {
@@ -217,150 +205,175 @@ const InventoryPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold dark:text-white">{t('inventory.title')}</h2>
-        <div className="relative w-[260px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
-          <Input
-            placeholder={t('inventory.searchPlaceholder')}
-            value={searchText}
-            onChange={(e) => {
-              setSearchText(e.target.value);
-              setPage(1);
-            }}
-            className="pl-9"
-          />
+    <div>
+      {/* Page header */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at 100% 0%, rgba(82, 196, 26, 0.10) 0%, transparent 40%), radial-gradient(circle at 0% 100%, rgba(250, 173, 20, 0.08) 0%, transparent 35%)`,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">08 / KHO HÀNG</span>
+            <div className="flex items-center gap-2.5 mt-2">
+              <h1 className="display-heading">{t('inventory.title')}</h1>
+              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
+            </div>
+          </div>
+          <div className="relative w-full sm:w-[280px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
+            <Input
+              placeholder={t('inventory.searchPlaceholder')}
+              value={searchText}
+              onChange={(e) => {
+                setSearchText(e.target.value);
+                setPage(1);
+              }}
+              className="pl-9"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
-              <th className="w-10 px-3 py-3" />
-              <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                {t('inventory.colProduct')}
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                {t('inventory.colSku')}
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                {t('inventory.colStock')}
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                {t('inventory.colStatus')}
-              </th>
-              <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                {t('inventory.colAction')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
+      {/* Table */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-white/[0.02]">
               <tr>
-                <td colSpan={6} className="text-center py-12 text-neutral-500">
-                  {t('common.loading')}
-                </td>
+                <th className="w-10 px-3 py-3" />
+                {['colProduct', 'colSku', 'colStock', 'colStatus', 'colAction'].map((key) => (
+                  <th
+                    key={key}
+                    className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
+                  >
+                    {t(`inventory.${key}`)}
+                  </th>
+                ))}
               </tr>
-            ) : products.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-neutral-500">
-                  {t('common.noData')}
-                </td>
-              </tr>
-            ) : (
-              products.map((product) => {
-                const hasVariants = product.variants.length > 0;
-                const isExpanded = expandedRows.has(product.key);
-                const isEditingProduct =
-                  editing?.productId === product.id && editing?.variantId === undefined;
+            </thead>
+            <tbody>
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-neutral-500">
+                    {t('common.loading')}
+                  </td>
+                </tr>
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-neutral-500">
+                    {t('common.noData')}
+                  </td>
+                </tr>
+              ) : (
+                products.map((product) => {
+                  const hasVariants = product.variants.length > 0;
+                  const isExpanded = expandedRows.has(product.key);
+                  const isEditingProduct =
+                    editing?.productId === product.id && editing?.variantId === undefined;
 
-                return (
-                  <React.Fragment key={product.key}>
-                    <tr
-                      className={`border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 ${
-                        product.stockQuantity === 0 ? 'bg-red-50/50 dark:bg-red-900/10' : ''
-                      }`}
-                    >
-                      <td className="px-3 py-3 text-center">
-                        {hasVariants && (
-                          <button
-                            onClick={() => toggleExpand(product.key)}
-                            className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="size-4" />
-                            ) : (
-                              <ChevronRight className="size-4" />
-                            )}
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 dark:text-neutral-200 truncate max-w-[300px]">
-                        {product.name}
-                      </td>
-                      <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
-                        {hasVariants ? `${product.variants.length} biến thể` : '—'}
-                      </td>
-                      <td className="px-4 py-3 dark:text-neutral-200">
-                        {hasVariants ? (
-                          <span>{product.stockQuantity}</span>
-                        ) : (
-                          renderStockCell(product.stockQuantity, isEditingProduct)
-                        )}
-                      </td>
-                      <td className="px-4 py-3">{getStockBadge(product.stockQuantity)}</td>
-                      <td className="px-4 py-3">
-                        {!hasVariants &&
-                          renderActionButtons(isEditingProduct, () =>
-                            handleEdit(product.id, product.stockQuantity),
-                          )}
-                      </td>
-                    </tr>
-                    {/* Expanded variant rows */}
-                    {hasVariants &&
-                      isExpanded &&
-                      product.variants.map((variant) => {
-                        const isEditingVariant =
-                          editing?.productId === product.id && editing?.variantId === variant.id;
-                        return (
-                          <tr
-                            key={variant.key}
-                            className={`border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-800/30 ${
-                              variant.stockQuantity === 0 ? 'bg-red-50/30 dark:bg-red-900/10' : ''
-                            }`}
-                          >
-                            <td className="px-3 py-2" />
-                            <td className="px-4 py-2 pl-12 dark:text-neutral-300">
-                              {variant.name}
-                            </td>
-                            <td className="px-4 py-2 text-neutral-600 dark:text-neutral-400">
-                              {variant.sku || '—'}
-                            </td>
-                            <td className="px-4 py-2 dark:text-neutral-200">
-                              {renderStockCell(variant.stockQuantity, isEditingVariant)}
-                            </td>
-                            <td className="px-4 py-2">{getStockBadge(variant.stockQuantity)}</td>
-                            <td className="px-4 py-2">
-                              {renderActionButtons(isEditingVariant, () =>
-                                handleEdit(product.id, variant.stockQuantity, variant.id),
+                  return (
+                    <React.Fragment key={product.key}>
+                      <tr
+                        className={`border-t border-[var(--border-default)] hover:bg-white/[0.03] transition ${
+                          product.stockQuantity === 0
+                            ? 'bg-[var(--admin-error)]/5'
+                            : product.stockQuantity <= LOW_STOCK_THRESHOLD
+                              ? 'bg-[var(--admin-warning)]/5'
+                              : ''
+                        }`}
+                      >
+                        <td className="px-3 py-3 text-center">
+                          {hasVariants && (
+                            <button
+                              onClick={() => toggleExpand(product.key)}
+                              className="text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                            >
+                              {isExpanded ? (
+                                <ChevronDown className="size-4" />
+                              ) : (
+                                <ChevronRight className="size-4" />
                               )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </React.Fragment>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 dark:text-neutral-200 truncate max-w-[300px]">
+                          {product.name}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                          {hasVariants ? `${product.variants.length} biến thể` : '—'}
+                        </td>
+                        <td className="px-4 py-3 dark:text-neutral-200">
+                          {hasVariants ? (
+                            <span>{product.stockQuantity}</span>
+                          ) : (
+                            renderStockCell(product.stockQuantity, isEditingProduct)
+                          )}
+                        </td>
+                        <td className="px-4 py-3">{getStockBadge(product.stockQuantity)}</td>
+                        <td className="px-4 py-3">
+                          {!hasVariants &&
+                            renderActionButtons(isEditingProduct, () =>
+                              handleEdit(product.id, product.stockQuantity),
+                            )}
+                        </td>
+                      </tr>
+                      {/* Expanded variant rows */}
+                      {hasVariants &&
+                        isExpanded &&
+                        product.variants.map((variant) => {
+                          const isEditingVariant =
+                            editing?.productId === product.id && editing?.variantId === variant.id;
+                          return (
+                            <tr
+                              key={variant.key}
+                              className={`border-t border-[var(--border-default)] bg-white/[0.01] ${
+                                variant.stockQuantity === 0
+                                  ? 'bg-[var(--admin-error)]/5'
+                                  : variant.stockQuantity <= LOW_STOCK_THRESHOLD
+                                    ? 'bg-[var(--admin-warning)]/5'
+                                    : ''
+                              }`}
+                            >
+                              <td className="px-3 py-2" />
+                              <td className="px-4 py-2 pl-12 dark:text-neutral-300">
+                                {variant.name}
+                              </td>
+                              <td className="px-4 py-2 text-neutral-600 dark:text-neutral-400">
+                                {variant.sku || '—'}
+                              </td>
+                              <td className="px-4 py-2 dark:text-neutral-200">
+                                {renderStockCell(variant.stockQuantity, isEditingVariant)}
+                              </td>
+                              <td className="px-4 py-2">{getStockBadge(variant.stockQuantity)}</td>
+                              <td className="px-4 py-2">
+                                {renderActionButtons(isEditingVariant, () =>
+                                  handleEdit(product.id, variant.stockQuantity, variant.id),
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-      {totalPages > 1 && (
-        <Pagination currentPage={page} totalPages={totalPages} onPageChange={(p) => setPage(p)} />
-      )}
+        {totalPages > 1 && (
+          <div className="px-5 py-4 border-t border-[var(--border-default)]">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => setPage(p)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

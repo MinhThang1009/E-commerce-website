@@ -353,8 +353,8 @@ const UserDetailPage: React.FC = () => {
               <TabsContent value="activity">
                 <div className="mt-2 space-y-3">
                   {(user.searchHistories || [])
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .sort(
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       (a: any, b: any) =>
                         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
                     )

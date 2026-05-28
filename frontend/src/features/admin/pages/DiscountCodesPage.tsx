@@ -5,10 +5,11 @@
  * @description Page component của feature admin
  */
 import React, { useState } from 'react';
-import { Plus, Pencil, Trash2, Percent, DollarSign, CheckCircle, Ban, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Percent, DollarSign, Search, Sparkles } from 'lucide-react';
 import dayjs from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { getLocale } from '@/utils/format';
+import { motion } from 'framer-motion';
+import { formatPrice as formatPriceUtil } from '@/utils/format';
 import {
   useGetDiscountCodesQuery,
   useCreateDiscountCodeMutation,
@@ -30,10 +31,10 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Pagination } from '@/components/common';
 import { useUiStore } from '@/stores/ui-store';
+import StatusPill from '../components/StatusPill';
 
 interface DiscountFormData {
   code: string;
@@ -189,45 +190,46 @@ const DiscountCodesPage: React.FC = () => {
     }
   };
 
-  // Luôn VND — locale động theo ngôn ngữ UI
-  const formatPrice = (price: number | string) => {
-    const num = parseFloat(String(price));
-    if (isNaN(num)) return `0${t('common.currencySymbol')}`;
-    return new Intl.NumberFormat(getLocale(), { style: 'currency', currency: 'VND' }).format(num);
-  };
+  const formatPrice = (price: number | string) => formatPriceUtil(price);
 
   const handleSearch = () => {
     setFilters({ ...filters, search: searchValue, page: 1 });
   };
 
   return (
-    <div className="p-2 sm:p-4 md:p-6">
-      <Card className="mb-4 md:mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 m-0 dark:text-white">
-                <Percent className="size-5 text-blue-500" />
-                {t('admin.discountCodes.title')}
-              </h1>
-              <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-                {t('admin.discountCodes.subtitle')}
-              </p>
+    <div>
+      {/* Page header */}
+      <div className="relative rounded-3xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-6 mb-5 overflow-hidden">
+        <div
+          className="absolute inset-0 -z-10 opacity-50 pointer-events-none"
+          style={{
+            background: `radial-gradient(circle at 100% 0%, rgba(250, 173, 20, 0.10) 0%, transparent 40%), radial-gradient(circle at 0% 100%, rgba(42, 172, 167, 0.08) 0%, transparent 35%)`,
+          }}
+        />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3">
+          <div>
+            <span className="section-number">07 / MÃ GIẢM GIÁ</span>
+            <div className="flex items-center gap-2.5 mt-2">
+              <h1 className="display-heading">{t('admin.discountCodes.title')}</h1>
+              <Sparkles className="w-5 h-5 text-[var(--accent)]/60" aria-hidden="true" />
             </div>
-            <Button onClick={handleCreate} size="lg">
-              <Plus className="size-4 mr-1" />
-              {t('admin.discountCodes.createCode')}
-            </Button>
+            <p className="text-sm text-[var(--text-tertiary)] mt-1.5">
+              {t('admin.discountCodes.subtitle')}
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Button onClick={handleCreate}>
+            <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+            {t('admin.discountCodes.createCode')}
+          </Button>
+        </div>
+      </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          {/* Search */}
-          <div className="mb-4 flex gap-2">
-            <div className="relative w-[300px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-400" />
+      {/* Filter + table card */}
+      <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
+        <div className="p-4 border-b border-[var(--border-default)]">
+          <div className="flex gap-2">
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)] pointer-events-none" />
               <Input
                 placeholder={t('admin.discountCodes.searchPlaceholder')}
                 value={searchValue}
@@ -237,160 +239,158 @@ const DiscountCodesPage: React.FC = () => {
               />
             </div>
             <Button variant="outline" onClick={handleSearch}>
-              <Search className="size-4" />
+              <Search className="w-4 h-4" strokeWidth={2.25} />
             </Button>
           </div>
+        </div>
 
-          {/* Table */}
-          <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-700">
-            <table className="w-full text-sm min-w-[800px]">
-              <thead>
-                <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin.discountCodes.table.code')}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[800px]">
+            <thead className="bg-white/[0.02]">
+              <tr>
+                {['code', 'type', 'minOrder', 'period', 'usage'].map((key) => (
+                  <th
+                    key={key}
+                    className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
+                  >
+                    {t(`admin.discountCodes.table.${key}`)}
                   </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin.discountCodes.table.type')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin.discountCodes.table.minOrder')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin.discountCodes.table.period')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin.discountCodes.table.usage')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('common.status')}
-                  </th>
-                  <th className="text-left px-4 py-3 font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin.common.actions')}
-                  </th>
+                ))}
+                <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  {t('common.status')}
+                </th>
+                <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  {t('admin.common.actions')}
+                </th>
+              </tr>
+            </thead>
+            <motion.tbody
+              initial="initial"
+              animate="animate"
+              variants={{ animate: { transition: { staggerChildren: 0.025 } } }}
+            >
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                    {t('common.loading')}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-neutral-500">
-                      {t('common.loading')}
+              ) : discountCodes.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                    {t('common.noData')}
+                  </td>
+                </tr>
+              ) : (
+                discountCodes.map((record: DiscountCode) => (
+                  <motion.tr
+                    key={record.id}
+                    variants={{
+                      initial: { opacity: 0, y: 8 },
+                      animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+                    }}
+                    className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                  >
+                    <td className="px-4 py-3">
+                      <StatusPill
+                        variant="info"
+                        label={record.code}
+                        showDot={false}
+                        className="font-mono font-semibold"
+                      />
                     </td>
-                  </tr>
-                ) : discountCodes.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-12 text-neutral-500">
-                      {t('common.noData')}
-                    </td>
-                  </tr>
-                ) : (
-                  discountCodes.map((record: DiscountCode) => (
-                    <tr
-                      key={record.id}
-                      className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
-                    >
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                          {record.code}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1 dark:text-neutral-200">
+                        {record.type === 'percent' ? (
+                          <Percent className="size-4 text-orange-500" />
+                        ) : (
+                          <DollarSign className="size-4 text-green-500" />
+                        )}
+                        <span className="font-medium">
+                          {record.type === 'percent'
+                            ? `${record.value}%`
+                            : formatPrice(record.value)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1 dark:text-neutral-200">
-                          {record.type === 'percent' ? (
-                            <Percent className="size-4 text-orange-500" />
-                          ) : (
-                            <DollarSign className="size-4 text-green-500" />
-                          )}
-                          <span className="font-medium">
-                            {record.type === 'percent'
-                              ? `${record.value}%`
-                              : formatPrice(record.value)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
-                        {formatPrice(record.minOrderAmount)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-400">
-                        <div>
-                          {t('admin.discountCodes.table.from')}{' '}
-                          {record.startDate
-                            ? dayjs(record.startDate).format('DD/MM/YYYY')
-                            : t('admin.discountCodes.table.unlimited')}
-                        </div>
-                        <div>
-                          {t('admin.discountCodes.table.to')}{' '}
-                          {record.endDate
-                            ? dayjs(record.endDate).format('DD/MM/YYYY')
-                            : t('admin.discountCodes.table.unlimited')}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="text-sm cursor-default">
-                              <span className="font-semibold text-blue-600">
-                                {record.usedCount}
-                              </span>{' '}
-                              / {record.usageLimit || '∞'}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {t('admin.discountCodes.table.usageInfo', {
-                              used: record.usedCount,
-                              limit: record.usageLimit || t('admin.discountCodes.table.noLimit'),
-                            })}
-                          </TooltipContent>
-                        </Tooltip>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
-                            record.isActive
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                          }`}
-                        >
-                          {record.isActive ? (
-                            <CheckCircle className="size-3" />
-                          ) : (
-                            <Ban className="size-3" />
-                          )}
-                          {record.isActive
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-neutral-600 dark:text-neutral-400">
+                      {formatPrice(record.minOrderAmount)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-neutral-400">
+                      <div>
+                        {t('admin.discountCodes.table.from')}{' '}
+                        {record.startDate
+                          ? dayjs(record.startDate).format('DD/MM/YYYY')
+                          : t('admin.discountCodes.table.unlimited')}
+                      </div>
+                      <div>
+                        {t('admin.discountCodes.table.to')}{' '}
+                        {record.endDate
+                          ? dayjs(record.endDate).format('DD/MM/YYYY')
+                          : t('admin.discountCodes.table.unlimited')}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="text-sm cursor-default">
+                            <span className="font-semibold text-blue-600">{record.usedCount}</span>{' '}
+                            / {record.usageLimit || '∞'}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {t('admin.discountCodes.table.usageInfo', {
+                            used: record.usedCount,
+                            limit: record.usageLimit || t('admin.discountCodes.table.noLimit'),
+                          })}
+                        </TooltipContent>
+                      </Tooltip>
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusPill
+                        variant={record.isActive ? 'success' : 'error'}
+                        label={
+                          record.isActive
                             ? t('admin.discountCodes.status.active')
-                            : t('admin.discountCodes.status.paused')}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(record)}>
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            onClick={() => handleDelete(record.id)}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                            : t('admin.discountCodes.status.paused')
+                        }
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(record)}
+                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                        >
+                          <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(record.id)}
+                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
+                        >
+                          <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
+            </motion.tbody>
+          </table>
+        </div>
 
-          {totalPages > 1 && (
+        {totalPages > 1 && (
+          <div className="px-5 py-4 border-t border-[var(--border-default)]">
             <Pagination
               currentPage={filters.page}
               totalPages={totalPages}
               onPageChange={(page) => setFilters({ ...filters, page })}
             />
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
 
       {/* Create/Edit Dialog */}
       <Dialog
@@ -403,7 +403,7 @@ const DiscountCodesPage: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="max-w-[700px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="glass-card-lg max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingCode
@@ -561,7 +561,7 @@ const DiscountCodesPage: React.FC = () => {
                 value={formData.description}
                 onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                 placeholder={t('admin.discountCodes.form.descriptionPlaceholder')}
-                className="mt-1 flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
+                className="mt-1 flex w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)] dark:bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition"
               />
             </div>
 

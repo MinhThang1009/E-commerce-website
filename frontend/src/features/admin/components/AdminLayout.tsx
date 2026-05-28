@@ -24,6 +24,7 @@ import {
   ChevronDown,
   LogOut,
   Home,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth';
@@ -162,8 +163,9 @@ const AdminLayout: React.FC = () => {
   };
 
   const fullName = getUserFullName() || user?.email || '';
-  // Lấy tên cuối (first name) cho lời chào — tránh tên dài chiếm hết header
-  const firstName = fullName.split(' ').slice(-1)[0] || fullName;
+  // Lời chào dùng firstName field trực tiếp (vd: "Admin", "Nguyễn Văn") — không parse
+  // Fallback: email prefix nếu thiếu firstName
+  const greetingName = user?.firstName || user?.email?.split('@')[0] || '';
 
   const renderNavItem = (item: NavItem, onClick?: () => void) => {
     const isActive =
@@ -325,8 +327,15 @@ const AdminLayout: React.FC = () => {
                 <Menu className="w-5 h-5" />
               </button>
               <div className="min-w-0 flex-1">
-                <div className="hidden md:block text-base font-semibold truncate text-[var(--text-primary)]">
-                  {t('admin.welcome.greeting', { name: firstName })}
+                <div className="hidden md:flex items-center gap-1.5 text-base font-semibold truncate text-[var(--text-primary)]">
+                  <Sparkles
+                    className="w-4 h-4 text-[var(--accent)] flex-shrink-0"
+                    strokeWidth={2.25}
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">
+                    {t('admin.welcome.greeting', { name: greetingName })}
+                  </span>
                 </div>
                 <div className="hidden md:block text-xs text-[var(--text-tertiary)] truncate">
                   {t('admin.welcome.subtitle')}

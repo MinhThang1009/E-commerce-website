@@ -24,6 +24,15 @@ import ProductImageGallery from '../components/ProductImageGallery';
 import RecentlyViewedProducts from '../components/RecentlyViewedProducts';
 import { motion } from 'framer-motion';
 import { fadeUp, stagger, itemFade, viewportOnce } from '@/utils/motion';
+import {
+  ChevronRight,
+  Minus,
+  Plus,
+  ShieldCheck,
+  Truck,
+  RefreshCcw,
+  CreditCard,
+} from 'lucide-react';
 
 import { useUiStore } from '@/stores/ui-store';
 import { useAddToCartMutation } from '@/features/cart';
@@ -475,15 +484,7 @@ const ProductDetailPage: React.FC = () => {
             >
               {t('productDetail.breadcrumb.home')}
             </Link>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mx-2 text-neutral-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 mx-2 text-neutral-400" />
           </li>
           <li className="flex items-center">
             <Link
@@ -495,15 +496,7 @@ const ProductDetailPage: React.FC = () => {
               {localizeField(product.category || product, 'name', i18n.language) ||
                 product.categoryName}
             </Link>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 mx-2 text-neutral-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight className="w-4 h-4 mx-2 text-neutral-400" />
           </li>
           <li className="text-neutral-800 dark:text-neutral-200 truncate">{productName}</li>
         </ol>
@@ -633,17 +626,6 @@ const ProductDetailPage: React.FC = () => {
             {productShortDesc || productDesc.substring(0, 150) + '...'}
           </p>
 
-          {/* Bộ chọn biến thể sản phẩm - Đã xóa theo yêu cầu vì trùng lặp với bộ chọn thuộc tính */}
-          {/* {product.isVariantProduct && (
-            <div className="mb-6">
-              <ProductVariantSelector
-                product={product}
-                selectedVariantId={skuId}
-                onVariantChange={handleVariantChange}
-              />
-            </div>
-          )} */}
-
           {/* Bộ chọn thuộc tính động */}
           {product.attributes && product.attributes.length > 0 && (
             <div className="mb-6">
@@ -706,23 +688,10 @@ const ProductDetailPage: React.FC = () => {
                 <div className="flex items-center">
                   <button
                     onClick={() => handleQuantityChange(quantity - 1)}
-                    className="w-10 h-10 flex items-center justify-center rounded-l-md border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center rounded-l-xl border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     disabled={quantity <= 1}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20 12H4"
-                      />
-                    </svg>
+                    <Minus className="w-4 h-4" />
                   </button>
                   <input
                     type="number"
@@ -734,23 +703,10 @@ const ProductDetailPage: React.FC = () => {
                   />
                   <button
                     onClick={() => handleQuantityChange(quantity + 1)}
-                    className="w-10 h-10 flex items-center justify-center rounded-r-md border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-10 h-10 flex items-center justify-center rounded-r-xl border border-neutral-300 dark:border-neutral-600 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     disabled={quantity >= maxStock}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               );
@@ -778,22 +734,9 @@ const ProductDetailPage: React.FC = () => {
                     product &&
                     product.attributes &&
                     product.attributes.length > 0 && (
-                      <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 rounded-lg mb-2">
-                        <p className="text-sm text-orange-700 dark:text-orange-400 font-medium flex items-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 mr-2"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                            />
-                          </svg>
+                      <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-3 rounded-xl mb-2">
+                        <p className="text-sm text-orange-700 dark:text-orange-400 font-medium flex items-center gap-2">
+                          <ShieldCheck className="w-5 h-5 flex-shrink-0" />
                           {t('product.selectAttributesRequired')}
                         </p>
                       </div>
@@ -834,66 +777,47 @@ const ProductDetailPage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Thông tin bổ sung */}
-        {/* <div className="border-t border-neutral-200 dark:border-neutral-700 pt-6 space-y-4">
-            <div className="flex">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-primary-500 dark:text-primary-400 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+        {/* Trust signals */}
+        <motion.div variants={fadeUp}>
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            {[
+              {
+                icon: ShieldCheck,
+                label: t('productDetail.trust.securePayment', {
+                  defaultValue: 'Thanh toán an toàn',
+                }),
+                color: 'text-emerald-500',
+              },
+              {
+                icon: Truck,
+                label: t('productDetail.trust.freeShipping', {
+                  defaultValue: 'Miễn phí vận chuyển',
+                }),
+                color: 'text-sky-500',
+              },
+              {
+                icon: RefreshCcw,
+                label: t('productDetail.trust.returnPolicy', { defaultValue: 'Đổi trả 30 ngày' }),
+                color: 'text-amber-500',
+              },
+              {
+                icon: CreditCard,
+                label: t('productDetail.trust.installment', { defaultValue: 'Trả góp 0%' }),
+                color: 'text-purple-500',
+              },
+            ].map(({ icon: Icon, label, color }) => (
+              <div
+                key={label}
+                className="flex items-center gap-2 p-3 rounded-xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-100 dark:border-neutral-700/50"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                />
-              </svg>
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                Secure payment
-              </span>
-            </div>
-            <div className="flex">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-primary-500 dark:text-primary-400 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                Free shipping on orders over $50
-              </span>
-            </div>
-            <div className="flex">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-primary-500 dark:text-primary-400 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                30-day return policy
-              </span>
-            </div>
-          </div> */}
+                <Icon className={`w-4 h-4 ${color} flex-shrink-0`} />
+                <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  {label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </motion.div>
 
       {/* Phần chi tiết sản phẩm */}

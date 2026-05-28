@@ -31,6 +31,7 @@ import { useCreateMomoUrlMutation } from '@/features/payment';
 import { useCreateVNPayUrlMutation } from '@/features/payment';
 import { useGetAddressesQuery } from '@/features/users';
 import { getErrorMsg } from '@/utils/error-utils';
+import { shippingSchema } from '@/schemas/checkout';
 
 const CheckoutPage: React.FC = () => {
   const { t } = useTranslation();
@@ -368,12 +369,27 @@ const CheckoutPage: React.FC = () => {
       updated.state = parts.length > 2 ? parts[parts.length - 2] : fallback;
       updated.city = parts.length > 3 ? parts[parts.length - 3] : fallback;
 
+      // Lưu province/district/ward/addressDetail riêng để AddressPicker restore khi back
+      if (parts.length >= 4) {
+        updated.addressDetail = parts[0];
+        updated.ward = parts[1];
+        updated.district = parts[2];
+        updated.province = parts[3];
+      } else if (parts.length === 3) {
+        updated.ward = parts[0];
+        updated.district = parts[1];
+        updated.province = parts[2];
+      }
+
       if (lat && lon) {
         updated.lat = lat;
         updated.lon = lon;
       }
       if (detail?.city) updated.city = detail.city;
-      if (detail?.state) updated.state = detail.state;
+      if (detail?.state) {
+        updated.state = detail.state;
+        updated.province = detail.state;
+      }
       if (detail?.country) updated.country = detail.country;
 
       if (updated.sameAsShipping) {
@@ -409,39 +425,26 @@ const CheckoutPage: React.FC = () => {
 
   // Validate form đầu vào
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    // Các trường bắt buộc
-    const requiredFields = ['firstName', 'lastName', 'email', 'phone'];
-
-    requiredFields.forEach((field) => {
-      if (!formData[field as keyof typeof formData]) {
-        newErrors[field] = t('checkout.validation.required');
-      }
+    const result = shippingSchema.safeParse({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      address: formData.address,
+      city: formData.city,
+      state: formData.state,
     });
 
-    // Validate địa chỉ đầy đủ — cần tỉnh + quận + số nhà (address phải có ít nhất 2 dấu phẩy)
-    const addressParts = (formData.address || '')
-      .split(',')
-      .map((p) => p.trim())
-      .filter(Boolean);
-    if (!formData.address || addressParts.length < 3) {
-      newErrors.address = t('checkout.validation.addressRequired');
-    }
-    if (!formData.city) newErrors.city = t('checkout.validation.required');
-    if (!formData.state) newErrors.state = t('checkout.validation.required');
+    const newErrors: Record<string, string> = {};
 
-    // Kiểm tra định dạng email
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = t('checkout.validation.emailInvalid');
+    if (!result.success) {
+      const fe = result.error.flatten().fieldErrors;
+      Object.entries(fe).forEach(([k, msgs]) => {
+        if (msgs?.[0]) newErrors[k] = msgs[0];
+      });
     }
 
-    const phoneDigits = formData.phone?.trim().replace(/[\s.-]/g, '') || '';
-    if (phoneDigits && !/^(0|\+84)[0-9]{9}$/.test(phoneDigits)) {
-      newErrors.phone = t('checkout.validation.phoneInvalid');
-    }
-
-    // Kiểm tra địa chỉ thanh toán nếu khác địa chỉ giao hàng
+    // Địa chỉ thanh toán (nằm ngoài shippingSchema — conditional logic)
     if (!formData.sameAsShipping) {
       const billingFields = [
         'billingFirstName',
@@ -452,7 +455,6 @@ const CheckoutPage: React.FC = () => {
         'billingZipCode',
         'billingCountry',
       ];
-
       billingFields.forEach((field) => {
         if (!formData[field as keyof typeof formData]) {
           newErrors[field] = t('checkout.validation.required');

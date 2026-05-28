@@ -12,6 +12,7 @@ import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
 import { useForgotPasswordMutation } from '../api/auth-api';
 import { getErrorMsg } from '@/utils/error-utils';
+import { forgotPasswordSchema } from '@/schemas/auth';
 
 const ForgotPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -24,21 +25,11 @@ const ForgotPasswordPage: React.FC = () => {
     error,
   } = useForgotPasswordMutation();
 
-  const validateEmail = (email: string) => {
-    if (!email) {
-      return t('auth.forgotPassword.validation.emailRequired');
-    }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      return t('auth.forgotPassword.validation.emailInvalid');
-    }
-    return '';
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const validationError = validateEmail(email);
-    if (validationError) {
-      setEmailError(validationError);
+    const result = forgotPasswordSchema.safeParse({ email });
+    if (!result.success) {
+      setEmailError(result.error.flatten().fieldErrors.email?.[0] ?? '');
       return;
     }
     setEmailError('');

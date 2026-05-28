@@ -65,7 +65,7 @@ Route → Page (lazy-loaded) → Components
 | **ESLint strict** | `--max-warnings 0` — không cho phép warning tồn tại |
 | **Pre-commit hooks** | Secret scan + architecture audit (chặn service import ORM trực tiếp) + lint-staged |
 | **CI/CD** | GitHub Actions: lint + typecheck + build + test trên mỗi push |
-| **Type safety** | TypeScript strict mode (FE), Zod schemas cho form validation |
+| **Type safety** | TypeScript strict mode (FE), Zod validation (BE) |
 | **i18n coverage** | Mọi user-visible string qua `t('key')`, parity check vi/en |
 
 ---
@@ -75,10 +75,10 @@ Route → Page (lazy-loaded) → Components
 **Frontend**
 - React 19 + TypeScript + Vite 8 (build ~2.5s)
 - Zustand v5 + Immer (client state) / TanStack Query v5 (server state)
-- Tailwind CSS v4 (`@tailwindcss/vite`) + SCSS + Ant Design v6 + Framer Motion v12
+- Tailwind CSS v4 (`@tailwindcss/vite`) + SCSS + shadcn/ui (Radix UI) + Framer Motion v12
 - React Router v7 (lazy-loaded, code splitting)
 - i18next v26 + react-i18next (vi/en)
-- Zod v4 (form validation schemas)
+- Lucide React (icon library)
 
 **Backend**
 - Node.js 20 + Express 4 (Modular Monolith, 17 modules)

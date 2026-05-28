@@ -15,7 +15,14 @@ import {
   Calendar,
   DollarSign,
   Info,
+  Clock,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+  AlertTriangle,
+  Truck,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import dayjs from 'dayjs';
 import { useGetAdminOrdersQuery, useUpdateOrderStatusMutation, AdminOrder } from '@/features/admin';
@@ -46,39 +53,42 @@ import { Pagination } from '@/components/common';
 import { useUiStore } from '@/stores/ui-store';
 
 // Cấu hình trạng thái với màu sắc và icon
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
   pending: {
     color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    icon: '⏳',
+    Icon: Clock,
   },
   processing: {
     color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    icon: '🔄',
+    Icon: RefreshCw,
   },
   shipped: {
     color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-    icon: '🚚',
+    Icon: Truck,
   },
   delivered: {
     color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    icon: '✅',
+    Icon: CheckCircle,
   },
-  cancelled: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: '❌' },
+  cancelled: {
+    color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    Icon: XCircle,
+  },
 };
 
-const PAYMENT_STATUS_CONFIG = {
+const PAYMENT_STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
   pending: {
     color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
-    icon: '⏳',
+    Icon: Clock,
   },
   paid: {
     color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    icon: '✅',
+    Icon: CheckCircle,
   },
-  failed: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', icon: '❌' },
+  failed: { color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400', Icon: XCircle },
   refunded: {
     color: 'bg-neutral-100 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-300',
-    icon: '🔄',
+    Icon: RotateCcw,
   },
 };
 
@@ -425,7 +435,11 @@ const OrdersPage: React.FC = () => {
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${paymentConfig?.color || ''}`}
                       >
-                        {warning ? '⚠️ ' : paymentConfig?.icon + ' '}
+                        {warning ? (
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                        ) : (
+                          paymentConfig?.Icon && <paymentConfig.Icon className="w-3.5 h-3.5" />
+                        )}
                         {paymentStatusText}
                       </span>
                     );
@@ -477,7 +491,10 @@ const OrdersPage: React.FC = () => {
                           <span
                             className={`${styles.statusTag} inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig?.color || ''}`}
                           >
-                            {statusConfig?.icon} {t(`admin.orders.status.${record.status}`)}
+                            {statusConfig?.Icon && (
+                              <statusConfig.Icon className="w-3.5 h-3.5 inline" />
+                            )}{' '}
+                            {t(`admin.orders.status.${record.status}`)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -568,7 +585,12 @@ const OrdersPage: React.FC = () => {
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG]?.color || ''}`}
                         >
-                          {STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG]?.icon}{' '}
+                          {(() => {
+                            const Ic =
+                              STATUS_CONFIG[selectedOrder.status as keyof typeof STATUS_CONFIG]
+                                ?.Icon;
+                            return Ic ? <Ic className="w-3.5 h-3.5 inline" /> : null;
+                          })()}{' '}
                           {t(`admin.orders.status.${selectedOrder.status}`)}
                         </span>
                       </td>
@@ -579,11 +601,13 @@ const OrdersPage: React.FC = () => {
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_STATUS_CONFIG[selectedOrder.paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG]?.color || ''}`}
                         >
-                          {
-                            PAYMENT_STATUS_CONFIG[
-                              selectedOrder.paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG
-                            ]?.icon
-                          }{' '}
+                          {(() => {
+                            const Ic =
+                              PAYMENT_STATUS_CONFIG[
+                                selectedOrder.paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG
+                              ]?.Icon;
+                            return Ic ? <Ic className="w-3.5 h-3.5 inline" /> : null;
+                          })()}{' '}
                           {selectedOrder.paymentStatus === 'pending'
                             ? selectedOrder.paymentMethod === 'cod'
                               ? t('admin.orders.details.paymentInfo.cod')

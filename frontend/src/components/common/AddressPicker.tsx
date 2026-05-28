@@ -47,7 +47,18 @@ interface AddressPickerProps {
   onChange: (value: string, lat?: string, lon?: string, detail?: AddressDetail) => void;
   error?: string;
   required?: boolean;
+  initialProvince?: string;
+  initialDistrict?: string;
+  initialWard?: string;
+  initialStreet?: string;
 }
+
+// ── Cache — tránh re-fetch khi component re-mount ────────────────────────────
+const apiCache: {
+  provinces: AdminUnit[] | null;
+  districts: Record<number, AdminUnit[]>;
+  wards: Record<number, AdminUnit[]>;
+} = { provinces: null, districts: {}, wards: {} };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function buildFullAddress(
@@ -66,21 +77,25 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
   onChange,
   error,
   required,
+  initialProvince = '',
+  initialDistrict = '',
+  initialWard = '',
+  initialStreet = '',
 }) => {
   const { t } = useTranslation();
   const labelText = label ?? t('addressPicker.label');
 
-  // Cascade state
+  // Cascade state — restore từ initial props khi re-mount
   const [provinces, setProvinces] = useState<AdminUnit[]>([]);
   const [districts, setDistricts] = useState<AdminUnit[]>([]);
   const [wards, setWards] = useState<AdminUnit[]>([]);
 
-  const [selectedProvince, setSelectedProvince] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState(initialProvince);
   const [selectedProvinceCode, setSelectedProvinceCode] = useState<number | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedDistrict, setSelectedDistrict] = useState(initialDistrict);
   const [selectedDistrictCode, setSelectedDistrictCode] = useState<number | null>(null);
-  const [selectedWard, setSelectedWard] = useState('');
-  const [street, setStreet] = useState('');
+  const [selectedWard, setSelectedWard] = useState(initialWard);
+  const [street, setStreet] = useState(initialStreet);
 
   const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingWards, setLoadingWards] = useState(false);
@@ -90,46 +105,97 @@ const AddressPicker: React.FC<AddressPickerProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
-  // Load danh sách tỉnh/thành phố một lần
+  // Load danh sách tỉnh/thành phố — cache để re-mount instant
   useEffect(() => {
+    if (apiCache.provinces) {
+      setProvinces(apiCache.provinces);
+      if (initialProvince) {
+        const match = apiCache.provinces.find((p) => p.name === initialProvince);
+        if (match) setSelectedProvinceCode(match.code);
+      }
+      return;
+    }
     fetch(`${VN_API}/p/`)
       .then((r) => r.json())
-      .then((data: AdminUnit[]) => setProvinces(data))
+      .then((data: AdminUnit[]) => {
+        apiCache.provinces = data;
+        setProvinces(data);
+        if (initialProvince) {
+          const match = data.find((p: AdminUnit) => p.name === initialProvince);
+          if (match) setSelectedProvinceCode(match.code);
+        }
+      })
       .catch((err) => console.error('Lỗi tải danh sách tỉnh/thành:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load quận/huyện khi chọn tỉnh
+  const isRestoringRef = useRef(!!initialProvince);
+
+  // Load quận/huyện khi chọn tỉnh — cache
   useEffect(() => {
     if (!selectedProvinceCode) {
       setDistricts([]);
       setWards([]);
       return;
     }
+    if (!isRestoringRef.current) {
+      setDistricts([]);
+      setSelectedDistrict('');
+      setSelectedDistrictCode(null);
+      setWards([]);
+      setSelectedWard('');
+    }
+    const cached = apiCache.districts[selectedProvinceCode];
+    if (cached) {
+      setDistricts(cached);
+      if (isRestoringRef.current && initialDistrict) {
+        const match = cached.find((d) => d.name === initialDistrict);
+        if (match) setSelectedDistrictCode(match.code);
+      }
+      return;
+    }
     setLoadingDistricts(true);
-    setDistricts([]);
-    setSelectedDistrict('');
-    setSelectedDistrictCode(null);
-    setWards([]);
-    setSelectedWard('');
     fetch(`${VN_API}/p/${selectedProvinceCode}?depth=2`)
       .then((r) => r.json())
-      .then((data) => setDistricts(data.districts ?? []))
+      .then((data) => {
+        const districts = data.districts ?? [];
+        apiCache.districts[selectedProvinceCode] = districts;
+        setDistricts(districts);
+        if (isRestoringRef.current && initialDistrict) {
+          const match = districts.find((d: AdminUnit) => d.name === initialDistrict);
+          if (match) setSelectedDistrictCode(match.code);
+        }
+      })
       .catch((err) => console.error('Lỗi tải danh sách quận/huyện:', err))
       .finally(() => setLoadingDistricts(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProvinceCode]);
 
-  // Load phường/xã khi chọn quận
+  // Load phường/xã khi chọn quận — cache
   useEffect(() => {
     if (!selectedDistrictCode) {
       setWards([]);
       return;
     }
+    if (!isRestoringRef.current) {
+      setWards([]);
+      setSelectedWard('');
+    }
+    const cached = apiCache.wards[selectedDistrictCode];
+    if (cached) {
+      setWards(cached);
+      if (isRestoringRef.current) isRestoringRef.current = false;
+      return;
+    }
     setLoadingWards(true);
-    setWards([]);
-    setSelectedWard('');
     fetch(`${VN_API}/d/${selectedDistrictCode}?depth=2`)
       .then((r) => r.json())
-      .then((data) => setWards(data.wards ?? []))
+      .then((data) => {
+        const wards = data.wards ?? [];
+        apiCache.wards[selectedDistrictCode] = wards;
+        setWards(wards);
+        if (isRestoringRef.current) isRestoringRef.current = false;
+      })
       .catch((err) => console.error('Lỗi tải danh sách phường/xã:', err))
       .finally(() => setLoadingWards(false));
   }, [selectedDistrictCode]);

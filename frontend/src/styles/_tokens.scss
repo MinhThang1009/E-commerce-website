@@ -28,7 +28,18 @@
   --admin-success: #52c41a;
   --admin-error: #ff4d4f;
   --admin-warning: #faad14;
+  --admin-purple: #722ed1;
   --admin-muted: #999;
+
+  /* Chart colors — dùng trong recharts, không thể dùng CSS var trực tiếp */
+  --chart-blue: #3b82f6;
+  --chart-green: #10b981;
+  --chart-yellow: #f59e0b;
+  --chart-red: #ef4444;
+  --chart-violet: #8b5cf6;
+  --chart-pink: #ec4899;
+  --chart-cyan: #06b6d4;
+  --chart-lime: #84cc16;
 }
 
 /* ─────────────────────────────────────────────────────────────

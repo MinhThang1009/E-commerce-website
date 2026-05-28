@@ -27,7 +27,7 @@
 ```
 routes/
   paths.ts        — ROUTES constants + buildRoute helpers
-  AppRoutes.tsx   — React Router v6 route tree với lazy loading
+  AppRoutes.tsx   — React Router v7 route tree với lazy loading
 ```
 
 ---

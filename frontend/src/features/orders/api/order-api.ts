@@ -257,10 +257,13 @@ export interface AvailableDiscountCode {
   endDate: string | null;
 }
 
+// Key chia sẻ với admin/api/discount-code-api.ts — admin mutations invalidate ['discount-codes'] bust query này
+export const discountAvailableKey = ['discount-codes', 'available'] as const;
+
 /** Lấy danh sách mã giảm giá còn hiệu lực để hiển thị ở checkout */
 export function useGetAvailableDiscountCodesQuery() {
   return useQuery<AvailableDiscountCode[]>({
-    queryKey: ['discount-codes', 'available'],
+    queryKey: discountAvailableKey,
     queryFn: async () => {
       const res = await apiClient.get<{
         status: string;

@@ -202,15 +202,17 @@ frontend/
 │   ├── lib/
 │   │   ├── api-client.ts    # Axios instance + interceptors (token attach + 401 handle)
 │   │   └── query-client.ts  # TanStack QueryClient (staleTime 5m, gcTime 10m)
-│   ├── hooks/               # useTokenRefresh, useAntdToast, + 6 hooks khác
+│   ├── hooks/               # useTokenRefresh, + 6 hooks khác
 │   ├── pages/               # Static pages (Home, About, FAQs, Privacy, Terms...)
 │   ├── utils/               # 14 utilities (token-manager, auth-utils, formatters...)
 │   ├── types/               # Shared TypeScript types (user.types, ui.types...)
-│   ├── styles/              # SCSS tokens, _variables.scss, index.scss
+│   ├── styles/              # SCSS tokens (_tokens.scss, index.scss)
+│   ├── schemas/             # Zod validation schemas (auth.ts, checkout.ts)
 │   ├── config/
 │   │   └── i18n.ts          # i18next initialization (localStorage detect, vi mặc định)
 │   ├── constants/
-│   │   └── index.ts         # PAGINATION, UPLOAD, SHIPPING
+│   │   ├── index.ts         # PAGINATION, UPLOAD, SHIPPING
+│   │   └── chart-colors.ts  # PIE_COLORS, ORDER_STATUS_COLORS, CHART_* (Recharts)
 │   └── locales/
 │       ├── vi.json
 │       └── en.json

@@ -34,25 +34,13 @@ import {
   Legend,
 } from 'recharts';
 import dayjs from 'dayjs';
-
-// Bảng màu cho Pie Charts
-const PIE_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#84cc16',
-];
-const STATUS_COLORS: Record<string, string> = {
-  pending: '#f59e0b',
-  processing: '#3b82f6',
-  shipped: '#8b5cf6',
-  delivered: '#10b981',
-  cancelled: '#ef4444',
-};
+import {
+  PIE_COLORS,
+  ORDER_STATUS_COLORS,
+  CHART_BLUE,
+  CHART_GREEN,
+  CHART_VIOLET,
+} from '@constants/chart-colors';
 
 const DashboardCharts: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -147,12 +135,12 @@ const DashboardCharts: React.FC = () => {
     [detailedData?.data?.orders, groupBy],
   );
 
-  // Tooltip style chung
+  // Tooltip style chung — dùng neutral colors phù hợp cả 2 mode
   const tooltipStyle = {
-    backgroundColor: isDark ? '#1e293b' : 'rgba(255,255,255,0.95)',
-    borderColor: isDark ? '#334155' : '#e5e7eb',
+    backgroundColor: isDark ? 'var(--bg-elevated)' : 'rgba(255,255,255,0.95)',
+    borderColor: isDark ? 'var(--border-strong)' : 'var(--border-default)',
     borderRadius: '0.375rem',
-    color: isDark ? '#f1f5f9' : '#1f2937',
+    color: isDark ? 'var(--text-primary)' : 'var(--text-primary)',
   };
   const tickStyle = { fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 };
 
@@ -321,8 +309,8 @@ const DashboardCharts: React.FC = () => {
                 >
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      <stop offset="5%" stopColor={CHART_BLUE} stopOpacity={0.8} />
+                      <stop offset="95%" stopColor={CHART_BLUE} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -344,7 +332,7 @@ const DashboardCharts: React.FC = () => {
                     type="monotone"
                     dataKey="revenue"
                     name={revenueLabel}
-                    stroke="#3b82f6"
+                    stroke={CHART_BLUE}
                     fillOpacity={1}
                     fill="url(#colorRevenue)"
                     strokeWidth={2}
@@ -366,8 +354,8 @@ const DashboardCharts: React.FC = () => {
                 >
                   <defs>
                     <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
-                      <stop offset="100%" stopColor="#10b981" stopOpacity={0.4} />
+                      <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.9} />
+                      <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.4} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
@@ -409,7 +397,10 @@ const DashboardCharts: React.FC = () => {
                     label={({ label, count }) => `${label}: ${count}`}
                   >
                     {(orderStatusData?.data || []).map((entry) => (
-                      <Cell key={entry.status} fill={STATUS_COLORS[entry.status] || '#9ca3af'} />
+                      <Cell
+                        key={entry.status}
+                        fill={ORDER_STATUS_COLORS[entry.status] || '#9ca3af'}
+                      />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
@@ -444,7 +435,7 @@ const DashboardCharts: React.FC = () => {
                     type="monotone"
                     dataKey="newUsers"
                     name={t('admin.charts.newUsers')}
-                    stroke="#8b5cf6"
+                    stroke={CHART_VIOLET}
                     strokeWidth={2}
                     dot={{ r: 3 }}
                   />
@@ -516,7 +507,7 @@ const DashboardCharts: React.FC = () => {
                         ? t('admin.charts.revenueLabel')
                         : t('admin.charts.soldCount')
                     }
-                    fill={topProductMetric === 'revenue' ? '#3b82f6' : '#10b981'}
+                    fill={topProductMetric === 'revenue' ? CHART_BLUE : CHART_GREEN}
                     radius={[0, 4, 4, 0]}
                   />
                 </BarChart>

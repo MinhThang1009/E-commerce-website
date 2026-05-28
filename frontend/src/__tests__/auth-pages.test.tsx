@@ -250,7 +250,7 @@ describe('LoginPage', () => {
     await act(async () => {
       fireEvent.click(submitBtn);
     });
-    expect(screen.getByText('auth.login.validation.emailRequired')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập email')).toBeInTheDocument();
   });
 
   it('submit với email không hợp lệ → hiển thị lỗi sai định dạng', async () => {
@@ -261,7 +261,7 @@ describe('LoginPage', () => {
     await act(async () => {
       fireEvent.click(submitBtn);
     });
-    expect(screen.getByText('auth.login.validation.emailInvalid')).toBeInTheDocument();
+    expect(screen.getByText('Email không hợp lệ')).toBeInTheDocument();
   });
 
   it('link đăng ký dẫn đến /register', () => {
@@ -309,7 +309,7 @@ describe('ForgotPasswordPage', () => {
     await act(async () => {
       fireEvent.submit(form);
     });
-    expect(screen.getByText('auth.forgotPassword.validation.emailRequired')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập email')).toBeInTheDocument();
   });
 
   it('submit với email sai định dạng → hiển thị lỗi định dạng', async () => {
@@ -320,7 +320,7 @@ describe('ForgotPasswordPage', () => {
     await act(async () => {
       fireEvent.submit(form);
     });
-    expect(screen.getByText('auth.forgotPassword.validation.emailInvalid')).toBeInTheDocument();
+    expect(screen.getByText('Email không hợp lệ')).toBeInTheDocument();
   });
 
   it('link quay lại đăng nhập dẫn đến /login', () => {
@@ -347,7 +347,7 @@ describe('LoginPage: validation interactions', () => {
     await act(async () => {
       fireEvent.click(submitBtn);
     });
-    expect(screen.getByText('auth.login.validation.emailInvalid')).toBeInTheDocument();
+    expect(screen.getByText('Email không hợp lệ')).toBeInTheDocument();
   });
 
   it('type password < 6 ký tự → validation error', async () => {
@@ -361,13 +361,12 @@ describe('LoginPage: validation interactions', () => {
     await act(async () => {
       fireEvent.click(submitBtn);
     });
-    // Mật khẩu ngắn → validation error xuất hiện (key tùy implementation)
+    // Mật khẩu ngắn → validation error xuất hiện
     const errors = screen.queryAllByTestId('input-error');
-    // Có ít nhất 1 lỗi validation hoặc text lỗi xuất hiện
     const hasPasswordError =
       errors.length > 0 ||
-      screen.queryByText('auth.login.validation.passwordRequired') !== null ||
-      screen.queryByText('auth.login.validation.passwordMinLength') !== null;
+      screen.queryByText('Mật khẩu tối thiểu 6 ký tự') !== null ||
+      screen.queryByText('Vui lòng nhập mật khẩu') !== null;
     expect(hasPasswordError).toBe(true);
   });
 

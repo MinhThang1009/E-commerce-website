@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Star,
   LayoutGrid,
+  Tag,
 } from 'lucide-react';
 
 // Danh mục sản phẩm thực từ database — với thumbnail từ sản phẩm nổi bật
@@ -196,7 +197,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
         <div
           className="absolute inset-0 bg-gradient-to-br
           from-neutral-50 via-white to-primary-50/30
-          dark:from-[#111111] dark:via-[#0d0d0d] dark:to-[#111111]"
+          dark:from-[var(--bg-base)] dark:via-[var(--bg-sunken)] dark:to-[var(--bg-base)]"
         />
 
         {/* Orb 1 — teal */}
@@ -476,7 +477,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onShopNowClick, onBrowseCateg
                 bg-warning-500/10 backdrop-blur-xl shadow-glow-secondary"
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">🏷️</span>
+                  <Tag className="w-5 h-5 text-warning-500" />
                   <div>
                     <div className="text-xs font-bold text-warning-600 dark:text-warning-400">
                       {t('homepage.hero.promotions.discount')}

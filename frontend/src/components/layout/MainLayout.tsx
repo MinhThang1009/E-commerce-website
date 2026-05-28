@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import Header from './Header';
 import Footer from './Footer';
 import PageTransition from './PageTransition';
+import MobileBottomNav from './MobileBottomNav';
 import { useScrollToTop } from '@/hooks/use-scroll-to-top';
 import { useCartMerge } from '@/features/cart';
 
@@ -38,6 +39,9 @@ const MainLayout: React.FC = () => {
         </div>
       </main>
       <Footer />
+      <MobileBottomNav />
+      {/* Padding cho mobile bottom nav */}
+      <div className="h-16 lg:hidden" />
     </div>
   );
 };

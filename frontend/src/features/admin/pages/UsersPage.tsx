@@ -374,7 +374,7 @@ const UsersPage: React.FC = () => {
                           {record.avatar ? (
                             <img
                               src={record.avatar}
-                              alt=""
+                              alt={`${record.firstName} ${record.lastName}`}
                               className="w-12 h-12 rounded-full object-cover"
                             />
                           ) : (

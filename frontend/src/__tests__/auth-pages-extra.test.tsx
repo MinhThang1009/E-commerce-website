@@ -226,7 +226,7 @@ describe('RegisterPage', () => {
     await act(async () => {
       fireEvent.click(submitBtn);
     });
-    expect(screen.getByText('validation.firstName.required')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập họ')).toBeInTheDocument();
   });
 
   it('link đăng nhập dẫn đến /login', () => {
@@ -350,7 +350,7 @@ describe('RegisterPage: form interactions', () => {
       fireEvent.click(submitBtn);
     });
     // Validation phải chạy — form không crash và xuất hiện ít nhất 1 error (firstName còn rỗng)
-    expect(screen.getByText('validation.firstName.required')).toBeInTheDocument();
+    expect(screen.getByText('Vui lòng nhập họ')).toBeInTheDocument();
   });
 });
 

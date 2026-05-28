@@ -46,6 +46,8 @@ module.exports = {
         '^@types/(.*)$': '<rootDir>/src/types/$1',
         '^@constants$': '<rootDir>/src/constants/index.ts',
         '^@constants/(.*)$': '<rootDir>/src/constants/$1',
+        '^@schemas$': '<rootDir>/src/schemas/index.ts',
+        '^@schemas/(.*)$': '<rootDir>/src/schemas/$1',
         '^@routes/(.*)$': '<rootDir>/src/routes/$1',
         '^@config/(.*)$': '<rootDir>/src/config/$1',
         '^@assets/(.*)$': '<rootDir>/src/assets/$1',

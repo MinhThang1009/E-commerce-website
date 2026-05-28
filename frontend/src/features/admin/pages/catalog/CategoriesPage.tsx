@@ -17,6 +17,7 @@ import {
 import type { Category } from '@features/catalog/types/category.types';
 import ImageUpload from '@/components/common/ImageUpload';
 import { getErrorMsg } from '@/utils/error-utils';
+import { categorySchema } from '@/schemas/admin';
 import {
   Button,
   Card,
@@ -101,14 +102,14 @@ const CategoriesPage: React.FC = () => {
       .map((cat: Category) => ({ value: cat.id, label: cat.name }));
 
   const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-    if (!formData.name || formData.name.trim().length === 0) {
-      errors.name = t('admin.categories.form.nameRequired');
-    } else if (formData.name.trim().length < 2) {
-      errors.name = t('admin.categories.form.nameMinLength') || 'Min 2 characters';
+    const result = categorySchema.safeParse({ name: formData.name });
+    if (!result.success) {
+      const fe = result.error.flatten().fieldErrors;
+      setFormErrors({ name: fe.name?.[0] });
+      return false;
     }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFormErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

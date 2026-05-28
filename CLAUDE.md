@@ -199,6 +199,7 @@ npm run test:ci             # CI mode + coverage
 @hooks       → src/hooks
 @pages       → src/pages
 @routes      → src/routes
+@schemas     → src/schemas
 @utils       → src/utils
 @types       → src/types
 @constants   → src/constants

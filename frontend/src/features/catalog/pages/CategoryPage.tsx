@@ -15,7 +15,16 @@ import { useGetAllCategoriesQuery } from '../api/category-api';
 import { ProductCard } from '@/features/catalog';
 import { getUploadUrl } from '@/utils/upload-url';
 import { localizeField } from '@/utils/localize';
-import { Smartphone, Tablet, Laptop, Watch, Clock, Package, type LucideIcon } from 'lucide-react';
+import {
+  Smartphone,
+  Tablet,
+  Laptop,
+  Watch,
+  Clock,
+  Package,
+  ShoppingBag,
+  type LucideIcon,
+} from 'lucide-react';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular';
 
@@ -211,7 +220,7 @@ const CategoryPage: React.FC = () => {
               to={ROUTES.SHOP}
               className="flex-shrink-0 flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800 hover:border-primary-300 dark:hover:border-primary-700 transition-all"
             >
-              🛍️ {t('category.all')}
+              <ShoppingBag className="w-4 h-4" /> {t('category.all')}
             </Link>
             {relatedCategories.map((cat) => (
               <Link

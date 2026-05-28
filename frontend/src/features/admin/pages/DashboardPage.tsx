@@ -15,6 +15,18 @@ import {
 import { useGetAdminOrdersQuery } from '../api/admin-order-api';
 import DashboardCharts from '../components/DashboardCharts';
 import { proxyImg } from '@/utils/proxy-img';
+import {
+  DollarSign,
+  ShoppingBag,
+  Users,
+  Package,
+  Calculator,
+  XCircle,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  AlertCircle,
+} from 'lucide-react';
 
 // Màu sắc badge trạng thái
 const statusColors: Record<string, string> = {
@@ -107,22 +119,9 @@ const DashboardPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-neutral-800 dark:text-neutral-100 mb-8">
           {t('admin.dashboard.title')}
         </h1>
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-8 text-center">
+        <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-8 text-center border border-neutral-200 dark:border-neutral-700">
           <div className="text-error-500 mb-4">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <AlertCircle className="h-16 w-16 mx-auto" />
           </div>
           <h2 className="text-xl font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
             {t('admin.dashboard.errors.loadingDashboard')}
@@ -153,290 +152,99 @@ const DashboardPage: React.FC = () => {
 
       {/* Các thẻ thống kê — 7 cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Tổng doanh thu */}
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('admin.dashboard.stats.totalRevenue')}
-            </h2>
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-primary-600 dark:text-primary-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+        {/* KPI Cards — data-driven */}
+        {[
+          {
+            label: t('admin.dashboard.stats.totalRevenue'),
+            value: formatCurrency(stats?.overview.totalRevenue || 0),
+            icon: DollarSign,
+            bg: 'bg-primary-100 dark:bg-primary-900/30',
+            iconColor: 'text-primary-600 dark:text-primary-400',
+            growth: stats?.growth.revenue,
+          },
+          {
+            label: t('admin.dashboard.stats.totalOrders'),
+            value: stats?.overview.totalOrders || 0,
+            icon: ShoppingBag,
+            bg: 'bg-blue-100 dark:bg-blue-900/30',
+            iconColor: 'text-blue-600 dark:text-blue-400',
+            growth: stats?.growth.orders,
+          },
+          {
+            label: t('admin.dashboard.stats.totalUsers'),
+            value: stats?.overview.totalUsers || 0,
+            icon: Users,
+            bg: 'bg-green-100 dark:bg-green-900/30',
+            iconColor: 'text-green-600 dark:text-green-400',
+            growth: stats?.growth.users,
+          },
+          {
+            label: t('admin.dashboard.stats.totalProducts'),
+            value: stats?.overview.totalProducts || 0,
+            icon: Package,
+            bg: 'bg-yellow-100 dark:bg-yellow-900/30',
+            iconColor: 'text-yellow-600 dark:text-yellow-400',
+            subtitle: t('admin.dashboard.stats.activeProducts'),
+          },
+          {
+            label: t('admin.dashboard.stats.aov'),
+            value: formatCurrency(stats?.overview.aov || 0),
+            icon: Calculator,
+            bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+            iconColor: 'text-indigo-600 dark:text-indigo-400',
+            subtitle: t('admin.dashboard.stats.averageOrderValue'),
+          },
+          {
+            label: t('admin.dashboard.stats.cancelledThisMonth'),
+            value: stats?.overview.cancelledOrdersMonth || 0,
+            icon: XCircle,
+            bg: 'bg-red-100 dark:bg-red-900/30',
+            iconColor: 'text-red-600 dark:text-red-400',
+            subtitle: t('admin.dashboard.stats.ordersThisMonth'),
+          },
+        ].map(({ label, value, icon: Icon, bg, iconColor, growth, subtitle }) => (
+          <div
+            key={label}
+            className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-6 border border-neutral-200 dark:border-neutral-700 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                {label}
+              </h2>
+              <div className={`p-2 ${bg} rounded-xl`}>
+                <Icon className={`w-5 h-5 ${iconColor}`} />
+              </div>
             </div>
+            <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{value}</div>
+            {growth !== undefined && (
+              <div className={`mt-2 text-sm flex items-center ${formatGrowth(growth).color}`}>
+                {formatGrowth(growth).isPositive ? (
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 mr-1" />
+                )}
+                <span>
+                  {formatGrowth(growth).value}% {t('admin.dashboard.stats.fromLastMonth')}
+                </span>
+              </div>
+            )}
+            {subtitle && !growth && (
+              <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">{subtitle}</div>
+            )}
           </div>
-          <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {formatCurrency(stats?.overview.totalRevenue || 0)}
-          </div>
-          {stats?.growth.revenue !== undefined && (
-            <div
-              className={`mt-2 text-sm flex items-center ${formatGrowth(stats.growth.revenue).color}`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={
-                    formatGrowth(stats.growth.revenue).isPositive
-                      ? 'M5 10l7-7m0 0l7 7m-7-7v18'
-                      : 'M19 14l-7 7m0 0l-7-7m7 7V3'
-                  }
-                />
-              </svg>
-              <span>
-                {formatGrowth(stats.growth.revenue).value}%{' '}
-                {t('admin.dashboard.stats.fromLastMonth')}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Tổng đơn hàng */}
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('admin.dashboard.stats.totalOrders')}
-            </h2>
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-blue-600 dark:text-blue-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {stats?.overview.totalOrders || 0}
-          </div>
-          {stats?.growth.orders !== undefined && (
-            <div
-              className={`mt-2 text-sm flex items-center ${formatGrowth(stats.growth.orders).color}`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={
-                    formatGrowth(stats.growth.orders).isPositive
-                      ? 'M5 10l7-7m0 0l7 7m-7-7v18'
-                      : 'M19 14l-7 7m0 0l-7-7m7 7V3'
-                  }
-                />
-              </svg>
-              <span>
-                {formatGrowth(stats.growth.orders).value}%{' '}
-                {t('admin.dashboard.stats.fromLastMonth')}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Tổng người dùng */}
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('admin.dashboard.stats.totalUsers')}
-            </h2>
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-green-600 dark:text-green-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {stats?.overview.totalUsers || 0}
-          </div>
-          {stats?.growth.users !== undefined && (
-            <div
-              className={`mt-2 text-sm flex items-center ${formatGrowth(stats.growth.users).color}`}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d={
-                    formatGrowth(stats.growth.users).isPositive
-                      ? 'M5 10l7-7m0 0l7 7m-7-7v18'
-                      : 'M19 14l-7 7m0 0l-7-7m7 7V3'
-                  }
-                />
-              </svg>
-              <span>
-                {formatGrowth(stats.growth.users).value}% {t('admin.dashboard.stats.fromLastMonth')}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Tổng sản phẩm */}
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('admin.dashboard.stats.totalProducts')}
-            </h2>
-            <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-yellow-600 dark:text-yellow-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {stats?.overview.totalProducts || 0}
-          </div>
-          <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            {t('admin.dashboard.stats.activeProducts')}
-          </div>
-        </div>
-
-        {/* AOV — Average Order Value */}
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('admin.dashboard.stats.aov')}
-            </h2>
-            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-indigo-600 dark:text-indigo-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {formatCurrency(stats?.overview.aov || 0)}
-          </div>
-          <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            {t('admin.dashboard.stats.averageOrderValue')}
-          </div>
-        </div>
-
-        {/* Đơn hủy tháng này */}
-        <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-              {t('admin.dashboard.stats.cancelledThisMonth')}
-            </h2>
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-red-600 dark:text-red-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-          </div>
-          <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {stats?.overview.cancelledOrdersMonth || 0}
-          </div>
-          <div className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-            {t('admin.dashboard.stats.ordersThisMonth')}
-          </div>
-        </div>
+        ))}
 
         {/* Sản phẩm sắp hết hàng */}
         <a
           href="#low-stock-widget"
-          className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm p-6 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-700 transition-colors"
+          className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm p-6 border border-neutral-200 dark:border-neutral-700 hover:border-red-300 dark:hover:border-red-700 hover:shadow-md transition-all"
         >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
               {t('admin.dashboard.stats.lowStock')}
             </h2>
-            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-full relative">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-orange-600 dark:text-orange-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+            <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl relative">
+              <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               {(stats?.overview.lowStockCount || 0) > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold">
                   !
@@ -455,22 +263,9 @@ const DashboardPage: React.FC = () => {
 
       {/* Cảnh báo đơn hàng chờ xử lý */}
       {(stats?.overview.ordersByStatus?.pending ?? 0) > 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-8">
           <div className="flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mr-2"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
+            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2 flex-shrink-0" />
             <span className="text-yellow-800 dark:text-yellow-200 font-medium">
               {t('admin.dashboard.alerts.pendingOrders', {
                 count: stats?.overview.ordersByStatus?.pending,
@@ -639,20 +434,7 @@ const DashboardPage: React.FC = () => {
         >
           <div className="px-6 py-4 border-b border-neutral-200 dark:border-neutral-700 flex justify-between items-center">
             <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-orange-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
               {t('admin.dashboard.lowStock.title')}
             </h2>
           </div>

@@ -2064,6 +2064,12 @@
       "ram": "RAM",
       "size": "Size",
       "weight": "Weight"
+    },
+    "trust": {
+      "securePayment": "Secure Payment",
+      "freeShipping": "Free Shipping",
+      "returnPolicy": "30-Day Returns",
+      "installment": "0% Installment"
     }
   },
   "validation": {

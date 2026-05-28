@@ -17,6 +17,7 @@ import {
 } from '../api/discount-code-api';
 import { DiscountCode } from '@/types/discount.types';
 import { getErrorMsg } from '@/utils/error-utils';
+import { discountCodeSchema } from '@/schemas/admin';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -131,20 +132,21 @@ const DiscountCodesPage: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    if (!formData.code.trim()) {
-      errors.code = t('admin.discountCodes.form.codeRequired');
-    } else if (!/^[A-Z0-9_]+$/.test(formData.code)) {
-      errors.code = t('admin.discountCodes.form.codePattern');
+    const result = discountCodeSchema.safeParse({
+      code: formData.code,
+      type: formData.type,
+      value: formData.value,
+    });
+    if (!result.success) {
+      const fe = result.error.flatten().fieldErrors;
+      const errors: Record<string, string> = {};
+      if (fe.code?.[0]) errors.code = fe.code[0];
+      if (fe.value?.[0]) errors.value = fe.value[0];
+      setFormErrors(errors);
+      return false;
     }
-    if (formData.value === undefined || formData.value === null) {
-      errors.value = t('admin.discountCodes.form.valueRequired');
-    }
-    if (formData.type === 'percent' && formData.value > 100) {
-      errors.value = t('admin.discountCodes.form.valueRequired');
-    }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFormErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

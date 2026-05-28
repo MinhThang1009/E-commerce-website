@@ -13,6 +13,7 @@ import { buildRoute } from '@/routes/paths';
 import { useGetBrandsQuery } from '../api/brand-api';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { ErrorState } from '@/components/common/ErrorState';
+import { Store } from 'lucide-react';
 
 // Simple Icons CDN fallback — dùng chung với HomePage marquee
 const SIMPLE_ICONS_SLUGS: Record<string, string> = {
@@ -95,7 +96,7 @@ const BrandsPage: React.FC = () => {
           <ErrorState error={error} onRetry={refetch} />
         ) : filteredBrands.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🏪</div>
+            <Store className="w-16 h-16 mx-auto mb-4 text-neutral-400" />
             <h3 className="text-xl font-bold">{t('brands.noResults')}</h3>
             <p className="text-neutral-500">{t('brands.noResultsHint')}</p>
           </div>

@@ -73,7 +73,7 @@ describe('handleAutoLogout', () => {
     expect(mockAddNotification).toHaveBeenCalledWith({
       message: 'Phiên đăng nhập đã hết hạn',
       type: 'warning',
-      duration: 4000,
+      duration: 5000,
     });
   });
 
@@ -93,7 +93,7 @@ describe('handleAutoLogout', () => {
     expect(mockAddNotification).toHaveBeenCalledWith({
       message: 'auth.errors.sessionExpired',
       type: 'warning',
-      duration: 4000,
+      duration: 5000,
     });
   });
 
@@ -150,7 +150,7 @@ describe('handleUnauthorizedError', () => {
     expect(mockAddNotification).toHaveBeenCalledWith({
       message: 'Bị khóa',
       type: 'warning',
-      duration: 4000,
+      duration: 5000,
     });
   });
 
@@ -162,7 +162,7 @@ describe('handleUnauthorizedError', () => {
     expect(mockAddNotification).toHaveBeenCalledWith({
       message: 'auth.errors.accountLocked',
       type: 'warning',
-      duration: 4000,
+      duration: 5000,
     });
   });
 

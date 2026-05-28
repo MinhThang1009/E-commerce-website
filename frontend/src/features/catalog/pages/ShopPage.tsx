@@ -12,7 +12,6 @@ import { ProductListCard } from '@/features/catalog';
 import { FilterPanel } from '@/features/catalog';
 import Pagination from '@/components/common/Pagination';
 import Select from '@/components/common/Select';
-import { PremiumButton } from '@/components/common';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import { ErrorState, EmptyState } from '@/components/common/ErrorState';
 import { Product, ProductFilters } from '../types/product.types';
@@ -23,9 +22,9 @@ import { useGetBrandsQuery } from '../api/brand-api';
 import { useTranslation } from 'react-i18next';
 import { localizeField } from '@/utils/localize';
 import { motion } from 'framer-motion';
-import { fadeUp, stagger, itemFade, viewportOnce } from '@/utils/motion';
-
-// Tùy chọn sắp xếp sẽ được xử lý bên trong component do dùng hooks
+import { stagger, itemFade, viewportOnce } from '@/utils/motion';
+import { LayoutGrid, List, SlidersHorizontal, Store } from 'lucide-react';
+import PageHero from '@/components/common/PageHero';
 
 const ShopPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -217,38 +216,30 @@ const ShopPage: React.FC = () => {
           href={`${import.meta.env.VITE_SITE_URL || 'https://techstore.vn'}/shop`}
         />
       </Helmet>
-      <div className="container mx-auto px-4 py-8">
-        {/* Tiêu đề trang */}
-        <motion.div
-          className="mb-8 text-center"
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
-        >
-          <h1 className="text-4xl font-bold text-neutral-800 dark:text-neutral-100 mb-3">
-            {t('shop.title')}
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 text-lg">
-            {productsData?.total
-              ? t('shop.stats', {
-                  current: productsData.data?.length || 0,
-                  total: productsData.total,
-                })
-              : t('shop.subtitle')}
-          </p>
-        </motion.div>
+      <PageHero
+        icon={<Store className="w-7 h-7 text-white" />}
+        title={t('shop.title')}
+        subtitle={
+          productsData?.total
+            ? t('shop.stats', {
+                current: productsData.data?.length || 0,
+                total: productsData.total,
+              })
+            : t('shop.subtitle')
+        }
+        badge={search ? `"${search}"` : undefined}
+      />
 
+      <div className="container mx-auto px-4 py-8">
         {/* Nút lọc trên mobile */}
         <div className="lg:hidden mb-4">
-          <PremiumButton
-            variant="outline"
-            size="large"
-            iconType="settings"
+          <button
             onClick={() => setIsMobileFilterOpen(true)}
-            className="w-full"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium hover:border-primary-300 dark:hover:border-primary-600 transition-colors"
           >
+            <SlidersHorizontal className="w-4 h-4" />
             {t('shop.filtersButton')}
-          </PremiumButton>
+          </button>
         </div>
 
         {/* Điều khiển trên mobile */}
@@ -258,42 +249,28 @@ const ShopPage: React.FC = () => {
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               {t('shop.viewMode')}:
             </span>
-            <div className="flex items-center bg-white dark:bg-neutral-800 rounded-lg p-1 border border-neutral-200 dark:border-neutral-700">
+            <div className="flex items-center bg-white dark:bg-neutral-800 rounded-xl p-1 border border-neutral-200 dark:border-neutral-700">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors ${
+                className={`p-2 rounded-lg transition-colors ${
                   viewMode === 'grid'
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-primary-500 text-white shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400'
                 }`}
                 aria-label={t('shop.gridView')}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
-                </svg>
+                <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${
+                className={`p-2 rounded-lg transition-colors ${
                   viewMode === 'list'
-                    ? 'bg-primary-500 text-white'
+                    ? 'bg-primary-500 text-white shadow-sm'
                     : 'text-neutral-600 dark:text-neutral-400'
                 }`}
                 aria-label={t('shop.listView')}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
+                <List className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -338,54 +315,31 @@ const ShopPage: React.FC = () => {
           {/* Sản phẩm */}
           <div className="flex-grow">
             {/* Sắp xếp và số kết quả - Desktop */}
-            <div className="hidden lg:flex justify-between items-center mb-6">
-              <p className="text-neutral-600 dark:text-neutral-400">
-                {productsData?.total
-                  ? t('shop.stats', {
-                      current: productsData.data?.length || 0,
-                      total: productsData.total,
-                    })
-                  : t('shop.subtitle')}
-              </p>
-
+            <div className="hidden lg:flex justify-end items-center mb-6">
               <div className="flex items-center gap-4">
                 {/* Chuyển chế độ hiển thị */}
-                <div className="flex items-center bg-white dark:bg-neutral-800 rounded-lg p-1 border border-neutral-200 dark:border-neutral-700">
+                <div className="flex items-center bg-white dark:bg-neutral-800 rounded-xl p-1 border border-neutral-200 dark:border-neutral-700">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition-colors ${
+                    className={`p-2 rounded-lg transition-colors ${
                       viewMode === 'grid'
-                        ? 'bg-primary-500 text-white'
+                        ? 'bg-primary-500 text-white shadow-sm'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                     }`}
                     aria-label={t('shop.gridView')}
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                      />
-                    </svg>
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-md transition-colors ${
+                    className={`p-2 rounded-lg transition-colors ${
                       viewMode === 'list'
-                        ? 'bg-primary-500 text-white'
+                        ? 'bg-primary-500 text-white shadow-sm'
                         : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
                     }`}
                     aria-label={t('shop.listView')}
                   >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16"
-                      />
-                    </svg>
+                    <List className="w-4 h-4" />
                   </button>
                 </div>
 

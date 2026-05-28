@@ -26,7 +26,12 @@ import { PAGINATION, UPLOAD } from '@constants';
 import { PAGINATION } from '@/constants';
 ```
 
-1 file duy nhất: `src/constants/index.ts`. Tất cả constants `as const` — type-safe, không reassign.
+Files trong `src/constants/`:
+
+- `index.ts` — `PAGINATION`, `UPLOAD`, `SHIPPING` constants
+- `chart-colors.ts` — `PIE_COLORS`, `ORDER_STATUS_COLORS`, `CHART_BLUE/GREEN/...` cho Recharts
+
+Tất cả constants `as const` — type-safe, không reassign.
 
 ---
 
@@ -65,7 +70,23 @@ SHIPPING.MAX_FEE; // 100_000 — phí ship tối đa
 
 ---
 
-# 5. Key Gotchas
+# 5. Chart Colors (chart-colors.ts)
+
+## 5.1 Export
+
+```ts
+import { PIE_COLORS, ORDER_STATUS_COLORS, CHART_BLUE, CHART_GREEN } from '@constants/chart-colors';
+```
+
+- `PIE_COLORS` — array 8 màu cho pie chart slices
+- `ORDER_STATUS_COLORS` — `Record<string, string>` mapping order status → color (pending/processing/shipped/delivered/cancelled)
+- `CHART_BLUE/GREEN/YELLOW/RED/VIOLET/PINK/CYAN/LIME` — named constants cho single-series charts
+
+**Lý do dùng constants thay vì CSS vars:** Recharts dùng SVG attributes (`stroke`, `fill`) không nhận CSS custom properties. Khi muốn đổi màu → sửa ở đây VÀ `_tokens.scss`.
+
+---
+
+# 6. Key Gotchas
 
 - **Luôn dùng constants** — không hardcode `limit: 10` hay `limit: 20` inline. Thay đổi 1 value → áp dụng toàn app.
 - **`ADMIN_LIMIT: 20`** chỉ dùng cho admin tables — user-facing pages dùng `DEFAULT_LIMIT: 10`.

@@ -163,6 +163,7 @@ Không có feature nào import từ checkout.
 
 # 8. Gotchas & Edge Cases
 
+- **Form validation dùng Zod:** `CheckoutPage.validateForm()` dùng `shippingSchema` từ `src/schemas/checkout.ts`. Phone VN regex: `(0|+84)[0-9]{9}`. Address cần >= 3 comma-separated parts. Billing fields validation vẫn manual (conditional, ngoài schema).
 - **Checkout là protected route** — guest click checkout → redirect `/login` → redirect back `/checkout`.
 - **Payment flow MoMo/VNPay:** `CheckoutPage` → `useCreateOrderMutation` → `useCreateMomoUrlMutation/VNPay` → `window.location.href = payUrl` (redirect toàn trang ra cổng thanh toán). Callback → backend → redirect về `/orders/:id`.
 - **Repay flow:** query param `?repayOrder=<id>&amount=<amount>` → skip form địa chỉ, set `currentOrder = { id, total, isRepay: true }`, trực tiếp tạo payment URL cho đơn đã có.

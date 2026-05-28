@@ -47,19 +47,19 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ form }) => {
         <AlertDescription>
           <div>
             <p>
-              <strong>📝 {t('admin.products.images.howToLabel')}:</strong>{' '}
+              <strong>{t('admin.products.images.howToLabel')}:</strong>{' '}
               {t('admin.products.images.guideInput')}
             </p>
             <p>
-              <strong>🖼️ {t('admin.products.images.requirementsLabel')}:</strong>{' '}
+              <strong>{t('admin.products.images.requirementsLabel')}:</strong>{' '}
               {t('admin.products.images.guideRequirement')}
             </p>
             <p>
-              <strong>📁 {t('admin.products.images.formatLabel')}:</strong>{' '}
+              <strong>{t('admin.products.images.formatLabel')}:</strong>{' '}
               {t('admin.products.images.guideFormat')}
             </p>
             <p>
-              <strong>🎯 {t('admin.products.images.thumbnailLabel')}:</strong>{' '}
+              <strong>{t('admin.products.images.thumbnailLabel')}:</strong>{' '}
               {t('admin.products.images.guideThumbnail')}
             </p>
             <p>

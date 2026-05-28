@@ -56,6 +56,10 @@ export const orderKeys = {
   detail: (id: string) => [...orderKeys.details(), id] as const,
   byNumber: (number: string) => [...orderKeys.all, 'number', number] as const,
 };
+
+// Key cho query discount codes từ checkout
+export const discountAvailableKey = ['discount-codes', 'available'] as const;
+// Admin mutations invalidate ['discount-codes'] root → bust query này tự động
 ```
 
 ## Client state (Zustand)

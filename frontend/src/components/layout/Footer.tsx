@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { ShopIcon } from '@/components/icons';
 import FeedbackModal from '@/components/common/FeedbackModal';
 import { ROUTES } from '@/routes/paths';
-import { ShieldCheck, Truck, Award, CreditCard } from 'lucide-react';
+import { ShieldCheck, Truck, Award, CreditCard, Phone, MapPin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   const { t } = useTranslation();
@@ -102,26 +102,26 @@ const Footer: React.FC = () => {
           {/* Hotline & Cửa hàng */}
           <div>
             <div className="mb-8">
-              <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-2">
+              <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-2">
                 {t('footer.hotline')}
-              </h4>
+              </h3>
               <a
                 href="tel:1900633579"
                 className="text-2xl font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors"
                 style={{ fontFamily: 'monospace' }}
               >
-                📞 1900.63.3579
+                <Phone className="w-5 h-5 inline mr-1" /> 1900.63.3579
               </a>
             </div>
 
             <div className="space-y-6">
               <div>
-                <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-base mb-3">
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-base mb-3">
                   {t('footer.hanoiStore')}
-                </h4>
+                </h3>
                 <div className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
                   <div className="flex items-start gap-2">
-                    <span className="mt-1">🏪</span>
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary-500" />
                     <p>
                       {t('footer.hanoiAddress')} ({t('footer.directions')})
                     </p>
@@ -130,18 +130,18 @@ const Footer: React.FC = () => {
               </div>
 
               <div>
-                <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-base mb-3">
+                <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-base mb-3">
                   {t('footer.hcmStore')}
-                </h4>
+                </h3>
                 <div className="text-sm text-neutral-600 dark:text-neutral-400 space-y-2">
                   <div className="flex items-start gap-2">
-                    <span className="mt-1">🏪</span>
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary-500" />
                     <p>
                       {t('footer.hcmAddress1')} ({t('footer.directions')})
                     </p>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="mt-1">🏪</span>
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-primary-500" />
                     <p>
                       {t('footer.hcmAddress2')} ({t('footer.directions')})
                     </p>
@@ -153,9 +153,9 @@ const Footer: React.FC = () => {
 
           {/* Thông tin hữu ích — link đến trang static & khám phá */}
           <div>
-            <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
               {t('footer.usefulInfo')}
-            </h4>
+            </h3>
             <ul className="space-y-3">
               {[
                 { labelKey: 'footer.usefulLinks.shipping', path: '/shipping-returns' },
@@ -180,9 +180,9 @@ const Footer: React.FC = () => {
 
           {/* Phản hồi */}
           <div>
-            <h4 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
+            <h3 className="font-bold text-neutral-900 dark:text-neutral-100 text-lg mb-6">
               {t('footer.feedbackTitle')}
-            </h4>
+            </h3>
             <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl p-6 border border-neutral-100 dark:border-neutral-800">
               <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 leading-relaxed">
                 {t('footer.feedback.description')}
@@ -280,7 +280,7 @@ const Footer: React.FC = () => {
                   <ShieldCheck className="size-3.5" />
                   {t('footer.dmcaProtected')}
                 </span>
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-400 text-xs font-semibold border border-primary-200 dark:border-primary-800">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-primary-50 dark:bg-primary-900/20 text-primary-800 dark:text-primary-400 text-xs font-semibold border border-primary-200 dark:border-primary-800">
                   {t('footer.bctNotified')}
                 </span>
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-xs font-semibold border border-red-200 dark:border-red-800">

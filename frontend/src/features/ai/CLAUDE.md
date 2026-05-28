@@ -55,14 +55,10 @@ features/ai/
     ChatMessages.tsx          — Scrollable message list, auto-scroll xuống khi có tin mới
     MessageBubble.tsx         — Styled wrapper cho message content
     ChatInput.tsx             — Text input + voice button (Web Speech API) + send button
-    ChatSuggestions.tsx       — Suggested quick replies bên dưới message AI
     AIProductCard.tsx         — Product card mở rộng (dùng ngoài chat context)
-    icons/                    — SVG icon components: SendIcon, BotIcon, UserIcon, LoadingIcon, TrashIcon, HelpIcon...
+    icons/                    — SVG icon components: SendIcon, ChatIcon, CloseIcon, UserIcon, LoadingIcon, EyeIcon, GridIcon, ImageIcon, LightningIcon, StarIcon, index.ts
 
   hooks/
-
-  constants/
-    chat-widget.ts            — CHAT_WIDGET_CONFIG: DEFAULT_SIZE 384×600, MIN 300×400, MAX 800×800; STORAGE_KEYS; getGreetingMessage() (không dùng bởi ChatWidgetPortal — widget build greeting inline); RESIZE_HANDLE_STYLES + RESIZE_HANDLE_CLASSES (leftover từ resize implementation cũ, hiện không dùng)
 
   types/
     message.types.ts          — Message interface (re-export/định nghĩa lại từ chatbot-api.ts types)
@@ -188,7 +184,7 @@ interface SendChatbotMessageRequest {
 
 - **2 API layers song song:** `chatbot-api.ts` (TanStack Query — dùng chính) vs `chatbot-service.ts` (class-based legacy, axios trực tiếp, không qua `apiClient`). Khi thêm logic mới → dùng `chatbot-api.ts`.
 - **`chatbot-service.ts` là LEGACY** — tự lấy token từ `useAuthStore.getState()`. Tồn tại vì code cũ còn tham chiếu — không xóa khi chưa migrate hết.
-- **Widget size persist** vào `localStorage[CHAT_WIDGET_CONFIG.STORAGE_KEYS.SIZE]` = `'chatWidgetSize'`. Default 384×600, min 300×400, max 800×800.
+- **Widget size persist** vào `localStorage['chatWidgetSize']`. Default 384×600, min 300×400, max 800×800.
 - **Chat messages persist qua navigation** — chatStore Zustand giữ state trong memory + localStorage, không reset khi navigate.
 - **Widget render:** `ChatWidgetPortal` là fixed-position div — z-index luôn cao nhất (z-50 button, z-[9999] panel), không bị clip bởi `overflow: hidden` của parent.
 - **Rate limit backend:** `chatbotLimiter` = 20 req/60s, không có dev override.

@@ -7,8 +7,7 @@
 import { PremiumButton } from '@/components/common';
 import { EmptyState } from '@/components/common/ErrorState';
 import CartItem from '../components/CartItem';
-import CheckCircleIcon from '@/components/icons/CheckCircleIcon';
-import PlusCircleIcon from '@/components/icons/PlusCircleIcon';
+import { CheckCircle, Info, AlertTriangle, Tag, Check, ShoppingBag } from 'lucide-react';
 import { useClearCartMutation, useGetCartQuery, useValidateCartQuery } from '../api/cart-api';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
@@ -246,18 +245,18 @@ const CartPage: React.FC = () => {
 
       {/* Trạng thái đồng bộ */}
       {isAuthenticated && serverCart && serverCart.id && (
-        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <div className="flex items-center text-green-700 dark:text-green-300">
-            <CheckCircleIcon />
+        <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+          <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm">{t('cart.syncedWithAccount')}</span>
           </div>
         </div>
       )}
 
       {!isAuthenticated && items.length > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-primary-700/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <div className="flex items-center text-blue-700 dark:text-blue-300">
-            <PlusCircleIcon />
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-primary-700/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+          <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300">
+            <Info className="w-4 h-4 flex-shrink-0" />
             <span className="text-sm">{t('cart.savedLocally')}</span>
           </div>
         </div>
@@ -267,7 +266,7 @@ const CartPage: React.FC = () => {
       {issueItems.length > 0 && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-xl shadow-sm">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">⚠️</span>
+            <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
                 {t('cart.validation.stockIssues')}
@@ -368,8 +367,9 @@ const CartPage: React.FC = () => {
 
               {/* -- Ô nhập voucher -- */}
               <div>
-                <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                  🏷️ {t('cart.voucher.title')}
+                <label className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
+                  <Tag className="w-3.5 h-3.5" />
+                  {t('cart.voucher.title')}
                 </label>
                 {appliedVoucher ? (
                   <div className="flex items-center justify-between gap-2 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg px-3 py-2">
@@ -433,19 +433,7 @@ const CartPage: React.FC = () => {
                 {appliedVoucher && (
                   <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
                     <span className="flex items-center gap-1">
-                      <svg
-                        className="w-3.5 h-3.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                        />
-                      </svg>
+                      <Tag className="w-3.5 h-3.5" />
                       {t('cart.voucher.discountLabel', { code: appliedVoucher.code })}
                     </span>
                     <span className="font-semibold">
@@ -481,7 +469,8 @@ const CartPage: React.FC = () => {
                 onClick={() => navigate(ROUTES.SHOP)}
                 className="btn-glass-secondary w-full h-12 flex items-center justify-center gap-2 text-sm font-semibold !rounded-xl"
               >
-                → {t('cart.continueShopping')}
+                <ShoppingBag className="w-4 h-4" />
+                {t('cart.continueShopping')}
               </button>
 
               <div className="text-sm text-neutral-500 dark:text-neutral-400 space-y-1.5">
@@ -490,21 +479,8 @@ const CartPage: React.FC = () => {
                   t('cart.benefits.secureCheckout'),
                   t('cart.benefits.returnPolicy'),
                 ].map((benefit) => (
-                  <p key={benefit} className="flex items-center">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 mr-2 text-primary-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
+                  <p key={benefit} className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary-500 flex-shrink-0" />
                     {benefit}
                   </p>
                 ))}

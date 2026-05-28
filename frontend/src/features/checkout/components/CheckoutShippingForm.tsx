@@ -17,6 +17,10 @@ interface CheckoutShippingFormProps {
     email: string;
     phone: string;
     address: string;
+    province?: string;
+    district?: string;
+    ward?: string;
+    addressDetail?: string;
     sameAsShipping: boolean;
     [key: string]: unknown;
   };
@@ -127,6 +131,10 @@ const CheckoutShippingForm: React.FC<CheckoutShippingFormProps> = ({
             onChange={onAddressChange}
             error={errors.address}
             required
+            initialProvince={formData.province}
+            initialDistrict={formData.district}
+            initialWard={formData.ward}
+            initialStreet={formData.addressDetail}
           />
         </div>
       </div>

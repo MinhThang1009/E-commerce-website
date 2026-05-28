@@ -48,8 +48,28 @@ styles/
   --color-secondary: #ff755e;
   --color-secondary-light: #ff9a87;
   --color-secondary-dark: #e56954;
+
+  /* Admin semantic */
+  --admin-info: #1890ff;
+  --admin-success: #52c41a;
+  --admin-error: #ff4d4f;
+  --admin-warning: #faad14;
+  --admin-purple: #722ed1;
+  --admin-muted: #999;
+
+  /* Chart colors — dùng trong Recharts (SVG attr, không CSS var) */
+  --chart-blue: #3b82f6;
+  --chart-green: #10b981;
+  --chart-yellow: #f59e0b;
+  --chart-red: #ef4444;
+  --chart-violet: #8b5cf6;
+  --chart-pink: #ec4899;
+  --chart-cyan: #06b6d4;
+  --chart-lime: #84cc16;
 }
 ```
+
+**Chart colors**: static hex values (không thể dùng CSS var cho SVG attributes). Import từ `src/constants/chart-colors.ts`.
 
 ## 2.2 Button glass tokens
 
@@ -83,9 +103,9 @@ Dark mode: opacity thấp hơn để glass trong hơn, màu giữ nguyên.
 **Light mode (`/:root`):**
 
 ```
---bg-base: #ffffff         --text-primary: #09090b
---bg-surface: #fafafa      --text-secondary: #52525b
---bg-elevated: #f4f4f5     --text-tertiary: #a1a1aa
+--bg-base: #ffffff         --bg-surface: #fafafa        --bg-elevated: #f4f4f5
+--bg-sunken: #f0f0f0       --bg-surface-secondary: #f5f5f5  --bg-surface-tertiary: #eeeeee
+--text-primary: #09090b    --text-secondary: #52525b    --text-tertiary: #a1a1aa
 --accent: #2aaca7          --border-default: #e4e4e7
 --glass-bg: rgba(255,255,255,0.65)
 ```
@@ -93,10 +113,13 @@ Dark mode: opacity thấp hơn để glass trong hơn, màu giữ nguyên.
 **Dark mode (`.dark`):**
 
 ```
---bg-base: #111111         --text-primary: #fafafa
---bg-surface: #161616      --accent: #4bbcb8 (luminous)
+--bg-base: #111111         --bg-surface: #161616        --bg-elevated: #1f1f1f
+--bg-sunken: #0a0a0a       --bg-surface-secondary: #1f1f1f  --bg-surface-tertiary: #2a2a2a
+--text-primary: #fafafa    --accent: #4bbcb8 (luminous)
 --glass-bg: rgba(255,255,255,0.05)
 ```
+
+**Dùng trong Tailwind:** `bg-[var(--bg-base)]` hoặc Tailwind v4 shorthand `bg-(--bg-base)`. Tránh arbitrary hex literals trong dark mode — dùng token.
 
 ## 3.2 Typography
 

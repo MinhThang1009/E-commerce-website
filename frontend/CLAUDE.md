@@ -300,8 +300,9 @@ frontend/src/
   pages/CLAUDE.md                            ← static/marketing pages
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← global TypeScript types
-  styles/CLAUDE.md                           ← SCSS tokens, global styles
-  constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING
+  styles/CLAUDE.md                           ← SCSS tokens, global styles, chart tokens
+  constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING, chart-colors
+  schemas/CLAUDE.md                          ← Zod validation schemas (auth, checkout)
   __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 18 suites)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget

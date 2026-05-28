@@ -18,6 +18,7 @@ import {
   useDeleteBrandMutation,
 } from '@features/catalog/api/brand-api';
 import { getErrorMsg } from '@/utils/error-utils';
+import { brandSchema } from '@/schemas/admin';
 import {
   Button,
   Card,
@@ -83,19 +84,17 @@ const BrandsPage: React.FC = () => {
   const paginatedBrands = brands.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const validateForm = (): boolean => {
-    const errors: FormErrors = {};
-    if (!formData.name || formData.name.trim().length === 0) {
-      errors.name = t('admin.brands.form.nameRequired');
+    const result = brandSchema.safeParse({
+      name: formData.name,
+      website: formData.website,
+    });
+    if (!result.success) {
+      const fe = result.error.flatten().fieldErrors;
+      setFormErrors({ name: fe.name?.[0], website: fe.website?.[0] });
+      return false;
     }
-    if (formData.website && formData.website.trim().length > 0) {
-      try {
-        new URL(formData.website);
-      } catch {
-        errors.website = t('admin.brands.form.websiteInvalid');
-      }
-    }
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFormErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

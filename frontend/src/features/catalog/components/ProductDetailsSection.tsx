@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import DOMPurify from 'dompurify';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, FileText, Settings } from 'lucide-react';
 import '@/styles/product-description.css';
 
 interface Specification {
@@ -50,7 +50,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         <div className="h-fit shadow-sm rounded-lg bg-white dark:bg-neutral-950">
           <div className="px-6 py-4 border-b border-gray-100 dark:border-white/[0.06]">
             <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-800 dark:text-neutral-200">📝</span>
+              <FileText className="w-5 h-5 text-gray-800 dark:text-neutral-200" />
               <span className="text-lg font-semibold text-gray-800 dark:text-neutral-200">
                 {t('product.description')}
               </span>
@@ -63,7 +63,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                 style={{ maxHeight: '500px' }}
                 dangerouslySetInnerHTML={{ __html: cleanDescription }}
               />
-              <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white via-white/80 to-transparent flex items-end justify-center pb-4 pt-12 dark:from-[#141414] dark:via-[#141414]/80">
+              <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white via-white/80 to-transparent flex items-end justify-center pb-4 pt-12 dark:from-[var(--bg-base)] dark:via-[var(--bg-base)]/80">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
@@ -82,7 +82,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
         <div className="h-fit sticky top-16 sm:top-20 lg:top-24 shadow-sm hover:shadow-lg rounded-lg bg-white dark:bg-neutral-950 transition-all duration-300">
           <div className="px-4 py-4 border-b border-gray-100 dark:border-white/[0.06]">
             <div className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-800 dark:text-neutral-200">⚙️</span>
+              <Settings className="w-5 h-5 text-gray-800 dark:text-neutral-200" />
               <span className="text-lg font-semibold text-gray-800 dark:text-neutral-200">
                 {t('product.specifications')}
               </span>
@@ -114,7 +114,7 @@ const ProductDetailsSection: React.FC<ProductDetailsSectionProps> = ({
                 </div>
 
                 {specifications.length > 5 && (
-                  <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white via-white/80 to-transparent flex items-end justify-center pb-4 pt-12 dark:from-[#141414] dark:via-[#141414]/80">
+                  <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-white via-white/80 to-transparent flex items-end justify-center pb-4 pt-12 dark:from-[var(--bg-base)] dark:via-[var(--bg-base)]/80">
                     <button
                       type="button"
                       onClick={() => setIsSpecModalOpen(true)}

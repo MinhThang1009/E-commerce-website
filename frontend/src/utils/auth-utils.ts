@@ -43,18 +43,16 @@ const logoutManager = LogoutManager.getInstance();
  * @param errorMessage - Thông báo lỗi tùy chọn để hiển thị
  * @param redirectDelay - Thời gian chờ trước khi chuyển hướng về trang đăng nhập (mili giây)
  */
-export const handleAutoLogout = (errorMessage?: string, redirectDelay: number = 1000) => {
+export const handleAutoLogout = (errorMessage?: string, redirectDelay: number = 2000) => {
   const resolvedMessage = errorMessage ?? i18next.t('auth.errors.sessionExpired');
 
-  // Ngăn chặn đăng xuất trùng lặp
   if (logoutManager.isLoggingOut) return;
 
   logoutManager.setLoggingOut(true);
 
-  // Hiển thị thông báo cho người dùng
   useUiStore
     .getState()
-    .addNotification({ message: resolvedMessage, type: 'warning', duration: 4000 });
+    .addNotification({ message: resolvedMessage, type: 'warning', duration: 5000 });
 
   // Đăng xuất để xóa trạng thái xác thực
   useAuthStore.getState().logout();

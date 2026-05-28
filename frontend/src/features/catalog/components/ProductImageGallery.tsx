@@ -252,7 +252,7 @@ const ProductImageGallery: React.FC<ProductImageGalleryProps> = ({
           if (!open) resetLightbox();
         }}
       >
-        <DialogContent className="!max-w-none !w-screen !h-screen !rounded-none p-0 bg-black border-none flex items-center justify-center">
+        <DialogContent className="!max-w-none !w-screen !h-screen !rounded-none p-0 bg-black border-none flex items-center justify-center [&>button.opacity-70]:hidden">
           <img
             src={images[selectedImage]}
             alt={`${productName} - Full view`}

@@ -666,6 +666,12 @@
       "ram": "Bộ nhớ (RAM)",
       "size": "Kích cỡ",
       "weight": "Trọng lượng"
+    },
+    "trust": {
+      "securePayment": "Thanh toán an toàn",
+      "freeShipping": "Miễn phí vận chuyển",
+      "returnPolicy": "Đổi trả 30 ngày",
+      "installment": "Trả góp 0%"
     }
   },
   "footer": {

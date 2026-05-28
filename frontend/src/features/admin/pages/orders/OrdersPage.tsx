@@ -5,6 +5,7 @@
  * @description Page component của feature orders
  */
 import React, { useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Search,
   Eye,
@@ -122,11 +123,12 @@ const OrdersPage: React.FC = () => {
   const { t } = useTranslation();
   const { addNotification } = useUiStore();
 
-  // Quản lý state
+  // Quản lý state — khởi tạo statusFilter từ query param (?status=pending từ Dashboard)
+  const [searchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -997,9 +999,7 @@ const OrdersPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {getPaymentNote() && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                    {getPaymentNote()}
-                  </p>
+                  <p className="text-xs text-[var(--admin-warning)] mt-1">{getPaymentNote()}</p>
                 )}
               </div>
 
@@ -1010,7 +1010,7 @@ const OrdersPage: React.FC = () => {
                   value={updateForm.note}
                   onChange={(e) => setUpdateForm((prev) => ({ ...prev, note: e.target.value }))}
                   placeholder={t('admin.orders.updateStatus.notePlaceholder')}
-                  className="mt-1 flex w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)] dark:bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-primary)] text-[var(--text-primary)] shadow-sm transition-colors placeholder:text-[var(--text-tertiary)] dark:placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
+                  className="mt-1 flex w-full rounded-xl border border-[var(--border-default)] bg-[var(--bg-base)] dark:bg-white/[0.03] px-3 py-2 text-sm text-[var(--text-primary)] text-[var(--text-primary)] shadow-sm transition-colors placeholder:text-[var(--text-tertiary)] dark:placeholder:text-[var(--text-tertiary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)]"
                 />
               </div>
             </div>

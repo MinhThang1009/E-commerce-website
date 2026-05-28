@@ -97,7 +97,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
                 {...form.register('name', { required: t('attrModal.nameRequired') })}
               />
               {form.formState.errors.name?.message && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-sm text-[var(--admin-error)] mt-1">
                   {String(form.formState.errors.name.message)}
                 </p>
               )}
@@ -111,13 +111,13 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
                 </span>
               </Label>
               <textarea
-                className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
+                className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)]"
                 rows={3}
                 placeholder={t('attrModal.valuePlaceholder')}
                 {...form.register('value', { required: t('attrModal.valueRequired') })}
               />
               {form.formState.errors.value?.message && (
-                <p className="text-sm text-red-500 mt-1">
+                <p className="text-sm text-[var(--admin-error)] mt-1">
                   {String(form.formState.errors.value.message)}
                 </p>
               )}

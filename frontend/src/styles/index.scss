@@ -1270,6 +1270,30 @@ body {
   outline-offset: 2px;
 }
 
+/* Admin Switch — Liquid Glass: track translucent (token CTA) + specular + blur, KHÔNG solid */
+.admin-switch {
+  backdrop-filter: blur(10px) saturate(1.7);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7);
+  border: 1px solid var(--admin-cta-border) !important;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.admin-switch[data-state='checked'] {
+  background: var(--admin-cta-bg) !important;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.45),
+    0 1px 4px rgba(0, 0, 0, 0.14);
+}
+.admin-switch[data-state='unchecked'] {
+  background: rgba(120, 120, 120, 0.22) !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+}
+.dark .admin-switch[data-state='unchecked'] {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
 /* Admin primary CTA — gradient teal + glow (flagship). Scope admin, không đụng Button global. */
 /*
  * Token CTA admin — derive từ --color-primary qua color-mix.

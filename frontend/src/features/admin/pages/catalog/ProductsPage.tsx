@@ -22,6 +22,9 @@ import {
   ChevronRight,
   AlertCircle,
   Package as PackageIcon,
+  CheckCircle2,
+  AlertTriangle,
+  PackageX,
   X,
 } from 'lucide-react';
 import {
@@ -54,6 +57,7 @@ import {
 } from '@/components/ui';
 import StatusPill, { type StatusVariant } from '../../components/StatusPill';
 import AdminPageHeader from '../../components/AdminPageHeader';
+import AdminStatCard from '../../components/AdminStatCard';
 
 interface AdminProductRow {
   id: string;
@@ -164,6 +168,31 @@ const ProductsPage: React.FC = () => {
     [productsResponse?.data?.products],
   );
   const pagination = productsResponse?.data?.pagination;
+
+  // Query full list (limit cao) để tính StatStrip chính xác — data thật, không bịa
+  const { data: allProductsResponse, isLoading: isStatsLoading } = useGetAdminProductsQuery({
+    page: 1,
+    limit: 1000,
+  });
+  const productStats = useMemo(() => {
+    const list = (allProductsResponse?.data?.products || []) as unknown as AdminProductRow[];
+    const stockOf = (p: AdminProductRow): number => {
+      if (p.variants && p.variants.length > 0) {
+        return p.variants.reduce((s, v) => s + (v.stockQuantity ?? 0), 0);
+      }
+      return p.stockQuantity ?? p.stock ?? 0;
+    };
+    let active = 0;
+    let lowStock = 0;
+    let outOfStock = 0;
+    for (const p of list) {
+      if (p.status === 'active') active += 1;
+      const s = stockOf(p);
+      if (s === 0) outOfStock += 1;
+      else if (s < 20) lowStock += 1;
+    }
+    return { total: list.length, active, lowStock, outOfStock };
+  }, [allProductsResponse]);
 
   const rawCategories = categoriesResponse?.data;
   const apiCategories = useMemo(() => {
@@ -347,6 +376,38 @@ const ProductsPage: React.FC = () => {
           </>
         }
       />
+
+      {/* StatStrip — tổng / đang bán / sắp hết / hết hàng (data thật) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <AdminStatCard
+          label={t('admin.products.statCards.total')}
+          value={productStats.total}
+          icon={PackageIcon}
+          accentVar="--accent"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.products.statCards.active')}
+          value={productStats.active}
+          icon={CheckCircle2}
+          accentVar="--admin-success"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.products.statCards.lowStock')}
+          value={productStats.lowStock}
+          icon={AlertTriangle}
+          accentVar="--admin-warning"
+          isLoading={isStatsLoading}
+        />
+        <AdminStatCard
+          label={t('admin.products.statCards.outOfStock')}
+          value={productStats.outOfStock}
+          icon={PackageX}
+          accentVar="--admin-error"
+          isLoading={isStatsLoading}
+        />
+      </div>
 
       {/* Filter bar — glass card */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-4 mb-5 shadow-sm">

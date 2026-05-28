@@ -343,9 +343,9 @@ const DiscountCodesPage: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 text-[var(--text-primary)]">
                         {record.type === 'percent' ? (
-                          <Percent className="size-4 text-orange-500" />
+                          <Percent className="size-4 text-[var(--admin-warning)]" />
                         ) : (
-                          <DollarSign className="size-4 text-green-500" />
+                          <DollarSign className="size-4 text-[var(--admin-success)]" />
                         )}
                         <span className="font-medium">
                           {record.type === 'percent'
@@ -375,7 +375,9 @@ const DiscountCodesPage: React.FC = () => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="text-sm cursor-default">
-                            <span className="font-semibold text-blue-600">{record.usedCount}</span>{' '}
+                            <span className="font-semibold text-[var(--admin-info)]">
+                              {record.usedCount}
+                            </span>{' '}
                             / {record.usageLimit || '∞'}
                           </div>
                         </TooltipTrigger>
@@ -470,7 +472,9 @@ const DiscountCodesPage: React.FC = () => {
                     <Plus className="size-4" />
                   </Button>
                 </div>
-                {formErrors.code && <p className="text-xs text-red-500 mt-1">{formErrors.code}</p>}
+                {formErrors.code && (
+                  <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.code}</p>
+                )}
               </div>
               <div>
                 <Label>{t('admin.discountCodes.form.type')}</Label>
@@ -515,7 +519,7 @@ const DiscountCodesPage: React.FC = () => {
                   className="mt-1"
                 />
                 {formErrors.value && (
-                  <p className="text-xs text-red-500 mt-1">{formErrors.value}</p>
+                  <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.value}</p>
                 )}
               </div>
               {formData.type === 'percent' && (

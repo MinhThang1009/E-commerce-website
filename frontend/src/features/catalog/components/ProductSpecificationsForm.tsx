@@ -159,14 +159,14 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
                     onChange={(e) => updateSpecification(spec.id, 'name', e.target.value)}
                   />
                   <textarea
-                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50 resize-y"
                     placeholder={t('admin.products.specs.valuePlaceholder')}
                     value={spec.value}
                     onChange={(e) => updateSpecification(spec.id, 'value', e.target.value)}
                     rows={1}
                   />
                   <textarea
-                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50 resize-y"
                     placeholder="Value (EN) — optional"
                     value={spec.valueEn || ''}
                     onChange={(e) =>
@@ -192,7 +192,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-red-500 hover:text-red-600"
+                    className="text-[var(--admin-error)] hover:opacity-80"
                     onClick={() => removeSpecification(spec.id)}
                   >
                     <Trash2 className="size-4" />

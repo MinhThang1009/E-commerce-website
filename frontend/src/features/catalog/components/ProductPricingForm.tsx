@@ -13,7 +13,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useTranslation } from 'react-i18next';
 
 const inputClassName =
-  'flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50';
 
 interface ProductPricingFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,7 +72,8 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
 
       <div>
         <Label className="mb-1.5 block">
-          {t('admin.products.pricing.priceLabel')} <span className="text-red-500">*</span>
+          {t('admin.products.pricing.priceLabel')}{' '}
+          <span className="text-[var(--admin-error)]">*</span>
           {hasVariants && (
             <span
               className="ml-1 text-xs text-neutral-500"
@@ -96,7 +97,9 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
           </span>
         </div>
         {form.formState.errors.price?.message && (
-          <p className="text-sm text-red-500 mt-1">{String(form.formState.errors.price.message)}</p>
+          <p className="text-sm text-[var(--admin-error)] mt-1">
+            {String(form.formState.errors.price.message)}
+          </p>
         )}
       </div>
 
@@ -163,7 +166,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
           </p>
         )}
         {form.formState.errors.stockQuantity?.message && (
-          <p className="text-sm text-red-500 mt-1">
+          <p className="text-sm text-[var(--admin-error)] mt-1">
             {String(form.formState.errors.stockQuantity.message)}
           </p>
         )}

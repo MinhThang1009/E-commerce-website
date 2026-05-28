@@ -33,11 +33,13 @@ import { cn } from '@/utils/cn';
 import {
   useGetDashboardStatsQuery,
   useGetLowStockAnalyticsQuery,
+  useGetDetailedStatsQuery,
 } from '../api/admin-dashboard-api';
 import { useGetAdminOrdersQuery } from '../api/admin-order-api';
 import DashboardCharts from '../components/DashboardCharts';
 import FlipNumber from '../components/FlipNumber';
 import StatusPill from '../components/StatusPill';
+import Sparkline from '../components/Sparkline';
 
 const easeOutQuart = [0.22, 1, 0.36, 1] as const;
 const stagger = {
@@ -105,6 +107,20 @@ const DashboardPage: React.FC = () => {
   });
 
   const { data: lowStockData } = useGetLowStockAnalyticsQuery({ threshold: 10 });
+
+  // Chuỗi doanh thu 30 ngày cho sparkline (data thật — cùng nguồn /admin/stats)
+  const revenueRange = React.useMemo(() => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 29);
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    return { startDate: fmt(start), endDate: fmt(end), groupBy: 'day' as const };
+  }, []);
+  const { data: detailedStats } = useGetDetailedStatsQuery(revenueRange);
+  const revenueSeries = React.useMemo(
+    () => (detailedStats?.data?.orders ?? []).map((o) => o.revenue),
+    [detailedStats],
+  );
 
   if (isDashboardLoading) {
     return (
@@ -190,15 +206,15 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ===== ROW 1: 3 MAIN CARDS (NexaStore layout) ===== */}
+        {/* ===== ROW 1: BENTO — card doanh thu rộng gấp đôi ===== */}
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4"
+          className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4"
           variants={stagger}
           initial="initial"
           animate="animate"
         >
-          {/* Card 1: Sales Summary — big revenue + growth + vs last month */}
-          <motion.div variants={fadeUp}>
+          {/* Card 1: Sales Summary — big revenue + growth + sparkline (bento: 2 cột) */}
+          <motion.div variants={fadeUp} className="lg:col-span-2">
             <div
               className="admin-kpi-card admin-card-glow p-5 h-full"
               style={{ '--kpi-accent': 'var(--accent)' } as React.CSSProperties}
@@ -226,11 +242,15 @@ const DashboardPage: React.FC = () => {
                   className="text-4xl font-bold text-[var(--text-primary)] tracking-tight"
                 />
               </div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-3">
                 <GrowthPill value={growthRevenue} />
                 <span className="text-[11px] text-[var(--text-tertiary)]">
                   {t('admin.dashboard.stats.fromLastMonth')}
                 </span>
+              </div>
+              {/* Sparkline doanh thu 30 ngày — data thật */}
+              <div className="mb-4">
+                <Sparkline data={revenueSeries} height={48} />
               </div>
               {/* Mini stats row */}
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[var(--border-default)]">
@@ -389,7 +409,7 @@ const DashboardPage: React.FC = () => {
               </div>
               <Link
                 to={ROUTES.ADMIN_USERS}
-                className="mt-3 block w-full text-center py-2 rounded-xl bg-[var(--accent)] text-white text-xs font-medium hover:bg-[var(--color-primary-dark)] transition"
+                className="admin-btn-primary mt-3 block w-full rounded-xl py-2 text-center text-xs font-medium"
               >
                 {t('admin.users.title')}
               </Link>

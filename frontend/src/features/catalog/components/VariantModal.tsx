@@ -22,7 +22,7 @@ import {
 import { formatAttributeKey } from '../utils/product-naming';
 
 const inputNumberClassName =
-  'flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50';
+  'flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50';
 
 interface Variant {
   id?: string;
@@ -151,7 +151,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   {...form.register('name', { required: t('variantModal.nameRequired') })}
                 />
                 {form.formState.errors.name?.message && (
-                  <p className="text-sm text-red-500 mt-1">
+                  <p className="text-sm text-[var(--admin-error)] mt-1">
                     {String(form.formState.errors.name.message)}
                   </p>
                 )}
@@ -174,7 +174,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="mb-1.5 block">
-                  {t('variantModal.priceLabel')} <span className="text-red-500">*</span>
+                  {t('variantModal.priceLabel')}{' '}
+                  <span className="text-[var(--admin-error)]">*</span>
                   <span
                     className="ml-1 text-xs text-neutral-500"
                     title={t('variantModal.priceTooltip')}
@@ -196,7 +197,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   </span>
                 </div>
                 {form.formState.errors.price?.message && (
-                  <p className="text-sm text-red-500 mt-1">
+                  <p className="text-sm text-[var(--admin-error)] mt-1">
                     {String(form.formState.errors.price.message)}
                   </p>
                 )}
@@ -229,7 +230,8 @@ const VariantModal: React.FC<VariantModalProps> = ({
 
               <div>
                 <Label className="mb-1.5 block">
-                  {t('variantModal.stockLabel')} <span className="text-red-500">*</span>
+                  {t('variantModal.stockLabel')}{' '}
+                  <span className="text-[var(--admin-error)]">*</span>
                 </Label>
                 <div className="flex">
                   <input
@@ -244,7 +246,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   </span>
                 </div>
                 {form.formState.errors.stock?.message && (
-                  <p className="text-sm text-red-500 mt-1">
+                  <p className="text-sm text-[var(--admin-error)] mt-1">
                     {String(form.formState.errors.stock.message)}
                   </p>
                 )}
@@ -296,7 +298,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
             <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 mt-4">
               <Label className="mb-1.5 block">{t('variantModal.imagesLabel')}</Label>
               <textarea
-                className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500"
+                className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)]"
                 rows={3}
                 placeholder={t('variantModal.imagesPlaceholder')}
                 {...form.register('images')}

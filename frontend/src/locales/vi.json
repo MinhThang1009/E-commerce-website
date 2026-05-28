@@ -1114,6 +1114,7 @@
     "dashboard": {
       "title": "Bảng điều khiển Admin",
       "lastUpdated": "Cập nhật lần cuối",
+      "sparkline": { "needMoreData": "Cần thêm dữ liệu" },
       "stats": {
         "totalRevenue": "Tổng doanh thu",
         "totalOrders": "Tổng đơn hàng",
@@ -1292,6 +1293,12 @@
       "title": "Quản lý sản phẩm",
       "subtitle": "Quản lý danh sách sản phẩm của bạn",
       "stats": "{{totalItems}} sản phẩm • {{totalPages}} trang",
+      "statCards": {
+        "total": "Tổng sản phẩm",
+        "active": "Đang bán",
+        "lowStock": "Sắp hết",
+        "outOfStock": "Hết hàng"
+      },
       "actions": {
         "export": "Xuất dữ liệu",
         "add": "Thêm sản phẩm",

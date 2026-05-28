@@ -66,7 +66,7 @@ const ProductFAQForm: React.FC<ProductFAQFormProps> = ({ form }) => {
                 <div>
                   <Label className="mb-1.5 block">{t('admin.products.faq.answerLabel')}</Label>
                   <textarea
-                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
                     rows={3}
                     placeholder={t('admin.products.faq.answerPlaceholder')}
                     value={faq.answer}
@@ -77,7 +77,7 @@ const ProductFAQForm: React.FC<ProductFAQFormProps> = ({ form }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 text-red-500 hover:text-red-600"
+                className="absolute top-2 right-2 text-[var(--admin-error)] hover:opacity-80"
                 onClick={() => removeFaq(index)}
               >
                 <MinusCircle className="size-4" />

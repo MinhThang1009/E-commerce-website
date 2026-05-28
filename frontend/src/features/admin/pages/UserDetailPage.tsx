@@ -84,8 +84,8 @@ const UserDetailPage: React.FC = () => {
         {/* Left: Profile card */}
         <div className="lg:col-span-1 space-y-5">
           <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
-            {/* Gradient cover */}
-            <div className="h-24 bg-gradient-to-r from-[var(--color-primary)] to-[var(--admin-info)] relative">
+            {/* Gradient cover — signature teal→coral (flagship) */}
+            <div className="h-24 bg-gradient-to-r from-[var(--color-primary)] via-[var(--accent)] to-[var(--color-secondary)] relative">
               <div
                 className="absolute inset-0 opacity-30"
                 style={{

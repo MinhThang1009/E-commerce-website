@@ -55,7 +55,9 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           {...form.register('name')}
         />
         {form.formState.errors.name?.message && (
-          <p className="text-sm text-red-500 mt-1">{String(form.formState.errors.name.message)}</p>
+          <p className="text-sm text-[var(--admin-error)] mt-1">
+            {String(form.formState.errors.name.message)}
+          </p>
         )}
       </div>
 
@@ -94,14 +96,14 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
       <div>
         <Label className="mb-1.5 block">{t('admin.products.form.shortDescription')}</Label>
         <textarea
-          className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
           rows={3}
           placeholder={t('admin.products.form.shortDescriptionPlaceholder')}
           maxLength={200}
           {...form.register('shortDescription')}
         />
         {form.formState.errors.shortDescription?.message && (
-          <p className="text-sm text-red-500 mt-1">
+          <p className="text-sm text-[var(--admin-error)] mt-1">
             {String(form.formState.errors.shortDescription.message)}
           </p>
         )}
@@ -117,7 +119,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           onChange={(html) => form.setValue('description', html)}
         />
         {form.formState.errors.description?.message && (
-          <p className="text-sm text-red-500 mt-1">
+          <p className="text-sm text-[var(--admin-error)] mt-1">
             {String(form.formState.errors.description.message)}
           </p>
         )}

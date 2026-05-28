@@ -56,7 +56,7 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
                   onClick={() => toggleCategory(category.id)}
                   className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     isSelected
-                      ? 'bg-primary-500 text-white'
+                      ? 'bg-[var(--accent)] text-white'
                       : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
                   }`}
                 >
@@ -67,7 +67,7 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
           </div>
         )}
         {form.formState.errors.categoryIds?.message && (
-          <p className="text-sm text-red-500 mt-1">
+          <p className="text-sm text-[var(--admin-error)] mt-1">
             {String(form.formState.errors.categoryIds.message)}
           </p>
         )}

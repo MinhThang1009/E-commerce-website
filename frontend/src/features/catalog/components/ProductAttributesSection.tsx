@@ -32,12 +32,13 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
       <div className="flex justify-between items-center mb-4">
         <div>
           <h5 className="text-base font-semibold">
-            {t('productSection.attr.sectionTitle')} <span className="text-red-500">*</span>
+            {t('productSection.attr.sectionTitle')}{' '}
+            <span className="text-[var(--admin-error)]">*</span>
           </h5>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             {t('productSection.attr.sectionDesc')}
           </p>
-          <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+          <p className="text-sm text-[var(--admin-warning)] mt-2">
             <strong>{t('common.note')}:</strong> {t('productSection.attr.note')}
           </p>
         </div>
@@ -107,7 +108,7 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                        className="size-8 text-[var(--admin-error)] hover:opacity-80 hover:bg-[var(--admin-error)]/10"
                         onClick={() => onDeleteAttribute(attr.id!)}
                       >
                         <Trash2 className="size-4" />

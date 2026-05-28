@@ -268,7 +268,7 @@ const DashboardCharts: React.FC = () => {
               type="button"
               onClick={handleCustomDateApply}
               disabled={!customFrom || !customTo}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+              className="admin-btn-primary px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {t('admin.charts.apply')}
             </button>

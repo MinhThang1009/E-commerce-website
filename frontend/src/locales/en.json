@@ -985,6 +985,7 @@
     "dashboard": {
       "title": "Admin dashboard",
       "lastUpdated": "Last updated",
+      "sparkline": { "needMoreData": "Need more data" },
       "stats": {
         "totalRevenue": "Total revenue",
         "totalOrders": "Total orders",
@@ -1216,6 +1217,12 @@
         "total": "Total: {{count}} products"
       },
       "stats": "{{count}} products",
+      "statCards": {
+        "total": "Total products",
+        "active": "Active",
+        "lowStock": "Low stock",
+        "outOfStock": "Out of stock"
+      },
       "subtitle": "Manage your product catalog",
       "table": {
         "actions": "Actions",

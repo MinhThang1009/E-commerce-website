@@ -1021,7 +1021,8 @@ const cloneProduct = catchAsync(async (req, res) => {
     delete productData.updatedAt;
     delete productData.slug;
     delete productData.categories;
-    delete productData.attributes;
+    // Xóa các association eager-loaded khỏi payload create (giữ lại cột JSON `attributes` của product).
+    delete productData.productAttributes;
     delete productData.variants;
     delete productData.productSpecifications;
     productData.name = newName;
@@ -1038,8 +1039,8 @@ const cloneProduct = catchAsync(async (req, res) => {
       await ProductCategory.bulkCreate(categoryLinks, { transaction });
     }
 
-    if (originalProduct.attributes && originalProduct.attributes.length > 0) {
-      const attributeData = originalProduct.attributes.map((attr) => {
+    if (originalProduct.productAttributes && originalProduct.productAttributes.length > 0) {
+      const attributeData = originalProduct.productAttributes.map((attr) => {
         const data = attr.get({ plain: true });
         delete data.id;
         delete data.createdAt;

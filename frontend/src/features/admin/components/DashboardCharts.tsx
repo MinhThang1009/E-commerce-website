@@ -2,20 +2,12 @@
  * @file DashboardCharts.tsx
  * @layer Component
  * @feature admin
- * @description UI component cho feature admin
+ * @description Charts dashboard với glass tooltip + hex constants (spec §6)
  */
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { useUiStore } from '@/stores/ui-store';
-import {
-  useGetDetailedStatsQuery,
-  useGetOrderStatusAnalyticsQuery,
-  useGetTopProductsAnalyticsQuery,
-  useGetRevenueByCategoryAnalyticsQuery,
-  useGetUserGrowthAnalyticsQuery,
-  useGetPaymentMethodsAnalyticsQuery,
-} from '../api/admin-dashboard-api';
+import { Download, FileSpreadsheet } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -34,6 +26,9 @@ import {
   Legend,
 } from 'recharts';
 import dayjs from 'dayjs';
+import { useUiStore } from '@/stores/ui-store';
+import { formatPrice } from '@/utils/format';
+import { cn } from '@/utils/cn';
 import {
   PIE_COLORS,
   ORDER_STATUS_COLORS,
@@ -41,14 +36,28 @@ import {
   CHART_GREEN,
   CHART_VIOLET,
 } from '@constants/chart-colors';
+import {
+  useGetDetailedStatsQuery,
+  useGetOrderStatusAnalyticsQuery,
+  useGetTopProductsAnalyticsQuery,
+  useGetRevenueByCategoryAnalyticsQuery,
+  useGetUserGrowthAnalyticsQuery,
+  useGetPaymentMethodsAnalyticsQuery,
+} from '../api/admin-dashboard-api';
+import GlassTooltip from './GlassTooltip';
+
+// Axis tick color theo theme (constants — KHÔNG CSS var, vì Recharts SVG)
+const AXIS_LIGHT = '#52525b';
+const AXIS_DARK = '#a1a1aa';
+const GRID_LIGHT = 'rgba(0,0,0,0.06)';
+const GRID_DARK = 'rgba(255,255,255,0.06)';
 
 const DashboardCharts: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const theme = useUiStore((s) => s.theme);
   const isDark = theme === 'dark';
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // State bộ lọc — đọc từ URL query params nếu có
   const [period, setPeriod] = useState<'7d' | '30d' | '90d' | 'custom'>(
     searchParams.get('from') && searchParams.get('to') ? 'custom' : '30d',
   );
@@ -57,7 +66,6 @@ const DashboardCharts: React.FC = () => {
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [topProductMetric, setTopProductMetric] = useState<'revenue' | 'soldCount'>('revenue');
 
-  // Tính toán ngày dựa trên khoảng thời gian
   const { startDate, endDate } = useMemo(() => {
     if (period === 'custom' && customFrom && customTo) {
       return { startDate: customFrom, endDate: customTo };
@@ -73,7 +81,6 @@ const DashboardCharts: React.FC = () => {
     };
   }, [period, customFrom, customTo]);
 
-  // Cập nhật URL khi chọn custom range
   const handleCustomDateApply = () => {
     if (customFrom && customTo) {
       setPeriod('custom');
@@ -81,7 +88,6 @@ const DashboardCharts: React.FC = () => {
     }
   };
 
-  // Reset về preset period
   const handlePeriodChange = (newPeriod: '7d' | '30d' | '90d') => {
     setPeriod(newPeriod);
     setCustomFrom('');
@@ -91,7 +97,6 @@ const DashboardCharts: React.FC = () => {
     setSearchParams(searchParams);
   };
 
-  // Queries
   const { data: detailedData, isLoading: isDetailedLoading } = useGetDetailedStatsQuery({
     startDate,
     endDate,
@@ -105,15 +110,6 @@ const DashboardCharts: React.FC = () => {
   const { data: categoryData } = useGetRevenueByCategoryAnalyticsQuery({ startDate, endDate });
   const { data: userGrowthData } = useGetUserGrowthAnalyticsQuery({ startDate, endDate, groupBy });
   const { data: paymentMethodsData } = useGetPaymentMethodsAnalyticsQuery();
-
-  const formatCurrency = (amount: number) => {
-    const locale = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: 'VND',
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
 
   const formatPeriodLabel = (label: string) => {
     if (!label) return '';
@@ -131,18 +127,22 @@ const DashboardCharts: React.FC = () => {
         revenue: o.revenue,
         orderCount: o.orderCount,
       })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- formatPeriodLabel phụ thuộc vào groupBy đã có trong deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- formatPeriodLabel depends on groupBy already in deps
     [detailedData?.data?.orders, groupBy],
   );
 
-  // Tooltip style chung — dùng neutral colors phù hợp cả 2 mode
-  const tooltipStyle = {
-    backgroundColor: isDark ? 'var(--bg-elevated)' : 'rgba(255,255,255,0.95)',
-    borderColor: isDark ? 'var(--border-strong)' : 'var(--border-default)',
-    borderRadius: '0.375rem',
-    color: isDark ? 'var(--text-primary)' : 'var(--text-primary)',
+  const tickStyle = {
+    fill: isDark ? AXIS_DARK : AXIS_LIGHT,
+    fontSize: 11,
   };
-  const tickStyle = { fill: isDark ? '#9ca3af' : '#6b7280', fontSize: 12 };
+  const gridStroke = isDark ? GRID_DARK : GRID_LIGHT;
+
+  // Format axis numeric tick: 1500 → "1.5K", 1500000 → "1.5M"
+  const compactNumber = (v: number) => {
+    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    if (v >= 1_000) return `${(v / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    return String(v);
+  };
 
   // Export CSV
   const handleExport = async (type: 'orders' | 'products') => {
@@ -170,433 +170,443 @@ const DashboardCharts: React.FC = () => {
     }
   };
 
+  // ===== Loading skeleton =====
   if (isDetailedLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {[...Array(2)].map((_, index) => (
-          <div
-            key={index}
-            className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700 animate-pulse h-80 flex items-center justify-center"
-          >
-            <div className="text-neutral-400">{t('common.loading')}</div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {[...Array(2)].map((_, idx) => (
+          <div key={idx} className="shimmer rounded-2xl h-80" />
         ))}
       </div>
     );
   }
 
+  // Card wrapper — solid (KHÔNG glass) per spec §0 Rule 1
+  const cardClass =
+    'rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] p-5 shadow-sm';
+
   return (
-    <div className="space-y-6 mb-8">
-      {/* Header: bộ lọc thời gian + export */}
-      <div className="flex flex-col gap-4 bg-white dark:bg-neutral-800 p-4 rounded-lg border border-neutral-200 dark:border-neutral-700">
-        {/* Bộ lọc thời gian + export */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Preset buttons */}
-            {(['7d', '30d', '90d'] as const).map((p) => (
-              <button
-                key={p}
-                onClick={() => handlePeriodChange(p)}
-                className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-                  period === p
-                    ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-300 dark:border-primary-700 text-primary-700 dark:text-primary-300'
-                    : 'bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-600'
-                }`}
-              >
-                {t(`admin.charts.last${p === '7d' ? '7Days' : p === '30d' ? '30Days' : '90Days'}`)}
-              </button>
-            ))}
-
-            {/* Custom date range */}
-            <div className="flex items-center gap-1">
-              <input
-                type="date"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="px-2 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 rounded-md text-neutral-800 dark:text-neutral-100"
-              />
-              <span className="text-neutral-400">—</span>
-              <input
-                type="date"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="px-2 py-1.5 text-sm border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 rounded-md text-neutral-800 dark:text-neutral-100"
-              />
-              <button
-                onClick={handleCustomDateApply}
-                disabled={!customFrom || !customTo}
-                className="px-3 py-1.5 text-sm bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t('admin.charts.apply')}
-              </button>
-            </div>
-
-            {/* Group by */}
-            <select
-              value={groupBy}
-              onChange={(e) => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
-              className="px-3 py-1.5 border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-700 text-sm rounded-md text-neutral-800 dark:text-neutral-100"
+    <div className="space-y-4 mt-6">
+      {/* Filter bar — glass styling */}
+      <div
+        className={cn(
+          cardClass,
+          'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap',
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Preset buttons */}
+          {(['7d', '30d', '90d'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => handlePeriodChange(p)}
+              className={cn(
+                'px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                period === p
+                  ? 'bg-[var(--accent)]/12 border-[var(--accent)]/30 text-[var(--accent)]'
+                  : 'bg-transparent border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5',
+              )}
             >
-              <option value="day">{t('admin.charts.byDay')}</option>
-              <option value="week">{t('admin.charts.byWeek')}</option>
-              <option value="month">{t('admin.charts.byMonth')}</option>
-            </select>
+              {t(`admin.charts.last${p === '7d' ? '7Days' : p === '30d' ? '30Days' : '90Days'}`)}
+            </button>
+          ))}
+
+          {/* Custom date range */}
+          <div className="flex items-center gap-1.5">
+            <input
+              type="date"
+              value={customFrom}
+              onChange={(e) => setCustomFrom(e.target.value)}
+              className="px-2 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] tabular-nums"
+            />
+            <span className="text-[var(--text-tertiary)]">—</span>
+            <input
+              type="date"
+              value={customTo}
+              onChange={(e) => setCustomTo(e.target.value)}
+              className="px-2 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] tabular-nums"
+            />
+            <button
+              type="button"
+              onClick={handleCustomDateApply}
+              disabled={!customFrom || !customTo}
+              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--color-primary-dark)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+            >
+              {t('admin.charts.apply')}
+            </button>
           </div>
 
-          {/* Export buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleExport('orders')}
-              className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-1"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+          {/* Group by */}
+          <select
+            value={groupBy}
+            onChange={(e) => setGroupBy(e.target.value as 'day' | 'week' | 'month')}
+            className="px-3 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)]"
+          >
+            <option value="day">{t('admin.charts.byDay')}</option>
+            <option value="week">{t('admin.charts.byWeek')}</option>
+            <option value="month">{t('admin.charts.byMonth')}</option>
+          </select>
+        </div>
+
+        {/* Export buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleExport('orders')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5 transition"
+          >
+            <Download className="w-3.5 h-3.5" strokeWidth={2.25} />
+            {t('admin.charts.exportOrders')}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleExport('products')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5 transition"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" strokeWidth={2.25} />
+            {t('admin.charts.exportProducts')}
+          </button>
+        </div>
+      </div>
+
+      {/* Row 1: Revenue Area + Order Count Bar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={cardClass}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+            {t('admin.charts.revenue', {
+              period: t(
+                `admin.charts.period${
+                  period === '7d'
+                    ? '7d'
+                    : period === '30d'
+                      ? '30d'
+                      : period === '90d'
+                        ? '90d'
+                        : 'Custom'
+                }`,
+              ),
+            })}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={orderDataForChart}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={CHART_BLUE} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={CHART_BLUE} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
+                <YAxis
+                  tickFormatter={compactNumber}
+                  tick={tickStyle}
+                  axisLine={false}
+                  tickLine={false}
                 />
-              </svg>
-              {t('admin.charts.exportOrders')}
-            </button>
-            <button
-              onClick={() => handleExport('products')}
-              className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-1"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                <Tooltip
+                  cursor={{ stroke: CHART_BLUE, strokeDasharray: '4 4', opacity: 0.4 }}
+                  content={
+                    <GlassTooltip
+                      formatter={(v) => formatPrice(Number(v))}
+                      labelMap={{ revenue: revenueLabel }}
+                    />
+                  }
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  name={revenueLabel}
+                  stroke={CHART_BLUE}
+                  fillOpacity={1}
+                  fill="url(#colorRevenue)"
+                  strokeWidth={2.5}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+            {t('admin.charts.orderCount')}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={orderDataForChart}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                <defs>
+                  <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.9} />
+                    <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.4} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={tickStyle} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(16, 185, 129, 0.08)' }}
+                  content={<GlassTooltip labelMap={{ orderCount: ordersLabel }} />}
                 />
-              </svg>
-              {t('admin.charts.exportProducts')}
-            </button>
+                <Bar
+                  dataKey="orderCount"
+                  name={ordersLabel}
+                  fill="url(#colorOrders)"
+                  radius={[8, 8, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Charts */}
-      <>
-        {/* Hàng 1: Revenue Area + Order Count Bar */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.charts.revenue', {
-                period: t(
-                  `admin.charts.period${period === '7d' ? '7d' : period === '30d' ? '30d' : period === '90d' ? '90d' : 'Custom'}`,
-                ),
-              })}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={orderDataForChart}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+      {/* Row 2: Order Status Pie + User Growth Line */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={cardClass}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+            {t('admin.charts.orderStatusDist')}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={orderStatusData?.data || []}
+                  dataKey="count"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={85}
+                  stroke={isDark ? '#111111' : '#ffffff'}
+                  strokeWidth={2}
+                  label={({ label, count }) => `${label}: ${count}`}
                 >
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CHART_BLUE} stopOpacity={0.8} />
-                      <stop offset="95%" stopColor={CHART_BLUE} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    className="stroke-neutral-200 dark:stroke-neutral-700"
-                  />
-                  <XAxis dataKey="name" tick={tickStyle} />
-                  <YAxis
-                    tickFormatter={(v) =>
-                      v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : v
-                    }
-                    tick={tickStyle}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={tooltipStyle}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    name={revenueLabel}
-                    stroke={CHART_BLUE}
-                    fillOpacity={1}
-                    fill="url(#colorRevenue)"
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.charts.orderCount')}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={orderDataForChart}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={0.9} />
-                      <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.4} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    className="stroke-neutral-200 dark:stroke-neutral-700"
-                  />
-                  <XAxis dataKey="name" tick={tickStyle} />
-                  <YAxis allowDecimals={false} tick={tickStyle} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Bar
-                    dataKey="orderCount"
-                    name={ordersLabel}
-                    fill="url(#colorOrders)"
-                    radius={[6, 6, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                  {(orderStatusData?.data || []).map((entry) => (
+                    <Cell
+                      key={entry.status}
+                      fill={ORDER_STATUS_COLORS[entry.status] || '#9ca3af'}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<GlassTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Hàng 2: Order Status Pie + User Growth Line */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Pie chart: Phân bổ trạng thái đơn hàng */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.charts.orderStatusDist')}
+        <div className={cardClass}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+            {t('admin.charts.userGrowth')}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={(userGrowthData?.data || []).map((d) => ({
+                  ...d,
+                  date: formatPeriodLabel(d.date),
+                }))}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={tickStyle} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ stroke: CHART_VIOLET, strokeDasharray: '4 4', opacity: 0.4 }}
+                  content={<GlassTooltip labelMap={{ newUsers: t('admin.charts.newUsers') }} />}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="newUsers"
+                  name={t('admin.charts.newUsers')}
+                  stroke={CHART_VIOLET}
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: CHART_VIOLET }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Top Products Bar + Category Revenue Bar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={cardClass}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+              {t('admin.charts.topProducts')}
             </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={orderStatusData?.data || []}
-                    dataKey="count"
-                    nameKey="label"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ label, count }) => `${label}: ${count}`}
-                  >
-                    {(orderStatusData?.data || []).map((entry) => (
-                      <Cell
-                        key={entry.status}
-                        fill={ORDER_STATUS_COLORS[entry.status] || '#9ca3af'}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setTopProductMetric('revenue')}
+                className={cn(
+                  'px-2.5 py-1 text-[11px] font-medium rounded-md transition',
+                  topProductMetric === 'revenue'
+                    ? 'bg-[var(--accent)]/12 text-[var(--accent)]'
+                    : 'text-[var(--text-tertiary)] hover:bg-white/5',
+                )}
+              >
+                {t('admin.charts.byRevenue')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTopProductMetric('soldCount')}
+                className={cn(
+                  'px-2.5 py-1 text-[11px] font-medium rounded-md transition',
+                  topProductMetric === 'soldCount'
+                    ? 'bg-[var(--accent)]/12 text-[var(--accent)]'
+                    : 'text-[var(--text-tertiary)] hover:bg-white/5',
+                )}
+              >
+                {t('admin.charts.bySoldCount')}
+              </button>
             </div>
           </div>
-
-          {/* Line chart: Tăng trưởng user */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.charts.userGrowth')}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={(userGrowthData?.data || []).map((d) => ({
-                    ...d,
-                    date: formatPeriodLabel(d.date),
-                  }))}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    className="stroke-neutral-200 dark:stroke-neutral-700"
-                  />
-                  <XAxis dataKey="date" tick={tickStyle} />
-                  <YAxis allowDecimals={false} tick={tickStyle} />
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Line
-                    type="monotone"
-                    dataKey="newUsers"
-                    name={t('admin.charts.newUsers')}
-                    stroke={CHART_VIOLET}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={(topProductsData?.data || []).map((p) => ({
+                  name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+                  revenue: p.revenue,
+                  soldCount: p.soldCount,
+                }))}
+                layout="vertical"
+                margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+              >
+                <CartesianGrid stroke={gridStroke} strokeDasharray="0" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tick={tickStyle}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={topProductMetric === 'revenue' ? compactNumber : undefined}
+                />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  tick={tickStyle}
+                  width={80}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(59, 130, 246, 0.08)' }}
+                  content={
+                    <GlassTooltip
+                      formatter={
+                        topProductMetric === 'revenue' ? (v) => formatPrice(Number(v)) : undefined
+                      }
+                      labelMap={{
+                        revenue: t('admin.charts.revenueLabel'),
+                        soldCount: t('admin.charts.soldCount'),
+                      }}
+                    />
+                  }
+                />
+                <Bar
+                  dataKey={topProductMetric}
+                  name={
+                    topProductMetric === 'revenue'
+                      ? t('admin.charts.revenueLabel')
+                      : t('admin.charts.soldCount')
+                  }
+                  fill={topProductMetric === 'revenue' ? CHART_BLUE : CHART_GREEN}
+                  radius={[0, 6, 6, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Hàng 3: Top Products Bar + Category Revenue Bar */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Bar chart: Top sản phẩm */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                {t('admin.charts.topProducts')}
-              </h3>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setTopProductMetric('revenue')}
-                  className={`px-2 py-1 text-xs rounded ${topProductMetric === 'revenue' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
-                >
-                  {t('admin.charts.byRevenue')}
-                </button>
-                <button
-                  onClick={() => setTopProductMetric('soldCount')}
-                  className={`px-2 py-1 text-xs rounded ${topProductMetric === 'soldCount' ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-700'}`}
-                >
-                  {t('admin.charts.bySoldCount')}
-                </button>
-              </div>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={(topProductsData?.data || []).map((p) => ({
-                    name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+        <div className={cardClass}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+            {t('admin.charts.revenueByCategory')}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={(categoryData?.data || []).map((c, i) => ({
+                  name:
+                    c.categoryName.length > 15
+                      ? c.categoryName.substring(0, 15) + '...'
+                      : c.categoryName,
+                  revenue: c.revenue,
+                  fill: PIE_COLORS[i % PIE_COLORS.length],
+                }))}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
+                <YAxis
+                  tickFormatter={compactNumber}
+                  tick={tickStyle}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ fill: 'rgba(139, 92, 246, 0.08)' }}
+                  content={
+                    <GlassTooltip
+                      formatter={(v) => formatPrice(Number(v))}
+                      labelMap={{ revenue: t('admin.charts.revenueLabel') }}
+                    />
+                  }
+                />
+                <Bar dataKey="revenue" name={t('admin.charts.revenueLabel')} radius={[6, 6, 0, 0]}>
+                  {(categoryData?.data || []).map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4: Payment Methods Pie */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={cardClass}>
+          <h3 className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
+            {t('admin.charts.paymentMethods')}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={(paymentMethodsData?.data || []).map((p) => ({
+                    name: p.method,
+                    value: p.count,
                     revenue: p.revenue,
-                    soldCount: p.soldCount,
                   }))}
-                  layout="vertical"
-                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={85}
+                  stroke={isDark ? '#111111' : '#ffffff'}
+                  strokeWidth={2}
+                  label={({ name, value }) => `${name}: ${value}`}
                 >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    className="stroke-neutral-200 dark:stroke-neutral-700"
-                  />
-                  <XAxis
-                    type="number"
-                    tick={tickStyle}
-                    tickFormatter={
-                      topProductMetric === 'revenue'
-                        ? (v) =>
-                            v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
-                        : undefined
-                    }
-                  />
-                  <YAxis dataKey="name" type="category" tick={tickStyle} width={80} />
-                  <Tooltip
-                    formatter={(value: number) =>
-                      topProductMetric === 'revenue' ? formatCurrency(value) : value
-                    }
-                    contentStyle={tooltipStyle}
-                  />
-                  <Bar
-                    dataKey={topProductMetric}
-                    name={
-                      topProductMetric === 'revenue'
-                        ? t('admin.charts.revenueLabel')
-                        : t('admin.charts.soldCount')
-                    }
-                    fill={topProductMetric === 'revenue' ? CHART_BLUE : CHART_GREEN}
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Bar chart: Doanh thu theo danh mục */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.charts.revenueByCategory')}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={(categoryData?.data || []).map((c, i) => ({
-                    name:
-                      c.categoryName.length > 15
-                        ? c.categoryName.substring(0, 15) + '...'
-                        : c.categoryName,
-                    revenue: c.revenue,
-                    fill: PIE_COLORS[i % PIE_COLORS.length],
-                  }))}
-                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    className="stroke-neutral-200 dark:stroke-neutral-700"
-                  />
-                  <XAxis dataKey="name" tick={tickStyle} />
-                  <YAxis
-                    tickFormatter={(v) =>
-                      v >= 1000000 ? `${v / 1000000}M` : v >= 1000 ? `${v / 1000}K` : `${v}`
-                    }
-                    tick={tickStyle}
-                  />
-                  <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
-                    contentStyle={tooltipStyle}
-                  />
-                  <Bar
-                    dataKey="revenue"
-                    name={t('admin.charts.revenueLabel')}
-                    radius={[4, 4, 0, 0]}
-                  >
-                    {(categoryData?.data || []).map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+                  {(paymentMethodsData?.data || []).map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<GlassTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Hàng 4: Payment Methods Pie */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-neutral-800 rounded-lg p-6 shadow-sm border border-neutral-200 dark:border-neutral-700">
-            <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-4">
-              {t('admin.charts.paymentMethods')}
-            </h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={(paymentMethodsData?.data || []).map((p) => ({
-                      name: p.method,
-                      value: p.count,
-                      revenue: p.revenue,
-                    }))}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {(paymentMethodsData?.data || []).map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={tooltipStyle} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      </>
+      </div>
     </div>
   );
 };

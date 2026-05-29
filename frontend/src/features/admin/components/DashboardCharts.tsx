@@ -330,8 +330,8 @@ const DashboardCharts: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 1: Revenue Area + Order Count Bar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Row 1: Revenue Area — full width (lấp đẹp, không để trống cột) */}
+      <div className="mb-4">
         <div className={cardClass}>
           <ChartCardTitle
             icon={TrendingUp}
@@ -408,43 +408,6 @@ const DashboardCharts: React.FC = () => {
                   />
                 )}
               </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className={cardClass}>
-          <ChartCardTitle
-            icon={BarChart3}
-            color={CHART_GREEN}
-            title={t('admin.charts.orderCount')}
-          />
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={orderDataForChart}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={1} />
-                    <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.6} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
-                <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={tickStyle} axisLine={false} tickLine={false} />
-                <Tooltip
-                  cursor={{ fill: 'rgba(16, 185, 129, 0.08)' }}
-                  content={<GlassTooltip labelMap={{ orderCount: ordersLabel }} />}
-                />
-                <Bar
-                  dataKey="orderCount"
-                  name={ordersLabel}
-                  fill="url(#colorOrders)"
-                  radius={[8, 8, 0, 0]}
-                  maxBarSize={64}
-                />
-              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -707,8 +670,45 @@ const DashboardCharts: React.FC = () => {
         </div>
       </div>
 
-      {/* Row 4: Payment Methods Pie */}
+      {/* Row 4: Order Count (Bar) + Payment Methods (Pie) — 2 cột đều */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={cardClass}>
+          <ChartCardTitle
+            icon={BarChart3}
+            color={CHART_GREEN}
+            title={t('admin.charts.orderCount')}
+          />
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={orderDataForChart}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorOrders" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={CHART_GREEN} stopOpacity={1} />
+                    <stop offset="100%" stopColor={CHART_GREEN} stopOpacity={0.6} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
+                <YAxis allowDecimals={false} tick={tickStyle} axisLine={false} tickLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'rgba(16, 185, 129, 0.08)' }}
+                  content={<GlassTooltip labelMap={{ orderCount: ordersLabel }} />}
+                />
+                <Bar
+                  dataKey="orderCount"
+                  name={ordersLabel}
+                  fill="url(#colorOrders)"
+                  radius={[8, 8, 0, 0]}
+                  maxBarSize={64}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className={cardClass}>
           <ChartCardTitle
             icon={CreditCard}

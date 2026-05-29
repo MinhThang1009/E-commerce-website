@@ -13,7 +13,7 @@ import {
   Trash2,
   FolderOpen,
   RefreshCw,
-  ChevronLeft,
+  ChevronDown,
   ChevronRight,
 } from 'lucide-react';
 import { useUiStore } from '@/stores/ui-store';
@@ -76,6 +76,50 @@ const rowItem = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: easeOutQuart } },
 };
 
+interface CategoryTreeRow {
+  category: Category;
+  depth: number;
+  isLast: boolean;
+  childCount: number;
+}
+
+// BE trả /categories/tree dạng PHẲNG (findAllCategoriesSorted) — phải tự gom theo parentId.
+// Trả về map parentId → danh sách con đã sort theo sortOrder rồi tên.
+function groupCategoriesByParent(flat: Category[]): Map<string | null, Category[]> {
+  const ids = new Set(flat.map((c) => c.id));
+  const byParent = new Map<string | null, Category[]>();
+  for (const cat of flat) {
+    // parentId trỏ tới category không tồn tại (orphan) → coi như gốc
+    const key = cat.parentId && ids.has(cat.parentId) ? cat.parentId : null;
+    const list = byParent.get(key) ?? [];
+    list.push(cat);
+    byParent.set(key, list);
+  }
+  for (const list of byParent.values()) {
+    list.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name));
+  }
+  return byParent;
+}
+
+// Duyệt cây theo thứ tự hiển thị, bỏ qua nhánh đang thu gọn.
+function flattenVisibleRows(
+  byParent: Map<string | null, Category[]>,
+  collapsedIds: Set<string>,
+  parentId: string | null = null,
+  depth = 0,
+  acc: CategoryTreeRow[] = [],
+): CategoryTreeRow[] {
+  const siblings = byParent.get(parentId) ?? [];
+  siblings.forEach((category, i) => {
+    const childCount = (byParent.get(category.id) ?? []).length;
+    acc.push({ category, depth, isLast: i === siblings.length - 1, childCount });
+    if (childCount > 0 && !collapsedIds.has(category.id)) {
+      flattenVisibleRows(byParent, collapsedIds, category.id, depth + 1, acc);
+    }
+  });
+  return acc;
+}
+
 const CategoriesPage: React.FC = () => {
   const { t } = useTranslation();
   const addNotification = useUiStore((s) => s.addNotification);
@@ -84,8 +128,7 @@ const CategoriesPage: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   const { data: categoriesData, isLoading, isFetching, refetch } = useGetCategoryTreeQuery();
   const { mutateAsync: createCategory, isPending: isCreating } = useCreateCategoryMutation();
@@ -98,11 +141,19 @@ const CategoriesPage: React.FC = () => {
     return [categoriesData.data];
   }, [categoriesData]);
 
-  const totalPages = Math.max(1, Math.ceil(categories.length / pageSize));
-  const paginatedCategories = categories.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
+  const childrenByParent = useMemo(() => groupCategoriesByParent(categories), [categories]);
+  const visibleRows = useMemo(
+    () => flattenVisibleRows(childrenByParent, collapsedIds),
+    [childrenByParent, collapsedIds],
   );
+
+  const toggleCollapse = (id: string) =>
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const getParentOptions = (excludeId?: string) =>
     categories
@@ -263,10 +314,11 @@ const CategoriesPage: React.FC = () => {
                 </tr>
               </thead>
               <motion.tbody variants={rowStagger} initial="initial" animate="animate">
-                {paginatedCategories.map((record: Category) => {
+                {visibleRows.map(({ category: record, depth, isLast, childCount }) => {
                   const parent = record.parentId
                     ? categories.find((cat: Category) => cat.id === record.parentId)
                     : null;
+                  const isCollapsed = collapsedIds.has(record.id);
                   return (
                     <motion.tr
                       key={record.id}
@@ -290,9 +342,58 @@ const CategoriesPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-[var(--text-primary)]">{record.name}</div>
-                        <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums">
-                          {record.slug}
+                        <div className="flex items-center gap-1.5">
+                          {/* Connector cây — elbow ├/└ thụt theo độ sâu */}
+                          {depth > 0 && (
+                            <span
+                              aria-hidden
+                              className="relative shrink-0 self-stretch"
+                              style={{ width: depth * 22 }}
+                            >
+                              <span
+                                className={cn(
+                                  'absolute right-[11px] top-0 w-px bg-[var(--border-strong)]',
+                                  isLast ? 'h-1/2' : 'h-full',
+                                )}
+                              />
+                              <span className="absolute right-[11px] top-1/2 h-px w-[11px] bg-[var(--border-strong)]" />
+                            </span>
+                          )}
+                          {/* Toggle thu gọn cho node có con; node lá giữ chỗ để thẳng hàng */}
+                          {childCount > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleCollapse(record.id)}
+                              className="p-0.5 -ml-0.5 rounded text-[var(--text-tertiary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition shrink-0"
+                              aria-expanded={!isCollapsed}
+                              aria-label={
+                                isCollapsed
+                                  ? t('admin.categories.expand')
+                                  : t('admin.categories.collapse')
+                              }
+                            >
+                              {isCollapsed ? (
+                                <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                              ) : (
+                                <ChevronDown className="w-3.5 h-3.5" strokeWidth={2.5} />
+                              )}
+                            </button>
+                          ) : (
+                            <span className="w-[18px] shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
+                              <span className="truncate">{record.name}</span>
+                              {childCount > 0 && (
+                                <span className="rounded-md bg-[var(--accent)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent)] tabular-nums">
+                                  {childCount}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums truncate">
+                              {record.slug}
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 max-w-xs">
@@ -357,55 +458,11 @@ const CategoriesPage: React.FC = () => {
           </div>
         )}
 
-        {/* Pagination */}
-        {categories.length > pageSize && !isEmpty && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-4 border-t border-[var(--border-default)]">
-            <span className="text-xs text-[var(--text-tertiary)]">
-              {t('admin.categories.totalItems', {
-                range0: (currentPage - 1) * pageSize + 1,
-                range1: Math.min(currentPage * pageSize, categories.length),
-                total: categories.length,
-              })}
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
-                aria-label="Previous"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => {
-                const page = i + 1;
-                const isActive = currentPage === page;
-                return (
-                  <button
-                    key={page}
-                    type="button"
-                    onClick={() => setCurrentPage(page)}
-                    className={cn(
-                      'min-w-[36px] h-9 px-3 rounded-lg text-sm font-medium transition tabular-nums',
-                      isActive
-                        ? 'bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20'
-                        : 'text-[var(--text-secondary)] hover:bg-white/5',
-                    )}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="p-2 rounded-lg text-[var(--text-secondary)] hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition"
-                aria-label="Next"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+        {/* Footer: tổng số danh mục — tree hiển thị toàn bộ, không phân trang */}
+        {!isEmpty && (
+          <div className="flex items-center gap-2 px-5 py-3 border-t border-[var(--border-default)] text-xs text-[var(--text-tertiary)]">
+            <FolderOpen className="w-3.5 h-3.5" strokeWidth={2} />
+            {t('admin.categories.totalCount', { total: categories.length })}
           </div>
         )}
       </div>

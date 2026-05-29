@@ -1496,6 +1496,9 @@
       "title": "Category management",
       "addCategory": "Add category",
       "editCategory": "Edit category",
+      "expand": "Expand subcategories",
+      "collapse": "Collapse subcategories",
+      "totalCount": "{{total}} categories",
       "table": {
         "name": "Category name",
         "slug": "Slug",
@@ -1532,7 +1535,6 @@
       "subtitle": "Manage store product categories",
       "deleteTitle": "Delete category",
       "deleteConfirm": "Are you sure you want to delete this category?",
-      "totalItems": "{{range0}}-{{range1}} of {{total}} categories",
       "addCategoryModal": "Add new category"
     },
     "discountCodes": {

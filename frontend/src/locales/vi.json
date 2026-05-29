@@ -1625,6 +1625,9 @@
       "title": "Quản lý danh mục",
       "addCategory": "Thêm danh mục",
       "editCategory": "Sửa danh mục",
+      "expand": "Mở rộng danh mục con",
+      "collapse": "Thu gọn danh mục con",
+      "totalCount": "{{total}} danh mục",
       "table": {
         "name": "Tên danh mục",
         "slug": "Slug",
@@ -1661,7 +1664,6 @@
       "subtitle": "Quản lý danh mục sản phẩm của cửa hàng",
       "deleteTitle": "Xóa danh mục",
       "deleteConfirm": "Bạn có chắc chắn muốn xóa danh mục này?",
-      "totalItems": "{{range0}}-{{range1}} của {{total}} danh mục",
       "addCategoryModal": "Thêm danh mục mới"
     },
     "discountCodes": {

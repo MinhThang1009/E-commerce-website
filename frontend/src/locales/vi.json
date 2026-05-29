@@ -1373,15 +1373,15 @@
       "backToList": "Quay lại danh sách",
       "tabs": {
         "incompleteWarning": "Vui lòng hoàn thành các bước trước đó trước khi truy cập tab này",
-        "basic": "1. Thông tin cơ bản",
-        "specifications": "2. Thông số kỹ thuật",
-        "attributes": "3. Thuộc tính",
-        "variants": "4. Biến thể",
-        "pricing": "5. Giá & Kho hàng",
-        "category": "6. Phân loại",
-        "images": "7. Hình ảnh",
-        "faqs": "8. FAQ",
-        "seo": "9. SEO"
+        "basic": "Thông tin cơ bản",
+        "specifications": "Thông số kỹ thuật",
+        "attributes": "Thuộc tính",
+        "variants": "Biến thể",
+        "pricing": "Giá & Kho hàng",
+        "category": "Phân loại",
+        "images": "Hình ảnh",
+        "faqs": "FAQ",
+        "seo": "SEO"
       },
       "submit": {
         "create": "Tạo sản phẩm",
@@ -1406,7 +1406,7 @@
         "category": "6. Phân loại",
         "images": "7. Hình ảnh",
         "seo": "8. SEO",
-        "faqs": "10. FAQ"
+        "faqs": "9. FAQ"
       },
       "loadingText": "Đang tải thông tin sản phẩm...",
       "errors": {
@@ -1910,7 +1910,10 @@
       "revenueByCategory": "Doanh thu theo danh mục",
       "paymentMethods": "Phương thức thanh toán",
       "exportOrders": "Xuất đơn hàng",
-      "exportProducts": "Xuất sản phẩm"
+      "exportProducts": "Xuất sản phẩm",
+      "customize": "Tùy chỉnh",
+      "fromDate": "Từ ngày",
+      "toDate": "Đến ngày"
     },
     "chatbot": {
       "tab": "AI Chatbot",

@@ -205,9 +205,9 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ===== ROW 1: BENTO — card doanh thu rộng gấp đôi ===== */}
+        {/* ===== ROW 1: BENTO — Doanh thu (2/3) + KPI người dùng (1/3) ===== */}
         <motion.div
-          className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4"
+          className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4"
           variants={stagger}
           initial="initial"
           animate="animate"
@@ -273,79 +273,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Card 2: Recent Orders — timeline mini (NexaStore style) */}
-          <motion.div variants={fadeUp}>
-            <div
-              className="admin-kpi-card admin-card-glow p-5 h-full"
-              style={{ '--kpi-accent': 'var(--admin-info)' } as React.CSSProperties}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[var(--admin-info)]/12 flex items-center justify-center">
-                    <ShoppingBag
-                      className="w-4.5 h-4.5 text-[var(--admin-info)]"
-                      strokeWidth={2.25}
-                    />
-                  </div>
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.dashboard.sections.recentOrders')}
-                  </span>
-                </div>
-                <Link
-                  to={ROUTES.ADMIN_ORDERS}
-                  className="text-xs text-[var(--accent)] hover:underline font-medium"
-                >
-                  {t('admin.dashboard.sections.viewAll')} →
-                </Link>
-              </div>
-              <div className="space-y-2.5">
-                {isOrdersLoading ? (
-                  [...Array(4)].map((_, i) => <div key={i} className="shimmer h-10 rounded-lg" />)
-                ) : recentOrders.length > 0 ? (
-                  recentOrders.slice(0, 4).map((order) => (
-                    <div
-                      key={order.id}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition"
-                    >
-                      <OrderStatusBadge status={order.status} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs font-medium text-[var(--text-primary)] truncate">
-                          {order.number}
-                        </div>
-                        <div className="text-[10px] text-[var(--text-tertiary)]">
-                          {order.shippingFirstName} {order.shippingLastName}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-xs font-semibold text-[var(--text-primary)] tabular-nums">
-                          {formatPrice(order.total)}
-                        </div>
-                        <StatusPill
-                          variant={
-                            order.status === 'delivered'
-                              ? 'success'
-                              : order.status === 'cancelled'
-                                ? 'error'
-                                : order.status === 'pending'
-                                  ? 'warning'
-                                  : 'info'
-                          }
-                          label={t(`admin.dashboard.orderStatus.${order.status}`)}
-                          className="text-[9px] px-1.5 py-0"
-                        />
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-sm text-[var(--text-tertiary)]">
-                    {t('admin.dashboard.table.noRecentOrders')}
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Card 3: Customer Overview — 4 sub-KPIs (NexaStore style) */}
+          {/* Card 2: Customer Overview — 4 sub-KPIs (NexaStore style) */}
           <motion.div variants={fadeUp}>
             <div
               className="admin-kpi-card admin-card-glow p-5 h-full"
@@ -389,12 +317,12 @@ const DashboardPage: React.FC = () => {
                 ].map(({ label, value, growth, color }) => (
                   <div
                     key={label}
-                    className="rounded-xl bg-white/[0.03] border border-[var(--border-default)] p-3"
+                    className="rounded-xl bg-white/[0.03] border border-[var(--border-default)] p-3 min-w-0"
                   >
-                    <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1 truncate">
+                    <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1 leading-tight">
                       {label}
                     </div>
-                    <div className="flex items-baseline gap-1.5">
+                    <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
                       <span
                         className="text-lg font-bold tabular-nums"
                         style={{ color: `var(${color})` }}
@@ -438,8 +366,83 @@ const DashboardPage: React.FC = () => {
         {/* ===== CHARTS ===== */}
         <DashboardCharts />
 
-        {/* ===== ROW BOTTOM: Cảnh báo sắp hết hàng — full-width, item lưới 2 cột ===== */}
-        <div className="mt-4">
+        {/* ===== ROW BOTTOM: Đơn hàng gần đây + Cảnh báo sắp hết hàng (mỗi card ~1/2) ===== */}
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-4 mt-4',
+            lowStockProducts.length > 0 && 'lg:grid-cols-2',
+          )}
+        >
+          {/* Đơn hàng gần đây — card rộng: hiện đủ mã + tên + giá + trạng thái */}
+          <div
+            className="admin-kpi-card admin-card-glow p-5"
+            style={{ '--kpi-accent': 'var(--admin-info)' } as React.CSSProperties}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-[var(--admin-info)]/12 flex items-center justify-center">
+                  <ShoppingBag
+                    className="w-4.5 h-4.5 text-[var(--admin-info)]"
+                    strokeWidth={2.25}
+                  />
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                  {t('admin.dashboard.sections.recentOrders')}
+                </span>
+              </div>
+              <Link
+                to={ROUTES.ADMIN_ORDERS}
+                className="text-xs text-[var(--accent)] hover:underline font-medium whitespace-nowrap"
+              >
+                {t('admin.dashboard.sections.viewAll')} →
+              </Link>
+            </div>
+            <div className="space-y-2.5">
+              {isOrdersLoading ? (
+                [...Array(5)].map((_, i) => <div key={i} className="shimmer h-10 rounded-lg" />)
+              ) : recentOrders.length > 0 ? (
+                recentOrders.slice(0, 5).map((order) => (
+                  <div
+                    key={order.id}
+                    className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition"
+                  >
+                    <OrderStatusBadge status={order.status} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-[var(--text-primary)] truncate">
+                        {order.number}
+                      </div>
+                      <div className="text-[10px] text-[var(--text-tertiary)] truncate">
+                        {order.shippingFirstName} {order.shippingLastName}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-xs font-semibold text-[var(--text-primary)] tabular-nums">
+                        {formatPrice(order.total)}
+                      </div>
+                      <StatusPill
+                        variant={
+                          order.status === 'delivered'
+                            ? 'success'
+                            : order.status === 'cancelled'
+                              ? 'error'
+                              : order.status === 'pending'
+                                ? 'warning'
+                                : 'info'
+                        }
+                        label={t(`admin.dashboard.orderStatus.${order.status}`)}
+                        className="text-[9px] px-1.5 py-0"
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 text-sm text-[var(--text-tertiary)]">
+                  {t('admin.dashboard.table.noRecentOrders')}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Low Stock */}
           {lowStockProducts.length > 0 && (
             <div id="low-stock-widget" className="admin-kpi-card admin-card-glow overflow-hidden">
@@ -447,7 +450,7 @@ const DashboardPage: React.FC = () => {
                 <AlertTriangle className="w-4 h-4 text-[var(--admin-warning)]" strokeWidth={2.25} />
                 <h2 className="text-sm font-semibold">{t('admin.dashboard.lowStock.title')}</h2>
               </div>
-              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="p-4 grid grid-cols-1 gap-2">
                 {lowStockProducts.slice(0, 8).map((product) => {
                   const isOut = product.stockQuantity === 0;
                   return (
@@ -473,7 +476,7 @@ const DashboardPage: React.FC = () => {
                         <p className="text-xs font-medium text-[var(--text-primary)] truncate">
                           {product.name}
                         </p>
-                        <p className="text-[10px] text-[var(--text-tertiary)] tabular-nums">
+                        <p className="text-[10px] text-[var(--text-tertiary)] tabular-nums truncate">
                           {product.sku || '—'}
                         </p>
                       </div>

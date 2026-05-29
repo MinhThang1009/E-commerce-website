@@ -1246,15 +1246,15 @@
       "backToList": "Back to list",
       "tabs": {
         "incompleteWarning": "Please complete the previous steps before accessing this tab",
-        "basic": "1. Basic info",
-        "specifications": "2. Specifications",
-        "attributes": "3. Attributes",
-        "variants": "4. Variants",
-        "pricing": "5. Pricing & Stock",
-        "category": "6. Category",
-        "images": "7. Images",
-        "faqs": "8. FAQ",
-        "seo": "9. SEO"
+        "basic": "Basic info",
+        "specifications": "Specifications",
+        "attributes": "Attributes",
+        "variants": "Variants",
+        "pricing": "Pricing & Stock",
+        "category": "Category",
+        "images": "Images",
+        "faqs": "FAQs",
+        "seo": "SEO"
       },
       "submit": {
         "create": "Create product",
@@ -1278,7 +1278,8 @@
         "pricing": "5. Pricing & Stock",
         "category": "6. Category",
         "images": "7. Images",
-        "seo": "8. SEO"
+        "seo": "8. SEO",
+        "faqs": "9. FAQs"
       },
       "loadingText": "Loading product information...",
       "errors": {
@@ -1358,6 +1359,7 @@
         "pricePlaceholder": "Enter selling price",
         "comparePriceLabel": "Compare at price",
         "comparePriceTooltip": "Original price before discount (if any)",
+        "comparePriceTooltipVariant": "Product has variants — compare price is set per variant in the Variants tab",
         "stockLabelVariant": "Total stock quantity",
         "stockLabel": "Stock quantity",
         "stockRequired": "Please enter quantity!",
@@ -1779,7 +1781,10 @@
       "revenueByCategory": "Revenue by Category",
       "paymentMethods": "Payment methods",
       "exportOrders": "Export orders",
-      "exportProducts": "Export products"
+      "exportProducts": "Export products",
+      "customize": "Customize",
+      "fromDate": "From date",
+      "toDate": "To date"
     },
     "chatbot": {
       "tab": "AI Chatbot",

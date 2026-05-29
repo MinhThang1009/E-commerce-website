@@ -4,7 +4,7 @@
  * @feature admin
  * @description Charts dashboard với glass tooltip + hex constants (spec §6)
  */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -17,6 +17,7 @@ import {
   Trophy,
   Layers,
   CreditCard,
+  Settings2,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -99,6 +100,8 @@ const DashboardCharts: React.FC = () => {
   const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('day');
   const [topProductMetric, setTopProductMetric] = useState<'revenue' | 'soldCount'>('revenue');
   const [comparePeriod, setComparePeriod] = useState<ComparePeriod>(null);
+  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const customRef = useRef<HTMLDivElement>(null);
 
   const { startDate, endDate } = useMemo(() => {
     if (period === 'custom' && customFrom && customTo) {
@@ -119,8 +122,28 @@ const DashboardCharts: React.FC = () => {
     if (customFrom && customTo) {
       setPeriod('custom');
       setSearchParams({ from: customFrom, to: customTo });
+      setIsCustomOpen(false);
     }
   };
+
+  // Đóng popover khi click ra ngoài hoặc nhấn Escape
+  useEffect(() => {
+    if (!isCustomOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (customRef.current && !customRef.current.contains(e.target as Node)) {
+        setIsCustomOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCustomOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isCustomOpen]);
 
   const handlePeriodChange = (newPeriod: '7d' | '30d' | '90d') => {
     setPeriod(newPeriod);
@@ -229,6 +252,9 @@ const DashboardCharts: React.FC = () => {
         className={cn(
           cardClass,
           'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-wrap',
+          // Nâng toolbar lên trên các chart card kế tiếp khi popover mở — tránh bị SVG đè
+          // (mỗi admin-chart-card là 1 stacking context riêng do backdrop-filter)
+          isCustomOpen && 'relative z-20',
         )}
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -249,29 +275,61 @@ const DashboardCharts: React.FC = () => {
             </button>
           ))}
 
-          {/* Custom date range */}
-          <div className="flex items-center gap-1.5">
-            <input
-              type="date"
-              value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
-              className="px-2 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] tabular-nums"
-            />
-            <span className="text-[var(--text-tertiary)]">—</span>
-            <input
-              type="date"
-              value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
-              className="px-2 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] tabular-nums"
-            />
+          {/* Custom date range — gom 2 ô date + Áp dụng vào popover "Tùy chỉnh" */}
+          <div className="relative" ref={customRef}>
             <button
               type="button"
-              onClick={handleCustomDateApply}
-              disabled={!customFrom || !customTo}
-              className="admin-btn-primary px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={() => setIsCustomOpen((open) => !open)}
+              aria-expanded={isCustomOpen}
+              aria-haspopup="dialog"
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors',
+                period === 'custom'
+                  ? 'bg-[var(--accent)]/12 border-[var(--accent)]/30 text-[var(--accent)]'
+                  : 'bg-transparent border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5',
+              )}
             >
-              {t('admin.charts.apply')}
+              <Settings2 className="w-3.5 h-3.5" strokeWidth={2.25} />
+              {t('admin.charts.customize')}
             </button>
+
+            {isCustomOpen && (
+              <div
+                role="dialog"
+                className="absolute left-0 top-full z-30 mt-2 w-64 space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--bg-elevated)] p-4 shadow-xl"
+              >
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-medium text-[var(--text-tertiary)]">
+                    {t('admin.charts.fromDate')}
+                  </span>
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] tabular-nums"
+                  />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-[11px] font-medium text-[var(--text-tertiary)]">
+                    {t('admin.charts.toDate')}
+                  </span>
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    className="w-full px-2 py-1.5 text-xs rounded-lg bg-[var(--bg-base)] border border-[var(--border-default)] text-[var(--text-primary)] tabular-nums"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={handleCustomDateApply}
+                  disabled={!customFrom || !customTo}
+                  className="admin-btn-primary w-full px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {t('admin.charts.apply')}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Group by */}

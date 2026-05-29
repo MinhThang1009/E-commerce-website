@@ -1391,7 +1391,8 @@
         "guideRequirement": "Ratio 1:1 or 4:3, minimum 400x400px",
         "guideFormat": "JPG, PNG, WebP",
         "guideThumbnail": "Displayed in product list",
-        "guideBackend": "Use http://localhost:8888/uploads for local images (do NOT use /api/uploads)",
+        "guideBackend": "Use {{base}} as the image URL base (do NOT use /api/uploads)",
+        "backendLabel": "Image base URL",
         "howToLabel": "How to enter",
         "requirementsLabel": "Requirements",
         "formatLabel": "Format"

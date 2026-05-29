@@ -1518,7 +1518,8 @@
         "guideRequirement": "Tỷ lệ 1:1 hoặc 4:3, tối thiểu 400x400px",
         "guideFormat": "JPG, PNG, WebP",
         "guideThumbnail": "Hiển thị trong danh sách sản phẩm",
-        "guideBackend": "Sử dụng http://localhost:8888/uploads cho local images (KHÔNG dùng /api/uploads)",
+        "guideBackend": "Dùng {{base}} làm URL gốc cho ảnh (KHÔNG dùng /api/uploads)",
+        "backendLabel": "URL gốc ảnh",
         "howToLabel": "Cách nhập",
         "requirementsLabel": "Yêu cầu",
         "formatLabel": "Định dạng"

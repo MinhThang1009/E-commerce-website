@@ -7,7 +7,7 @@
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Info } from 'lucide-react';
+import { Info, Link2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -19,6 +19,11 @@ interface ProductImagesFormProps {
 
 const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ form }) => {
   const { t } = useTranslation();
+  // URL gốc ảnh tải lên = origin của VITE_API_URL (bỏ hậu tố /api) + /uploads.
+  // Tránh hardcode localhost lộ ra production — tự đổi theo môi trường deploy.
+  const uploadBase =
+    (import.meta.env.VITE_API_URL || 'http://localhost:8888/api').replace(/\/api\/?$/, '') +
+    '/uploads';
 
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -62,8 +67,12 @@ const ProductImagesForm: React.FC<ProductImagesFormProps> = ({ form }) => {
               <strong>{t('admin.products.images.thumbnailLabel')}:</strong>{' '}
               {t('admin.products.images.guideThumbnail')}
             </p>
-            <p>
-              <strong>🔗 Backend:</strong> {t('admin.products.images.guideBackend')}
+            <p className="flex items-start gap-1">
+              <Link2 className="size-3.5 mt-0.5 shrink-0" aria-hidden />
+              <span>
+                <strong>{t('admin.products.images.backendLabel')}:</strong>{' '}
+                {t('admin.products.images.guideBackend', { base: uploadBase })}
+              </span>
             </p>
           </div>
         </AlertDescription>

@@ -21,7 +21,7 @@ const ProductSeoForm: React.FC<ProductSeoFormProps> = ({ form }) => {
   const { t } = useTranslation();
 
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
       {/* SEO Title — VI */}
       <div>
         <Label className="mb-1.5 block">{`${t('admin.products.seo.titleLabel')} (VI)`}</Label>

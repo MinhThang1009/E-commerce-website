@@ -42,7 +42,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
       {hasVariants && (
         <div className="col-span-2">
           <Alert variant="warning" className="mb-4">

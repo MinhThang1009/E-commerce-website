@@ -946,6 +946,7 @@ const ProductsPage: React.FC = () => {
               {t('admin.products.modal.close')}
             </Button>
             <Button
+              className="admin-btn-primary"
               onClick={() => {
                 setIsQuickViewOpen(false);
                 navigate(buildRoute.adminProductEdit(selectedProduct?.id ?? ''));

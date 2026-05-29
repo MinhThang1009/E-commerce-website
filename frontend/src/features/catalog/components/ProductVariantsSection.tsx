@@ -43,7 +43,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
             <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
           </p>
         </div>
-        <Button onClick={onAddVariant}>
+        <Button onClick={onAddVariant} className="admin-btn-primary">
           <Plus className="size-4" />
           {t('productSection.variants.addButton')}
         </Button>

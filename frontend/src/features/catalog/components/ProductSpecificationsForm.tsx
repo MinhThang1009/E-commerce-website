@@ -135,7 +135,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       </p>
 
       <div className="mb-6">
-        <Button size="lg" onClick={addSpecification}>
+        <Button size="lg" onClick={addSpecification} className="admin-btn-primary">
           <Plus className="size-4" />
           {t('admin.products.specs.addButton')}
         </Button>

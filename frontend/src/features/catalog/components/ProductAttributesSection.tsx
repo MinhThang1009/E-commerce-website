@@ -42,7 +42,7 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
             <strong>{t('common.note')}:</strong> {t('productSection.attr.note')}
           </p>
         </div>
-        <Button onClick={onAddAttribute}>
+        <Button onClick={onAddAttribute} className="admin-btn-primary">
           <Plus className="size-4" />
           {t('productSection.attr.addButton')}
         </Button>

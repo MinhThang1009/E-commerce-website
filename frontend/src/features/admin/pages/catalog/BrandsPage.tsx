@@ -83,7 +83,7 @@ const BrandsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  const { data: brandsData, isLoading, refetch } = useGetBrandsQuery();
+  const { data: brandsData, isLoading, isFetching, refetch } = useGetBrandsQuery();
   const { mutateAsync: createBrand, isPending: isCreating } = useCreateBrandMutation();
   const { mutateAsync: updateBrand, isPending: isUpdating } = useUpdateBrandMutation();
   const { mutateAsync: deleteBrand } = useDeleteBrandMutation();
@@ -175,9 +175,9 @@ const BrandsPage: React.FC = () => {
         subtitle={t('admin.brands.subtitle')}
         actions={
           <>
-            <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCw
-                className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+                className={cn('w-4 h-4 mr-2', isFetching && 'animate-spin')}
                 strokeWidth={2.25}
               />
               {t('common.refresh')}

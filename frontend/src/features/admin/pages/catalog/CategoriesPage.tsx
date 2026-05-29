@@ -87,7 +87,7 @@ const CategoriesPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  const { data: categoriesData, isLoading, refetch } = useGetCategoryTreeQuery();
+  const { data: categoriesData, isLoading, isFetching, refetch } = useGetCategoryTreeQuery();
   const { mutateAsync: createCategory, isPending: isCreating } = useCreateCategoryMutation();
   const { mutateAsync: updateCategory, isPending: isUpdating } = useUpdateCategoryMutation();
   const { mutateAsync: deleteCategory } = useDeleteCategoryMutation();
@@ -190,9 +190,9 @@ const CategoriesPage: React.FC = () => {
         subtitle={t('admin.categories.subtitle')}
         actions={
           <>
-            <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+            <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
               <RefreshCw
-                className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+                className={cn('w-4 h-4 mr-2', isFetching && 'animate-spin')}
                 strokeWidth={2.25}
               />
               {t('common.refresh')}

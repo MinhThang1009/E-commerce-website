@@ -73,7 +73,7 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
                 isDone
                   ? 'border-[var(--admin-success)] bg-[var(--admin-success)] text-white'
                   : isActive
-                    ? 'border-[var(--accent)] bg-[var(--accent)] text-white'
+                    ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent)]'
                     : 'border-[var(--border-default)] bg-[var(--bg-base)] text-[var(--text-tertiary)]',
               )}
             >

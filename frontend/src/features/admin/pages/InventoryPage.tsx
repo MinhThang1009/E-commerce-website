@@ -72,7 +72,7 @@ const InventoryPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
-  const { data, isLoading, refetch } = useGetAdminProductsQuery({
+  const { data, isLoading, isFetching, refetch } = useGetAdminProductsQuery({
     page,
     limit: 20,
     search: searchText || undefined,
@@ -265,9 +265,9 @@ const InventoryPage: React.FC = () => {
         sparkle
         subtitle={t('inventory.subtitle')}
         actions={
-          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw
-              className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+              className={cn('w-4 h-4 mr-2', isFetching && 'animate-spin')}
               strokeWidth={2.25}
             />
             {t('common.refresh')}

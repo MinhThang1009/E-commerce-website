@@ -95,8 +95,8 @@ const UserDetailPage: React.FC = () => {
               />
             </div>
             <div className="px-5 pb-5 text-center">
-              {/* Avatar */}
-              <div className="-mt-12 mb-4">
+              {/* Avatar — relative z-10 để nổi trên cover (cover positioned nên vẽ đè nếu avatar static) */}
+              <div className="relative z-10 -mt-12 mb-4">
                 {user.avatar ? (
                   <img
                     src={user.avatar}

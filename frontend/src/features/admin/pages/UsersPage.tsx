@@ -89,7 +89,7 @@ const UsersPage: React.FC = () => {
     sortOrder: 'DESC',
   });
 
-  const { data: usersData, isLoading, refetch } = useGetAllUsersQuery(filters);
+  const { data: usersData, isLoading, isFetching, refetch } = useGetAllUsersQuery(filters);
   const { mutateAsync: updateUser, isPending: isUpdating } = useUpdateUserMutation();
   const { mutateAsync: deleteUser } = useDeleteUserMutation();
 
@@ -178,9 +178,9 @@ const UsersPage: React.FC = () => {
         sparkle
         subtitle={t('admin.users.subtitle')}
         actions={
-          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw
-              className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+              className={cn('w-4 h-4 mr-2', isFetching && 'animate-spin')}
               strokeWidth={2.25}
             />
             {t('common.refresh')}

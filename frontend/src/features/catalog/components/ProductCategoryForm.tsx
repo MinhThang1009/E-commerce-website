@@ -44,9 +44,9 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
       <div>
         <Label className="mb-1.5 block">{t('admin.products.category.label')}</Label>
         {isLoading ? (
-          <div className="animate-pulse h-10 bg-neutral-200 dark:bg-neutral-700 rounded-xl" />
+          <div className="shimmer h-10 rounded-xl" />
         ) : (
-          <div className="flex flex-wrap gap-2 p-3 border border-neutral-300 dark:border-neutral-600 rounded-xl bg-white dark:bg-neutral-800 min-h-[42px]">
+          <div className="flex flex-wrap gap-2 p-3 border border-[var(--border-default)] rounded-xl bg-[var(--bg-base)] min-h-[42px]">
             {categories.map((category) => {
               const isSelected = selectedIds.includes(category.id);
               return (
@@ -54,10 +54,10 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
                   key={category.id}
                   type="button"
                   onClick={() => toggleCategory(category.id)}
-                  className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
                     isSelected
-                      ? 'bg-[var(--accent)] text-white'
-                      : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600'
+                      ? 'bg-[var(--accent)]/12 border-[var(--accent)]/30 text-[var(--accent)]'
+                      : 'bg-transparent border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5'
                   }`}
                 >
                   {category.name}

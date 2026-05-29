@@ -625,7 +625,7 @@ const EditProductPage: React.FC = () => {
           <p className="text-sm text-[var(--text-tertiary)] mb-6">
             {t('admin.products.errors.loadFailedDesc')}
           </p>
-          <Button onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
+          <Button className="admin-btn-primary" onClick={() => navigate(ROUTES.ADMIN_PRODUCTS)}>
             {t('admin.products.backToList')}
           </Button>
         </div>

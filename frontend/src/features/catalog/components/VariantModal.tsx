@@ -314,7 +314,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 <X className="size-4" />
                 {t('common.cancel')}
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="admin-btn-primary">
                 <Save className="size-4" />
                 {variant ? t('variantModal.updateBtn') : t('variantModal.addBtn')}
               </Button>

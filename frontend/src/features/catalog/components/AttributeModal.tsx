@@ -180,7 +180,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
                 <X className="size-4" />
                 {t('common.cancel')}
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="admin-btn-primary">
                 <Save className="size-4" />
                 {attribute ? t('attrModal.updateBtn') : t('attrModal.addBtn')}
               </Button>

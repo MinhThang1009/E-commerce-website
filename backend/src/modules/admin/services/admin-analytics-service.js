@@ -69,7 +69,9 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
       },
       {
         model: Product,
-        attributes: ['nameVi', 'nameEn'],
+        // Cần 'id' để Sequelize load association productImages (limit:1 → query riêng cần product_id)
+        // và để group theo 'Product.id'
+        attributes: ['id', 'nameVi', 'nameEn'],
         include: [
           {
             model: ProductImage,

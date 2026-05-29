@@ -23,6 +23,10 @@ import {
   CheckCircle2,
   XCircle,
   RefreshCw,
+  Plus,
+  Ticket,
+  Boxes,
+  Zap,
   type LucideIcon,
 } from 'lucide-react';
 import { ROUTES, buildRoute } from '@/routes/paths';
@@ -33,6 +37,7 @@ import {
   useGetDashboardStatsQuery,
   useGetLowStockAnalyticsQuery,
   useGetDetailedStatsQuery,
+  useGetUserGrowthAnalyticsQuery,
 } from '../api/admin-dashboard-api';
 import { useGetAdminOrdersQuery } from '../api/admin-order-api';
 import DashboardCharts from '../components/DashboardCharts';
@@ -120,6 +125,17 @@ const DashboardPage: React.FC = () => {
     () => (detailedStats?.data?.orders ?? []).map((o) => o.revenue),
     [detailedStats],
   );
+  // Chuỗi số đơn hàng 30 ngày — sparkline mini cho KPI "Tổng đơn hàng"
+  const orderCountSeries = React.useMemo(
+    () => (detailedStats?.data?.orders ?? []).map((o) => o.orderCount),
+    [detailedStats],
+  );
+  // Chuỗi người dùng mới 30 ngày — sparkline mini cho KPI "Tổng người dùng"
+  const { data: userGrowthData } = useGetUserGrowthAnalyticsQuery(revenueRange);
+  const userGrowthSeries = React.useMemo(
+    () => (userGrowthData?.data ?? []).map((d) => d.newUsers),
+    [userGrowthData],
+  );
 
   if (isDashboardLoading) {
     return (
@@ -205,6 +221,85 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        {/* ===== Hành động nhanh — shortcut tới tác vụ thường dùng ===== */}
+        <div className="admin-kpi-card admin-card-glow p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-4 h-4 text-[var(--accent)]" strokeWidth={2.25} />
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+              {t('admin.dashboard.quickActions.title', { defaultValue: 'Hành động nhanh' })}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            {[
+              {
+                to: '/admin/products/create',
+                Icon: Plus,
+                label: t('admin.dashboard.quickActions.addProduct', {
+                  defaultValue: 'Thêm sản phẩm',
+                }),
+                color: '--accent',
+              },
+              {
+                to: '/admin/discount-codes',
+                Icon: Ticket,
+                label: t('admin.dashboard.quickActions.createDiscount', {
+                  defaultValue: 'Tạo mã giảm giá',
+                }),
+                color: '--color-violet',
+              },
+              {
+                to: buildRoute.adminOrdersPending(),
+                Icon: Clock,
+                label: t('admin.dashboard.quickActions.pendingOrders', {
+                  defaultValue: 'Đơn chờ xử lý',
+                }),
+                color: '--color-warning',
+                badge: pendingCount,
+              },
+              {
+                to: '/admin/inventory',
+                Icon: Boxes,
+                label: t('admin.dashboard.quickActions.manageInventory', {
+                  defaultValue: 'Quản lý kho',
+                }),
+                color: '--color-info',
+              },
+              {
+                to: ROUTES.ADMIN_USERS,
+                Icon: Users,
+                label: t('admin.dashboard.quickActions.manageUsers', {
+                  defaultValue: 'Người dùng',
+                }),
+                color: '--color-success',
+              },
+            ].map(({ to, Icon, label, color, badge }) => (
+              <Link
+                key={label}
+                to={to}
+                className="group relative flex flex-col items-center gap-1.5 rounded-xl border border-[var(--border-default)] bg-white/[0.02] p-3 text-center transition hover:border-[var(--accent)]/30 hover:bg-[var(--accent)]/5"
+              >
+                <span
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg"
+                  style={{
+                    backgroundColor: `color-mix(in srgb, var(${color}) 14%, transparent)`,
+                    color: `var(${color})`,
+                  }}
+                >
+                  <Icon className="w-4.5 h-4.5" strokeWidth={2.25} />
+                </span>
+                <span className="text-[11px] font-medium leading-tight text-[var(--text-secondary)]">
+                  {label}
+                </span>
+                {badge ? (
+                  <span className="absolute right-1.5 top-1.5 min-w-[18px] rounded-full bg-[var(--color-warning)] px-1 py-px text-center text-[10px] font-bold text-white">
+                    {badge}
+                  </span>
+                ) : null}
+              </Link>
+            ))}
+          </div>
+        </div>
+
         {/* ===== ROW 1: BENTO — Doanh thu (2/3) + KPI người dùng (1/3) ===== */}
         <motion.div
           className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4"
@@ -254,7 +349,7 @@ const DashboardPage: React.FC = () => {
               {/* Mini stats row */}
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[var(--border-default)]">
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+                  <div className="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
                     {t('admin.dashboard.stats.aov')}
                   </div>
                   <div className="text-sm font-bold text-[var(--text-primary)] tabular-nums">
@@ -262,7 +357,7 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+                  <div className="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
                     {t('admin.dashboard.stats.totalProducts')}
                   </div>
                   <div className="text-sm font-bold text-[var(--text-primary)] tabular-nums">
@@ -297,12 +392,14 @@ const DashboardPage: React.FC = () => {
                     value: totalOrders,
                     growth: growthOrders,
                     color: '--color-info',
+                    series: orderCountSeries,
                   },
                   {
                     label: t('admin.dashboard.stats.totalUsers'),
                     value: totalUsers,
                     growth: growthUsers,
                     color: '--color-success',
+                    series: userGrowthSeries,
                   },
                   {
                     label: t('admin.dashboard.stats.cancelledThisMonth'),
@@ -314,12 +411,12 @@ const DashboardPage: React.FC = () => {
                     value: lowStockCount,
                     color: '--color-warning',
                   },
-                ].map(({ label, value, growth, color }) => (
+                ].map(({ label, value, growth, color, series }) => (
                   <div
                     key={label}
                     className="rounded-xl bg-white/[0.03] border border-[var(--border-default)] p-3 min-w-0"
                   >
-                    <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1 leading-tight">
+                    <div className="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1 leading-tight">
                       {label}
                     </div>
                     <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
@@ -331,6 +428,11 @@ const DashboardPage: React.FC = () => {
                       </span>
                       {growth !== undefined && <GrowthPill value={growth} />}
                     </div>
+                    {series && series.length >= 2 && (
+                      <div className="mt-1.5">
+                        <Sparkline data={series} color={`var(${color})`} height={20} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -489,6 +591,10 @@ const DashboardPage: React.FC = () => {
                         <Link
                           to={buildRoute.adminProductEdit(product.id)}
                           className="text-[var(--accent)] hover:underline"
+                          title={t('admin.products.actions.view', { defaultValue: 'Xem chi tiết' })}
+                          aria-label={t('admin.products.actions.view', {
+                            defaultValue: 'Xem chi tiết',
+                          })}
                         >
                           <Eye className="w-3.5 h-3.5" strokeWidth={2.25} />
                         </Link>

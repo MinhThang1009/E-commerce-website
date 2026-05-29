@@ -22,6 +22,7 @@ import { cn } from '@/utils/cn';
 import StatusPill from '../components/StatusPill';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminStatCard from '../components/AdminStatCard';
+import AdminMobileCard from '../components/AdminMobileCard';
 import { useGetAdminProductsQuery } from '../api/admin-product-api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -323,7 +324,7 @@ const InventoryPage: React.FC = () => {
 
       {/* Table */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm">
             <thead className="bg-white/[0.02]">
               <tr>
@@ -445,6 +446,84 @@ const InventoryPage: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Mobile: card-list thay cho table */}
+        {!isLoading && products.length > 0 && (
+          <div className="space-y-3 p-3 md:hidden">
+            {products.map((product) => {
+              const hasVariants = product.variants.length > 0;
+              const isExpanded = expandedRows.has(product.key);
+              const isEditingProduct =
+                editing?.productId === product.id && editing?.variantId === undefined;
+              return (
+                <AdminMobileCard
+                  key={product.key}
+                  title={product.name}
+                  status={getStockBadge(product.stockQuantity)}
+                  fields={[
+                    {
+                      label: t('inventory.colStock'),
+                      value: renderStockCell(
+                        product.stockQuantity,
+                        hasVariants ? false : isEditingProduct,
+                      ),
+                    },
+                  ]}
+                  actions={
+                    hasVariants ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(product.key)}
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="size-4" />
+                        ) : (
+                          <ChevronRight className="size-4" />
+                        )}
+                        {product.variants.length} biến thể
+                      </button>
+                    ) : (
+                      renderActionButtons(isEditingProduct, () =>
+                        handleEdit(product.id, product.stockQuantity),
+                      )
+                    )
+                  }
+                >
+                  {hasVariants && isExpanded && (
+                    <div className="mt-3 space-y-2 border-t border-[var(--border-default)] pt-3">
+                      {product.variants.map((variant) => {
+                        const isEditingVariant =
+                          editing?.productId === product.id && editing?.variantId === variant.id;
+                        return (
+                          <div key={variant.key} className="rounded-lg bg-white/[0.02] p-2.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="min-w-0 truncate text-sm text-[var(--text-secondary)]">
+                                {variant.name}
+                              </span>
+                              {getStockBadge(variant.stockQuantity)}
+                            </div>
+                            <div className="mt-1.5 flex items-center justify-between gap-2 text-sm">
+                              <span className="text-[var(--text-tertiary)]">
+                                {variant.sku || '—'}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                {renderStockCell(variant.stockQuantity, isEditingVariant)}
+                                {renderActionButtons(isEditingVariant, () =>
+                                  handleEdit(product.id, variant.stockQuantity, variant.id),
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </AdminMobileCard>
+              );
+            })}
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="px-5 py-4 border-t border-[var(--border-default)]">

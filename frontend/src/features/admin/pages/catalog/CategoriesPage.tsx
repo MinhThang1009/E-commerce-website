@@ -46,6 +46,7 @@ import {
 } from '@/components/ui';
 import StatusPill from '../../components/StatusPill';
 import AdminPageHeader from '../../components/AdminPageHeader';
+import AdminMobileCard from '../../components/AdminMobileCard';
 
 interface CategoryFormData {
   name: string;
@@ -286,130 +287,251 @@ const CategoriesPage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-white/[0.02]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
-                    {t('admin.categories.table.image')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.categories.table.name')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.brands.form.description')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.categories.table.parent')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('common.status')}
-                  </th>
-                  <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
-                    {t('admin.categories.table.order')}
-                  </th>
-                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
-                    {t('admin.common.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <motion.tbody variants={rowStagger} initial="initial" animate="animate">
-                {visibleRows.map(({ category: record, depth, isLast, childCount }) => {
-                  const parent = record.parentId
-                    ? categories.find((cat: Category) => cat.id === record.parentId)
-                    : null;
-                  const isCollapsed = collapsedIds.has(record.id);
-                  return (
-                    <motion.tr
-                      key={record.id}
-                      variants={rowItem}
-                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition flex items-center justify-center">
-                          {record.image ? (
-                            <img
-                              src={record.image}
-                              alt={record.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            />
-                          ) : (
-                            <FolderOpen
-                              className="w-5 h-5 text-[var(--text-tertiary)]"
-                              strokeWidth={1.75}
-                            />
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1.5">
-                          {/* Connector cây — elbow ├/└ thụt theo độ sâu */}
-                          {depth > 0 && (
-                            <span
-                              aria-hidden
-                              className="relative shrink-0 self-stretch"
-                              style={{ width: depth * 22 }}
-                            >
-                              <span
-                                className={cn(
-                                  'absolute right-[11px] top-0 w-px bg-[var(--border-strong)]',
-                                  isLast ? 'h-1/2' : 'h-full',
-                                )}
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.02]">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                      {t('admin.categories.table.image')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.categories.table.name')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.brands.form.description')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.categories.table.parent')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('common.status')}
+                    </th>
+                    <th className="px-4 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                      {t('admin.categories.table.order')}
+                    </th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                      {t('admin.common.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <motion.tbody variants={rowStagger} initial="initial" animate="animate">
+                  {visibleRows.map(({ category: record, depth, isLast, childCount }) => {
+                    const parent = record.parentId
+                      ? categories.find((cat: Category) => cat.id === record.parentId)
+                      : null;
+                    const isCollapsed = collapsedIds.has(record.id);
+                    return (
+                      <motion.tr
+                        key={record.id}
+                        variants={rowItem}
+                        className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition flex items-center justify-center">
+                            {record.image ? (
+                              <img
+                                src={record.image}
+                                alt={record.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                               />
-                              <span className="absolute right-[11px] top-1/2 h-px w-[11px] bg-[var(--border-strong)]" />
-                            </span>
+                            ) : (
+                              <FolderOpen
+                                className="w-5 h-5 text-[var(--text-tertiary)]"
+                                strokeWidth={1.75}
+                              />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            {/* Connector cây — elbow ├/└ thụt theo độ sâu */}
+                            {depth > 0 && (
+                              <span
+                                aria-hidden
+                                className="relative shrink-0 self-stretch"
+                                style={{ width: depth * 22 }}
+                              >
+                                <span
+                                  className={cn(
+                                    'absolute right-[11px] top-0 w-px bg-[var(--border-strong)]',
+                                    isLast ? 'h-1/2' : 'h-full',
+                                  )}
+                                />
+                                <span className="absolute right-[11px] top-1/2 h-px w-[11px] bg-[var(--border-strong)]" />
+                              </span>
+                            )}
+                            {/* Toggle thu gọn cho node có con; node lá giữ chỗ để thẳng hàng */}
+                            {childCount > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleCollapse(record.id)}
+                                className="p-0.5 -ml-0.5 rounded text-[var(--text-tertiary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition shrink-0"
+                                aria-expanded={!isCollapsed}
+                                aria-label={
+                                  isCollapsed
+                                    ? t('admin.categories.expand')
+                                    : t('admin.categories.collapse')
+                                }
+                              >
+                                {isCollapsed ? (
+                                  <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                ) : (
+                                  <ChevronDown className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                )}
+                              </button>
+                            ) : (
+                              <span className="w-[18px] shrink-0" />
+                            )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
+                                <span className="truncate">{record.name}</span>
+                                {childCount > 0 && (
+                                  <span className="rounded-md bg-[var(--accent)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent)] tabular-nums">
+                                    {childCount}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums truncate">
+                                {record.slug}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 max-w-xs">
+                          {record.description ? (
+                            <div
+                              className="truncate text-[var(--text-secondary)]"
+                              title={record.description}
+                            >
+                              {record.description}
+                            </div>
+                          ) : (
+                            <span className="text-[var(--text-tertiary)]">—</span>
                           )}
-                          {/* Toggle thu gọn cho node có con; node lá giữ chỗ để thẳng hàng */}
-                          {childCount > 0 ? (
+                        </td>
+                        <td className="px-4 py-3">
+                          {!record.parentId ? (
+                            <StatusPill
+                              variant="success"
+                              label={t('admin.categories.table.root')}
+                              showDot={false}
+                            />
+                          ) : parent ? (
+                            <StatusPill variant="info" label={parent.name} showDot={false} />
+                          ) : (
+                            <span className="text-[var(--text-tertiary)]">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusPill
+                            variant={record.isActive ? 'success' : 'error'}
+                            label={record.isActive ? t('common.active') : t('admin.common.hidden')}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center tabular-nums text-[var(--text-secondary)]">
+                          {record.sortOrder || 0}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-0.5">
                             <button
                               type="button"
-                              onClick={() => toggleCollapse(record.id)}
-                              className="p-0.5 -ml-0.5 rounded text-[var(--text-tertiary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 transition shrink-0"
-                              aria-expanded={!isCollapsed}
-                              aria-label={
-                                isCollapsed
-                                  ? t('admin.categories.expand')
-                                  : t('admin.categories.collapse')
-                              }
+                              onClick={() => handleEdit(record)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                              title={t('admin.common.actions')}
                             >
-                              {isCollapsed ? (
-                                <ChevronRight className="w-3.5 h-3.5" strokeWidth={2.5} />
-                              ) : (
-                                <ChevronDown className="w-3.5 h-3.5" strokeWidth={2.5} />
-                              )}
+                              <Pencil className="w-4 h-4" strokeWidth={2.25} />
                             </button>
-                          ) : (
-                            <span className="w-[18px] shrink-0" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 font-medium text-[var(--text-primary)]">
-                              <span className="truncate">{record.name}</span>
-                              {childCount > 0 && (
-                                <span className="rounded-md bg-[var(--accent)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--accent)] tabular-nums">
-                                  {childCount}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums truncate">
-                              {record.slug}
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(record.id)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                              title={t('common.delete')}
+                            >
+                              <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 max-w-xs">
-                        {record.description ? (
-                          <div
-                            className="truncate text-[var(--text-secondary)]"
-                            title={record.description}
-                          >
-                            {record.description}
-                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </motion.tbody>
+              </table>
+            </div>
+
+            {/* Mobile: card-list thay cho table (thụt lề theo depth của cây) */}
+            <div className="space-y-3 p-3 md:hidden">
+              {visibleRows.map(({ category: record, depth, childCount }) => {
+                const parent = record.parentId
+                  ? categories.find((cat: Category) => cat.id === record.parentId)
+                  : null;
+                const isCollapsed = collapsedIds.has(record.id);
+                return (
+                  <AdminMobileCard
+                    key={record.id}
+                    indent={depth * 16}
+                    media={
+                      <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)]">
+                        {record.image ? (
+                          <img
+                            src={record.image}
+                            alt={record.name}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
-                          <span className="text-[var(--text-tertiary)]">—</span>
+                          <FolderOpen
+                            className="h-5 w-5 text-[var(--text-tertiary)]"
+                            strokeWidth={1.75}
+                          />
                         )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {!record.parentId ? (
+                      </div>
+                    }
+                    title={
+                      <span className="flex items-center gap-1.5">
+                        {childCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleCollapse(record.id)}
+                            className="shrink-0 rounded p-0.5 text-[var(--text-tertiary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                            aria-expanded={!isCollapsed}
+                            aria-label={
+                              isCollapsed
+                                ? t('admin.categories.expand')
+                                : t('admin.categories.collapse')
+                            }
+                          >
+                            {isCollapsed ? (
+                              <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.5} />
+                            ) : (
+                              <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />
+                            )}
+                          </button>
+                        )}
+                        <span className="truncate">{record.name}</span>
+                        {childCount > 0 && (
+                          <span className="rounded-md bg-[var(--accent)]/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--accent)]">
+                            {childCount}
+                          </span>
+                        )}
+                      </span>
+                    }
+                    subtitle={record.slug}
+                    status={
+                      <StatusPill
+                        variant={record.isActive ? 'success' : 'error'}
+                        label={record.isActive ? t('common.active') : t('admin.common.hidden')}
+                      />
+                    }
+                    fields={[
+                      {
+                        label: t('admin.brands.form.description'),
+                        value: record.description || (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        ),
+                      },
+                      {
+                        label: t('admin.categories.table.parent'),
+                        value: !record.parentId ? (
                           <StatusPill
                             variant="success"
                             label={t('admin.categories.table.root')}
@@ -419,43 +541,37 @@ const CategoriesPage: React.FC = () => {
                           <StatusPill variant="info" label={parent.name} showDot={false} />
                         ) : (
                           <span className="text-[var(--text-tertiary)]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusPill
-                          variant={record.isActive ? 'success' : 'error'}
-                          label={record.isActive ? t('common.active') : t('admin.common.hidden')}
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-center tabular-nums text-[var(--text-secondary)]">
-                        {record.sortOrder || 0}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(record)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                            title={t('admin.common.actions')}
-                          >
-                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteConfirmId(record.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                            title={t('common.delete')}
-                          >
-                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </motion.tbody>
-            </table>
-          </div>
+                        ),
+                      },
+                      { label: t('admin.categories.table.order'), value: record.sortOrder || 0 },
+                    ]}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(record)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                          title={t('common.edit')}
+                          aria-label={t('common.edit')}
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(record.id)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                          title={t('common.delete')}
+                          aria-label={t('common.delete')}
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                      </>
+                    }
+                  />
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* Footer: tổng số danh mục — tree hiển thị toàn bộ, không phân trang */}

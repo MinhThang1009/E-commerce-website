@@ -48,6 +48,7 @@ import { useUiStore } from '@/stores/ui-store';
 import StatusPill from '../components/StatusPill';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminStatCard from '../components/AdminStatCard';
+import AdminMobileCard from '../components/AdminMobileCard';
 
 interface UserFormData {
   firstName: string;
@@ -289,141 +290,259 @@ const UsersPage: React.FC = () => {
             <h3 className="text-lg font-semibold mb-1.5">{t('common.noData')}</h3>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[800px]">
-              <thead className="bg-white/[0.02]">
-                <tr>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.users.table.user')}
-                  </th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
-                    {t('admin.users.table.role')}
-                  </th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[150px]">
-                    {t('common.status')}
-                  </th>
-                  <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
-                    {t('admin.users.table.createdAt')}
-                  </th>
-                  <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
-                    {t('admin.common.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <motion.tbody variants={rowStagger} initial="initial" animate="animate">
-                {users.map((record) => (
-                  <motion.tr
-                    key={record.id}
-                    variants={rowItem}
-                    className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        {record.avatar ? (
-                          <img
-                            src={record.avatar}
-                            alt={`${record.firstName} ${record.lastName}`}
-                            className="w-10 h-10 rounded-full object-cover ring-2 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--color-primary-dark)] flex items-center justify-center text-white font-semibold text-sm ring-2 ring-[var(--accent)]/20">
-                            {(record.firstName?.[0] || 'U').toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="font-medium text-[var(--text-primary)] truncate">
-                            {record.firstName} {record.lastName}
-                          </div>
-                          <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1">
-                            <Mail className="w-3 h-3" />
-                            {record.email}
-                          </div>
-                          {record.phone && (
-                            <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {record.phone}
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm min-w-[800px]">
+                <thead className="bg-white/[0.02]">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.users.table.user')}
+                    </th>
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                      {t('admin.users.table.role')}
+                    </th>
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[150px]">
+                      {t('common.status')}
+                    </th>
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                      {t('admin.users.table.createdAt')}
+                    </th>
+                    <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
+                      {t('admin.common.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <motion.tbody variants={rowStagger} initial="initial" animate="animate">
+                  {users.map((record) => (
+                    <motion.tr
+                      key={record.id}
+                      variants={rowItem}
+                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          {record.avatar ? (
+                            <img
+                              src={record.avatar}
+                              alt={`${record.firstName} ${record.lastName}`}
+                              className="w-10 h-10 rounded-full object-cover ring-2 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--color-primary-dark)] flex items-center justify-center text-white font-semibold text-sm ring-2 ring-[var(--accent)]/20">
+                              {(record.firstName?.[0] || 'U').toUpperCase()}
                             </div>
                           )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusPill
-                        variant={record.role === 'admin' ? 'error' : 'info'}
-                        label={
-                          <span className="inline-flex items-center gap-1">
-                            {record.role === 'admin' ? (
-                              <Crown className="w-3 h-3" />
-                            ) : (
-                              <User className="w-3 h-3" />
+                          <div className="min-w-0">
+                            <div className="font-medium text-[var(--text-primary)] truncate">
+                              {record.firstName} {record.lastName}
+                            </div>
+                            <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {record.email}
+                            </div>
+                            {record.phone && (
+                              <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {record.phone}
+                              </div>
                             )}
-                            {record.role === 'admin'
-                              ? t('admin.users.roles.admin')
-                              : t('admin.users.roles.customer')}
-                          </span>
-                        }
-                        showDot={false}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="space-y-1">
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
                         <StatusPill
-                          variant={record.isActive ? 'success' : 'error'}
+                          variant={record.role === 'admin' ? 'error' : 'info'}
                           label={
-                            record.isActive
-                              ? t('admin.users.status.active')
-                              : t('admin.users.status.locked')
-                          }
-                        />
-                        <StatusPill
-                          variant={record.isEmailVerified ? 'info' : 'warning'}
-                          label={
-                            record.isEmailVerified
-                              ? t('admin.users.table.verified')
-                              : t('admin.users.table.notVerified')
+                            <span className="inline-flex items-center gap-1">
+                              {record.role === 'admin' ? (
+                                <Crown className="w-3 h-3" />
+                              ) : (
+                                <User className="w-3 h-3" />
+                              )}
+                              {record.role === 'admin'
+                                ? t('admin.users.roles.admin')
+                                : t('admin.users.roles.customer')}
+                            </span>
                           }
                           showDot={false}
                         />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="space-y-1">
+                          <StatusPill
+                            variant={record.isActive ? 'success' : 'error'}
+                            label={
+                              record.isActive
+                                ? t('admin.users.status.active')
+                                : t('admin.users.status.locked')
+                            }
+                          />
+                          <StatusPill
+                            variant={record.isEmailVerified ? 'info' : 'warning'}
+                            label={
+                              record.isEmailVerified
+                                ? t('admin.users.table.verified')
+                                : t('admin.users.table.notVerified')
+                            }
+                            showDot={false}
+                          />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)] tabular-nums text-xs">
+                        {formatDate(record.createdAt, { dateStyle: 'short' })}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
+                            title={t('admin.orders.actions.view')}
+                          >
+                            <Eye className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(record)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                            title={t('common.edit')}
+                            aria-label={t('common.edit')}
+                          >
+                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(record.id)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                            title={t('common.delete')}
+                            aria-label={t('common.delete')}
+                          >
+                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </motion.tbody>
+              </table>
+            </div>
+
+            {/* Mobile: card-list thay cho table */}
+            <div className="space-y-3 p-3 md:hidden">
+              {users.map((record) => (
+                <AdminMobileCard
+                  key={record.id}
+                  media={
+                    record.avatar ? (
+                      <img
+                        src={record.avatar}
+                        alt={`${record.firstName} ${record.lastName}`}
+                        className="h-10 w-10 rounded-full object-cover ring-2 ring-[var(--border-default)]"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[var(--accent)] to-[var(--color-primary-dark)] text-sm font-semibold text-white ring-2 ring-[var(--accent)]/20">
+                        {(record.firstName?.[0] || 'U').toUpperCase()}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)] tabular-nums text-xs">
-                      {formatDate(record.createdAt, { dateStyle: 'short' })}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
-                          title={t('admin.orders.actions.view')}
-                        >
-                          <Eye className="w-4 h-4" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(record)}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                          title={t('common.edit')}
-                          aria-label={t('common.edit')}
-                        >
-                          <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(record.id)}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                          title={t('common.delete')}
-                          aria-label={t('common.delete')}
-                        >
-                          <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
-              </motion.tbody>
-            </table>
-          </div>
+                    )
+                  }
+                  title={`${record.firstName} ${record.lastName}`}
+                  subtitle={
+                    <span className="inline-flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {record.email}
+                    </span>
+                  }
+                  status={
+                    <StatusPill
+                      variant={record.role === 'admin' ? 'error' : 'info'}
+                      label={
+                        <span className="inline-flex items-center gap-1">
+                          {record.role === 'admin' ? (
+                            <Crown className="h-3 w-3" />
+                          ) : (
+                            <User className="h-3 w-3" />
+                          )}
+                          {record.role === 'admin'
+                            ? t('admin.users.roles.admin')
+                            : t('admin.users.roles.customer')}
+                        </span>
+                      }
+                      showDot={false}
+                    />
+                  }
+                  fields={[
+                    {
+                      label: t('common.status'),
+                      value: (
+                        <span className="flex flex-wrap justify-end gap-1">
+                          <StatusPill
+                            variant={record.isActive ? 'success' : 'error'}
+                            label={
+                              record.isActive
+                                ? t('admin.users.status.active')
+                                : t('admin.users.status.locked')
+                            }
+                          />
+                          <StatusPill
+                            variant={record.isEmailVerified ? 'info' : 'warning'}
+                            label={
+                              record.isEmailVerified
+                                ? t('admin.users.table.verified')
+                                : t('admin.users.table.notVerified')
+                            }
+                            showDot={false}
+                          />
+                        </span>
+                      ),
+                    },
+                    ...(record.phone
+                      ? [
+                          {
+                            label: <Phone className="h-3.5 w-3.5" />,
+                            value: record.phone,
+                          },
+                        ]
+                      : []),
+                    {
+                      label: t('admin.users.table.createdAt'),
+                      value: formatDate(record.createdAt, { dateStyle: 'short' }),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)]"
+                        title={t('admin.orders.actions.view')}
+                        aria-label={t('admin.orders.actions.view')}
+                      >
+                        <Eye className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(record)}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                        title={t('common.edit')}
+                        aria-label={t('common.edit')}
+                      >
+                        <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(record.id)}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                        title={t('common.delete')}
+                        aria-label={t('common.delete')}
+                      >
+                        <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </>
+                  }
+                />
+              ))}
+            </div>
+          </>
         )}
 
         {totalPages > 1 && (

@@ -43,6 +43,7 @@ import {
 } from '@/components/ui';
 import StatusPill from '../../components/StatusPill';
 import AdminPageHeader from '../../components/AdminPageHeader';
+import AdminMobileCard from '../../components/AdminMobileCard';
 
 interface BrandFormData {
   name: string;
@@ -220,105 +221,183 @@ const BrandsPage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-white/[0.02]">
-                <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
-                    {t('admin.brands.table.logo')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.brands.table.name')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.brands.table.website') || 'Website'}
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.brands.table.status')}
-                  </th>
-                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
-                    {t('admin.brands.table.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <motion.tbody variants={rowStagger} initial="initial" animate="animate">
-                {paginatedBrands.map((record: any) => {
-                  const fullLogoUrl = getUploadUrl(record.logoUrl);
-                  return (
-                    <motion.tr
-                      key={record.id}
-                      variants={rowItem}
-                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--color-secondary)]/30 transition flex items-center justify-center p-1.5">
-                          {record.logoUrl ? (
-                            <img
-                              src={fullLogoUrl}
-                              alt={record.name}
-                              className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
-                            />
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.02]">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                      {t('admin.brands.table.logo')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.brands.table.name')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.brands.table.website') || 'Website'}
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.brands.table.status')}
+                    </th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[120px]">
+                      {t('admin.brands.table.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <motion.tbody variants={rowStagger} initial="initial" animate="animate">
+                  {paginatedBrands.map((record: any) => {
+                    const fullLogoUrl = getUploadUrl(record.logoUrl);
+                    return (
+                      <motion.tr
+                        key={record.id}
+                        variants={rowItem}
+                        className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--color-secondary)]/30 transition flex items-center justify-center p-1.5">
+                            {record.logoUrl ? (
+                              <img
+                                src={fullLogoUrl}
+                                alt={record.name}
+                                className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300"
+                              />
+                            ) : (
+                              <Award
+                                className="w-5 h-5 text-[var(--text-tertiary)]"
+                                strokeWidth={1.75}
+                              />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-[var(--text-primary)]">
+                            {record.name}
+                          </div>
+                          <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums">
+                            {record.slug}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {record.website ? (
+                            <a
+                              href={record.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline transition"
+                            >
+                              <Globe className="w-3.5 h-3.5" strokeWidth={2.25} />
+                              <span className="text-sm">{new URL(record.website).hostname}</span>
+                            </a>
                           ) : (
-                            <Award
-                              className="w-5 h-5 text-[var(--text-tertiary)]"
-                              strokeWidth={1.75}
-                            />
+                            <span className="text-[var(--text-tertiary)]">—</span>
                           )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-[var(--text-primary)]">{record.name}</div>
-                        <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums">
-                          {record.slug}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        {record.website ? (
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusPill
+                            variant={record.isActive ? 'success' : 'error'}
+                            label={record.isActive ? t('common.active') : t('admin.common.hidden')}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => handleEdit(record)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                              title={t('admin.common.actions')}
+                            >
+                              <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(record.id)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                              title={t('common.delete')}
+                            >
+                              <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </motion.tbody>
+              </table>
+            </div>
+
+            {/* Mobile: card-list thay cho table */}
+            <div className="space-y-3 p-3 md:hidden">
+              {paginatedBrands.map((record: any) => {
+                const fullLogoUrl = getUploadUrl(record.logoUrl);
+                return (
+                  <AdminMobileCard
+                    key={record.id}
+                    media={
+                      <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-[var(--bg-surface)] p-1.5 ring-1 ring-[var(--border-default)]">
+                        {record.logoUrl ? (
+                          <img
+                            src={fullLogoUrl}
+                            alt={record.name}
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <Award
+                            className="h-5 w-5 text-[var(--text-tertiary)]"
+                            strokeWidth={1.75}
+                          />
+                        )}
+                      </div>
+                    }
+                    title={record.name}
+                    subtitle={record.slug}
+                    status={
+                      <StatusPill
+                        variant={record.isActive ? 'success' : 'error'}
+                        label={record.isActive ? t('common.active') : t('admin.common.hidden')}
+                      />
+                    }
+                    fields={[
+                      {
+                        label: t('admin.brands.table.website') || 'Website',
+                        value: record.website ? (
                           <a
                             href={record.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline transition"
+                            className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline"
                           >
-                            <Globe className="w-3.5 h-3.5" strokeWidth={2.25} />
-                            <span className="text-sm">{new URL(record.website).hostname}</span>
+                            <Globe className="h-3.5 w-3.5" strokeWidth={2.25} />
+                            <span>{new URL(record.website).hostname}</span>
                           </a>
                         ) : (
                           <span className="text-[var(--text-tertiary)]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusPill
-                          variant={record.isActive ? 'success' : 'error'}
-                          label={record.isActive ? t('common.active') : t('admin.common.hidden')}
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(record)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                            title={t('admin.common.actions')}
-                          >
-                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteConfirmId(record.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                            title={t('common.delete')}
-                          >
-                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </motion.tbody>
-            </table>
-          </div>
+                        ),
+                      },
+                    ]}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(record)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                          title={t('common.edit')}
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(record.id)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                      </>
+                    }
+                  />
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* Pagination */}

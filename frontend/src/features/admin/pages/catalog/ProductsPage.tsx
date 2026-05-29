@@ -58,6 +58,7 @@ import {
 import StatusPill, { type StatusVariant } from '../../components/StatusPill';
 import AdminPageHeader from '../../components/AdminPageHeader';
 import AdminStatCard from '../../components/AdminStatCard';
+import AdminMobileCard from '../../components/AdminMobileCard';
 
 interface AdminProductRow {
   id: string;
@@ -522,223 +523,386 @@ const ProductsPage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[var(--bg-surface)] dark:bg-white/[0.02]">
-                <tr>
-                  <th className="px-4 py-3 text-left w-10">
-                    <input
-                      type="checkbox"
-                      className="admin-checkbox"
-                      checked={
-                        productList.length > 0 && selectedRowKeys.length === productList.length
-                      }
-                      onChange={(e) => handleSelectAll(e.target.checked)}
-                      aria-label={t('admin.products.table.image')}
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
-                    {t('admin.products.table.image')}
-                  </th>
-                  <th className="px-4 py-3 text-left">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('name')}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
-                    >
-                      {t('admin.products.table.name')}
-                      <SortIcon field="name" />
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                    {t('admin.products.table.category')}
-                  </th>
-                  <th className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('price')}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
-                    >
-                      {t('admin.products.table.price')}
-                      <SortIcon field="price" />
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleSort('stockQuantity')}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
-                    >
-                      {t('admin.products.table.stock')}
-                      <SortIcon field="stockQuantity" />
-                    </button>
-                  </th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
-                    {t('admin.products.table.status')}
-                  </th>
-                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
-                    {t('admin.products.table.actions')}
-                  </th>
-                </tr>
-              </thead>
-              <motion.tbody variants={rowStagger} initial="initial" animate="animate">
-                {productList.map((product) => {
-                  const stock =
-                    product.stockQuantity !== undefined ? product.stockQuantity : product.stock;
-                  const stockVal = stock ?? 0;
-                  const sc = stockColor(stockVal);
-                  const stockPct =
-                    stockVal === 0 ? 0 : Math.min(100, (stockVal / STOCK_BAR_MAX) * 100);
-                  return (
-                    <motion.tr
-                      key={product.id}
-                      variants={rowItem}
-                      className="border-t border-[var(--border-default)] hover:bg-[var(--accent)]/[0.05] transition group"
-                    >
-                      <td className="px-4 py-3">
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-[var(--bg-surface)] dark:bg-white/[0.02]">
+                  <tr>
+                    <th className="px-4 py-3 text-left w-10">
+                      <input
+                        type="checkbox"
+                        className="admin-checkbox"
+                        checked={
+                          productList.length > 0 && selectedRowKeys.length === productList.length
+                        }
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        aria-label={t('admin.products.table.image')}
+                      />
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-20">
+                      {t('admin.products.table.image')}
+                    </th>
+                    <th className="px-4 py-3 text-left">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('name')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
+                      >
+                        {t('admin.products.table.name')}
+                        <SortIcon field="name" />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.products.table.category')}
+                    </th>
+                    <th className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('price')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
+                      >
+                        {t('admin.products.table.price')}
+                        <SortIcon field="price" />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('stockQuantity')}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--accent)] transition"
+                      >
+                        {t('admin.products.table.stock')}
+                        <SortIcon field="stockQuantity" />
+                      </button>
+                    </th>
+                    <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
+                      {t('admin.products.table.status')}
+                    </th>
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] w-[140px]">
+                      {t('admin.products.table.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <motion.tbody variants={rowStagger} initial="initial" animate="animate">
+                  {productList.map((product) => {
+                    const stock =
+                      product.stockQuantity !== undefined ? product.stockQuantity : product.stock;
+                    const stockVal = stock ?? 0;
+                    const sc = stockColor(stockVal);
+                    const stockPct =
+                      stockVal === 0 ? 0 : Math.min(100, (stockVal / STOCK_BAR_MAX) * 100);
+                    return (
+                      <motion.tr
+                        key={product.id}
+                        variants={rowItem}
+                        className="border-t border-[var(--border-default)] hover:bg-[var(--accent)]/[0.05] transition group"
+                      >
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            className="admin-checkbox"
+                            checked={selectedRowKeys.includes(product.id)}
+                            onChange={(e) => handleSelectRow(product, e.target.checked)}
+                            aria-label={`Chọn ${product.name}`}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition">
+                            <img
+                              src={product.images?.[0] || '/placeholder-image.jpg'}
+                              alt={product.name}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 max-w-[280px]">
+                          <div className="font-medium text-[var(--text-primary)] truncate">
+                            {product.name}
+                          </div>
+                          {(product.sku as string | undefined) && (
+                            <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums mt-0.5 truncate">
+                              {product.sku as string}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {product.categories && product.categories.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {product.categories.slice(0, 2).map((cat, index) => {
+                                const c = categoryColor(cat.name);
+                                return (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium"
+                                    style={{ backgroundColor: `${c}1f`, color: c }}
+                                  >
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full"
+                                      style={{ backgroundColor: c }}
+                                    />
+                                    {cat.name}
+                                  </span>
+                                );
+                              })}
+                              {product.categories.length > 2 && (
+                                <span className="text-[11px] text-[var(--text-tertiary)]">
+                                  +{product.categories.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[var(--text-tertiary)]">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums font-semibold text-[var(--text-primary)]">
+                          {calculateDisplayPrice(product)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="text-xs font-bold tabular-nums w-8 text-right"
+                              style={{ color: sc }}
+                            >
+                              {stockVal}
+                            </span>
+                            <div className="h-1.5 flex-1 max-w-[64px] rounded-full bg-[var(--border-default)] overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${stockPct}%`, backgroundColor: sc }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Select
+                            value={product.status}
+                            onValueChange={(value) => handleStatusChange(product.id, value)}
+                          >
+                            <SelectTrigger className="h-8 w-auto text-xs border-0 border-transparent bg-transparent dark:bg-transparent shadow-none px-1 gap-1 hover:bg-transparent dark:hover:bg-transparent focus:ring-0 focus-visible:ring-2 focus-visible:ring-[var(--accent)] data-[state=open]:bg-transparent dark:data-[state=open]:bg-transparent">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions
+                                .filter((opt) => opt.value !== 'all')
+                                .map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    <StatusPill
+                                      variant={STATUS_VARIANT[opt.value] || 'neutral'}
+                                      label={opt.label}
+                                    />
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button
+                              type="button"
+                              onClick={() => openQuickView(product)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
+                              title={t('admin.products.actions.view')}
+                            >
+                              <Eye className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                              title={t('admin.products.actions.edit')}
+                            >
+                              <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCloneProduct(product.id)}
+                              disabled={isCloning}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              title={t('admin.products.actions.clone')}
+                            >
+                              <Copy className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(product.id)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                              title={t('admin.products.actions.delete')}
+                            >
+                              <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </motion.tbody>
+              </table>
+            </div>
+
+            {/* Mobile: card-list thay cho table */}
+            <div className="space-y-3 p-3 md:hidden">
+              {productList.map((product) => {
+                const stock =
+                  product.stockQuantity !== undefined ? product.stockQuantity : product.stock;
+                const stockVal = stock ?? 0;
+                const sc = stockColor(stockVal);
+                const stockPct =
+                  stockVal === 0 ? 0 : Math.min(100, (stockVal / STOCK_BAR_MAX) * 100);
+                return (
+                  <AdminMobileCard
+                    key={product.id}
+                    media={
+                      <div className="h-12 w-12 overflow-hidden rounded-lg bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)]">
+                        <img
+                          src={product.images?.[0] || '/placeholder-image.jpg'}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
+                          }}
+                        />
+                      </div>
+                    }
+                    title={
+                      <span className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          className="admin-checkbox"
+                          className="admin-checkbox shrink-0"
                           checked={selectedRowKeys.includes(product.id)}
                           onChange={(e) => handleSelectRow(product, e.target.checked)}
                           aria-label={`Chọn ${product.name}`}
                         />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-[var(--bg-surface)] ring-1 ring-[var(--border-default)] group-hover:ring-[var(--accent)]/30 transition">
-                          <img
-                            src={product.images?.[0] || '/placeholder-image.jpg'}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder-image.jpg';
-                            }}
-                          />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 max-w-[280px]">
-                        <div className="font-medium text-[var(--text-primary)] truncate">
-                          {product.name}
-                        </div>
-                        {(product.sku as string | undefined) && (
-                          <div className="text-[11px] text-[var(--text-tertiary)] tabular-nums mt-0.5 truncate">
-                            {product.sku as string}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {product.categories && product.categories.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {product.categories.slice(0, 2).map((cat, index) => {
-                              const c = categoryColor(cat.name);
-                              return (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium"
-                                  style={{ backgroundColor: `${c}1f`, color: c }}
-                                >
+                        <span className="truncate">{product.name}</span>
+                      </span>
+                    }
+                    subtitle={(product.sku as string | undefined) || undefined}
+                    status={
+                      <Select
+                        value={product.status}
+                        onValueChange={(value) => handleStatusChange(product.id, value)}
+                      >
+                        <SelectTrigger className="h-8 w-auto gap-1 border-0 border-transparent bg-transparent px-1 text-xs shadow-none hover:bg-transparent focus:ring-0 focus-visible:ring-2 focus-visible:ring-[var(--accent)] data-[state=open]:bg-transparent dark:bg-transparent dark:hover:bg-transparent dark:data-[state=open]:bg-transparent">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions
+                            .filter((opt) => opt.value !== 'all')
+                            .map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                <StatusPill
+                                  variant={STATUS_VARIANT[opt.value] || 'neutral'}
+                                  label={opt.label}
+                                />
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    }
+                    fields={[
+                      {
+                        label: t('admin.products.table.category'),
+                        value:
+                          product.categories && product.categories.length > 0 ? (
+                            <span className="flex flex-wrap justify-end gap-1">
+                              {product.categories.slice(0, 2).map((cat, index) => {
+                                const c = categoryColor(cat.name);
+                                return (
                                   <span
-                                    className="w-1.5 h-1.5 rounded-full"
-                                    style={{ backgroundColor: c }}
-                                  />
-                                  {cat.name}
+                                    key={index}
+                                    className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-medium"
+                                    style={{ backgroundColor: `${c}1f`, color: c }}
+                                  >
+                                    <span
+                                      className="h-1.5 w-1.5 rounded-full"
+                                      style={{ backgroundColor: c }}
+                                    />
+                                    {cat.name}
+                                  </span>
+                                );
+                              })}
+                              {product.categories.length > 2 && (
+                                <span className="text-[11px] text-[var(--text-tertiary)]">
+                                  +{product.categories.length - 2}
                                 </span>
-                              );
-                            })}
-                            {product.categories.length > 2 && (
-                              <span className="text-[11px] text-[var(--text-tertiary)]">
-                                +{product.categories.length - 2}
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-[var(--text-tertiary)]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap tabular-nums font-semibold text-[var(--text-primary)]">
-                        {calculateDisplayPrice(product)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="text-xs font-bold tabular-nums w-8 text-right"
-                            style={{ color: sc }}
-                          >
-                            {stockVal}
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-[var(--text-tertiary)]">—</span>
+                          ),
+                      },
+                      {
+                        label: t('admin.products.table.price'),
+                        value: (
+                          <span className="font-semibold tabular-nums text-[var(--text-primary)]">
+                            {calculateDisplayPrice(product)}
                           </span>
-                          <div className="h-1.5 flex-1 max-w-[64px] rounded-full bg-[var(--border-default)] overflow-hidden">
-                            <div
-                              className="h-full rounded-full"
-                              style={{ width: `${stockPct}%`, backgroundColor: sc }}
-                            />
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Select
-                          value={product.status}
-                          onValueChange={(value) => handleStatusChange(product.id, value)}
+                        ),
+                      },
+                      {
+                        label: t('admin.products.table.stock'),
+                        value: (
+                          <span className="flex items-center justify-end gap-2">
+                            <span
+                              className="w-8 text-right text-xs font-bold tabular-nums"
+                              style={{ color: sc }}
+                            >
+                              {stockVal}
+                            </span>
+                            <span className="h-1.5 w-16 overflow-hidden rounded-full bg-[var(--border-default)]">
+                              <span
+                                className="block h-full rounded-full"
+                                style={{ width: `${stockPct}%`, backgroundColor: sc }}
+                              />
+                            </span>
+                          </span>
+                        ),
+                      },
+                    ]}
+                    actions={
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openQuickView(product)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)]"
+                          title={t('admin.products.actions.view')}
                         >
-                          <SelectTrigger className="h-8 w-auto text-xs border-0 border-transparent bg-transparent dark:bg-transparent shadow-none px-1 gap-1 hover:bg-transparent dark:hover:bg-transparent focus:ring-0 focus-visible:ring-2 focus-visible:ring-[var(--accent)] data-[state=open]:bg-transparent dark:data-[state=open]:bg-transparent">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {statusOptions
-                              .filter((opt) => opt.value !== 'all')
-                              .map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  <StatusPill
-                                    variant={STATUS_VARIANT[opt.value] || 'neutral'}
-                                    label={opt.label}
-                                  />
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-0.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={() => openQuickView(product)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
-                            title={t('admin.products.actions.view')}
-                          >
-                            <Eye className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                            title={t('admin.products.actions.edit')}
-                          >
-                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleCloneProduct(product.id)}
-                            disabled={isCloning}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] transition disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t('admin.products.actions.clone')}
-                          >
-                            <Copy className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteConfirmId(product.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                            title={t('admin.products.actions.delete')}
-                          >
-                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  );
-                })}
-              </motion.tbody>
-            </table>
-          </div>
+                          <Eye className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                          title={t('admin.products.actions.edit')}
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCloneProduct(product.id)}
+                          disabled={isCloning}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] disabled:cursor-not-allowed disabled:opacity-40"
+                          title={t('admin.products.actions.clone')}
+                        >
+                          <Copy className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmId(product.id)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                          title={t('admin.products.actions.delete')}
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                      </>
+                    }
+                  />
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* Pagination */}

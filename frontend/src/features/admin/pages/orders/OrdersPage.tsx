@@ -41,6 +41,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AdminPageHeader from '../../components/AdminPageHeader';
 import AdminStatCard from '../../components/AdminStatCard';
+import AdminMobileCard from '../../components/AdminMobileCard';
 import {
   Select,
   SelectTrigger,
@@ -437,7 +438,7 @@ const OrdersPage: React.FC = () => {
 
       {/* Orders table */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm min-w-[800px]">
             <thead className="bg-white/[0.02]">
               <tr>
@@ -620,6 +621,126 @@ const OrdersPage: React.FC = () => {
             </motion.tbody>
           </table>
         </div>
+
+        {/* Mobile: card-list thay cho table */}
+        {orders.length > 0 && (
+          <div className="space-y-3 p-3 md:hidden">
+            {orders.map((record: AdminOrder) => {
+              const statusConfig = STATUS_CONFIG[record.status as keyof typeof STATUS_CONFIG];
+              const paymentConfig =
+                PAYMENT_STATUS_CONFIG[record.paymentStatus as keyof typeof PAYMENT_STATUS_CONFIG];
+              const isCOD = record.paymentMethod === 'cod';
+
+              let paymentStatusText: string = record.paymentStatus;
+              if (record.paymentStatus === 'pending') {
+                paymentStatusText = isCOD
+                  ? t('admin.orders.paymentStatus.cod')
+                  : t('admin.orders.paymentStatus.pending');
+              } else if (record.paymentStatus === 'paid') {
+                paymentStatusText = t('admin.orders.paymentStatus.paid');
+              } else if (record.paymentStatus === 'failed') {
+                paymentStatusText = t('admin.orders.paymentStatus.failed');
+              } else if (record.paymentStatus === 'refunded') {
+                paymentStatusText = t('admin.orders.paymentStatus.refunded');
+              }
+
+              const warning =
+                record.status === 'delivered' &&
+                !isCOD &&
+                (record.paymentStatus === 'pending' || record.paymentStatus === 'failed')
+                  ? t('admin.orders.updateStatus.deliveredUnpaidNote')
+                  : record.paymentStatus === 'refunded' && record.status !== 'cancelled'
+                    ? t('admin.orders.updateStatus.refundedActiveNote')
+                    : record.status === 'cancelled' && record.paymentStatus === 'paid'
+                      ? t('admin.orders.updateStatus.cancelledRefundNote')
+                      : null;
+
+              const paymentTag = (
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${paymentConfig?.color || ''}`}
+                >
+                  {warning ? (
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                  ) : (
+                    paymentConfig?.Icon && <paymentConfig.Icon className="w-3.5 h-3.5" />
+                  )}
+                  {paymentStatusText}
+                </span>
+              );
+
+              return (
+                <AdminMobileCard
+                  key={record.id}
+                  title={record.number}
+                  subtitle={t('admin.orders.table.itemCount', {
+                    count: record.items?.length || 0,
+                  })}
+                  status={
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusConfig?.color || ''}`}
+                    >
+                      {statusConfig?.Icon && <statusConfig.Icon className="w-3.5 h-3.5 inline" />}{' '}
+                      {t(`admin.orders.status.${record.status}`)}
+                    </span>
+                  }
+                  fields={[
+                    {
+                      label: t('admin.orders.table.customer'),
+                      value: (
+                        <span className="font-medium text-[var(--text-primary)]">
+                          {record.User?.firstName} {record.User?.lastName}
+                        </span>
+                      ),
+                    },
+                    {
+                      label: t('admin.orders.table.createdAt'),
+                      value: formatDate(record.createdAt),
+                    },
+                    {
+                      label: t('admin.orders.table.total'),
+                      value: (
+                        <span className="font-semibold" style={{ color: 'var(--color-info)' }}>
+                          {formatCurrency(record.total)}
+                        </span>
+                      ),
+                    },
+                    {
+                      label: t('admin.orders.table.payment'),
+                      value: warning ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>{paymentTag}</TooltipTrigger>
+                          <TooltipContent>{warning}</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        paymentTag
+                      ),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleViewDetails(record)}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)]"
+                        title={t('admin.orders.actions.view')}
+                      >
+                        <Eye className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateStatus(record)}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                        title={t('admin.orders.actions.update')}
+                      >
+                        <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </>
+                  }
+                />
+              );
+            })}
+          </div>
+        )}
 
         {pagination && pagination.totalPages > 1 && (
           <div className="px-5 py-4 border-t border-[var(--border-default)]">

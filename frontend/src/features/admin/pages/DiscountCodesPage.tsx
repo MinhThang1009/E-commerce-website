@@ -47,6 +47,7 @@ import { useUiStore } from '@/stores/ui-store';
 import StatusPill from '../components/StatusPill';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminStatCard from '../components/AdminStatCard';
+import AdminMobileCard from '../components/AdminMobileCard';
 
 interface DiscountFormData {
   code: string;
@@ -285,7 +286,7 @@ const DiscountCodesPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm min-w-[800px]">
             <thead className="bg-white/[0.02]">
               <tr>
@@ -427,6 +428,94 @@ const DiscountCodesPage: React.FC = () => {
             </motion.tbody>
           </table>
         </div>
+
+        {/* Mobile: card-list thay cho table */}
+        {!isLoading && discountCodes.length > 0 && (
+          <div className="space-y-3 p-3 md:hidden">
+            {discountCodes.map((record: DiscountCode) => (
+              <AdminMobileCard
+                key={record.id}
+                title={<span className="font-mono font-semibold">{record.code}</span>}
+                status={
+                  <StatusPill
+                    variant={record.isActive ? 'success' : 'error'}
+                    label={
+                      record.isActive
+                        ? t('admin.discountCodes.status.active')
+                        : t('admin.discountCodes.status.paused')
+                    }
+                  />
+                }
+                fields={[
+                  {
+                    label: t('admin.discountCodes.table.type'),
+                    value: (
+                      <span className="inline-flex items-center gap-1 font-medium text-[var(--text-primary)]">
+                        {record.type === 'percent' ? (
+                          <Percent className="size-4 text-[var(--color-warning)]" />
+                        ) : (
+                          <Banknote className="size-4 text-[var(--color-success)]" />
+                        )}
+                        {record.type === 'percent' ? `${record.value}%` : formatPrice(record.value)}
+                      </span>
+                    ),
+                  },
+                  {
+                    label: t('admin.discountCodes.table.minOrder'),
+                    value: formatPrice(record.minOrderAmount),
+                  },
+                  {
+                    label: t('admin.discountCodes.table.period'),
+                    value: (
+                      <span className="text-right">
+                        {record.startDate
+                          ? dayjs(record.startDate).format('DD/MM/YYYY')
+                          : t('admin.discountCodes.table.unlimited')}
+                        {' → '}
+                        {record.endDate
+                          ? dayjs(record.endDate).format('DD/MM/YYYY')
+                          : t('admin.discountCodes.table.unlimited')}
+                      </span>
+                    ),
+                  },
+                  {
+                    label: t('admin.discountCodes.table.usage'),
+                    value: (
+                      <span>
+                        <span className="font-semibold text-[var(--color-info)]">
+                          {record.usedCount}
+                        </span>{' '}
+                        / {record.usageLimit || '∞'}
+                      </span>
+                    ),
+                  },
+                ]}
+                actions={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(record)}
+                      className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                      title={t('common.edit')}
+                      aria-label={t('common.edit')}
+                    >
+                      <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(record.id)}
+                      className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                      title={t('common.delete')}
+                      aria-label={t('common.delete')}
+                    >
+                      <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                    </button>
+                  </>
+                }
+              />
+            ))}
+          </div>
+        )}
 
         {totalPages > 1 && (
           <div className="px-5 py-4 border-t border-[var(--border-default)]">

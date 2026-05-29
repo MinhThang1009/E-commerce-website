@@ -4,7 +4,7 @@
  * @feature admin
  * @description API client functions cho feature admin
  */
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 
 export interface AdminOrder {
@@ -106,6 +106,9 @@ export function useGetAdminOrdersQuery(
       return data;
     },
     enabled: options?.skip !== undefined ? !options.skip : true,
+    // Giữ data trang/tìm-kiếm trước khi queryKey đổi → isLoading không bật lại mỗi keystroke
+    // → trang không return skeleton → ô search KHÔNG bị unmount (tránh mất focus/crash khi gõ)
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -925,7 +925,7 @@ const OrdersPage: React.FC = () => {
                       <span className="text-[var(--text-primary)]">
                         {selectedOrder.paymentMethod === 'cod'
                           ? t('admin.orders.details.paymentInfo.cod')
-                          : selectedOrder.paymentMethod.toUpperCase()}
+                          : selectedOrder.paymentMethod?.toUpperCase() || 'N/A'}
                       </span>
                     </div>
                     <div className="flex justify-between">

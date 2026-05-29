@@ -56,10 +56,6 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
       value: values.value.trim(),
     };
 
-    const savedAttributes = JSON.parse(localStorage.getItem('debug_attributes') || '[]');
-    savedAttributes.push(attributeData);
-    localStorage.setItem('debug_attributes', JSON.stringify(savedAttributes));
-
     onSave(attributeData);
     handleClose();
   });

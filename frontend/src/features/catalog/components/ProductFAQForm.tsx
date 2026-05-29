@@ -75,8 +75,10 @@ const ProductFAQForm: React.FC<ProductFAQFormProps> = ({ form }) => {
                 </div>
               </div>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
+                aria-label={t('common.delete')}
                 className="absolute top-2 right-2 text-[var(--color-danger)] hover:opacity-80"
                 onClick={() => removeFaq(index)}
               >
@@ -84,7 +86,7 @@ const ProductFAQForm: React.FC<ProductFAQFormProps> = ({ form }) => {
               </Button>
             </div>
           ))}
-          <Button variant="outline" onClick={addFaq} className="w-full border-dashed">
+          <Button type="button" variant="outline" onClick={addFaq} className="w-full border-dashed">
             <Plus className="size-4" />
             {t('admin.products.faq.addButton')}
           </Button>

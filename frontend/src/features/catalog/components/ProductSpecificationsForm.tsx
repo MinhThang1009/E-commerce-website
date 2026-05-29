@@ -135,7 +135,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       </p>
 
       <div className="mb-6">
-        <Button size="lg" onClick={addSpecification} className="admin-btn-primary">
+        <Button type="button" size="lg" onClick={addSpecification} className="admin-btn-primary">
           <Plus className="size-4" />
           {t('admin.products.specs.addButton')}
         </Button>
@@ -190,8 +190,10 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
                     </SelectContent>
                   </Select>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="icon"
+                    aria-label={t('common.delete')}
                     className="text-[var(--color-danger)] hover:opacity-80"
                     onClick={() => removeSpecification(spec.id)}
                   >

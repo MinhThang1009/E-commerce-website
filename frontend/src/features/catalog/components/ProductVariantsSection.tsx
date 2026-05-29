@@ -43,7 +43,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
             <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
           </p>
         </div>
-        <Button onClick={onAddVariant} className="admin-btn-primary">
+        <Button type="button" onClick={onAddVariant} className="admin-btn-primary">
           <Plus className="size-4" />
           {t('productSection.variants.addButton')}
         </Button>
@@ -132,16 +132,20 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t('common.edit')}
                         className="size-8"
                         onClick={() => onEditVariant(variant)}
                       >
                         <Pencil className="size-4" />
                       </Button>
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t('common.delete')}
                         className="size-8 text-[var(--color-danger)] hover:opacity-80 hover:bg-[var(--color-danger)]/10"
                         onClick={() => onDeleteVariant(variant.id!)}
                       >

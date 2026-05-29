@@ -73,6 +73,16 @@ const rowItem = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: easeOutQuart } },
 };
 
+// Lấy hostname an toàn — website thiếu scheme (vd "techstore.vn") hoặc malformed sẽ làm
+// new URL() throw, fallback về chuỗi gốc thay vì crash cả bảng.
+const safeHostname = (url: string): string => {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+};
+
 const BrandsPage: React.FC = () => {
   const { t } = useTranslation();
   const addNotification = useUiStore((s) => s.addNotification);
@@ -285,7 +295,7 @@ const BrandsPage: React.FC = () => {
                               className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline transition"
                             >
                               <Globe className="w-3.5 h-3.5" strokeWidth={2.25} />
-                              <span className="text-sm">{new URL(record.website).hostname}</span>
+                              <span className="text-sm">{safeHostname(record.website)}</span>
                             </a>
                           ) : (
                             <span className="text-[var(--text-tertiary)]">—</span>
@@ -366,7 +376,7 @@ const BrandsPage: React.FC = () => {
                             className="inline-flex items-center gap-1.5 text-[var(--accent)] hover:underline"
                           >
                             <Globe className="h-3.5 w-3.5" strokeWidth={2.25} />
-                            <span>{new URL(record.website).hostname}</span>
+                            <span>{safeHostname(record.website)}</span>
                           </a>
                         ) : (
                           <span className="text-[var(--text-tertiary)]">—</span>

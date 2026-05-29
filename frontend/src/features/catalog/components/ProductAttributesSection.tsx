@@ -42,7 +42,7 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
             <strong>{t('common.note')}:</strong> {t('productSection.attr.note')}
           </p>
         </div>
-        <Button onClick={onAddAttribute} className="admin-btn-primary">
+        <Button type="button" onClick={onAddAttribute} className="admin-btn-primary">
           <Plus className="size-4" />
           {t('productSection.attr.addButton')}
         </Button>
@@ -98,16 +98,20 @@ const ProductAttributesSection: React.FC<ProductAttributesSectionProps> = ({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t('common.edit')}
                         className="size-8"
                         onClick={() => onEditAttribute(attr)}
                       >
                         <Pencil className="size-4" />
                       </Button>
                       <Button
+                        type="button"
                         variant="ghost"
                         size="icon"
+                        aria-label={t('common.delete')}
                         className="size-8 text-[var(--color-danger)] hover:opacity-80 hover:bg-[var(--color-danger)]/10"
                         onClick={() => onDeleteAttribute(attr.id!)}
                       >

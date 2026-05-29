@@ -246,7 +246,12 @@ const InventoryPage: React.FC = () => {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" onClick={onEdit}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            aria-label={t('inventory.editStock')}
+          >
             <Pencil className="size-4" />
           </Button>
         </TooltipTrigger>

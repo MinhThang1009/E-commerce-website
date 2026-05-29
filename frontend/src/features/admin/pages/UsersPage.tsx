@@ -403,6 +403,8 @@ const UsersPage: React.FC = () => {
                           type="button"
                           onClick={() => handleEdit(record)}
                           className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                          title={t('common.edit')}
+                          aria-label={t('common.edit')}
                         >
                           <Pencil className="w-4 h-4" strokeWidth={2.25} />
                         </button>
@@ -410,6 +412,8 @@ const UsersPage: React.FC = () => {
                           type="button"
                           onClick={() => handleDelete(record.id)}
                           className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                          title={t('common.delete')}
+                          aria-label={t('common.delete')}
                         >
                           <Trash2 className="w-4 h-4" strokeWidth={2.25} />
                         </button>

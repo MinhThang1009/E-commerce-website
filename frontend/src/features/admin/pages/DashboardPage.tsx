@@ -16,7 +16,6 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownRight,
-  TrendingUp,
   Package,
   Eye,
   Clock,
@@ -439,83 +438,8 @@ const DashboardPage: React.FC = () => {
         {/* ===== CHARTS ===== */}
         <DashboardCharts />
 
-        {/* ===== ROW BOTTOM: Top Products + Low Stock side by side ===== */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          {/* Top products */}
-          <div className="admin-kpi-card admin-card-glow overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-[var(--accent)]" strokeWidth={2.25} />
-                <h2 className="text-sm font-semibold">
-                  {t('admin.dashboard.sections.topProducts')}
-                </h2>
-              </div>
-              <Link
-                to={ROUTES.ADMIN_PRODUCTS}
-                className="text-xs font-medium text-[var(--accent)] hover:underline"
-              >
-                {t('admin.dashboard.sections.viewAll')} →
-              </Link>
-            </div>
-            <div className="p-4">
-              {stats?.topProducts && stats.topProducts.length > 0 ? (
-                <div className="space-y-2.5">
-                  {stats.topProducts.slice(0, 5).map((item, index) => (
-                    <div
-                      key={item.product.id ?? index}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition"
-                    >
-                      <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[10px] font-bold text-[var(--accent)] tabular-nums">
-                        {index + 1}
-                      </span>
-                      <div className="flex-shrink-0 w-9 h-9 rounded-lg overflow-hidden bg-[var(--bg-surface)]">
-                        {item.product.images?.[0] ? (
-                          <img
-                            src={item.product.images[0]}
-                            alt={item.product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[10px] text-[var(--text-tertiary)]">
-                            <Package className="w-4 h-4" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-[var(--text-primary)] truncate">
-                          {item.product.name}
-                        </p>
-                        <div className="flex items-center gap-2 text-[10px]">
-                          <span className="text-[var(--text-tertiary)] tabular-nums">
-                            {formatNumber(item.totalSold)} {t('admin.dashboard.table.sold')}
-                          </span>
-                          <span className="text-[var(--admin-success)] tabular-nums font-medium">
-                            {formatPrice(item.totalRevenue)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center py-10 gap-3">
-                  <div className="w-14 h-14 rounded-2xl bg-[var(--accent)]/10 flex items-center justify-center">
-                    <Package className="w-7 h-7 text-[var(--accent)]" strokeWidth={1.75} />
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)] font-medium">
-                    {t('admin.dashboard.table.noProductData')}
-                  </p>
-                  <Link
-                    to={ROUTES.ADMIN_PRODUCTS}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--accent)]/12 text-[var(--accent)] text-xs font-medium hover:bg-[var(--accent)]/20 transition"
-                  >
-                    {t('admin.dashboard.sections.viewAll')} →
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-
+        {/* ===== ROW BOTTOM: Cảnh báo sắp hết hàng — full-width, item lưới 2 cột ===== */}
+        <div className="mt-4">
           {/* Low Stock */}
           {lowStockProducts.length > 0 && (
             <div id="low-stock-widget" className="admin-kpi-card admin-card-glow overflow-hidden">
@@ -523,8 +447,8 @@ const DashboardPage: React.FC = () => {
                 <AlertTriangle className="w-4 h-4 text-[var(--admin-warning)]" strokeWidth={2.25} />
                 <h2 className="text-sm font-semibold">{t('admin.dashboard.lowStock.title')}</h2>
               </div>
-              <div className="p-4 space-y-2">
-                {lowStockProducts.slice(0, 5).map((product) => {
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {lowStockProducts.slice(0, 8).map((product) => {
                   const isOut = product.stockQuantity === 0;
                   return (
                     <div

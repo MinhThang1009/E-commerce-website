@@ -1671,6 +1671,10 @@
       "title": "Quản lý mã giảm giá",
       "addCode": "Thêm mã giảm giá",
       "editCode": "Sửa mã giảm giá",
+      "empty": {
+        "title": "Chưa có mã giảm giá",
+        "description": "Tạo mã giảm giá đầu tiên để chạy khuyến mãi."
+      },
       "stats": {
         "running": "Đang chạy",
         "expired": "Hết hạn",
@@ -3691,6 +3695,11 @@
     "cancel": "Hủy",
     "invalidQty": "Số lượng không hợp lệ",
     "updateSuccess": "Cập nhật tồn kho thành công",
-    "updateError": "Cập nhật tồn kho thất bại"
+    "updateError": "Cập nhật tồn kho thất bại",
+    "loadError": "Không tải được tồn kho",
+    "empty": {
+      "title": "Chưa có sản phẩm trong kho",
+      "description": "Thêm sản phẩm để bắt đầu theo dõi tồn kho."
+    }
   }
 }

@@ -324,205 +324,217 @@ const InventoryPage: React.FC = () => {
 
       {/* Table */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-sm">
-            <thead className="bg-white/[0.02]">
-              <tr>
-                <th className="w-10 px-3 py-3" />
-                {['colProduct', 'colSku', 'colStock', 'colStatus', 'colAction'].map((key) => (
-                  <th
-                    key={key}
-                    className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
-                  >
-                    {t(`inventory.${key}`)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-[var(--text-tertiary)]">
-                    {t('common.loading')}
-                  </td>
-                </tr>
-              ) : products.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-[var(--text-tertiary)]">
-                    {t('common.noData')}
-                  </td>
-                </tr>
-              ) : (
-                products.map((product) => {
-                  const hasVariants = product.variants.length > 0;
-                  const isExpanded = expandedRows.has(product.key);
-                  const isEditingProduct =
-                    editing?.productId === product.id && editing?.variantId === undefined;
-
-                  return (
-                    <React.Fragment key={product.key}>
-                      <tr
-                        className={`border-t border-[var(--border-default)] hover:bg-white/[0.03] transition ${
-                          product.stockQuantity === 0
-                            ? 'bg-[var(--color-danger)]/5'
-                            : product.stockQuantity <= LOW_STOCK_THRESHOLD
-                              ? 'bg-[var(--color-warning)]/5'
-                              : ''
-                        }`}
+        {isLoading ? (
+          <div className="p-5 space-y-3">
+            {[...Array(6)].map((_, idx) => (
+              <div key={idx} className="shimmer h-14 rounded-lg" />
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute inset-0 rounded-3xl bg-[var(--accent)]/10 blur-2xl" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[var(--accent)]/15 to-[var(--color-secondary)]/10 flex items-center justify-center border border-[var(--accent)]/20">
+                <PackageX className="w-8 h-8 text-[var(--accent)]" strokeWidth={1.5} />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold mb-1.5 text-[var(--text-primary)]">
+              {t('inventory.empty.title')}
+            </h3>
+            <p className="text-sm text-[var(--text-tertiary)] max-w-sm">
+              {t('inventory.empty.description')}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="bg-white/[0.02]">
+                  <tr>
+                    <th className="w-10 px-3 py-3" />
+                    {['colProduct', 'colSku', 'colStock', 'colStatus', 'colAction'].map((key) => (
+                      <th
+                        key={key}
+                        className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
                       >
-                        <td className="px-3 py-3 text-center">
-                          {hasVariants && (
-                            <button
-                              onClick={() => toggleExpand(product.key)}
-                              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                            >
-                              {isExpanded ? (
-                                <ChevronDown className="size-4" />
-                              ) : (
-                                <ChevronRight className="size-4" />
-                              )}
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-primary)] truncate max-w-[300px]">
-                          {product.name}
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">
-                          {hasVariants ? `${product.variants.length} biến thể` : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-primary)]">
-                          {hasVariants
-                            ? renderStockCell(product.stockQuantity, false)
-                            : renderStockCell(product.stockQuantity, isEditingProduct)}
-                        </td>
-                        <td className="px-4 py-3">{getStockBadge(product.stockQuantity)}</td>
-                        <td className="px-4 py-3">
-                          {!hasVariants &&
-                            renderActionButtons(isEditingProduct, () =>
-                              handleEdit(product.id, product.stockQuantity),
+                        {t(`inventory.${key}`)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product) => {
+                    const hasVariants = product.variants.length > 0;
+                    const isExpanded = expandedRows.has(product.key);
+                    const isEditingProduct =
+                      editing?.productId === product.id && editing?.variantId === undefined;
+
+                    return (
+                      <React.Fragment key={product.key}>
+                        <tr
+                          className={`border-t border-[var(--border-default)] hover:bg-white/[0.03] transition ${
+                            product.stockQuantity === 0
+                              ? 'bg-[var(--color-danger)]/5'
+                              : product.stockQuantity <= LOW_STOCK_THRESHOLD
+                                ? 'bg-[var(--color-warning)]/5'
+                                : ''
+                          }`}
+                        >
+                          <td className="px-3 py-3 text-center">
+                            {hasVariants && (
+                              <button
+                                onClick={() => toggleExpand(product.key)}
+                                className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="size-4" />
+                                ) : (
+                                  <ChevronRight className="size-4" />
+                                )}
+                              </button>
                             )}
-                        </td>
-                      </tr>
-                      {/* Expanded variant rows */}
-                      {hasVariants &&
-                        isExpanded &&
-                        product.variants.map((variant) => {
+                          </td>
+                          <td className="px-4 py-3 text-[var(--text-primary)] truncate max-w-[300px]">
+                            {product.name}
+                          </td>
+                          <td className="px-4 py-3 text-[var(--text-secondary)]">
+                            {hasVariants ? `${product.variants.length} biến thể` : '—'}
+                          </td>
+                          <td className="px-4 py-3 text-[var(--text-primary)]">
+                            {hasVariants
+                              ? renderStockCell(product.stockQuantity, false)
+                              : renderStockCell(product.stockQuantity, isEditingProduct)}
+                          </td>
+                          <td className="px-4 py-3">{getStockBadge(product.stockQuantity)}</td>
+                          <td className="px-4 py-3">
+                            {!hasVariants &&
+                              renderActionButtons(isEditingProduct, () =>
+                                handleEdit(product.id, product.stockQuantity),
+                              )}
+                          </td>
+                        </tr>
+                        {/* Expanded variant rows */}
+                        {hasVariants &&
+                          isExpanded &&
+                          product.variants.map((variant) => {
+                            const isEditingVariant =
+                              editing?.productId === product.id &&
+                              editing?.variantId === variant.id;
+                            return (
+                              <tr
+                                key={variant.key}
+                                className={`border-t border-[var(--border-default)] bg-white/[0.01] ${
+                                  variant.stockQuantity === 0
+                                    ? 'bg-[var(--color-danger)]/5'
+                                    : variant.stockQuantity <= LOW_STOCK_THRESHOLD
+                                      ? 'bg-[var(--color-warning)]/5'
+                                      : ''
+                                }`}
+                              >
+                                <td className="px-3 py-2" />
+                                <td className="px-4 py-2 pl-12 text-[var(--text-secondary)]">
+                                  {variant.name}
+                                </td>
+                                <td className="px-4 py-2 text-[var(--text-secondary)]">
+                                  {variant.sku || '—'}
+                                </td>
+                                <td className="px-4 py-2 text-[var(--text-primary)]">
+                                  {renderStockCell(variant.stockQuantity, isEditingVariant)}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {getStockBadge(variant.stockQuantity)}
+                                </td>
+                                <td className="px-4 py-2">
+                                  {renderActionButtons(isEditingVariant, () =>
+                                    handleEdit(product.id, variant.stockQuantity, variant.id),
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile: card-list thay cho table */}
+            <div className="space-y-3 p-3 md:hidden">
+              {products.map((product) => {
+                const hasVariants = product.variants.length > 0;
+                const isExpanded = expandedRows.has(product.key);
+                const isEditingProduct =
+                  editing?.productId === product.id && editing?.variantId === undefined;
+                return (
+                  <AdminMobileCard
+                    key={product.key}
+                    title={product.name}
+                    status={getStockBadge(product.stockQuantity)}
+                    fields={[
+                      {
+                        label: t('inventory.colStock'),
+                        value: renderStockCell(
+                          product.stockQuantity,
+                          hasVariants ? false : isEditingProduct,
+                        ),
+                      },
+                    ]}
+                    actions={
+                      hasVariants ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpand(product.key)}
+                          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="size-4" />
+                          ) : (
+                            <ChevronRight className="size-4" />
+                          )}
+                          {product.variants.length} biến thể
+                        </button>
+                      ) : (
+                        renderActionButtons(isEditingProduct, () =>
+                          handleEdit(product.id, product.stockQuantity),
+                        )
+                      )
+                    }
+                  >
+                    {hasVariants && isExpanded && (
+                      <div className="mt-3 space-y-2 border-t border-[var(--border-default)] pt-3">
+                        {product.variants.map((variant) => {
                           const isEditingVariant =
                             editing?.productId === product.id && editing?.variantId === variant.id;
                           return (
-                            <tr
-                              key={variant.key}
-                              className={`border-t border-[var(--border-default)] bg-white/[0.01] ${
-                                variant.stockQuantity === 0
-                                  ? 'bg-[var(--color-danger)]/5'
-                                  : variant.stockQuantity <= LOW_STOCK_THRESHOLD
-                                    ? 'bg-[var(--color-warning)]/5'
-                                    : ''
-                              }`}
-                            >
-                              <td className="px-3 py-2" />
-                              <td className="px-4 py-2 pl-12 text-[var(--text-secondary)]">
-                                {variant.name}
-                              </td>
-                              <td className="px-4 py-2 text-[var(--text-secondary)]">
-                                {variant.sku || '—'}
-                              </td>
-                              <td className="px-4 py-2 text-[var(--text-primary)]">
-                                {renderStockCell(variant.stockQuantity, isEditingVariant)}
-                              </td>
-                              <td className="px-4 py-2">{getStockBadge(variant.stockQuantity)}</td>
-                              <td className="px-4 py-2">
-                                {renderActionButtons(isEditingVariant, () =>
-                                  handleEdit(product.id, variant.stockQuantity, variant.id),
-                                )}
-                              </td>
-                            </tr>
+                            <div key={variant.key} className="rounded-lg bg-white/[0.02] p-2.5">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="min-w-0 truncate text-sm text-[var(--text-secondary)]">
+                                  {variant.name}
+                                </span>
+                                {getStockBadge(variant.stockQuantity)}
+                              </div>
+                              <div className="mt-1.5 flex items-center justify-between gap-2 text-sm">
+                                <span className="text-[var(--text-tertiary)]">
+                                  {variant.sku || '—'}
+                                </span>
+                                <span className="flex items-center gap-2">
+                                  {renderStockCell(variant.stockQuantity, isEditingVariant)}
+                                  {renderActionButtons(isEditingVariant, () =>
+                                    handleEdit(product.id, variant.stockQuantity, variant.id),
+                                  )}
+                                </span>
+                              </div>
+                            </div>
                           );
                         })}
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile: card-list thay cho table */}
-        {!isLoading && products.length > 0 && (
-          <div className="space-y-3 p-3 md:hidden">
-            {products.map((product) => {
-              const hasVariants = product.variants.length > 0;
-              const isExpanded = expandedRows.has(product.key);
-              const isEditingProduct =
-                editing?.productId === product.id && editing?.variantId === undefined;
-              return (
-                <AdminMobileCard
-                  key={product.key}
-                  title={product.name}
-                  status={getStockBadge(product.stockQuantity)}
-                  fields={[
-                    {
-                      label: t('inventory.colStock'),
-                      value: renderStockCell(
-                        product.stockQuantity,
-                        hasVariants ? false : isEditingProduct,
-                      ),
-                    },
-                  ]}
-                  actions={
-                    hasVariants ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleExpand(product.key)}
-                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="size-4" />
-                        ) : (
-                          <ChevronRight className="size-4" />
-                        )}
-                        {product.variants.length} biến thể
-                      </button>
-                    ) : (
-                      renderActionButtons(isEditingProduct, () =>
-                        handleEdit(product.id, product.stockQuantity),
-                      )
-                    )
-                  }
-                >
-                  {hasVariants && isExpanded && (
-                    <div className="mt-3 space-y-2 border-t border-[var(--border-default)] pt-3">
-                      {product.variants.map((variant) => {
-                        const isEditingVariant =
-                          editing?.productId === product.id && editing?.variantId === variant.id;
-                        return (
-                          <div key={variant.key} className="rounded-lg bg-white/[0.02] p-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="min-w-0 truncate text-sm text-[var(--text-secondary)]">
-                                {variant.name}
-                              </span>
-                              {getStockBadge(variant.stockQuantity)}
-                            </div>
-                            <div className="mt-1.5 flex items-center justify-between gap-2 text-sm">
-                              <span className="text-[var(--text-tertiary)]">
-                                {variant.sku || '—'}
-                              </span>
-                              <span className="flex items-center gap-2">
-                                {renderStockCell(variant.stockQuantity, isEditingVariant)}
-                                {renderActionButtons(isEditingVariant, () =>
-                                  handleEdit(product.id, variant.stockQuantity, variant.id),
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </AdminMobileCard>
-              );
-            })}
-          </div>
+                      </div>
+                    )}
+                  </AdminMobileCard>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {totalPages > 1 && (

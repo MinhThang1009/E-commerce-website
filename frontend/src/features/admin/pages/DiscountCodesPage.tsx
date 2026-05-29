@@ -286,235 +286,246 @@ const DiscountCodesPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full text-sm min-w-[800px]">
-            <thead className="bg-white/[0.02]">
-              <tr>
-                {['code', 'type', 'minOrder', 'period', 'usage'].map((key) => (
-                  <th
-                    key={key}
-                    className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
-                  >
-                    {t(`admin.discountCodes.table.${key}`)}
-                  </th>
-                ))}
-                <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                  {t('common.status')}
-                </th>
-                <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                  {t('admin.common.actions')}
-                </th>
-              </tr>
-            </thead>
-            <motion.tbody
-              initial="initial"
-              animate="animate"
-              variants={{ animate: { transition: { staggerChildren: 0.025 } } }}
-            >
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-[var(--text-tertiary)]">
-                    {t('common.loading')}
-                  </td>
-                </tr>
-              ) : discountCodes.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-[var(--text-tertiary)]">
-                    {t('common.noData')}
-                  </td>
-                </tr>
-              ) : (
-                discountCodes.map((record: DiscountCode) => (
-                  <motion.tr
-                    key={record.id}
-                    variants={{
-                      initial: { opacity: 0, y: 8 },
-                      animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
-                    }}
-                    className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
-                  >
-                    <td className="px-4 py-3">
-                      <StatusPill
-                        variant="info"
-                        label={record.code}
-                        showDot={false}
-                        className="font-mono font-semibold"
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 text-[var(--text-primary)]">
-                        {record.type === 'percent' ? (
-                          <Percent className="size-4 text-[var(--color-warning)]" />
-                        ) : (
-                          <Banknote className="size-4 text-[var(--color-success)]" />
-                        )}
-                        <span className="font-medium">
+        {isLoading ? (
+          <div className="p-5 space-y-3">
+            {[...Array(6)].map((_, idx) => (
+              <div key={idx} className="shimmer h-14 rounded-lg" />
+            ))}
+          </div>
+        ) : discountCodes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="relative w-16 h-16 mb-4">
+              <div className="absolute inset-0 rounded-3xl bg-[var(--accent)]/10 blur-2xl" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[var(--accent)]/15 to-[var(--color-secondary)]/10 flex items-center justify-center border border-[var(--accent)]/20">
+                <Percent className="w-8 h-8 text-[var(--accent)]" strokeWidth={1.5} />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold mb-1.5 text-[var(--text-primary)]">
+              {t('admin.discountCodes.empty.title')}
+            </h3>
+            <p className="text-sm text-[var(--text-tertiary)] max-w-sm">
+              {t('admin.discountCodes.empty.description')}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden overflow-x-auto md:block">
+              <table className="w-full text-sm min-w-[800px]">
+                <thead className="bg-white/[0.02]">
+                  <tr>
+                    {['code', 'type', 'minOrder', 'period', 'usage'].map((key) => (
+                      <th
+                        key={key}
+                        className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]"
+                      >
+                        {t(`admin.discountCodes.table.${key}`)}
+                      </th>
+                    ))}
+                    <th className="text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('common.status')}
+                    </th>
+                    <th className="text-right px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                      {t('admin.common.actions')}
+                    </th>
+                  </tr>
+                </thead>
+                <motion.tbody
+                  initial="initial"
+                  animate="animate"
+                  variants={{ animate: { transition: { staggerChildren: 0.025 } } }}
+                >
+                  {discountCodes.map((record: DiscountCode) => (
+                    <motion.tr
+                      key={record.id}
+                      variants={{
+                        initial: { opacity: 0, y: 8 },
+                        animate: { opacity: 1, y: 0, transition: { duration: 0.25 } },
+                      }}
+                      className="border-t border-[var(--border-default)] hover:bg-white/[0.03] transition group"
+                    >
+                      <td className="px-4 py-3">
+                        <StatusPill
+                          variant="info"
+                          label={record.code}
+                          showDot={false}
+                          className="font-mono font-semibold"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 text-[var(--text-primary)]">
+                          {record.type === 'percent' ? (
+                            <Percent className="size-4 text-[var(--color-warning)]" />
+                          ) : (
+                            <Banknote className="size-4 text-[var(--color-success)]" />
+                          )}
+                          <span className="font-medium">
+                            {record.type === 'percent'
+                              ? `${record.value}%`
+                              : formatPrice(record.value)}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[var(--text-secondary)]">
+                        {formatPrice(record.minOrderAmount)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
+                        <div>
+                          {t('admin.discountCodes.table.from')}{' '}
+                          {record.startDate
+                            ? dayjs(record.startDate).format('DD/MM/YYYY')
+                            : t('admin.discountCodes.table.unlimited')}
+                        </div>
+                        <div>
+                          {t('admin.discountCodes.table.to')}{' '}
+                          {record.endDate
+                            ? dayjs(record.endDate).format('DD/MM/YYYY')
+                            : t('admin.discountCodes.table.unlimited')}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="text-sm cursor-default">
+                              <span className="font-semibold text-[var(--color-info)]">
+                                {record.usedCount}
+                              </span>{' '}
+                              / {record.usageLimit || '∞'}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {t('admin.discountCodes.table.usageInfo', {
+                              used: record.usedCount,
+                              limit: record.usageLimit || t('admin.discountCodes.table.noLimit'),
+                            })}
+                          </TooltipContent>
+                        </Tooltip>
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusPill
+                          variant={record.isActive ? 'success' : 'error'}
+                          label={
+                            record.isActive
+                              ? t('admin.discountCodes.status.active')
+                              : t('admin.discountCodes.status.paused')
+                          }
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(record)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                            title={t('common.edit')}
+                            aria-label={t('common.edit')}
+                          >
+                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(record.id)}
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                            title={t('common.delete')}
+                            aria-label={t('common.delete')}
+                          >
+                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </motion.tbody>
+              </table>
+            </div>
+
+            {/* Mobile: card-list thay cho table */}
+            <div className="space-y-3 p-3 md:hidden">
+              {discountCodes.map((record: DiscountCode) => (
+                <AdminMobileCard
+                  key={record.id}
+                  title={<span className="font-mono font-semibold">{record.code}</span>}
+                  status={
+                    <StatusPill
+                      variant={record.isActive ? 'success' : 'error'}
+                      label={
+                        record.isActive
+                          ? t('admin.discountCodes.status.active')
+                          : t('admin.discountCodes.status.paused')
+                      }
+                    />
+                  }
+                  fields={[
+                    {
+                      label: t('admin.discountCodes.table.type'),
+                      value: (
+                        <span className="inline-flex items-center gap-1 font-medium text-[var(--text-primary)]">
+                          {record.type === 'percent' ? (
+                            <Percent className="size-4 text-[var(--color-warning)]" />
+                          ) : (
+                            <Banknote className="size-4 text-[var(--color-success)]" />
+                          )}
                           {record.type === 'percent'
                             ? `${record.value}%`
                             : formatPrice(record.value)}
                         </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-[var(--text-secondary)]">
-                      {formatPrice(record.minOrderAmount)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
-                      <div>
-                        {t('admin.discountCodes.table.from')}{' '}
-                        {record.startDate
-                          ? dayjs(record.startDate).format('DD/MM/YYYY')
-                          : t('admin.discountCodes.table.unlimited')}
-                      </div>
-                      <div>
-                        {t('admin.discountCodes.table.to')}{' '}
-                        {record.endDate
-                          ? dayjs(record.endDate).format('DD/MM/YYYY')
-                          : t('admin.discountCodes.table.unlimited')}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-sm cursor-default">
-                            <span className="font-semibold text-[var(--color-info)]">
-                              {record.usedCount}
-                            </span>{' '}
-                            / {record.usageLimit || '∞'}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {t('admin.discountCodes.table.usageInfo', {
-                            used: record.usedCount,
-                            limit: record.usageLimit || t('admin.discountCodes.table.noLimit'),
-                          })}
-                        </TooltipContent>
-                      </Tooltip>
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusPill
-                        variant={record.isActive ? 'success' : 'error'}
-                        label={
-                          record.isActive
-                            ? t('admin.discountCodes.status.active')
-                            : t('admin.discountCodes.status.paused')
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(record)}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                          title={t('common.edit')}
-                          aria-label={t('common.edit')}
-                        >
-                          <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(record.id)}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                          title={t('common.delete')}
-                          aria-label={t('common.delete')}
-                        >
-                          <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                        </button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))
-              )}
-            </motion.tbody>
-          </table>
-        </div>
-
-        {/* Mobile: card-list thay cho table */}
-        {!isLoading && discountCodes.length > 0 && (
-          <div className="space-y-3 p-3 md:hidden">
-            {discountCodes.map((record: DiscountCode) => (
-              <AdminMobileCard
-                key={record.id}
-                title={<span className="font-mono font-semibold">{record.code}</span>}
-                status={
-                  <StatusPill
-                    variant={record.isActive ? 'success' : 'error'}
-                    label={
-                      record.isActive
-                        ? t('admin.discountCodes.status.active')
-                        : t('admin.discountCodes.status.paused')
-                    }
-                  />
-                }
-                fields={[
-                  {
-                    label: t('admin.discountCodes.table.type'),
-                    value: (
-                      <span className="inline-flex items-center gap-1 font-medium text-[var(--text-primary)]">
-                        {record.type === 'percent' ? (
-                          <Percent className="size-4 text-[var(--color-warning)]" />
-                        ) : (
-                          <Banknote className="size-4 text-[var(--color-success)]" />
-                        )}
-                        {record.type === 'percent' ? `${record.value}%` : formatPrice(record.value)}
-                      </span>
-                    ),
-                  },
-                  {
-                    label: t('admin.discountCodes.table.minOrder'),
-                    value: formatPrice(record.minOrderAmount),
-                  },
-                  {
-                    label: t('admin.discountCodes.table.period'),
-                    value: (
-                      <span className="text-right">
-                        {record.startDate
-                          ? dayjs(record.startDate).format('DD/MM/YYYY')
-                          : t('admin.discountCodes.table.unlimited')}
-                        {' → '}
-                        {record.endDate
-                          ? dayjs(record.endDate).format('DD/MM/YYYY')
-                          : t('admin.discountCodes.table.unlimited')}
-                      </span>
-                    ),
-                  },
-                  {
-                    label: t('admin.discountCodes.table.usage'),
-                    value: (
-                      <span>
-                        <span className="font-semibold text-[var(--color-info)]">
-                          {record.usedCount}
-                        </span>{' '}
-                        / {record.usageLimit || '∞'}
-                      </span>
-                    ),
-                  },
-                ]}
-                actions={
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(record)}
-                      className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                      title={t('common.edit')}
-                      aria-label={t('common.edit')}
-                    >
-                      <Pencil className="h-4 w-4" strokeWidth={2.25} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(record.id)}
-                      className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
-                      title={t('common.delete')}
-                      aria-label={t('common.delete')}
-                    >
-                      <Trash2 className="h-4 w-4" strokeWidth={2.25} />
-                    </button>
-                  </>
-                }
-              />
-            ))}
-          </div>
+                      ),
+                    },
+                    {
+                      label: t('admin.discountCodes.table.minOrder'),
+                      value: formatPrice(record.minOrderAmount),
+                    },
+                    {
+                      label: t('admin.discountCodes.table.period'),
+                      value: (
+                        <span className="text-right">
+                          {record.startDate
+                            ? dayjs(record.startDate).format('DD/MM/YYYY')
+                            : t('admin.discountCodes.table.unlimited')}
+                          {' → '}
+                          {record.endDate
+                            ? dayjs(record.endDate).format('DD/MM/YYYY')
+                            : t('admin.discountCodes.table.unlimited')}
+                        </span>
+                      ),
+                    },
+                    {
+                      label: t('admin.discountCodes.table.usage'),
+                      value: (
+                        <span>
+                          <span className="font-semibold text-[var(--color-info)]">
+                            {record.usedCount}
+                          </span>{' '}
+                          / {record.usageLimit || '∞'}
+                        </span>
+                      ),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleEdit(record)}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                        title={t('common.edit')}
+                        aria-label={t('common.edit')}
+                      >
+                        <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(record.id)}
+                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                        title={t('common.delete')}
+                        aria-label={t('common.delete')}
+                      >
+                        <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                      </button>
+                    </>
+                  }
+                />
+              ))}
+            </div>
+          </>
         )}
 
         {totalPages > 1 && (

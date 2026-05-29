@@ -2,6 +2,16 @@
 
 > Cập nhật: 2026-05-29. Đọc kèm `ADMIN_UI_FLAGSHIP_2026.md` (spec, project root).
 
+## ⏩ Session 2026-05-30 — Audit + P0 fixes (đọc trước)
+
+**Đã làm phiên này** (working tree sạch, mọi commit verify xanh typecheck/lint/test:ci 550/i18n):
+- **Audit + kiểm chứng 9.5/10** → `ADMIN_POLISH_BACKLOG.md` (124 finding, P0/P1/P2 + thứ tự) + `ADMIN_AUDIT_VALIDATION.md` (chỉ **1 FP** = F121 `.input-error`; 52 gap mới audit gốc bỏ sót, 7 P0).
+- **5 commit P0**: `f0892aa` (5 bug: `type=button` ×4 form chống submit sớm · OrdersPage `paymentMethod?.` crash guard · xoá AttributeModal `debug_attributes` · BrandsPage `safeHostname`) · `14bf552` (Pricing/Seo `grid-cols-1 sm:grid-cols-2`) · `7bf6e9c` (bỏ `localhost:8888` hardcode → derive `VITE_API_URL`) · `7b3f40e` (empty/loading state Inventory + Discount, phủ desktop+mobile) · `0000103` (docs).
+
+**Bước kế (P0 cuối — chưa làm):** `DashboardCharts.tsx` thêm helper `EmptyChart` (icon + `t('admin.charts.noData')` — CẦN thêm i18n key) + skeleton, wrap 5 chart khi data rỗng. Data source: `orderStatusData?.data` (~L486), `userGrowthData?.data` (~L552), `topProductsData?.data` (~L625), `categoryData?.data` (~L688), `paymentMethodsData?.data` (~L780). Revenue+OrderCount đã có skeleton (`isDetailedLoading` ~L236). Lưu ý: marginal thấp (chart hiện vẫn render với data thưa; EmptyChart chỉ kích hoạt khi rỗng hẳn).
+
+**Sau đó:** (1) fresh-review đợt P0 (~13 file, tránh self-review bias) · (2) P1 work-packages trong backlog (WP-A states chung → WP-B light-token → WP-C a11y…). **KHÔNG fix F121** (false positive). CAT_PALETTE = won't-fix (cố ý, theo gotcha).
+
 ## Commits đã có (mới → cũ)
 
 ```

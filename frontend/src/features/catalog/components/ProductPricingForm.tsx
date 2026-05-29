@@ -60,7 +60,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
                   </li>
                 </ul>
                 {variantsNeedPrices && (
-                  <p className="mt-2 text-[var(--admin-error)]">
+                  <p className="mt-2 text-[var(--color-danger)]">
                     {t('admin.products.pricing.variantGoBack')}
                   </p>
                 )}
@@ -73,7 +73,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
       <div>
         <Label className="mb-1.5 block">
           {t('admin.products.pricing.priceLabel')}{' '}
-          <span className="text-[var(--admin-error)]">*</span>
+          <span className="text-[var(--color-danger)]">*</span>
           {hasVariants && (
             <span
               className="ml-1 text-xs text-neutral-500"
@@ -97,7 +97,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
           </span>
         </div>
         {form.formState.errors.price?.message && (
-          <p className="text-sm text-[var(--admin-error)] mt-1">
+          <p className="text-sm text-[var(--color-danger)] mt-1">
             {String(form.formState.errors.price.message)}
           </p>
         )}
@@ -166,7 +166,7 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
           </p>
         )}
         {form.formState.errors.stockQuantity?.message && (
-          <p className="text-sm text-[var(--admin-error)] mt-1">
+          <p className="text-sm text-[var(--color-danger)] mt-1">
             {String(form.formState.errors.stockQuantity.message)}
           </p>
         )}

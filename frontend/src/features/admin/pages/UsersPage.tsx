@@ -172,7 +172,7 @@ const UsersPage: React.FC = () => {
     <div>
       {/* Page header */}
       <AdminPageHeader
-        sectionNumber="06 / NGƯỜI DÙNG"
+        sectionNumber="04 / NGƯỜI DÙNG"
         title={t('admin.users.title')}
         gradientTitle
         sparkle
@@ -194,28 +194,28 @@ const UsersPage: React.FC = () => {
           label={t('admin.users.stats.total')}
           value={totalUsers}
           icon={User}
-          accentVar="--admin-info"
+          accentVar="--color-info"
           isLoading={isLoading}
         />
         <AdminStatCard
           label={t('admin.users.stats.admins')}
           value={adminCount}
           icon={Crown}
-          accentVar="--admin-error"
+          accentVar="--color-danger"
           isLoading={isLoading}
         />
         <AdminStatCard
           label={t('admin.users.stats.customers')}
           value={customerCount}
           icon={Users}
-          accentVar="--admin-success"
+          accentVar="--color-success"
           isLoading={isLoading}
         />
         <AdminStatCard
           label={t('admin.users.stats.verified')}
           value={verifiedCount}
           icon={Mail}
-          accentVar="--admin-purple"
+          accentVar="--color-violet"
           isLoading={isLoading}
         />
       </div>
@@ -281,9 +281,9 @@ const UsersPage: React.FC = () => {
         ) : isEmpty ? (
           <div className="flex flex-col items-center justify-center py-16 px-6">
             <div className="relative w-20 h-20 mb-5">
-              <div className="absolute inset-0 rounded-3xl bg-[var(--admin-info)]/10 blur-2xl" />
-              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[var(--admin-info)]/15 to-[var(--accent)]/10 flex items-center justify-center border border-[var(--admin-info)]/20">
-                <Users className="w-10 h-10 text-[var(--admin-info)]" strokeWidth={1.5} />
+              <div className="absolute inset-0 rounded-3xl bg-[var(--color-info)]/10 blur-2xl" />
+              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-[var(--color-info)]/15 to-[var(--accent)]/10 flex items-center justify-center border border-[var(--color-info)]/20">
+                <Users className="w-10 h-10 text-[var(--color-info)]" strokeWidth={1.5} />
               </div>
             </div>
             <h3 className="text-lg font-semibold mb-1.5">{t('common.noData')}</h3>
@@ -394,7 +394,7 @@ const UsersPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => navigate(buildRoute.adminUserDetail(record.id))}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-info)]/10 hover:text-[var(--admin-info)] transition"
+                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
                           title={t('admin.orders.actions.view')}
                         >
                           <Eye className="w-4 h-4" strokeWidth={2.25} />
@@ -409,7 +409,7 @@ const UsersPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleDelete(record.id)}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
+                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
                         >
                           <Trash2 className="w-4 h-4" strokeWidth={2.25} />
                         </button>
@@ -458,7 +458,7 @@ const UsersPage: React.FC = () => {
                   className="mt-1"
                 />
                 {formErrors.firstName && (
-                  <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.firstName}</p>
+                  <p className="text-xs text-[var(--color-danger)] mt-1">{formErrors.firstName}</p>
                 )}
               </div>
               <div>
@@ -470,7 +470,7 @@ const UsersPage: React.FC = () => {
                   className="mt-1"
                 />
                 {formErrors.lastName && (
-                  <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.lastName}</p>
+                  <p className="text-xs text-[var(--color-danger)] mt-1">{formErrors.lastName}</p>
                 )}
               </div>
             </div>
@@ -485,7 +485,7 @@ const UsersPage: React.FC = () => {
                 className="mt-1"
               />
               {formErrors.phone && (
-                <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.phone}</p>
+                <p className="text-xs text-[var(--color-danger)] mt-1">{formErrors.phone}</p>
               )}
             </div>
 

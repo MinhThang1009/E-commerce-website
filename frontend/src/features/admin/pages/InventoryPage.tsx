@@ -57,9 +57,9 @@ const LOW_STOCK_THRESHOLD = 5;
 // Ngưỡng hiển thị thanh tồn kho (cap trực quan) + màu theo mức
 const STOCK_BAR_MAX = 100;
 function stockColor(s: number): string {
-  if (s === 0) return 'var(--admin-error)';
-  if (s <= LOW_STOCK_THRESHOLD) return 'var(--admin-warning)';
-  return 'var(--admin-success)';
+  if (s === 0) return 'var(--color-danger)';
+  if (s <= LOW_STOCK_THRESHOLD) return 'var(--color-warning)';
+  return 'var(--color-success)';
 }
 
 const InventoryPage: React.FC = () => {
@@ -288,14 +288,14 @@ const InventoryPage: React.FC = () => {
           label={t('inventory.stats.lowStock')}
           value={stats.lowStock}
           icon={AlertTriangle}
-          accentVar="--admin-warning"
+          accentVar="--color-warning"
           isLoading={isLoading}
         />
         <AdminStatCard
           label={t('inventory.stats.outOfStock')}
           value={stats.outOfStock}
           icon={PackageX}
-          accentVar="--admin-error"
+          accentVar="--color-danger"
           isLoading={isLoading}
         />
       </div>
@@ -358,9 +358,9 @@ const InventoryPage: React.FC = () => {
                       <tr
                         className={`border-t border-[var(--border-default)] hover:bg-white/[0.03] transition ${
                           product.stockQuantity === 0
-                            ? 'bg-[var(--admin-error)]/5'
+                            ? 'bg-[var(--color-danger)]/5'
                             : product.stockQuantity <= LOW_STOCK_THRESHOLD
-                              ? 'bg-[var(--admin-warning)]/5'
+                              ? 'bg-[var(--color-warning)]/5'
                               : ''
                         }`}
                       >
@@ -408,9 +408,9 @@ const InventoryPage: React.FC = () => {
                               key={variant.key}
                               className={`border-t border-[var(--border-default)] bg-white/[0.01] ${
                                 variant.stockQuantity === 0
-                                  ? 'bg-[var(--admin-error)]/5'
+                                  ? 'bg-[var(--color-danger)]/5'
                                   : variant.stockQuantity <= LOW_STOCK_THRESHOLD
-                                    ? 'bg-[var(--admin-warning)]/5'
+                                    ? 'bg-[var(--color-warning)]/5'
                                     : ''
                               }`}
                             >

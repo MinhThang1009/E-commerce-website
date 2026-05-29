@@ -9,7 +9,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
-  DollarSign,
+  Banknote,
   ShoppingBag,
   Users,
   AlertTriangle,
@@ -58,8 +58,8 @@ function GrowthPill({ value }: { value: number }) {
       className={cn(
         'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums',
         isPositive
-          ? 'bg-[var(--admin-success)]/12 text-[var(--admin-success)]'
-          : 'bg-[var(--admin-error)]/12 text-[var(--admin-error)]',
+          ? 'bg-[var(--color-success)]/12 text-[var(--color-success)]'
+          : 'bg-[var(--color-danger)]/12 text-[var(--color-danger)]',
       )}
     >
       <Arrow className="w-3 h-3" strokeWidth={2.5} />
@@ -69,11 +69,11 @@ function GrowthPill({ value }: { value: number }) {
 }
 
 const ORDER_STATUS_ICON: Record<string, { Icon: LucideIcon; color: string }> = {
-  delivered: { Icon: CheckCircle2, color: 'var(--admin-success)' },
-  cancelled: { Icon: XCircle, color: 'var(--admin-error)' },
-  pending: { Icon: Clock, color: 'var(--admin-warning)' },
-  processing: { Icon: RefreshCw, color: 'var(--admin-info)' },
-  shipped: { Icon: Truck, color: 'var(--admin-purple)' },
+  delivered: { Icon: CheckCircle2, color: 'var(--color-success)' },
+  cancelled: { Icon: XCircle, color: 'var(--color-danger)' },
+  pending: { Icon: Clock, color: 'var(--color-warning)' },
+  processing: { Icon: RefreshCw, color: 'var(--color-info)' },
+  shipped: { Icon: Truck, color: 'var(--color-violet)' },
 };
 
 function OrderStatusBadge({ status }: { status: string }) {
@@ -150,7 +150,7 @@ const DashboardPage: React.FC = () => {
           <h1 className="display-heading mt-2">{t('admin.dashboard.title')}</h1>
         </div>
         <div className="glass-card-lg p-10 text-center">
-          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-[var(--admin-error)]" />
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-[var(--color-danger)]" />
           <h2 className="text-xl font-semibold mb-1">
             {t('admin.dashboard.errors.loadingDashboard')}
           </h2>
@@ -221,7 +221,7 @@ const DashboardPage: React.FC = () => {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-9 h-9 rounded-xl bg-[var(--accent)]/12 flex items-center justify-center">
-                    <DollarSign className="w-4.5 h-4.5 text-[var(--accent)]" strokeWidth={2.25} />
+                    <Banknote className="w-4.5 h-4.5 text-[var(--accent)]" strokeWidth={2.25} />
                   </div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                     {t('admin.dashboard.stats.totalRevenue')}
@@ -277,12 +277,12 @@ const DashboardPage: React.FC = () => {
           <motion.div variants={fadeUp}>
             <div
               className="admin-kpi-card admin-card-glow p-5 h-full"
-              style={{ '--kpi-accent': 'var(--admin-success)' } as React.CSSProperties}
+              style={{ '--kpi-accent': 'var(--color-success)' } as React.CSSProperties}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-[var(--admin-success)]/12 flex items-center justify-center">
-                    <Users className="w-4.5 h-4.5 text-[var(--admin-success)]" strokeWidth={2.25} />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--color-success)]/12 flex items-center justify-center">
+                    <Users className="w-4.5 h-4.5 text-[var(--color-success)]" strokeWidth={2.25} />
                   </div>
                   <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                     {t('admin.dashboard.stats.totalUsers')}
@@ -296,23 +296,23 @@ const DashboardPage: React.FC = () => {
                     label: t('admin.dashboard.stats.totalOrders'),
                     value: totalOrders,
                     growth: growthOrders,
-                    color: '--admin-info',
+                    color: '--color-info',
                   },
                   {
                     label: t('admin.dashboard.stats.totalUsers'),
                     value: totalUsers,
                     growth: growthUsers,
-                    color: '--admin-success',
+                    color: '--color-success',
                   },
                   {
                     label: t('admin.dashboard.stats.cancelledThisMonth'),
                     value: cancelled,
-                    color: '--admin-error',
+                    color: '--color-danger',
                   },
                   {
                     label: t('admin.dashboard.stats.lowStock'),
                     value: lowStockCount,
-                    color: '--admin-warning',
+                    color: '--color-warning',
                   },
                 ].map(({ label, value, growth, color }) => (
                   <div
@@ -346,9 +346,9 @@ const DashboardPage: React.FC = () => {
 
         {/* Pending alert */}
         {pendingCount > 0 && (
-          <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl bg-[var(--admin-warning)]/10 border border-[var(--admin-warning)]/30">
+          <div className="flex items-center gap-3 mb-4 px-4 py-2.5 rounded-xl bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30">
             <AlertTriangle
-              className="w-4 h-4 text-[var(--admin-warning)] flex-shrink-0"
+              className="w-4 h-4 text-[var(--color-warning)] flex-shrink-0"
               strokeWidth={2.25}
             />
             <span className="flex-1 text-xs text-[var(--text-primary)] font-medium">
@@ -356,7 +356,7 @@ const DashboardPage: React.FC = () => {
             </span>
             <Link
               to={buildRoute.adminOrdersPending()}
-              className="text-xs font-medium text-[var(--admin-warning)] hover:underline whitespace-nowrap"
+              className="text-xs font-medium text-[var(--color-warning)] hover:underline whitespace-nowrap"
             >
               {t('admin.dashboard.alerts.viewOrders')} →
             </Link>
@@ -376,13 +376,13 @@ const DashboardPage: React.FC = () => {
           {/* Đơn hàng gần đây — card rộng: hiện đủ mã + tên + giá + trạng thái */}
           <div
             className="admin-kpi-card admin-card-glow p-5"
-            style={{ '--kpi-accent': 'var(--admin-info)' } as React.CSSProperties}
+            style={{ '--kpi-accent': 'var(--color-info)' } as React.CSSProperties}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-[var(--admin-info)]/12 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-[var(--color-info)]/12 flex items-center justify-center">
                   <ShoppingBag
-                    className="w-4.5 h-4.5 text-[var(--admin-info)]"
+                    className="w-4.5 h-4.5 text-[var(--color-info)]"
                     strokeWidth={2.25}
                   />
                 </div>
@@ -447,7 +447,7 @@ const DashboardPage: React.FC = () => {
           {lowStockProducts.length > 0 && (
             <div id="low-stock-widget" className="admin-kpi-card admin-card-glow overflow-hidden">
               <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-[var(--admin-warning)]" strokeWidth={2.25} />
+                <AlertTriangle className="w-4 h-4 text-[var(--color-warning)]" strokeWidth={2.25} />
                 <h2 className="text-sm font-semibold">{t('admin.dashboard.lowStock.title')}</h2>
               </div>
               <div className="p-4 grid grid-cols-1 gap-2">
@@ -458,7 +458,7 @@ const DashboardPage: React.FC = () => {
                       key={product.id}
                       className={cn(
                         'flex items-center gap-3 p-2 rounded-xl transition',
-                        isOut ? 'bg-[var(--admin-error)]/5' : 'bg-[var(--admin-warning)]/5',
+                        isOut ? 'bg-[var(--color-danger)]/5' : 'bg-[var(--color-warning)]/5',
                       )}
                     >
                       {product.thumbnail ? (

@@ -97,7 +97,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
                 {...form.register('name', { required: t('attrModal.nameRequired') })}
               />
               {form.formState.errors.name?.message && (
-                <p className="text-sm text-[var(--admin-error)] mt-1">
+                <p className="text-sm text-[var(--color-danger)] mt-1">
                   {String(form.formState.errors.name.message)}
                 </p>
               )}
@@ -117,7 +117,7 @@ const AttributeModal: React.FC<AttributeModalProps> = ({ open, onClose, attribut
                 {...form.register('value', { required: t('attrModal.valueRequired') })}
               />
               {form.formState.errors.value?.message && (
-                <p className="text-sm text-[var(--admin-error)] mt-1">
+                <p className="text-sm text-[var(--color-danger)] mt-1">
                   {String(form.formState.errors.value.message)}
                 </p>
               )}

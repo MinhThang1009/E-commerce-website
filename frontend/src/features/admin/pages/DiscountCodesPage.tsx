@@ -10,7 +10,7 @@ import {
   Pencil,
   Trash2,
   Percent,
-  DollarSign,
+  Banknote,
   Search,
   Zap,
   CalendarX,
@@ -233,7 +233,7 @@ const DiscountCodesPage: React.FC = () => {
     <div>
       {/* Page header */}
       <AdminPageHeader
-        sectionNumber="07 / MÃ GIẢM GIÁ"
+        sectionNumber="03 / MÃ GIẢM GIÁ"
         title={t('admin.discountCodes.title')}
         gradientTitle
         sparkle
@@ -252,21 +252,21 @@ const DiscountCodesPage: React.FC = () => {
           label={t('admin.discountCodes.stats.running')}
           value={stats.running}
           icon={Zap}
-          accentVar="--admin-success"
+          accentVar="--color-success"
           isLoading={isLoading}
         />
         <AdminStatCard
           label={t('admin.discountCodes.stats.expired')}
           value={stats.expired}
           icon={CalendarX}
-          accentVar="--admin-error"
+          accentVar="--color-danger"
           isLoading={isLoading}
         />
         <AdminStatCard
           label={t('admin.discountCodes.stats.totalUsage')}
           value={stats.totalUsage}
           icon={TrendingUp}
-          accentVar="--admin-info"
+          accentVar="--color-info"
           isLoading={isLoading}
         />
       </div>
@@ -343,9 +343,9 @@ const DiscountCodesPage: React.FC = () => {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1 text-[var(--text-primary)]">
                         {record.type === 'percent' ? (
-                          <Percent className="size-4 text-[var(--admin-warning)]" />
+                          <Percent className="size-4 text-[var(--color-warning)]" />
                         ) : (
-                          <DollarSign className="size-4 text-[var(--admin-success)]" />
+                          <Banknote className="size-4 text-[var(--color-success)]" />
                         )}
                         <span className="font-medium">
                           {record.type === 'percent'
@@ -375,7 +375,7 @@ const DiscountCodesPage: React.FC = () => {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div className="text-sm cursor-default">
-                            <span className="font-semibold text-[var(--admin-info)]">
+                            <span className="font-semibold text-[var(--color-info)]">
                               {record.usedCount}
                             </span>{' '}
                             / {record.usageLimit || '∞'}
@@ -411,7 +411,7 @@ const DiscountCodesPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleDelete(record.id)}
-                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
+                          className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
                         >
                           <Trash2 className="w-4 h-4" strokeWidth={2.25} />
                         </button>
@@ -473,7 +473,7 @@ const DiscountCodesPage: React.FC = () => {
                   </Button>
                 </div>
                 {formErrors.code && (
-                  <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.code}</p>
+                  <p className="text-xs text-[var(--color-danger)] mt-1">{formErrors.code}</p>
                 )}
               </div>
               <div>
@@ -519,7 +519,7 @@ const DiscountCodesPage: React.FC = () => {
                   className="mt-1"
                 />
                 {formErrors.value && (
-                  <p className="text-xs text-[var(--admin-error)] mt-1">{formErrors.value}</p>
+                  <p className="text-xs text-[var(--color-danger)] mt-1">{formErrors.value}</p>
                 )}
               </div>
               {formData.type === 'percent' && (

@@ -353,7 +353,7 @@ const DashboardCharts: React.FC = () => {
             className={cn(
               'px-3 py-1.5 text-xs font-medium rounded-lg border transition',
               comparePeriod
-                ? 'bg-[var(--admin-purple)]/12 border-[var(--admin-purple)]/30 text-[var(--admin-purple)]'
+                ? 'bg-[var(--color-violet)]/12 border-[var(--color-violet)]/30 text-[var(--color-violet)]'
                 : 'border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-white/5',
             )}
           >

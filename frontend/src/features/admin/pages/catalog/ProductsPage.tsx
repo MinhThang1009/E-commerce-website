@@ -109,9 +109,9 @@ function categoryColor(name: string): string {
 // Ngưỡng hiển thị thanh tồn kho (cap trực quan) + màu theo mức
 const STOCK_BAR_MAX = 150;
 function stockColor(s: number): string {
-  if (s === 0) return 'var(--admin-error)';
-  if (s < 20) return 'var(--admin-warning)';
-  return 'var(--admin-success)';
+  if (s === 0) return 'var(--color-danger)';
+  if (s < 20) return 'var(--color-warning)';
+  return 'var(--color-success)';
 }
 
 const ProductsPage: React.FC = () => {
@@ -325,12 +325,12 @@ const ProductsPage: React.FC = () => {
     return (
       <div>
         <div className="mb-6">
-          <span className="section-number">02 / SẢN PHẨM</span>
+          <span className="section-number">05 / SẢN PHẨM</span>
           <h1 className="display-heading mt-2">{t('admin.products.title')}</h1>
         </div>
         <div className="glass-card-lg p-10 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-danger)]/10 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-[var(--color-danger)]" strokeWidth={1.5} />
           </div>
           <h2 className="text-lg font-semibold mb-2">{t('admin.products.messages.loadError')}</h2>
           <Button variant="outline" onClick={() => refetch()}>
@@ -348,7 +348,7 @@ const ProductsPage: React.FC = () => {
   return (
     <div>
       <AdminPageHeader
-        sectionNumber="02 / SẢN PHẨM"
+        sectionNumber="05 / SẢN PHẨM"
         title={t('admin.products.title')}
         gradientTitle
         sparkle
@@ -390,21 +390,21 @@ const ProductsPage: React.FC = () => {
           label={t('admin.products.statCards.active')}
           value={productStats.active}
           icon={CheckCircle2}
-          accentVar="--admin-success"
+          accentVar="--color-success"
           isLoading={isStatsLoading}
         />
         <AdminStatCard
           label={t('admin.products.statCards.lowStock')}
           value={productStats.lowStock}
           icon={AlertTriangle}
-          accentVar="--admin-warning"
+          accentVar="--color-warning"
           isLoading={isStatsLoading}
         />
         <AdminStatCard
           label={t('admin.products.statCards.outOfStock')}
           value={productStats.outOfStock}
           icon={PackageX}
-          accentVar="--admin-error"
+          accentVar="--color-danger"
           isLoading={isStatsLoading}
         />
       </div>
@@ -701,7 +701,7 @@ const ProductsPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => openQuickView(product)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-info)]/10 hover:text-[var(--admin-info)] transition"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
                             title={t('admin.products.actions.view')}
                           >
                             <Eye className="w-4 h-4" strokeWidth={2.25} />
@@ -718,7 +718,7 @@ const ProductsPage: React.FC = () => {
                             type="button"
                             onClick={() => handleCloneProduct(product.id)}
                             disabled={isCloning}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-purple)]/10 hover:text-[var(--admin-purple)] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] transition disabled:opacity-40 disabled:cursor-not-allowed"
                             title={t('admin.products.actions.clone')}
                           >
                             <Copy className="w-4 h-4" strokeWidth={2.25} />
@@ -726,7 +726,7 @@ const ProductsPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setDeleteConfirmId(product.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
                             title={t('admin.products.actions.delete')}
                           >
                             <Trash2 className="w-4 h-4" strokeWidth={2.25} />
@@ -799,11 +799,11 @@ const ProductsPage: React.FC = () => {
 
       {/* Delete confirm dialog — glass */}
       <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="glass-dialog !border-[var(--admin-error)]/20 max-w-md">
+        <DialogContent className="glass-dialog !border-[var(--color-danger)]/20 max-w-md">
           <DialogHeader>
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--admin-error)]/15 flex items-center justify-center flex-shrink-0">
-                <Trash2 className="w-5 h-5 text-[var(--admin-error)]" strokeWidth={2.25} />
+              <div className="w-10 h-10 rounded-full bg-[var(--color-danger)]/15 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-[var(--color-danger)]" strokeWidth={2.25} />
               </div>
               <div>
                 <DialogTitle>{t('admin.products.messages.deleteTitle')}</DialogTitle>
@@ -870,7 +870,7 @@ const ProductsPage: React.FC = () => {
                         {selectedProduct.categories.map((cat, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--admin-info)]/10 text-[var(--admin-info)] border border-[var(--admin-info)]/20"
+                            className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/20"
                           >
                             {cat.name}
                           </span>

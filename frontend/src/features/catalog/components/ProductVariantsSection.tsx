@@ -34,12 +34,12 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
         <div>
           <h5 className="text-base font-semibold">
             {t('productSection.variants.sectionTitle')}{' '}
-            <span className="text-[var(--admin-error)]">*</span>
+            <span className="text-[var(--color-danger)]">*</span>
           </h5>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
             {t('productSection.variants.sectionDesc')}
           </p>
-          <p className="text-sm text-[var(--admin-warning)] mt-2">
+          <p className="text-sm text-[var(--color-warning)] mt-2">
             <strong>{t('common.note')}:</strong> {t('productSection.variants.note')}
           </p>
         </div>
@@ -115,7 +115,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                         {Object.entries(variant.attributes).map(([key, value]) => (
                           <span
                             key={key}
-                            className="inline-block rounded-full bg-[var(--admin-info)]/15 text-[var(--admin-info)] px-2 py-0.5 text-xs"
+                            className="inline-block rounded-full bg-[var(--color-info)]/15 text-[var(--color-info)] px-2 py-0.5 text-xs"
                           >
                             {formatAttributeKey(key)}: {value}
                           </span>
@@ -142,7 +142,7 @@ const ProductVariantsSection: React.FC<ProductVariantsSectionProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="size-8 text-[var(--admin-error)] hover:opacity-80 hover:bg-[var(--admin-error)]/10"
+                        className="size-8 text-[var(--color-danger)] hover:opacity-80 hover:bg-[var(--color-danger)]/10"
                         onClick={() => onDeleteVariant(variant.id!)}
                       >
                         <Trash2 className="size-4" />

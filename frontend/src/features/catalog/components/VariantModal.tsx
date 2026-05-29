@@ -151,7 +151,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   {...form.register('name', { required: t('variantModal.nameRequired') })}
                 />
                 {form.formState.errors.name?.message && (
-                  <p className="text-sm text-[var(--admin-error)] mt-1">
+                  <p className="text-sm text-[var(--color-danger)] mt-1">
                     {String(form.formState.errors.name.message)}
                   </p>
                 )}
@@ -175,7 +175,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <div>
                 <Label className="mb-1.5 block">
                   {t('variantModal.priceLabel')}{' '}
-                  <span className="text-[var(--admin-error)]">*</span>
+                  <span className="text-[var(--color-danger)]">*</span>
                   <span
                     className="ml-1 text-xs text-neutral-500"
                     title={t('variantModal.priceTooltip')}
@@ -197,7 +197,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   </span>
                 </div>
                 {form.formState.errors.price?.message && (
-                  <p className="text-sm text-[var(--admin-error)] mt-1">
+                  <p className="text-sm text-[var(--color-danger)] mt-1">
                     {String(form.formState.errors.price.message)}
                   </p>
                 )}
@@ -231,7 +231,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
               <div>
                 <Label className="mb-1.5 block">
                   {t('variantModal.stockLabel')}{' '}
-                  <span className="text-[var(--admin-error)]">*</span>
+                  <span className="text-[var(--color-danger)]">*</span>
                 </Label>
                 <div className="flex">
                   <input
@@ -246,7 +246,7 @@ const VariantModal: React.FC<VariantModalProps> = ({
                   </span>
                 </div>
                 {form.formState.errors.stock?.message && (
-                  <p className="text-sm text-[var(--admin-error)] mt-1">
+                  <p className="text-sm text-[var(--color-danger)] mt-1">
                     {String(form.formState.errors.stock.message)}
                   </p>
                 )}

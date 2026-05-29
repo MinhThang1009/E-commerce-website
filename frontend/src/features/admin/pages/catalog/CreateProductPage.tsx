@@ -438,7 +438,7 @@ const CreateProductPage: React.FC = () => {
   };
 
   const _getTabLabelStyle = (tabKey: string) => {
-    if (completedSteps[tabKey]) return 'text-[var(--admin-success)]';
+    if (completedSteps[tabKey]) return 'text-[var(--color-success)]';
     if (!isTabAccessible(tabKey)) return 'text-[var(--text-tertiary)] opacity-50';
     return '';
   };

@@ -14,7 +14,7 @@ import {
   ShoppingCart,
   User,
   Calendar,
-  DollarSign,
+  Banknote,
   Info,
   Clock,
   CheckCircle,
@@ -65,27 +65,27 @@ import { useUiStore } from '@/stores/ui-store';
 const STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
   pending: {
     color:
-      'bg-[var(--admin-warning)]/12 text-[var(--admin-warning)] border border-[var(--admin-warning)]/25',
+      'bg-[var(--color-warning)]/12 text-[var(--color-warning)] border border-[var(--color-warning)]/25',
     Icon: Clock,
   },
   processing: {
     color:
-      'bg-[var(--admin-info)]/12 text-[var(--admin-info)] border border-[var(--admin-info)]/25',
+      'bg-[var(--color-info)]/12 text-[var(--color-info)] border border-[var(--color-info)]/25',
     Icon: RefreshCw,
   },
   shipped: {
     color:
-      'bg-[var(--admin-purple)]/12 text-[var(--admin-purple)] border border-[var(--admin-purple)]/25',
+      'bg-[var(--color-violet)]/12 text-[var(--color-violet)] border border-[var(--color-violet)]/25',
     Icon: Truck,
   },
   delivered: {
     color:
-      'bg-[var(--admin-success)]/12 text-[var(--admin-success)] border border-[var(--admin-success)]/25',
+      'bg-[var(--color-success)]/12 text-[var(--color-success)] border border-[var(--color-success)]/25',
     Icon: CheckCircle,
   },
   cancelled: {
     color:
-      'bg-[var(--admin-error)]/12 text-[var(--admin-error)] border border-[var(--admin-error)]/25',
+      'bg-[var(--color-danger)]/12 text-[var(--color-danger)] border border-[var(--color-danger)]/25',
     Icon: XCircle,
   },
 };
@@ -93,17 +93,17 @@ const STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
 const PAYMENT_STATUS_CONFIG: Record<string, { color: string; Icon: LucideIcon }> = {
   pending: {
     color:
-      'bg-[var(--admin-warning)]/12 text-[var(--admin-warning)] border border-[var(--admin-warning)]/25',
+      'bg-[var(--color-warning)]/12 text-[var(--color-warning)] border border-[var(--color-warning)]/25',
     Icon: Clock,
   },
   paid: {
     color:
-      'bg-[var(--admin-success)]/12 text-[var(--admin-success)] border border-[var(--admin-success)]/25',
+      'bg-[var(--color-success)]/12 text-[var(--color-success)] border border-[var(--color-success)]/25',
     Icon: CheckCircle,
   },
   failed: {
     color:
-      'bg-[var(--admin-error)]/12 text-[var(--admin-error)] border border-[var(--admin-error)]/25',
+      'bg-[var(--color-danger)]/12 text-[var(--color-danger)] border border-[var(--color-danger)]/25',
     Icon: XCircle,
   },
   refunded: {
@@ -143,6 +143,7 @@ const OrdersPage: React.FC = () => {
   const {
     data: ordersData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useGetAdminOrdersQuery({
@@ -309,7 +310,7 @@ const OrdersPage: React.FC = () => {
     return (
       <div>
         <div className="mb-6">
-          <span className="section-number">05 / ĐƠN HÀNG</span>
+          <span className="section-number">02 / ĐƠN HÀNG</span>
           <div className="h-9 w-64 mt-2 shimmer rounded-lg" />
         </div>
         <div className="space-y-3">
@@ -325,12 +326,12 @@ const OrdersPage: React.FC = () => {
     return (
       <div>
         <div className="mb-6">
-          <span className="section-number">05 / ĐƠN HÀNG</span>
+          <span className="section-number">02 / ĐƠN HÀNG</span>
           <h1 className="display-heading mt-2">{t('admin.orders.title')}</h1>
         </div>
         <div className="glass-card-lg p-10 text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
-            <ShoppingCart className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-danger)]/10 flex items-center justify-center">
+            <ShoppingCart className="w-8 h-8 text-[var(--color-danger)]" strokeWidth={1.5} />
           </div>
           <p className="text-sm text-[var(--text-tertiary)] mb-4">
             {t('admin.orders.messages.loadError')}
@@ -347,18 +348,18 @@ const OrdersPage: React.FC = () => {
     <div>
       {/* Page header */}
       <AdminPageHeader
-        sectionNumber="05 / ĐƠN HÀNG"
+        sectionNumber="02 / ĐƠN HÀNG"
         title={t('admin.orders.title')}
         gradientTitle
         sparkle
         subtitle={t('admin.orders.subtitle')}
         actions={
-          <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw
-              className={cn('w-4 h-4 mr-2', isLoading && 'animate-spin')}
+              className={cn('w-4 h-4 mr-2', isFetching && 'animate-spin')}
               strokeWidth={2.25}
             />
-            {t('admin.orders.messages.retry')}
+            {t('common.refresh')}
           </Button>
         }
       />
@@ -369,34 +370,34 @@ const OrdersPage: React.FC = () => {
           label={t('admin.orders.status.pending')}
           value={ordersByStatus.pending ?? 0}
           icon={Clock}
-          accentVar="--admin-warning"
+          accentVar="--color-warning"
           isLoading={isStatsLoading}
         />
         <AdminStatCard
           label={t('admin.orders.status.processing')}
           value={ordersByStatus.processing ?? 0}
           icon={RefreshCw}
-          accentVar="--admin-info"
+          accentVar="--color-info"
           isLoading={isStatsLoading}
         />
         <AdminStatCard
           label={t('admin.orders.status.delivered')}
           value={ordersByStatus.delivered ?? 0}
           icon={CheckCircle}
-          accentVar="--admin-success"
+          accentVar="--color-success"
           isLoading={isStatsLoading}
         />
         <AdminStatCard
           label={t('admin.orders.status.cancelled')}
           value={ordersByStatus.cancelled ?? 0}
           icon={XCircle}
-          accentVar="--admin-error"
+          accentVar="--color-danger"
           isLoading={isStatsLoading}
         />
         <AdminStatCard
           label={t('admin.dashboard.stats.totalRevenue')}
           value={totalRevenue}
-          icon={DollarSign}
+          icon={Banknote}
           accentVar="--accent"
           suffix={t('common.currencySymbol')}
           isLoading={isStatsLoading}
@@ -533,7 +534,7 @@ const OrdersPage: React.FC = () => {
                       <td className="px-4 py-3">
                         <div>
                           <span className="font-semibold text-[var(--text-primary)]">
-                            #{record.number}
+                            {record.number}
                           </span>
                           <br />
                           <span className="text-xs text-[var(--text-tertiary)]">
@@ -566,8 +567,8 @@ const OrdersPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <DollarSign className="size-4 text-[var(--text-tertiary)]" />
-                          <span className="font-semibold" style={{ color: 'var(--admin-info)' }}>
+                          <Banknote className="size-4 text-[var(--text-tertiary)]" />
+                          <span className="font-semibold" style={{ color: 'var(--color-info)' }}>
                             {formatCurrency(record.total)}
                           </span>
                         </div>
@@ -597,7 +598,7 @@ const OrdersPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleViewDetails(record)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-info)]/10 hover:text-[var(--admin-info)] transition"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-info)]/10 hover:text-[var(--color-info)] transition"
                             title={t('admin.orders.actions.view')}
                           >
                             <Eye className="w-4 h-4" strokeWidth={2.25} />
@@ -651,7 +652,7 @@ const OrdersPage: React.FC = () => {
                         {t('admin.orders.details.orderNumber')}
                       </td>
                       <td className="px-4 py-2 font-semibold text-[var(--text-primary)]">
-                        #{selectedOrder.number}
+                        {selectedOrder.number}
                       </td>
                       <td className="px-4 py-2 font-medium bg-white/[0.02] w-[200px]">
                         {t('admin.orders.details.orderDate')}
@@ -893,7 +894,7 @@ const OrdersPage: React.FC = () => {
                     {selectedOrder.discount > 0 && (
                       <div
                         className="flex justify-between"
-                        style={{ color: 'var(--admin-success)' }}
+                        style={{ color: 'var(--color-success)' }}
                       >
                         <span>{t('admin.orders.details.summary.discount')}:</span>
                         <span>-{formatCurrency(selectedOrder.discount)}</span>
@@ -906,7 +907,7 @@ const OrdersPage: React.FC = () => {
                       </span>
                       <span
                         className="font-semibold text-base"
-                        style={{ color: 'var(--admin-info)' }}
+                        style={{ color: 'var(--color-info)' }}
                       >
                         {formatCurrency(selectedOrder.total)}
                       </span>
@@ -943,7 +944,7 @@ const OrdersPage: React.FC = () => {
               <Alert variant="info">
                 <Info className="size-4" />
                 <AlertDescription>
-                  {t('admin.orders.details.orderNumber')}: #{selectedOrder.number}
+                  {t('admin.orders.details.orderNumber')}: {selectedOrder.number}
                   <br />
                   {t('admin.orders.updateStatus.currentStatus')}:{' '}
                   {t(`admin.orders.status.${selectedOrder.status}`)}
@@ -999,7 +1000,7 @@ const OrdersPage: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {getPaymentNote() && (
-                  <p className="text-xs text-[var(--admin-warning)] mt-1">{getPaymentNote()}</p>
+                  <p className="text-xs text-[var(--color-warning)] mt-1">{getPaymentNote()}</p>
                 )}
               </div>
 

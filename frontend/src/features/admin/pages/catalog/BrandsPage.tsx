@@ -168,7 +168,7 @@ const BrandsPage: React.FC = () => {
     <div>
       {/* Page header */}
       <AdminPageHeader
-        sectionNumber="04 / THƯƠNG HIỆU"
+        sectionNumber="07 / THƯƠNG HIỆU"
         title={t('admin.brands.title')}
         gradientTitle
         sparkle
@@ -306,7 +306,7 @@ const BrandsPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setDeleteConfirmId(record.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--admin-error)]/10 hover:text-[var(--admin-error)] transition"
+                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
                             title={t('common.delete')}
                           >
                             <Trash2 className="w-4 h-4" strokeWidth={2.25} />
@@ -372,11 +372,11 @@ const BrandsPage: React.FC = () => {
 
       {/* Delete confirm — glass */}
       <Dialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="glass-dialog !border-[var(--admin-error)]/20 max-w-md">
+        <DialogContent className="glass-dialog !border-[var(--color-danger)]/20 max-w-md">
           <DialogHeader>
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-[var(--admin-error)]/15 flex items-center justify-center flex-shrink-0">
-                <Trash2 className="w-5 h-5 text-[var(--admin-error)]" strokeWidth={2.25} />
+              <div className="w-10 h-10 rounded-full bg-[var(--color-danger)]/15 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-[var(--color-danger)]" strokeWidth={2.25} />
               </div>
               <div>
                 <DialogTitle>{t('admin.brands.deleteTitle')}</DialogTitle>
@@ -428,7 +428,7 @@ const BrandsPage: React.FC = () => {
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
               />
               {formErrors.name && (
-                <p className="text-[var(--admin-error)] text-xs mt-1">{formErrors.name}</p>
+                <p className="text-[var(--color-danger)] text-xs mt-1">{formErrors.name}</p>
               )}
             </div>
 
@@ -468,7 +468,7 @@ const BrandsPage: React.FC = () => {
                 onChange={(e) => setFormData((prev) => ({ ...prev, website: e.target.value }))}
               />
               {formErrors.website && (
-                <p className="text-[var(--admin-error)] text-xs mt-1">{formErrors.website}</p>
+                <p className="text-[var(--color-danger)] text-xs mt-1">{formErrors.website}</p>
               )}
             </div>
 

@@ -19,7 +19,7 @@ interface AdminStatCardProps {
   /** Icon Lucide cho chip góc */
   icon: LucideIcon;
   /**
-   * Tên CSS var màu accent (vd '--admin-info'). Mặc định '--accent'.
+   * Tên CSS var màu accent (vd '--color-info'). Mặc định '--accent'.
    * Accent điều khiển: thanh trên cùng, nền icon chip, halo radial — KHÔNG hard-code hex.
    */
   accentVar?: string;
@@ -80,8 +80,8 @@ const AdminStatCard: React.FC<AdminStatCardProps> = ({
             className={cn(
               'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-semibold tabular-nums shrink-0',
               isPositive
-                ? 'bg-[var(--admin-success)]/12 text-[var(--admin-success)]'
-                : 'bg-[var(--admin-error)]/12 text-[var(--admin-error)]',
+                ? 'bg-[var(--color-success)]/12 text-[var(--color-success)]'
+                : 'bg-[var(--color-danger)]/12 text-[var(--color-danger)]',
             )}
           >
             <TrendArrow className="w-3 h-3" strokeWidth={2.5} />

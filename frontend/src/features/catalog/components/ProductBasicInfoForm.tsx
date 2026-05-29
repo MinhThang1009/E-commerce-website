@@ -55,7 +55,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           {...form.register('name')}
         />
         {form.formState.errors.name?.message && (
-          <p className="text-sm text-[var(--admin-error)] mt-1">
+          <p className="text-sm text-[var(--color-danger)] mt-1">
             {String(form.formState.errors.name.message)}
           </p>
         )}
@@ -73,13 +73,13 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           <SelectContent>
             <SelectItem value="active">
               <span className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-[var(--admin-success)]" strokeWidth={2.25} />
+                <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" strokeWidth={2.25} />
                 {t('admin.products.form.statusActive')}
               </span>
             </SelectItem>
             <SelectItem value="inactive">
               <span className="flex items-center gap-2">
-                <PauseCircle className="h-4 w-4 text-[var(--admin-warning)]" strokeWidth={2.25} />
+                <PauseCircle className="h-4 w-4 text-[var(--color-warning)]" strokeWidth={2.25} />
                 {t('admin.products.form.statusInactive')}
               </span>
             </SelectItem>
@@ -103,7 +103,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           {...form.register('shortDescription')}
         />
         {form.formState.errors.shortDescription?.message && (
-          <p className="text-sm text-[var(--admin-error)] mt-1">
+          <p className="text-sm text-[var(--color-danger)] mt-1">
             {String(form.formState.errors.shortDescription.message)}
           </p>
         )}
@@ -119,7 +119,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           onChange={(html) => form.setValue('description', html)}
         />
         {form.formState.errors.description?.message && (
-          <p className="text-sm text-[var(--admin-error)] mt-1">
+          <p className="text-sm text-[var(--color-danger)] mt-1">
             {String(form.formState.errors.description.message)}
           </p>
         )}

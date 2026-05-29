@@ -49,8 +49,8 @@ const UserDetailPage: React.FC = () => {
   if (error || !userData) {
     return (
       <div className="py-16 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
-          <User className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-danger)]/10 flex items-center justify-center">
+          <User className="w-8 h-8 text-[var(--color-danger)]" strokeWidth={1.5} />
         </div>
         <p className="text-[var(--text-tertiary)] mb-4">{t('admin.userDetail.notFound')}</p>
         <Link to={ROUTES.ADMIN_USERS}>
@@ -269,7 +269,7 @@ const UserDetailPage: React.FC = () => {
                                 onClick={() => setSelectedOrder(order)}
                                 className="font-medium text-[var(--accent)] hover:underline"
                               >
-                                #{order.number || order.id.substring(0, 8)}
+                                {order.number || order.id.substring(0, 8)}
                               </button>
                             </td>
                             <td className="px-4 py-3 text-[var(--text-secondary)] tabular-nums text-xs">
@@ -460,7 +460,7 @@ const UserDetailPage: React.FC = () => {
                   </div>
                 )}
                 {selectedOrder.discount != null && Number(selectedOrder.discount) > 0 && (
-                  <div className="flex justify-between text-[var(--admin-success)]">
+                  <div className="flex justify-between text-[var(--color-success)]">
                     <span>{t('admin.userDetail.orderDialog.discount')}</span>
                     <span className="tabular-nums">-{formatPrice(selectedOrder.discount)}</span>
                   </div>

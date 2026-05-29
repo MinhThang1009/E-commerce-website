@@ -267,7 +267,7 @@ const AdminLayout: React.FC = () => {
                 setShowUserMenu(false);
                 handleLogout();
               }}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--admin-error)] hover:bg-[var(--admin-error)]/10 transition border-t border-[var(--border-default)]"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition border-t border-[var(--border-default)]"
             >
               <LogOut className="w-4 h-4" />
               <span>{t('header.dropdown.logout')}</span>
@@ -354,7 +354,7 @@ const AdminLayout: React.FC = () => {
                 <Bell className="w-5 h-5 text-[var(--text-secondary)]" />
                 <span
                   aria-hidden="true"
-                  className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--admin-error)] rounded-full"
+                  className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--color-danger)] rounded-full"
                 />
               </button>
 

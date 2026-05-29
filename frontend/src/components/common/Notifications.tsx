@@ -103,12 +103,12 @@ const Notification: React.FC<{ notification: NotificationType }> = ({ notificati
       case 'success':
         return 'var(--accent)';
       case 'error':
-        return 'var(--admin-error)';
+        return 'var(--color-danger)';
       case 'warning':
-        return 'var(--admin-warning)';
+        return 'var(--color-warning)';
       case 'info':
       default:
-        return 'var(--admin-info)';
+        return 'var(--color-info)';
     }
   })();
 

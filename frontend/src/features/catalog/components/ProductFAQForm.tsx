@@ -77,7 +77,7 @@ const ProductFAQForm: React.FC<ProductFAQFormProps> = ({ form }) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="absolute top-2 right-2 text-[var(--admin-error)] hover:opacity-80"
+                className="absolute top-2 right-2 text-[var(--color-danger)] hover:opacity-80"
                 onClick={() => removeFaq(index)}
               >
                 <MinusCircle className="size-4" />

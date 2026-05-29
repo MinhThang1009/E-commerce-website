@@ -192,7 +192,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-[var(--admin-error)] hover:opacity-80"
+                    className="text-[var(--color-danger)] hover:opacity-80"
                     onClick={() => removeSpecification(spec.id)}
                   >
                     <Trash2 className="size-4" />

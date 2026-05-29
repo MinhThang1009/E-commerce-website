@@ -49,13 +49,13 @@ styles/
   --color-secondary-light: #ff9a87;
   --color-secondary-dark: #e56954;
 
-  /* Admin semantic */
-  --admin-info: #1890ff;
-  --admin-success: #52c41a;
-  --admin-error: #ff4d4f;
-  --admin-warning: #faad14;
-  --admin-purple: #722ed1;
-  --admin-muted: #999;
+  /* Semantic colors — đồng bộ palette §2.2 (Tailwind) với chart. Trước đây là --admin-* (palette Ant) */
+  --color-info: #3b82f6;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-warning: #f59e0b;
+  --color-violet: #8b5cf6;
+  --color-muted: #999;
 
   /* Chart colors — dùng trong Recharts (SVG attr, không CSS var) */
   --chart-blue: #3b82f6;

@@ -616,8 +616,8 @@ const EditProductPage: React.FC = () => {
     return (
       <div className="py-16 text-center">
         <div className="max-w-md mx-auto">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--admin-error)]/10 flex items-center justify-center">
-            <AlertCircle className="w-8 h-8 text-[var(--admin-error)]" strokeWidth={1.5} />
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--color-danger)]/10 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-[var(--color-danger)]" strokeWidth={1.5} />
           </div>
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
             {t('admin.products.errors.loadFailed')}

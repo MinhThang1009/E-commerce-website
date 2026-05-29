@@ -62,7 +62,7 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
               <span
                 className={cn(
                   'absolute left-1/2 top-1/2 h-[calc(100%+1.25rem)] w-0.5 -translate-x-1/2',
-                  isDone ? 'bg-[var(--admin-success)]' : 'bg-[var(--border-default)]',
+                  isDone ? 'bg-[var(--color-success)]' : 'bg-[var(--border-default)]',
                 )}
                 aria-hidden="true"
               />
@@ -71,7 +71,7 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
               className={cn(
                 'relative z-10 flex h-7 w-7 items-center justify-center rounded-full border text-xs font-bold tabular-nums transition',
                 isDone
-                  ? 'border-[var(--admin-success)] bg-[var(--admin-success)] text-white'
+                  ? 'border-[var(--color-success)] bg-[var(--color-success)] text-white'
                   : isActive
                     ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent)]'
                     : 'border-[var(--border-default)] bg-[var(--bg-base)] text-[var(--text-tertiary)]',

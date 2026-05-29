@@ -52,7 +52,7 @@ const ProductFormSaveBar: React.FC<ProductFormSaveBarProps> = ({
         minute: '2-digit',
       });
       return (
-        <span className="flex items-center gap-1.5 text-xs text-[var(--admin-success)]">
+        <span className="flex items-center gap-1.5 text-xs text-[var(--color-success)]">
           <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.25} />
           {t('admin.products.autosave.saved', { time })}
         </span>

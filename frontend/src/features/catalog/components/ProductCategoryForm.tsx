@@ -67,7 +67,7 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
           </div>
         )}
         {form.formState.errors.categoryIds?.message && (
-          <p className="text-sm text-[var(--admin-error)] mt-1">
+          <p className="text-sm text-[var(--color-danger)] mt-1">
             {String(form.formState.errors.categoryIds.message)}
           </p>
         )}

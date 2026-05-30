@@ -22,9 +22,10 @@
 ```
 src/components/
   common/     — UI primitives (Button, Modal, Input, Card, Rating, TiptapEditor...)
-  layout/     — Page structure (Header, Footer, MainLayout, PageLayout, Grid)
+  layout/     — Page structure (Header, Footer, MainLayout, PageLayout, PageTransition, MobileBottomNav)
   routing/    — Route guards (ProtectedRoute, AdminRoute, PublicOnlyRoute)
   sections/   — Homepage sections (HeroSection)
+  ui/         — shadcn/ui primitives (alert, badge, button, card, checkbox, dialog, input, label, select, sheet, switch, tabs, tooltip)
   icons/      — SVG icon components + NAVIGATION_ICONS map
 ```
 
@@ -69,28 +70,32 @@ import { ProtectedRoute, AdminRoute, PublicOnlyRoute } from '@/features/auth';
 | `LanguageSwitcher` | —                                                                                                                                               | Header i18n toggle (vi/en) — lưu vào `localStorage('language')`                         |
 | `ThemeToggle`      | —                                                                                                                                               | Header dark/light mode toggle — dùng View Transitions API cho circular reveal effect    |
 | `FeedbackModal`    | `isOpen`, `onClose`, `onSubmit`                                                                                                                 | Thu thập feedback người dùng                                                            |
+| `PageHero`         | `common/PageHero.tsx`                                                                                                                           | Hero banner đầu trang (không nằm trong barrel — import trực tiếp)                       |
 
 ## Barrel export
 
 ```ts
 // common/index.ts export phần lớn common components — dùng barrel khi có thể
-import { Button, Modal, PremiumButton, Card, Badge } from '@components/common';
+import { Button, Modal, PremiumButton, Badge } from '@components/common';
 // hoặc: import { Button } from '@/components/common';
 ```
 
-> **Các component KHÔNG có trong barrel** (import trực tiếp): `TiptapEditor`, `SearchBar`, `ImageUpload`, `AddressPicker`, `FeedbackModal`.
+> **Card** không nằm trong `common/` — import từ `@/components/ui` (shadcn/ui): `import { Card } from '@/components/ui';`
+
+> **Các component KHÔNG có trong barrel** (import trực tiếp): `SearchBar`, `ImageUpload`, `AddressPicker`, `FeedbackModal`, `PageHero`.
 
 ---
 
 # 3. Layout Components
 
-| Component        | Mô tả                                                                                                                                                                                                                                                                                  |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MainLayout`     | Root layout cho user routes: `Header → AnimatePresence + PageTransition → <Outlet /> → Footer`. Mount `useScrollToTop()`. Trigger `useCartMerge(isAuthenticated, justLoggedIn)` sau login.                                                                                             |
-| `PageTransition` | Framer Motion wrapper cho route transitions (fade + slide). Keyed by `pathname` — AnimatePresence triggers enter/exit animations khi route thay đổi.                                                                                                                                   |
-| `Header`         | Fixed top nav (z-50): logo, search bar, user dropdown (avatar/initials), cart/wishlist badge count, language/theme toggles, mobile hamburger menu. Scroll-aware: thêm `backdrop-blur` khi scroll > 10px. Cart count: ưu tiên server count khi authenticated, fallback về localStorage. |
-| `Footer`         | Links danh mục, store info, social links, feedback form CTA.                                                                                                                                                                                                                           |
-| `PageLayout`     | Per-page wrapper: SEO qua `react-helmet-async`, loading/error states. Props: `title`, `description?`, `keywords?`, `isLoading?`, `error?`, `showContainer?`, `noPaddingTop?`.                                                                                                          |
+| Component         | Mô tả                                                                                                                                                                                                                                                                                  |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MainLayout`      | Root layout cho user routes: `Header → AnimatePresence + PageTransition → <Outlet /> → Footer`. Mount `useScrollToTop()`. Trigger `useCartMerge(isAuthenticated, justLoggedIn)` sau login.                                                                                             |
+| `PageTransition`  | Framer Motion wrapper cho route transitions (fade + slide). Keyed by `pathname` — AnimatePresence triggers enter/exit animations khi route thay đổi.                                                                                                                                   |
+| `Header`          | Fixed top nav (z-50): logo, search bar, user dropdown (avatar/initials), cart/wishlist badge count, language/theme toggles, mobile hamburger menu. Scroll-aware: thêm `backdrop-blur` khi scroll > 10px. Cart count: ưu tiên server count khi authenticated, fallback về localStorage. |
+| `Footer`          | Links danh mục, store info, social links, feedback form CTA.                                                                                                                                                                                                                           |
+| `PageLayout`      | Per-page wrapper: SEO qua `react-helmet-async`, loading/error states. Props: `title`, `description?`, `keywords?`, `isLoading?`, `error?`, `showContainer?`, `noPaddingTop?`.                                                                                                          |
+| `MobileBottomNav` | Fixed bottom nav cho mobile (lucide icons), cart badge count, điều hướng các tab theo `isAuthenticated`.                                                                                                                                                                               |
 
 ### MainLayout mount pattern
 

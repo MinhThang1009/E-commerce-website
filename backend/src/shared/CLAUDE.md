@@ -117,11 +117,10 @@ const {
   NotFoundError,
   DomainError,
   eventBus,
-  Result,
   unitOfWork,
   logger,
   sequelize,
 } = require('@shared');
 ```
 
-`Result` — utility class cho pattern Result/Option (ít dùng trực tiếp, chủ yếu dùng trong DDD-lite modules nếu cần). **Lưu ý:** file `src/shared/result.js` không tồn tại trên disk — `index.js` sẽ throw khi `require('@shared')` được gọi trực tiếp mà không có mock.
+`index.js` spread toàn bộ `@shared/errors` (`AppError`, `DomainError`, `BusinessError`, `ValidationError`, `NotFoundError`) cộng `eventBus`, `sequelize`, `unitOfWork`, `logger`. Không có export `Result`.

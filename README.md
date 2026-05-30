@@ -28,7 +28,7 @@
 **Điểm nổi bật:**
 - Kiến trúc Modular Monolith — 17 backend modules, DI pattern, Event-Driven Communication
 - AI Chatbot với Hybrid RAG (cosine similarity + BM25 keyword, 1024-dim vectors)
-- **5.168 test cases** (257 suites, 5 tầng), coverage 100% unit, CI/CD với GitHub Actions
+- **5.388 test cases** (258 suites, 5 tầng), coverage 99,76% branches unit, CI/CD với GitHub Actions
 - Hỗ trợ đa ngôn ngữ (vi/en), dark mode, responsive
 
 ---
@@ -60,7 +60,7 @@ Route → Page (lazy-loaded) → Components
 
 | Biện pháp | Chi tiết |
 |---|---|
-| **5.168 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
+| **5.388 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
 | **Coverage thresholds** | Statements ≥97%, Lines ≥97%, Branches ≥85%, Functions ≥95% |
 | **ESLint strict** | `--max-warnings 0` — không cho phép warning tồn tại |
 | **Pre-commit hooks** | Secret scan + architecture audit (chặn service import ORM trực tiếp) + lint-staged |
@@ -73,12 +73,13 @@ Route → Page (lazy-loaded) → Components
 ## 3. Tech Stack
 
 **Frontend**
-- React 19 + TypeScript + Vite 8 (build ~2.5s)
+- React 19.2.6 + TypeScript 5.8 + Vite 8.0.14 (build ~2.5s)
 - Zustand v5 + Immer (client state) / TanStack Query v5 (server state)
 - Tailwind CSS v4 (`@tailwindcss/vite`) + SCSS + shadcn/ui (Radix UI) + Framer Motion v12
 - React Router v7 (lazy-loaded, code splitting)
-- i18next v26 + react-i18next (vi/en)
+- i18next v26 + react-i18next (vi/en) + Zod v4 (form/schema validation)
 - Lucide React (icon library)
+- dayjs (date utils), exceljs (export Excel), leaflet (bản đồ OpenStreetMap)
 
 **Backend**
 - Node.js 20 + Express 4 (Modular Monolith, 17 modules)
@@ -140,7 +141,7 @@ cp frontend/.env.example frontend/.env
 
 ```bash
 cd backend
-npm run db:migrate    # Tạo schema từ 81 migrations
+npm run db:migrate    # Tạo schema từ 61 migrations
 npm run db:seed       # Import seed data (sản phẩm, danh mục, users mẫu)
 ```
 
@@ -242,12 +243,12 @@ validate → normalize (expandAbbreviations) → injection/off-topic check
 
 | Suite | Suites | Tests | DB | Runtime |
 |---|---|---|---|---|
-| BE Unit Tests | 159 | 3.636 | Mock | ~10s |
-| BE Integration Tests | 36 | 184 | MySQL thật | ~50s |
-| BE API HTTP Tests | 39 | 700 | MySQL thật | ~190s |
-| BE E2E Tests | 5 | 100 | MySQL thật | ~20s |
-| FE Component Tests | 18 | 548 | jsdom | ~9s |
-| **Tổng** | **257** | **5.168** | | |
+| BE Unit Tests | 157 | 3.724 | Mock | ~20s |
+| BE Integration Tests | 36 | 184 | MySQL thật | ~55s |
+| BE API HTTP Tests | 39 | 700 | MySQL thật | ~230s |
+| BE E2E Tests | 5 | 100 | MySQL thật | ~25s |
+| FE Component Tests | 21 | 680 | jsdom | ~12s |
+| **Tổng** | **258** | **5.388** | | |
 
 Coverage threshold (CI): Statements >= 97%, Lines >= 97%, Branches >= 85%, Functions >= 95%.
 
@@ -288,7 +289,7 @@ e-commerce-website/
 │   │   │   ├── payment/        # MoMo + VNPay
 │   │   │   ├── ai/             # chatbot service, vector search
 │   │   │   └── ...             # 12 modules khác
-│   │   ├── models/             # 26 Sequelize models + associations (index.js)
+│   │   ├── models/             # 25 Sequelize models + associations (index.js)
 │   │   ├── shared/             # EventBus, AppError, UnitOfWork
 │   │   ├── services/           # email, embedding (unified), vector-store
 │   │   ├── middlewares/        # authenticate, authorize, rate-limiter
@@ -297,7 +298,7 @@ e-commerce-website/
 │   │   ├── config/             # database.js, sequelize.js, swagger.js
 │   │   ├── constants/          # shipping, OTP, pagination limits
 │   │   ├── locales/            # vi.json / en.json
-│   │   └── migrations/         # 81 Sequelize migrations
+│   │   └── migrations/         # 61 Sequelize migrations
 │   ├── data/                   # vector-db.json, SQL dumps
 │   ├── docs/                   # openapi.json (auto-generated)
 │   └── scripts/                # rebuild-db.js, index-products.js, audit-architecture.sh
@@ -315,7 +316,7 @@ e-commerce-website/
 │   │   ├── stores/             # 6 Zustand stores (auth, cart, chat, catalog, wishlist, ui)
 │   │   ├── routes/             # AppRoutes.tsx (lazy), paths.ts
 │   │   ├── lib/                # api-client.ts (Axios), query-client.ts (TanStack)
-│   │   ├── hooks/              # 8 global hooks (useTokenRefresh, useAntdToast...)
+│   │   ├── hooks/              # 5 global hooks (use-api-state, use-debounce, use-notifications, use-scroll-to-top, use-token-refresh)
 │   │   ├── pages/              # Static pages (Home, About, FAQs, Privacy...)
 │   │   ├── utils/              # 14 utilities (token-manager, auth-utils...)
 │   │   ├── types/              # Shared TypeScript types
@@ -366,7 +367,7 @@ e-commerce-website/
 |---|---|
 | `VITE_API_URL` | URL backend API, mặc định `http://localhost:8888/api` |
 | `VITE_GOOGLE_CLIENT_ID` | Google OAuth Client ID |
-| `VITE_GOONG_API_KEY` | Goong Maps API key (bản đồ chọn địa chỉ) |
+| `VITE_GOONG_API_KEY` | Goong Maps API key (geocoding địa chỉ → tọa độ; bản đồ hiển thị dùng Leaflet + OpenStreetMap) |
 
 ---
 

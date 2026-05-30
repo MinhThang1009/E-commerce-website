@@ -280,6 +280,16 @@ describe('BestSellersPage', () => {
     render(<BestSellersPage />);
     expect(screen.getByText('bestSellers.error.title')).toBeInTheDocument();
   });
+
+  it('loaded với sản phẩm (total > 0) → hiển thị dòng thống kê', () => {
+    mockGetProductsQuery = {
+      data: { data: [{ id: 'p1' }], total: 5, limit: 12 },
+      isLoading: false,
+      error: null,
+    };
+    render(<BestSellersPage />);
+    expect(screen.getByText('bestSellers.stats')).toBeInTheDocument();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -312,6 +322,16 @@ describe('DealsPage', () => {
     mockGetDealsQuery = { data: null, isLoading: false, error: new Error('Server error') };
     render(<DealsPage />);
     expect(screen.getByText('deals.errorTitle')).toBeInTheDocument();
+  });
+
+  it('loaded với deal giá dạng chuỗi → parse price/compareAtPrice đúng', () => {
+    mockGetDealsQuery = {
+      data: { data: [{ id: 'd1', price: '100000', compareAtPrice: '200000' }] },
+      isLoading: false,
+      error: null,
+    };
+    render(<DealsPage />);
+    expect(screen.getByText('deals.heroTitle')).toBeInTheDocument();
   });
 });
 
@@ -444,6 +464,22 @@ describe('BrandsPage: render với brands data', () => {
     };
     render(<BrandsPage />);
     expect(screen.queryByText('brands.noResults')).not.toBeInTheDocument();
+  });
+
+  it('brand name không có trong SIMPLE_ICONS_SLUGS → getBrandLogoUrl trả null → render initial', () => {
+    // "TêN Thương Hiệu Lạ" chắc chắn không có trong SIMPLE_ICONS_SLUGS → logoSrc=null → nhánh false của ternary
+    mockGetBrandsQuery = {
+      data: {
+        data: [
+          { id: '99', name: 'TenThuongHieuKhongCoTrongSimpleIcons', slug: 'custom', logoUrl: null },
+        ],
+      },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    render(<BrandsPage />);
+    expect(screen.getByText('TenThuongHieuKhongCoTrongSimpleIcons')).toBeInTheDocument();
   });
 });
 
@@ -1032,5 +1068,78 @@ describe('BestSellersPage: more interactions', () => {
     fireEvent.change(sortSelect, { target: { value: 'price_desc' } });
     // Assert — component vẫn hiển thị sau reset page
     expect(screen.getByText('bestSellers.title')).toBeInTheDocument();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CategoriesPage: slug/name mapping coverage (dòng 48-54)
+// ═══════════════════════════════════════════════════════════════
+describe('CategoriesPage: slug/name mapping', () => {
+  const mkCat = (id: string, name: string, slug: string) => ({
+    id,
+    name,
+    slug,
+    nameVi: name,
+    nameEn: name,
+    isActive: true,
+    sortOrder: 0,
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('category với name điện thoại → render được', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('1', 'Điện thoại', 'dien-thoai-custom')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category với name tablet → render được', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('2', 'Máy tính bảng tablet', 'tablet-custom')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category với name laptop → render được', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('3', 'Laptop máy tính xách tay', 'laptop-custom')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category với name smartwatch → render được', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('4', 'Smartwatch thông minh', 'watch-custom')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category với name đồng hồ → render được', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('5', 'Đồng hồ watch', 'dong-ho-custom')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category không match slug/name → fallback icon Package', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('6', 'Phụ kiện khác', 'phu-kien-khac')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
   });
 });

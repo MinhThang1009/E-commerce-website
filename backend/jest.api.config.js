@@ -10,7 +10,7 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/src/__api__/**/*.http.test.js'],
-  testPathIgnorePatterns: ['/node_modules/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.stryker-tmp/'],
   setupFiles: ['./src/__api__/setup.js'],
   moduleNameMapper: {
     '^@modules/(.*)$':     '<rootDir>/src/modules/$1',

@@ -86,6 +86,34 @@ const ChartCardTitle: React.FC<{ icon: LucideIcon; color: string; title: string 
   </div>
 );
 
+/** Skeleton shimmer khi chart đang tải lần đầu (chưa có cached data) */
+const ChartSkeleton: React.FC = () => <div className="shimmer h-full w-full rounded-xl" />;
+
+/** Trạng thái rỗng: icon trong khung nét đứt + thông báo khi không có dữ liệu */
+const EmptyChart: React.FC<{ icon: LucideIcon }> = ({ icon: Icon }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+      <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-dashed border-[var(--border-default)] text-[var(--text-tertiary)]">
+        <Icon className="h-6 w-6" strokeWidth={1.75} />
+      </span>
+      <p className="text-xs font-medium text-[var(--text-tertiary)]">{t('admin.charts.noData')}</p>
+    </div>
+  );
+};
+
+/** Bọc chart: ưu tiên skeleton (đang tải) → empty state (rỗng) → chart thật */
+const ChartFrame: React.FC<{
+  isLoading: boolean;
+  isEmpty: boolean;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}> = ({ isLoading, isEmpty, icon, children }) => {
+  if (isLoading) return <ChartSkeleton />;
+  if (isEmpty) return <EmptyChart icon={icon} />;
+  return <>{children}</>;
+};
+
 const DashboardCharts: React.FC = () => {
   const { t } = useTranslation();
   const theme = useUiStore((s) => s.theme);
@@ -159,14 +187,22 @@ const DashboardCharts: React.FC = () => {
     endDate,
     groupBy,
   });
-  const { data: orderStatusData } = useGetOrderStatusAnalyticsQuery({ startDate });
-  const { data: topProductsData } = useGetTopProductsAnalyticsQuery({
-    metric: topProductMetric,
-    limit: 5,
+  const { data: orderStatusData, isLoading: isOrderStatusLoading } =
+    useGetOrderStatusAnalyticsQuery({ startDate });
+  const { data: topProductsData, isLoading: isTopProductsLoading } =
+    useGetTopProductsAnalyticsQuery({
+      metric: topProductMetric,
+      limit: 5,
+    });
+  const { data: categoryData, isLoading: isCategoryLoading } =
+    useGetRevenueByCategoryAnalyticsQuery({ startDate, endDate });
+  const { data: userGrowthData, isLoading: isUserGrowthLoading } = useGetUserGrowthAnalyticsQuery({
+    startDate,
+    endDate,
+    groupBy,
   });
-  const { data: categoryData } = useGetRevenueByCategoryAnalyticsQuery({ startDate, endDate });
-  const { data: userGrowthData } = useGetUserGrowthAnalyticsQuery({ startDate, endDate, groupBy });
-  const { data: paymentMethodsData } = useGetPaymentMethodsAnalyticsQuery();
+  const { data: paymentMethodsData, isLoading: isPaymentMethodsLoading } =
+    useGetPaymentMethodsAnalyticsQuery();
 
   // Comparison Mode — ghost line kỳ trước (spec §21.5)
   const comparison = usePeriodComparison({ startDate, endDate, groupBy }, comparePeriod);
@@ -480,63 +516,69 @@ const DashboardCharts: React.FC = () => {
             title={t('admin.charts.orderStatusDist')}
           />
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={orderStatusData?.data || []}
-                  dataKey="count"
-                  nameKey="label"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={95}
-                  stroke={isDark ? '#111111' : '#ffffff'}
-                  strokeWidth={2}
-                  paddingAngle={2}
-                >
-                  {(orderStatusData?.data || []).map((entry) => (
-                    <Cell
-                      key={entry.status}
-                      fill={ORDER_STATUS_COLORS[entry.status] || '#9ca3af'}
+            <ChartFrame
+              isLoading={isOrderStatusLoading}
+              isEmpty={(orderStatusData?.data || []).length === 0}
+              icon={PieChartIcon}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={orderStatusData?.data || []}
+                    dataKey="count"
+                    nameKey="label"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={95}
+                    stroke={isDark ? '#111111' : '#ffffff'}
+                    strokeWidth={2}
+                    paddingAngle={2}
+                  >
+                    {(orderStatusData?.data || []).map((entry) => (
+                      <Cell
+                        key={entry.status}
+                        fill={ORDER_STATUS_COLORS[entry.status] || '#9ca3af'}
+                      />
+                    ))}
+                    <Label
+                      position="center"
+                      content={({ viewBox }) => {
+                        const vb = viewBox as { cx?: number; cy?: number } | undefined;
+                        if (vb?.cx == null || vb?.cy == null) return null;
+                        const total = (orderStatusData?.data || []).reduce(
+                          (sum, d) => sum + (d.count ?? 0),
+                          0,
+                        );
+                        return (
+                          <text x={vb.cx} y={vb.cy} textAnchor="middle">
+                            <tspan
+                              x={vb.cx}
+                              dy="-0.1em"
+                              fontSize="26"
+                              fontWeight="700"
+                              fill={isDark ? '#fafafa' : '#09090b'}
+                            >
+                              {total}
+                            </tspan>
+                            <tspan
+                              x={vb.cx}
+                              dy="1.6em"
+                              fontSize="11"
+                              fill={isDark ? AXIS_DARK : AXIS_LIGHT}
+                            >
+                              {t('admin.charts.totalOrdersShort', { defaultValue: 'đơn' })}
+                            </tspan>
+                          </text>
+                        );
+                      }}
                     />
-                  ))}
-                  <Label
-                    position="center"
-                    content={({ viewBox }) => {
-                      const vb = viewBox as { cx?: number; cy?: number } | undefined;
-                      if (vb?.cx == null || vb?.cy == null) return null;
-                      const total = (orderStatusData?.data || []).reduce(
-                        (sum, d) => sum + (d.count ?? 0),
-                        0,
-                      );
-                      return (
-                        <text x={vb.cx} y={vb.cy} textAnchor="middle">
-                          <tspan
-                            x={vb.cx}
-                            dy="-0.1em"
-                            fontSize="26"
-                            fontWeight="700"
-                            fill={isDark ? '#fafafa' : '#09090b'}
-                          >
-                            {total}
-                          </tspan>
-                          <tspan
-                            x={vb.cx}
-                            dy="1.6em"
-                            fontSize="11"
-                            fill={isDark ? AXIS_DARK : AXIS_LIGHT}
-                          >
-                            {t('admin.charts.totalOrdersShort', { defaultValue: 'đơn' })}
-                          </tspan>
-                        </text>
-                      );
-                    }}
-                  />
-                </Pie>
-                <Tooltip content={<GlassTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+                  </Pie>
+                  <Tooltip content={<GlassTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartFrame>
           </div>
         </div>
 
@@ -547,32 +589,38 @@ const DashboardCharts: React.FC = () => {
             title={t('admin.charts.userGrowth')}
           />
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={(userGrowthData?.data || []).map((d) => ({
-                  ...d,
-                  date: formatPeriodLabel(d.date),
-                }))}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
-                <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
-                <YAxis allowDecimals={false} tick={tickStyle} axisLine={false} tickLine={false} />
-                <Tooltip
-                  cursor={{ stroke: CHART_VIOLET, strokeDasharray: '4 4', opacity: 0.4 }}
-                  content={<GlassTooltip labelMap={{ newUsers: t('admin.charts.newUsers') }} />}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="newUsers"
-                  name={t('admin.charts.newUsers')}
-                  stroke={CHART_VIOLET}
-                  strokeWidth={2.5}
-                  dot={{ r: 3, fill: CHART_VIOLET }}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <ChartFrame
+              isLoading={isUserGrowthLoading}
+              isEmpty={(userGrowthData?.data || []).length === 0}
+              icon={UserPlus}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={(userGrowthData?.data || []).map((d) => ({
+                    ...d,
+                    date: formatPeriodLabel(d.date),
+                  }))}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                >
+                  <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                  <XAxis dataKey="date" tick={tickStyle} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={tickStyle} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    cursor={{ stroke: CHART_VIOLET, strokeDasharray: '4 4', opacity: 0.4 }}
+                    content={<GlassTooltip labelMap={{ newUsers: t('admin.charts.newUsers') }} />}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="newUsers"
+                    name={t('admin.charts.newUsers')}
+                    stroke={CHART_VIOLET}
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: CHART_VIOLET }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartFrame>
           </div>
         </div>
       </div>
@@ -620,59 +668,65 @@ const DashboardCharts: React.FC = () => {
             </div>
           </div>
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={(topProductsData?.data || []).map((p) => ({
-                  name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
-                  revenue: p.revenue,
-                  soldCount: p.soldCount,
-                }))}
-                layout="vertical"
-                margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
-              >
-                <CartesianGrid stroke={gridStroke} strokeDasharray="0" horizontal={false} />
-                <XAxis
-                  type="number"
-                  tick={tickStyle}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={topProductMetric === 'revenue' ? compactNumber : undefined}
-                />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  tick={tickStyle}
-                  width={80}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(42, 172, 167, 0.08)' }}
-                  content={
-                    <GlassTooltip
-                      formatter={
-                        topProductMetric === 'revenue' ? (v) => formatPrice(Number(v)) : undefined
-                      }
-                      labelMap={{
-                        revenue: t('admin.charts.revenueLabel'),
-                        soldCount: t('admin.charts.soldCount'),
-                      }}
-                    />
-                  }
-                />
-                <Bar
-                  dataKey={topProductMetric}
-                  name={
-                    topProductMetric === 'revenue'
-                      ? t('admin.charts.revenueLabel')
-                      : t('admin.charts.soldCount')
-                  }
-                  fill={topProductMetric === 'revenue' ? accent : CHART_GREEN}
-                  radius={[0, 6, 6, 0]}
-                  maxBarSize={30}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartFrame
+              isLoading={isTopProductsLoading}
+              isEmpty={(topProductsData?.data || []).length === 0}
+              icon={Trophy}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(topProductsData?.data || []).map((p) => ({
+                    name: p.name.length > 20 ? p.name.substring(0, 20) + '...' : p.name,
+                    revenue: p.revenue,
+                    soldCount: p.soldCount,
+                  }))}
+                  layout="vertical"
+                  margin={{ top: 5, right: 20, left: 80, bottom: 5 }}
+                >
+                  <CartesianGrid stroke={gridStroke} strokeDasharray="0" horizontal={false} />
+                  <XAxis
+                    type="number"
+                    tick={tickStyle}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={topProductMetric === 'revenue' ? compactNumber : undefined}
+                  />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    tick={tickStyle}
+                    width={80}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(42, 172, 167, 0.08)' }}
+                    content={
+                      <GlassTooltip
+                        formatter={
+                          topProductMetric === 'revenue' ? (v) => formatPrice(Number(v)) : undefined
+                        }
+                        labelMap={{
+                          revenue: t('admin.charts.revenueLabel'),
+                          soldCount: t('admin.charts.soldCount'),
+                        }}
+                      />
+                    }
+                  />
+                  <Bar
+                    dataKey={topProductMetric}
+                    name={
+                      topProductMetric === 'revenue'
+                        ? t('admin.charts.revenueLabel')
+                        : t('admin.charts.soldCount')
+                    }
+                    fill={topProductMetric === 'revenue' ? accent : CHART_GREEN}
+                    radius={[0, 6, 6, 0]}
+                    maxBarSize={30}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartFrame>
           </div>
         </div>
 
@@ -683,47 +737,53 @@ const DashboardCharts: React.FC = () => {
             title={t('admin.charts.revenueByCategory')}
           />
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={(categoryData?.data || []).map((c, i) => ({
-                  name:
-                    c.categoryName.length > 15
-                      ? c.categoryName.substring(0, 15) + '...'
-                      : c.categoryName,
-                  revenue: c.revenue,
-                  fill: PIE_COLORS[i % PIE_COLORS.length],
-                }))}
-                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              >
-                <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
-                <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
-                <YAxis
-                  tickFormatter={compactNumber}
-                  tick={tickStyle}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: 'rgba(139, 92, 246, 0.08)' }}
-                  content={
-                    <GlassTooltip
-                      formatter={(v) => formatPrice(Number(v))}
-                      labelMap={{ revenue: t('admin.charts.revenueLabel') }}
-                    />
-                  }
-                />
-                <Bar
-                  dataKey="revenue"
-                  name={t('admin.charts.revenueLabel')}
-                  radius={[6, 6, 0, 0]}
-                  maxBarSize={72}
+            <ChartFrame
+              isLoading={isCategoryLoading}
+              isEmpty={(categoryData?.data || []).length === 0}
+              icon={Layers}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={(categoryData?.data || []).map((c, i) => ({
+                    name:
+                      c.categoryName.length > 15
+                        ? c.categoryName.substring(0, 15) + '...'
+                        : c.categoryName,
+                    revenue: c.revenue,
+                    fill: PIE_COLORS[i % PIE_COLORS.length],
+                  }))}
+                  margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 >
-                  {(categoryData?.data || []).map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <CartesianGrid stroke={gridStroke} strokeDasharray="0" vertical={false} />
+                  <XAxis dataKey="name" tick={tickStyle} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tickFormatter={compactNumber}
+                    tick={tickStyle}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(139, 92, 246, 0.08)' }}
+                    content={
+                      <GlassTooltip
+                        formatter={(v) => formatPrice(Number(v))}
+                        labelMap={{ revenue: t('admin.charts.revenueLabel') }}
+                      />
+                    }
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    name={t('admin.charts.revenueLabel')}
+                    radius={[6, 6, 0, 0]}
+                    maxBarSize={72}
+                  >
+                    {(categoryData?.data || []).map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartFrame>
           </div>
         </div>
       </div>
@@ -774,32 +834,38 @@ const DashboardCharts: React.FC = () => {
             title={t('admin.charts.paymentMethods')}
           />
           <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={(paymentMethodsData?.data || []).map((p) => ({
-                    name: p.method,
-                    value: p.count,
-                    revenue: p.revenue,
-                  }))}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={95}
-                  stroke={isDark ? '#111111' : '#ffffff'}
-                  strokeWidth={2}
-                  paddingAngle={2}
-                >
-                  {(paymentMethodsData?.data || []).map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip content={<GlassTooltip />} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <ChartFrame
+              isLoading={isPaymentMethodsLoading}
+              isEmpty={(paymentMethodsData?.data || []).length === 0}
+              icon={CreditCard}
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={(paymentMethodsData?.data || []).map((p) => ({
+                      name: p.method,
+                      value: p.count,
+                      revenue: p.revenue,
+                    }))}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={95}
+                    stroke={isDark ? '#111111' : '#ffffff'}
+                    strokeWidth={2}
+                    paddingAngle={2}
+                  >
+                    {(paymentMethodsData?.data || []).map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<GlassTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </ChartFrame>
           </div>
         </div>
       </div>

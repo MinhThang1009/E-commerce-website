@@ -172,7 +172,7 @@ Inject từ `app.js`:
 
 - **`createReview` là upsert:** Nếu user đã review sản phẩm → update review cũ thay vì báo duplicate. Không có unique constraint enforced tại service layer.
 - **Order status phải là `delivered`:** `processing` hay `shipped` chưa đủ điều kiện review. `hasUserPurchasedProduct` join `Order` với `where status = 'delivered'`.
-- **`isVerified` vs `isHidden`:** Hai fields độc lập. `isVerified = false` → hiện nhưng không có badge "Verified Purchase". Giá trị `isVerified` mặc định khi user tạo/update là `true`.
+- **`isVerified`:** `isVerified = false` → hiện nhưng không có badge "Verified Purchase". Giá trị `isVerified` mặc định khi user tạo/update là `true` (model default là `false`, nhưng service luôn set `true`). Review model KHÔNG có field `isHidden`.
 - **`avgRating` update sau mỗi review CRUD:** `_refreshProductRating()` gọi inline trong service, không qua model hooks. Nếu `rating` sai trên Product → kiểm tra xem có code path nào bỏ qua `_refreshProductRating` không.
 - **Không có `GET /check-purchased` endpoint:** FE xác định "đã mua" bằng cách thử `POST /` — service trả 403 nếu chưa mua. Không thêm endpoint check riêng.
 - **Admin không thể delete review qua HTTP:** `deleteReview` service tìm `findReviewByIdAndUserId` — admin không có userId khớp → 404. Admin delete phải xử lý direct DB hoặc thêm endpoint riêng.

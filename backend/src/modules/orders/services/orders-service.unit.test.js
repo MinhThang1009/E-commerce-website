@@ -142,6 +142,22 @@ describe('OrdersService', () => {
       ).rejects.toMatchObject({ statusCode: 422 });
     });
 
+    test('paymentStatus=failed (bất kể status) → cho phép repay', async () => {
+      // _canRepay: status !== pending/cancelled NHƯNG paymentStatus === 'failed' → vẫn cho repay
+      const order = {
+        id: 7,
+        number: 'ORD-F',
+        status: 'processing',
+        paymentStatus: 'failed',
+        total: 500000,
+      };
+      repo.findOrderByIdAndUserId.mockResolvedValue(order);
+      const result = await service.repayOrder({ id: 7, userId: 1, originUrl: 'http://shop' });
+      expect(order.status).toBe('pending');
+      expect(order.paymentStatus).toBe('pending');
+      expect(result.paymentUrl).toContain('repayOrder=7');
+    });
+
     test('cancelled → reset pending + paymentUrl', async () => {
       const order = {
         id: 5,
@@ -264,6 +280,156 @@ describe('OrdersService', () => {
       repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
       const result = await service.getOrderById({ id: 1, userId: 1, role: 'admin' });
       expect(result).toMatchObject({ userId: 5 });
+    });
+
+    // Line 458 branch[0]: order không có toJSON → dùng spread { ...order }
+    test('order không có method toJSON → vẫn trả dữ liệu đúng qua spread', async () => {
+      // Plain object (không phải Sequelize instance) → không có toJSON
+      const order = { id: 7, userId: 1, items: null };
+      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+      const result = await service.getOrderById({ id: 7, userId: 1, role: 'customer' });
+      expect(result).toMatchObject({ id: 7, userId: 1 });
+    });
+
+    // Line 459 branch[0]: o.items là falsy → bỏ qua map items
+    test('order có toJSON nhưng items là null → không map items', async () => {
+      const order = {
+        id: 8,
+        userId: 1,
+        items: null,
+        toJSON: jest.fn().mockReturnValue({ id: 8, userId: 1, items: null }),
+      };
+      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+      const result = await service.getOrderById({ id: 8, userId: 1, role: 'customer' });
+      expect(result.items).toBeNull();
+    });
+
+    // B62[0] line 459: o.items là truthy → enter if block
+    test('order có items với productImages → thumbnail và images được map đúng', async () => {
+      const order = {
+        id: 9,
+        userId: 1,
+        items: [
+          {
+            Product: {
+              productImages: [
+                { imageUrl: 'http://img/thumb.jpg', isThumbnail: true },
+                { imageUrl: 'http://img/extra.jpg', isThumbnail: false },
+              ],
+            },
+          },
+        ],
+      };
+      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+      const result = await service.getOrderById({ id: 9, userId: 1, role: 'customer' });
+      expect(result.items[0].Product.thumbnail).toBe('http://img/thumb.jpg');
+      expect(result.items[0].Product.images).toEqual([
+        'http://img/thumb.jpg',
+        'http://img/extra.jpg',
+      ]);
+      expect(result.items[0].Product.productImages).toBeUndefined();
+    });
+
+    test('productImages không có ảnh thumbnail → dùng ảnh đầu tiên làm thumbnail', async () => {
+      const order = {
+        id: 10,
+        userId: 1,
+        items: [
+          {
+            Product: {
+              productImages: [
+                { imageUrl: 'http://img/first.jpg', isThumbnail: false },
+                { imageUrl: 'http://img/second.jpg', isThumbnail: false },
+              ],
+            },
+          },
+        ],
+      };
+      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+      const result = await service.getOrderById({ id: 10, userId: 1, role: 'customer' });
+      expect(result.items[0].Product.thumbnail).toBe('http://img/first.jpg');
+    });
+  });
+
+  describe('getUserOrders', () => {
+    // Line 428 branch[1]: parseFloat(item.unitPrice) trả về NaN → fallback về 0
+    test('item.unitPrice không parse được thành số → price = 0', async () => {
+      const row = {
+        toJSON: jest.fn().mockReturnValue({
+          items: [
+            {
+              unitPrice: 'invalid',
+              // price chưa có → trigger nhánh unitPrice !== undefined && price === undefined
+            },
+          ],
+        }),
+      };
+      repo.findUserOrdersWithItems.mockResolvedValue({ count: 1, rows: [row] });
+      const result = await service.getUserOrders({ userId: 1 });
+      expect(result.data[0].items[0].price).toBe(0);
+    });
+  });
+
+  describe('getAllOrders', () => {
+    // Line 540 branch[1]: limit không parse được thành số → fallback về 20
+    test('limit không hợp lệ (NaN) → pageLimit mặc định 20', async () => {
+      repo.findAllOrdersWithUser.mockResolvedValue({ count: 0, rows: [] });
+      await service.getAllOrders({ page: 1, limit: 'abc' });
+      const callArgs = repo.findAllOrdersWithUser.mock.calls[0][0];
+      expect(callArgs.limit).toBe(20);
+    });
+  });
+
+  describe('_buildTrackingSteps — completed state chính xác theo từng trạng thái', () => {
+    const buildOrder = (status) => ({
+      id: 1,
+      userId: 1,
+      status,
+      orderNumber: 'ORD-1',
+      total: 100000,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      User: { email: 'u@x.y' },
+    });
+
+    test('status=pending → chỉ step[0] completed=true, còn lại false', async () => {
+      repo.findOrderByNumberWithUserEmail.mockResolvedValue(buildOrder('pending'));
+      const result = await service.trackOrder({ orderNumber: 'ORD-1', email: 'u@x.y' });
+      expect(result.steps[0]).toMatchObject({ key: 'pending', completed: true });
+      expect(result.steps[1]).toMatchObject({ key: 'processing', completed: false });
+      expect(result.steps[2]).toMatchObject({ key: 'shipped', completed: false });
+      expect(result.steps[3]).toMatchObject({ key: 'delivered', completed: false });
+    });
+
+    test('status=processing → step[0] và step[1] completed=true', async () => {
+      repo.findOrderByNumberWithUserEmail.mockResolvedValue(buildOrder('processing'));
+      const result = await service.trackOrder({ orderNumber: 'ORD-1', email: 'u@x.y' });
+      expect(result.steps[0]).toMatchObject({ key: 'pending', completed: true });
+      expect(result.steps[1]).toMatchObject({ key: 'processing', completed: true });
+      expect(result.steps[2]).toMatchObject({ key: 'shipped', completed: false });
+      expect(result.steps[3]).toMatchObject({ key: 'delivered', completed: false });
+    });
+
+    test('status=shipped → step[0..2] completed=true, step[3] false', async () => {
+      repo.findOrderByNumberWithUserEmail.mockResolvedValue(buildOrder('shipped'));
+      const result = await service.trackOrder({ orderNumber: 'ORD-1', email: 'u@x.y' });
+      expect(result.steps[0]).toMatchObject({ key: 'pending', completed: true });
+      expect(result.steps[1]).toMatchObject({ key: 'processing', completed: true });
+      expect(result.steps[2]).toMatchObject({ key: 'shipped', completed: true });
+      expect(result.steps[3]).toMatchObject({ key: 'delivered', completed: false });
+    });
+
+    test('status=delivered → tất cả 4 steps completed=true', async () => {
+      repo.findOrderByNumberWithUserEmail.mockResolvedValue(buildOrder('delivered'));
+      const result = await service.trackOrder({ orderNumber: 'ORD-1', email: 'u@x.y' });
+      result.steps.forEach((step) => expect(step.completed).toBe(true));
+    });
+
+    test('status=cancelled → step[0] completed=false (không phải status bình thường)', async () => {
+      repo.findOrderByNumberWithUserEmail.mockResolvedValue(buildOrder('cancelled'));
+      const result = await service.trackOrder({ orderNumber: 'ORD-1', email: 'u@x.y' });
+      expect(result.steps[0]).toMatchObject({ key: 'pending', completed: false });
+      expect(result.steps[1]).toMatchObject({ key: 'processing', completed: false });
     });
   });
 });

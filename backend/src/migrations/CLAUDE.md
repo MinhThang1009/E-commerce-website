@@ -1,6 +1,6 @@
 # Migrations — TechStore Backend
 
-> 81 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
+> 61 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -21,7 +21,7 @@
 
 # 1. Lưu ý đọc file
 
-**KHÔNG đọc hết** 80 files — chỉ đọc khi cần trace schema change cụ thể. Dùng tên file (date prefix) để xác định file cần xem. Toàn bộ schema hiện tại ở `data/migration.sql`.
+**KHÔNG đọc hết** 61 files — chỉ đọc khi cần trace schema change cụ thể. Dùng tên file (date prefix) để xác định file cần xem. Toàn bộ schema hiện tại ở `data/migration.sql`.
 
 ---
 
@@ -40,27 +40,6 @@
 # 3. Danh sách tất cả migrations
 
 ```
-2024010101-initialize-schema.js
-2024071501-create-warranty-package-table.js
-2024121501-add-name-affecting-columns-to-attribute-values.js
-2024121901-add-laptop-fields.js
-2025011601-add-isActive-to-users.js
-2025011602-add-sku-status-to-products.js
-2025011701-add-stripe-customer-id-to-users.js
-2025070901-update-price-precision.js
-2025070902-fix-price-precision.js
-2025071501-create-product-warranty-table.js
-2025071502-create-product-specifications-table.js
-2025071503-update-product-attributes-table.js
-2025071601-add-variant-fields.js
-2025071801-create-images-table.js
-2025122401-add-faqs-to-products.js
-2026031701-add-otp-to-users.js
-2026031702-fix-too-many-keys-error.js
-2026031801-add-new-features-tables.js
-2026031802-add-loyalty-and-recently-viewed.js
-2026031803-create-banners.js
-2026031804-create-email-campaigns.js
 2026050201-migrate-product-status-to-english.js
 2026050301-update-reviews-add-variant-soft-delete.js
 2026050302-add-stock-quantity-to-products.js
@@ -121,44 +100,44 @@
 2026052202-add-fields-to-brands.js
 2026052203-drop-audit-logs.js
 2026052204-remove-manager-role.js
+2026052501-add-metadata-to-chat-messages.js
 ```
 
 ---
 
 # 4. Migration phases
 
-| Phase                | Files (prefix)            | Nội dung chính                                                                                                                                                                                            |
-| -------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Init**             | `2024010101`              | Schema ban đầu: sync từ Sequelize models, không tạo FK constraints để tránh "Too many keys"                                                                                                               |
-| **Early schema**     | `2024121501`–`2025071801` | Add laptop fields, price precision, images table, variant fields, product-warranty, product-specifications                                                                                                |
-| **Phase 5–6**        | `2026050201`–`2026050406` | Product status → English, reviews soft-delete, stock_quantity to products, schema naming standards (price→unit_price rename, discount fields), indexes, inventory_logs, AI chatbot fields                 |
-| **Phase 8–10**       | `2026050406`–`2026050408` | ChatMessage AI fields (provider, tokens), ChatMessage status fields                                                                                                                                       |
-| **Phase 35–38**      | `2026050409`–`2026050412` | FK constraint names, rename search_history table, import_logs, soft-delete columns                                                                                                                        |
-| **Phase 40**         | `2026050501`–`2026050512` | Massive cleanup: snake_case toàn bộ, FK constraints chuẩn, decimal precision DECIMAL(15,2), varchar lengths, default values, null consistency, check constraints, soft-delete columns, timestamp→datetime |
-| **i18n**             | `2026051611`              | Column-per-locale: `name_vi`/`name_en`, `description_vi`/`description_en` cho 6 bảng (products, categories, brands, news, banners)                                                                        |
-| **Cleanup**          | `2026051601`–`2026051615` | Index/constraint rename, optimize varchar, recently-viewed rename, table comments, drop columns, standardize column types, remove support_chat, add specifications_en                                     |
-| **Specs & variants** | `2026051700`–`2026051704` | `value_en` to product_specifications, `attributes_en` to product_variants, restore images table, rename reviews → product_reviews, drop brand_categories                                                  |
-| **Drop phase 1**     | `2026052001`–`2026052003` | Drop `import_logs`, drop `email_campaigns`+`newsletter_subscribers`, drop `collections`+`product_collections`                                                                                             |
-| **Drop phase 2**     | `2026052101`–`2026052107` | Drop `review_feedbacks`, drop `banners`+`news` (×2), drop `loyalty_histories` (×2), drop `warranty_packages`+`product_warranties` (×2) — 105/106/107 là re-run của 102/103/104                            |
-| **Brand/Category**   | `2026052201`–`2026052203` | Add `is_active` to `categories`, add `description_vi/en`+`website`+`is_active` to `brands`, drop `audit_logs`                                                                                             |
+| Phase                | Files (prefix)            | Nội dung chính                                                                                                                                                                                                                              |
+| -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Phase 5–6**        | `2026050201`–`2026050406` | Product status → English, reviews soft-delete, stock_quantity to products, schema naming standards (price→unit_price rename, discount fields), indexes, inventory_logs, AI chatbot fields                                                   |
+| **Phase 8–10**       | `2026050406`–`2026050407` | ChatMessage AI fields (provider, tokens), ChatMessage status fields                                                                                                                                                                         |
+| **Phase 35–38**      | `2026050409`–`2026050412` | FK constraint names, rename search_history table, import_logs, soft-delete columns                                                                                                                                                          |
+| **Phase 40**         | `2026050501`–`2026050512` | Massive cleanup: snake_case toàn bộ, FK constraints chuẩn, decimal precision DECIMAL(15,2), varchar lengths, default values, null consistency, check constraints, soft-delete columns, timestamp→datetime                                   |
+| **i18n**             | `2026051611`              | Column-per-locale: `name_vi`/`name_en`, `description_vi`/`description_en`. Ban đầu cho 6 bảng nhưng `news`+`banners` sau đã drop (`2026052102`/`2026052105`) → còn 4 bảng active: products, categories, brands (+ collections cũng đã drop) |
+| **Cleanup**          | `2026051601`–`2026051615` | Index/constraint rename, optimize varchar, recently-viewed rename, table comments, drop columns, standardize column types, remove support_chat, add specifications_en                                                                       |
+| **Specs & variants** | `2026051700`–`2026051704` | `value_en` to product_specifications, `attributes_en` to product_variants, restore images table, rename reviews → product_reviews, drop brand_categories                                                                                    |
+| **Drop phase 1**     | `2026052001`–`2026052003` | Drop `import_logs`, drop `email_campaigns`+`newsletter_subscribers`, drop `collections`+`product_collections`                                                                                                                               |
+| **Drop phase 2**     | `2026052101`–`2026052107` | Drop `review_feedbacks`, drop `banners`+`news` (×2), drop `loyalty_histories` (×2), drop `warranty_packages`+`product_warranties` (×2) — 105/106/107 là re-run của 102/103/104                                                              |
+| **Brand/Category**   | `2026052201`–`2026052203` | Add `is_active` to `categories`, add `description_vi/en`+`website`+`is_active` to `brands`, drop `audit_logs`                                                                                                                               |
 
 ---
 
 # 5. Migrations gần nhất (cuối cùng)
 
-| File                                        | Nội dung                                                                        |
-| ------------------------------------------- | ------------------------------------------------------------------------------- |
-| `2026052204-remove-manager-role.js`         | ALTER `users.role` ENUM: remove `'manager'` (chỉ còn `'customer'`, `'admin'`)   |
-| `2026052203-drop-audit-logs.js`             | Drop `audit_logs`                                                               |
-| `2026052202-add-fields-to-brands.js`        | Add `description_vi`, `description_en`, `website`, `is_active` to `brands`      |
-| `2026052201-add-is-active-to-categories.js` | Add `is_active` to `categories`                                                 |
-| `2026052107-drop-warranty-tables.js`        | Re-run: drop `product_warranties`, `warranty_packages`                          |
-| `2026052106-drop-loyalty.js`                | Re-run: drop `loyalty_histories`                                                |
-| `2026052105-drop-banners-and-news.js`       | Re-run: drop `banners`, `news`                                                  |
-| `2026052104-drop-warranty-tables.js`        | Drop `product_warranties`, `warranty_packages` (loyalty/warranty module đã xóa) |
-| `2026052103-drop-loyalty.js`                | Drop `loyalty_histories`                                                        |
-| `2026052102-drop-banners-and-news.js`       | Drop `banners`, `news`                                                          |
-| `2026052101-drop-review-feedbacks.js`       | Drop `review_feedbacks`                                                         |
+| File                                          | Nội dung                                                                             |
+| --------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `2026052501-add-metadata-to-chat-messages.js` | Add `metadata` (TEXT nullable) to `chat_messages` — JSON `{ products, suggestions }` |
+| `2026052204-remove-manager-role.js`           | ALTER `users.role` ENUM: remove `'manager'` (chỉ còn `'customer'`, `'admin'`)        |
+| `2026052203-drop-audit-logs.js`               | Drop `audit_logs`                                                                    |
+| `2026052202-add-fields-to-brands.js`          | Add `description_vi`, `description_en`, `website`, `is_active` to `brands`           |
+| `2026052201-add-is-active-to-categories.js`   | Add `is_active` to `categories`                                                      |
+| `2026052107-drop-warranty-tables.js`          | Re-run: drop `product_warranties`, `warranty_packages`                               |
+| `2026052106-drop-loyalty.js`                  | Re-run: drop `loyalty_histories`                                                     |
+| `2026052105-drop-banners-and-news.js`         | Re-run: drop `banners`, `news`                                                       |
+| `2026052104-drop-warranty-tables.js`          | Drop `product_warranties`, `warranty_packages` (loyalty/warranty module đã xóa)      |
+| `2026052103-drop-loyalty.js`                  | Drop `loyalty_histories`                                                             |
+| `2026052102-drop-banners-and-news.js`         | Drop `banners`, `news`                                                               |
+| `2026052101-drop-review-feedbacks.js`         | Drop `review_feedbacks`                                                              |
 
 **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại trong code mới.
 
@@ -235,9 +214,9 @@ module.exports = {
 
 # 9. Constraints quan trọng
 
-- **KHÔNG bao giờ re-enable `sequelize.sync()`** — gây lỗi "Too many keys" với MySQL InnoDB (limit 64 index per table). Migration `2026031702-fix-too-many-keys-error.js` đã remove sync.
+- **KHÔNG bao giờ re-enable `sequelize.sync()`** — gây lỗi "Too many keys" với MySQL InnoDB (limit 64 index per table). Sync đã được gỡ; schema quản lý hoàn toàn bằng migrations + baseline `data/migration.sql`.
 - **KHÔNG chỉnh sửa migration đã chạy** — tạo migration mới để alter (Sequelize track executed migrations trong bảng `SequelizeMeta`).
-- **KHÔNG tạo FK constraints trong `initialize-schema.js`** (migration đầu tiên) — chỉ tạo tables, FK constraints thêm vào trong migrations riêng để tránh circular dependency và 64-key limit.
+- **KHÔNG tạo FK constraints trong cùng bước tạo table** — chỉ tạo tables trước, FK constraints thêm ở migration/bước riêng để tránh circular dependency và 64-key limit.
 - **Migration filename phải unique** — Sequelize dùng tên file làm khóa trong `SequelizeMeta`.
 - **`scripts/lint-migrations.sh`** — CI script kiểm tra mọi migration có `down()` rollback. Fail CI nếu thiếu.
 

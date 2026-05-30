@@ -6,7 +6,6 @@
  *              Hiển thị trạng thái từng bước: đang chọn / đã xong (✓) / bị khoá. Token-driven.
  */
 import React from 'react';
-import { Check, Lock } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
 export interface FormStep {
@@ -17,10 +16,16 @@ export interface FormStep {
 interface ProductFormStepperProps {
   steps: FormStep[];
   activeStep: string;
-  /** Map bước → đã hoàn thành (hiện ✓). Bỏ trống nếu không gate. */
+  /** Map bước → required done (gate). */
   completedSteps?: Record<string, boolean>;
+  /** Map bước optional → có data (visual green). */
+  filledSteps?: Record<string, boolean>;
+  /** Bước nào là optional — dùng filledSteps thay vì completedSteps cho visual. */
+  optionalSteps?: Set<string>;
   /** Bước có được phép truy cập không (gate ở create). Mặc định: luôn truy cập được. */
   isStepAccessible?: (key: string) => boolean;
+  /** Bước bắt buộc — hiện dấu * đỏ sau label. */
+  requiredSteps?: Set<string>;
   onSelect: (key: string) => void;
 }
 
@@ -28,14 +33,21 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
   steps,
   activeStep,
   completedSteps,
+  filledSteps,
+  optionalSteps,
   isStepAccessible,
+  requiredSteps,
   onSelect,
 }) => (
   <nav className="flex flex-col" aria-label="Các bước nhập sản phẩm">
     {steps.map((step, index) => {
       const isActive = step.key === activeStep;
-      const isDone = completedSteps?.[step.key] ?? false;
+      const isOptional = optionalSteps?.has(step.key) ?? false;
+      const isDone = isOptional
+        ? (filledSteps?.[step.key] ?? false)
+        : (completedSteps?.[step.key] ?? false);
       const accessible = isStepAccessible ? isStepAccessible(step.key) : true;
+      const isRequired = requiredSteps?.has(step.key) ?? false;
       const isLast = index === steps.length - 1;
       return (
         <button
@@ -62,7 +74,11 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
               <span
                 className={cn(
                   'absolute left-1/2 top-1/2 h-[calc(100%+1.25rem)] w-0.5 -translate-x-1/2',
-                  isDone ? 'bg-[var(--color-success)]' : 'bg-[var(--border-default)]',
+                  isDone
+                    ? 'bg-[var(--color-success)]'
+                    : accessible
+                      ? 'bg-[var(--border-default)]'
+                      : 'bg-[var(--border-default)] opacity-30',
                 )}
                 aria-hidden="true"
               />
@@ -74,16 +90,12 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
                   ? 'border-[var(--color-success)] bg-[var(--color-success)] text-white'
                   : isActive
                     ? 'border-[var(--accent)]/40 bg-[var(--accent)]/15 text-[var(--accent)]'
-                    : 'border-[var(--border-default)] bg-[var(--bg-base)] text-[var(--text-tertiary)]',
+                    : accessible
+                      ? 'border-[var(--border-default)] bg-[var(--bg-base)] text-[var(--text-tertiary)]'
+                      : 'border-[var(--border-default)] bg-[var(--bg-base)] text-[var(--text-tertiary)] opacity-50',
               )}
             >
-              {isDone ? (
-                <Check className="h-4 w-4" strokeWidth={3} />
-              ) : !accessible ? (
-                <Lock className="h-3.5 w-3.5" strokeWidth={2.25} />
-              ) : (
-                index + 1
-              )}
+              {index + 1}
             </span>
           </div>
           <span
@@ -97,6 +109,11 @@ const ProductFormStepper: React.FC<ProductFormStepperProps> = ({
             )}
           >
             {step.label}
+            {isRequired && !isDone && (
+              <span className="ml-0.5 text-[var(--color-danger)]" aria-hidden="true">
+                *
+              </span>
+            )}
           </span>
         </button>
       );

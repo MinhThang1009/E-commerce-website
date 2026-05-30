@@ -15,9 +15,9 @@
 
 ## 1. Thứ tự đọc
 
-1. `email.js` — SMTP email sender (singleton, ~295 lines)
-2. `vector-store/vector-store.js` — Hybrid semantic + keyword search (~260 lines)
-3. `embedding/unified-embedding.js` — Multi-provider embedding API (~143 lines)
+1. `email.js` — SMTP email sender (singleton, ~306 lines)
+2. `vector-store/vector-store.js` — Hybrid semantic + keyword search (~587 lines)
+3. `embedding/unified-embedding.js` — Multi-provider embedding API (~265 lines)
 
 ---
 
@@ -25,7 +25,7 @@
 
 Gửi email qua nodemailer (Gmail SMTP hoặc custom SMTP). **Singleton** — transporter được khởi tạo 1 lần (singleton).
 
-**6 functions export:**
+**7 functions export** (`sendEmail` low-level + 6 hàm dưới):
 
 | Hàm                                                         | Trigger                        |
 | ----------------------------------------------------------- | ------------------------------ |
@@ -87,7 +87,7 @@ const embedding = require('@services/embedding/unified-embedding');
 const vector = await embedding.generateEmbedding('iPhone 15 Pro', 'passage');
 
 embedding.isAvailable(); // true nếu ≥1 provider configured
-embedding.activeName; // tên provider đang active (vd: 'jina-v3')
+embedding.activeName; // tên provider đang active (vd: 'Jina v3')
 ```
 
 **Env vars:** `JINA_API_KEY`, `HF_API_KEY`

@@ -248,7 +248,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 - **Rate limiters:** `chatbotLimiter` = 20 req/60s (không có dev override).
 - **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products. Log "Rebuilding vector store..." là bình thường.
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
-- **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại.
+- **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, `ReviewFeedback`, `AuditLog`, `BrandCategory` — không reference lại.
 - **Stock decrement:** LUÔN trong transaction với SELECT FOR UPDATE — không decrement bên ngoài unitOfWork.
 - **Discount usedCount:** Manual payments (cod/bank_transfer/installment) → tăng ngay trong `createOrder` transaction. Online payments (momo/vnpay) → tăng trong `payment-service.js` sau IPN/return success. Không tăng tại bước validate/apply.
 - **Image model:** file `models/image.js` tồn tại nhưng đã xóa khỏi `index.js` associations — `image` module require trực tiếp, không qua DI.
@@ -257,6 +257,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 - **AI module basePath:** `/api/chatbot` (không phải `/api/ai`).
 - **Wishlist module basePath:** `/api/wishlists` (plural).
 - **Search history basePath:** `/api/search-histories`.
+- **Role ENUM:** `'manager'` đã xóa khỏi `users.role` (chỉ còn `customer`/`admin`, migration `2026052204`) — không hardcode `'manager'` trong `authorize()` hoặc seed.
 
 ---
 
@@ -264,17 +265,17 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 159 | 3.636 | ~10s | `jest.config.js` |
-| BE Integration Tests | 36 | 184 | ~50s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | 700 | ~190s | `jest.api.config.js` |
-| BE E2E Tests | 5 | 100 | ~20s | `jest.e2e.config.js` |
-| FE Component Tests | 18 | 548 | ~9s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **257** | **5.168** | | |
+| BE Unit Tests | 157 | 3.724 | ~20s | `jest.config.js` |
+| BE Integration Tests | 36 | 184 | ~55s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | 700 | ~230s | `jest.api.config.js` |
+| BE E2E Tests | 5 | 100 | ~25s | `jest.e2e.config.js` |
+| FE Component Tests | 21 | ~680 | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **258** | **~5.388** | | |
 
-- **BE Coverage (local):** statements 99%, branches 97%, functions 99%, lines 99% (thresholds trong `jest.config.js`)
+- **BE Coverage (local):** statements 99.73%, branches 99.76%, functions 99.26%, lines 99.77% (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
-- **FE Coverage:** 100% tất cả metrics
-- **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — chỉ chạy BE Unit Tests + FE lint/typecheck/build (Integration/API/E2E không chạy trong CI vì không có MySQL service)
+- **FE Coverage:** global 79%+, per-file 100% cho auth pages + schemas/auth.ts (thresholds trong `jest.config.cjs`)
+- **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — chạy BE Unit Tests + **FE lint/typecheck/test/build** (Integration/API/E2E không chạy trong CI vì không có MySQL service)
 - **Full details:** [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md)
 
 ---
@@ -285,7 +286,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, 5.168 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.388 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace
@@ -293,8 +294,8 @@ backend/src/
   config/CLAUDE.md                           ← sequelize, swagger
   constants/CLAUDE.md                        ← Hằng số toàn cục (shipping, OTP, JWT)
   locales/CLAUDE.md                          ← i18n vi.json / en.json, conventions
-  models/CLAUDE.md                           ← 26 models, associations, conventions
-  migrations/CLAUDE.md                       ← 81 migrations, phases, patterns
+  models/CLAUDE.md                           ← 25 models, associations, conventions
+  migrations/CLAUDE.md                       ← 61 migrations, phases, patterns
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError/errors, unit-of-work
   services/CLAUDE.md                         ← email, vector-store, embedding (shared, non-DI)
@@ -347,7 +348,7 @@ frontend/src/
   stores/CLAUDE.md                           ← 6 Zustand stores
   routes/CLAUDE.md                           ← paths.ts, AppRoutes.tsx, lazy loading
   components/CLAUDE.md                       ← shared components (common/, layout/, routing/, sections/, icons/)
-  hooks/CLAUDE.md                            ← 6 hook files (8 exported hooks)
+  hooks/CLAUDE.md                            ← 5 hook files (5 exported hooks)
   pages/CLAUDE.md                            ← 8 static pages
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← Type barrel, shared types

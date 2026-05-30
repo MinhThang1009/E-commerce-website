@@ -39,12 +39,12 @@ const validateForm = () => {
 
 ### admin.ts
 
-| Schema               | Fields                                    | Đặc biệt                                          |
-| -------------------- | ----------------------------------------- | ------------------------------------------------- |
-| `categorySchema`     | name, description?, parentId?, image?     | name min 2 chars                                  |
-| `brandSchema`        | name, website?, description?, image?      | website: URL format nếu có                        |
-| `discountCodeSchema` | code, type, value, ...                    | code regex `^[A-Z0-9_]+$`; value ≤100 nếu percent |
-| `productSchema`      | name, basePrice, categoryIds, description | ref only — product form dùng antd Form riêng      |
+| Schema               | Fields                                    | Đặc biệt                                                                                                             |
+| -------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `categorySchema`     | name, description?, parentId?, image?     | name min 2 chars                                                                                                     |
+| `brandSchema`        | name, website?, description?, image?      | website: URL format nếu có                                                                                           |
+| `discountCodeSchema` | code, type, value, ...                    | code regex `^[A-Z0-9_]+$`; value ≤100 nếu percent                                                                    |
+| `productSchema`      | name, basePrice, categoryIds, description | ref only — product form không dùng schema này trực tiếp (antd đã gỡ, form dùng Radix UI/shadcn/ui + react-hook-form) |
 
 **Lưu ý Zod v4:** dùng `z.number({ error: '...' })` (không phải `invalid_type_error` của v3).
 

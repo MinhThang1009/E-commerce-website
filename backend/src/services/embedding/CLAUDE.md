@@ -49,7 +49,7 @@ if (!embeddingService.isAvailable()) {
 }
 
 // Active provider name
-console.log(embeddingService.activeName); // 'jina' | 'multilingual-e5-large-instruct' | ...
+console.log(embeddingService.activeName); // 'Jina v3' | 'multilingual-e5-large-instruct' | ...
 ```
 
 ---

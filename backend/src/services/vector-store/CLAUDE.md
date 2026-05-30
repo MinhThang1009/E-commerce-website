@@ -48,13 +48,13 @@ const results = await vectorStore.hybridSearch(query, (limit = 5), (minScore = 0
 // returns: [{ vector, text, metadata: { id, name, slug, price, thumbnail, inStock, ... }, score, lowConfidence? }]
 ```
 
-Chạy song song `_vectorSearch` (cosine similarity) và `_keywordSearch` (token matching, name weight ×3). Kết hợp + sort theo score tổng hợp. Keyword-only results được inject với flag `lowConfidence: true`.
+Chạy song song `_semanticSearch` (cosine similarity) và `_keywordSearch` (token matching, name weight ×3). Kết hợp + sort theo score tổng hợp. Keyword-only results được inject với flag `lowConfidence: true`.
 
 ## 3.3 Các methods khác
 
 - `clear()` — test utility
 - `cosineSimilarity(v1, v2)` — pure math
-- `save()` — persist to disk (fire-and-forget sau mỗi upsert)
+- `save()` — async, persist to disk; caller phải `await` (Product model hooks await sau mỗi upsert)
 
 ---
 

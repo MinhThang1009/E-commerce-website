@@ -203,6 +203,156 @@ describe('parseLLMOutput — extractProductsFromText: bổ sung sản phẩm t�
   });
 });
 
+// ─── hasNegationContext — pos === Infinity khi coreWords rỗng (line 113 branch[0]) ─────────
+
+describe('parseLLMOutput — extractProductsFromText: coreWords rỗng → hasNegationContext trả false (line 113)', () => {
+  test('sản phẩm có tên chỉ gồm ký tự đơn (< 2 ký tự) → coreWords rỗng → hasNegationContext pos=Infinity → trả false → sản phẩm được bổ sung', () => {
+    // Core name sẽ là "a b" (2 từ đơn ký tự, bị filter bởi w.length >= 2)
+    // → coreWords = [] → hasNegationContext(rLower, []) → for loop không chạy → pos=Infinity → return false
+    // → sản phẩm KHÔNG bị skip → được thêm vào candidates
+    // Để đạt được điều này: tên sản phẩm phải có core ≥ 2 từ (qua filter length < 2 tại line 160),
+    // nhưng tất cả từ trong core đều < 2 ký tự sau khi filter tại line 165.
+    // Cách dễ nhất: tên có 2 ký tự đơn, nhưng core.split().length >= 2 sẽ pass vì length=2 (2 single chars joined by space).
+    // Tuy nhiên filter (w) => w.length < 2 loại cả, còn regex phrase match cần test response chứa "a b".
+    // → dùng tên với 2 ký tự đơn được cách nhau: "A B Samsung" nhưng CATEGORY_PREFIX_RE không strip gì
+    // Core "a b samsung" có 3 words; "a"(1 char) và "b"(1 char) bị filter → coreWords = ["samsung"]
+    // → hasNegationContext được gọi với 1 word "samsung" tồn tại trong response → pos ≠ Infinity
+    // Cách đúng: đặt core name = "X Y" (2 từ 1 ký tự) — vì split length ≥ 2 pass line 160,
+    // nhưng sau filter >= 2 ký tự thì coreWords = []. Tuy nhiên regex phrase match "x y" cần có trong response.
+    const prods = [
+      {
+        id: 70,
+        name: 'A B', // core = "a b" — 2 từ đơn ký tự, split length=2 ≥ 2 → pass line 160
+        // coreWords = ["a","b"].filter(w => w.length >= 2) = [] → hasNegationContext(rLower, []) = false
+        price: 5000000,
+        basePrice: 5000000,
+        slug: 'a-b',
+        thumbnail: null,
+        inStock: true,
+        stockQuantity: 2,
+      },
+    ];
+    // Response chứa "a b" để vượt qua phrase-match regex ở line 163
+    const aiText = JSON.stringify({
+      response: 'a b là sản phẩm bạn cần tìm.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'product_search',
+    });
+    const result = parseLLMOutput(aiText, prods, 'a b');
+    // hasNegationContext trả false → sản phẩm được bổ sung (không bị skip)
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].id).toBe(70);
+  });
+});
+
+// ─── hasNegationContext — trả true khi câu chứa từ phủ định (line 166 branch[0]) ────────────
+
+describe('parseLLMOutput — extractProductsFromText: hasNegationContext=true → bỏ qua sản phẩm (line 166)', () => {
+  test('response đề cập sản phẩm trong ngữ cảnh phủ định → sản phẩm không được bổ sung', () => {
+    // Response chứa tên sản phẩm nhưng câu có "không có" → hasNegationContext = true → skip
+    const prods = [
+      {
+        id: 71,
+        name: 'Xiaomi Redmi Note 12',
+        price: 6000000,
+        basePrice: 6000000,
+        slug: 'xiaomi-redmi-note-12',
+        thumbnail: null,
+        inStock: false,
+        stockQuantity: 0,
+      },
+    ];
+    const aiText = JSON.stringify({
+      response: 'Rất tiếc, chúng tôi không có Xiaomi Redmi Note 12 trong kho hiện tại.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'product_search',
+    });
+    const result = parseLLMOutput(aiText, prods, 'xiaomi note 12');
+    // Câu chứa "không có" ngay trước tên SP → hasNegationContext = true → bị skip
+    expect(result.products).toHaveLength(0);
+  });
+
+  test('response đề cập sản phẩm với "hết hàng" → không được bổ sung', () => {
+    const prods = [
+      {
+        id: 72,
+        name: 'OPPO Find X7 Ultra',
+        price: 30000000,
+        basePrice: 30000000,
+        slug: 'oppo-find-x7-ultra',
+        thumbnail: null,
+        inStock: false,
+        stockQuantity: 0,
+      },
+    ];
+    const aiText = JSON.stringify({
+      response: 'OPPO Find X7 Ultra hiện đã hết hàng, bạn vui lòng chọn sản phẩm khác.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'product_search',
+    });
+    const result = parseLLMOutput(aiText, prods, 'oppo find x7');
+    // Câu chứa "hết hàng" → hasNegationContext = true → bị skip
+    expect(result.products).toHaveLength(0);
+  });
+});
+
+// ─── extractProductsFromText — p.price null → dùng p.basePrice (line 205 binary-expr branch[1]) ─
+
+describe('parseLLMOutput — extractProductsFromText: p.price null → fallback sang p.basePrice (line 205)', () => {
+  test('sản phẩm không có price (null) → toNum(p.price ?? p.basePrice) dùng basePrice', () => {
+    const prods = [
+      {
+        id: 73,
+        name: 'Samsung Galaxy Tab S9 Ultra',
+        price: null, // null → ?? operator lấy basePrice
+        basePrice: 22000000,
+        slug: 'samsung-tab-s9-ultra',
+        thumbnail: 'tab.jpg',
+        inStock: true,
+        stockQuantity: 4,
+      },
+    ];
+    const aiText = JSON.stringify({
+      response: 'Samsung Galaxy Tab S9 Ultra là chiếc máy tính bảng cao cấp nhất hiện nay.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'product_search',
+    });
+    const result = parseLLMOutput(aiText, prods, 'samsung tab s9');
+    expect(result.products).toHaveLength(1);
+    // price null → p.price ?? p.basePrice = 22000000
+    expect(result.products[0].price).toBe(22000000);
+  });
+
+  test('sản phẩm không có price (undefined) → toNum(p.price ?? p.basePrice) dùng basePrice', () => {
+    const prods = [
+      {
+        id: 74,
+        name: 'Lenovo ThinkPad X13 Gen4',
+        // price undefined
+        basePrice: 35000000,
+        slug: 'lenovo-thinkpad-x13',
+        thumbnail: null,
+        inStock: true,
+        stockQuantity: 1,
+      },
+    ];
+    const aiText = JSON.stringify({
+      response: 'Lenovo ThinkPad X13 Gen4 là laptop doanh nhân đáng tin cậy.',
+      matchedProducts: [],
+      suggestions: [],
+      intent: 'product_search',
+    });
+    const result = parseLLMOutput(aiText, prods, 'lenovo thinkpad x13');
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].price).toBe(35000000);
+    expect(result.products[0].discount).toBe(0); // không có compareAtPrice
+  });
+});
+
 // ─── hasNumberMismatch FALSE branch — matching numbers fall through ───────────
 
 describe('parseLLMOutput — hasNumberMismatch=false: fall through tiếp tục matching', () => {

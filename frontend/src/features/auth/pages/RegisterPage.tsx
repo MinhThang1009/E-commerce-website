@@ -150,6 +150,8 @@ const RegisterPage: React.FC = () => {
   };
 
   const handleResend = async () => {
+    // Nút resend đã disabled khi cooldown > 0 — guard chỉ phòng thủ, không reach được qua UI
+    /* istanbul ignore next */
     if (resendCooldown > 0) return;
     try {
       await resendVerification({ email: registeredEmail });

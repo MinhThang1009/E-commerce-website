@@ -18,9 +18,9 @@
 
 # 1. Mục đích & Trách nhiệm
 
-Cung cấp hooks để upload file/ảnh lên server. Không có UI riêng, không có pages — chỉ export hooks để các features khác dùng. Có 2 luồng upload độc lập dùng cho mục đích khác nhau:
+Cung cấp hooks để quản lý ảnh đã lưu trên server (image management). Không có UI riêng, không có pages — chỉ export hooks để các features khác dùng. Hiện chỉ còn 2 mutation, không có query:
 
-- **Rich image upload** (`image-api.ts` → `/images/`): có thumbnails, category, optimize, admin tools, dùng cho product images.
+- **Image management** (`image-api.ts` → `/images/`): xóa ảnh theo ID + convert base64 → stored image. Dùng chủ yếu cho admin product form.
 
 ---
 
@@ -28,12 +28,12 @@ Cung cấp hooks để upload file/ảnh lên server. Không có UI riêng, khô
 
 ```
 api/
-  image-api.ts    — Rich image upload: /images/ với metadata, thumbnails, admin tools; export imageKeys
+  image-api.ts    — Image management: delete + convert base64; export 2 mutation hooks + types
 
-index.ts          — Barrel export tất cả hooks và types
+index.ts          — Barrel export (re-export tất cả từ api/image-api.ts)
 ```
 
-Không có `components/`, `pages/`, `types/` riêng.
+Không có `components/`, `pages/`, `types/`, `hooks/`, `stores/` riêng.
 
 ---
 
@@ -41,14 +41,11 @@ Không có `components/`, `pages/`, `types/` riêng.
 
 ## Server state (TanStack Query)
 
-`image-api.ts` có query keys tập trung:
+`image-api.ts` có query keys nội bộ (không export), chỉ dùng để invalidate sau mutation:
 
 ```typescript
-export const imageKeys = {
+const imageKeys = {
   all: ['images'] as const,
-  detail: (id: string) => [...imageKeys.all, 'detail', id] as const,
-  byProduct: (productId: string) => [...imageKeys.all, 'product', productId] as const,
-  health: () => [...imageKeys.all, 'health'] as const,
 };
 ```
 
@@ -60,40 +57,29 @@ Không dùng Zustand stores.
 
 # 4. API Calls
 
-## Queries (chỉ `image-api.ts`)
+## Queries
 
-| Hook                                                | Endpoint                             | Mô tả                                              |
-| --------------------------------------------------- | ------------------------------------ | -------------------------------------------------- |
-| `useGetImageByIdQuery(id, options?)`                | `GET /api/images/:id`                | Chi tiết ảnh theo ID — enabled khi `id` có giá trị |
-| `useGetImagesByProductIdQuery(productId, options?)` | `GET /api/images/product/:productId` | Danh sách ảnh của sản phẩm                         |
-| `useImageHealthCheckQuery()`                        | `GET /api/images/health`             | Health check image service                         |
+Không có query hook nào trong feature này.
 
-| Hook                          | Endpoint                              | Body                         | Mô tả                                           |
-| ----------------------------- | ------------------------------------- | ---------------------------- | ----------------------------------------------- |
-| `useUploadSingleMutation()`   | `POST /api/uploads/:type/single`      | `{ type, file }` — FormData  | Upload 1 file theo `type` (product/user/review) |
-| `useUploadMultipleMutation()` | `POST /api/uploads/:type/multiple`    | `{ type, files }` — FormData | Upload nhiều file cùng type                     |
-| `useDeleteFileMutation()`     | `DELETE /api/uploads/:type/:filename` | `{ type, filename }`         | Xóa file theo type + filename                   |
+## Mutations — Image management (`image-api.ts`, path `/api/images/`)
 
-## Mutations — Rich image upload (`image-api.ts`, path `/api/images/`)
+| Hook                                | Endpoint                          | Mô tả                                                    |
+| ----------------------------------- | --------------------------------- | -------------------------------------------------------- |
+| `useDeleteImageMutation()`          | `DELETE /api/images/:id`          | Xóa ảnh theo image ID                                    |
+| `useConvertBase64ToImageMutation()` | `POST /api/images/convert/base64` | Convert base64 → stored image (admin paste từ clipboard) |
 
-| Hook                                | Endpoint                           | Mô tả                                                                         |
-| ----------------------------------- | ---------------------------------- | ----------------------------------------------------------------------------- |
-| `useUploadImageMutation()`          | `POST /api/images/upload`          | Upload ảnh với options: `category`, `productId`, `generateThumbs`, `optimize` |
-| `useUploadMultipleImagesMutation()` | `POST /api/images/upload-multiple` | Upload nhiều ảnh có metadata                                                  |
-| `useDeleteImageMutation()`          | `DELETE /api/images/:id`           | Xóa ảnh theo image ID                                                         |
-| `useConvertBase64ToImageMutation()` | `POST /api/images/convert/base64`  | Convert base64 → stored image (admin paste từ clipboard)                      |
-| `useCleanupOrphanedFilesMutation()` | `POST /api/images/admin/cleanup`   | Admin: dọn dẹp files không có DB reference                                    |
+`useConvertBase64ToImageMutation` nhận `{ base64Data: string; options?: ConvertBase64Options }`; mặc định `category` = `'product'`.
 
-`UploadImageOptions`:
+`ConvertBase64Options`:
 
 ```typescript
-interface UploadImageOptions {
-  category?: 'product' | 'user' | 'review';
+interface ConvertBase64Options {
+  category?: string;
   productId?: string;
-  generateThumbs?: boolean; // Tạo 3 sizes: 150px, 300px, 600px (small/medium/large) — chỉ dùng cho product images
-  optimize?: boolean; // WebP conversion + compression — tốn CPU
 }
 ```
+
+> Upload file thật (single/multiple) KHÔNG đi qua feature này — xem [§5](#5-components-chính).
 
 ---
 
@@ -101,24 +87,13 @@ interface UploadImageOptions {
 
 Không có components riêng trong feature này. UI upload được implement trong:
 
-- `components/common/ImageUpload.tsx` — shared upload component với file picker + preview. Dùng `useUploadSingleMutation` từ feature này.
+- `components/common/ImageUpload.tsx` — shared upload component với file picker + preview. Gọi trực tiếp `fetch` đến `POST /api/uploads/:type/:endpoint` (không qua hook của feature này).
 
 ---
 
 # 6. Types
 
 ```typescript
-interface UploadResponse {
-  status: string;
-  message: string;
-  data: { filename: string; originalName: string; url: string; size: number; type: string };
-}
-interface MultipleUploadResponse {
-  status: string;
-  message: string;
-  data: { files: Array<{ filename; originalName; url; size }>; type: string; count: number };
-}
-
 // image-api.ts
 interface ImageResponse {
   status: string;
@@ -141,12 +116,10 @@ interface ImageResponse {
     updatedAt: string;
   };
 }
-interface MultipleImageResponse {
-  data: {
-    successful: ImageResponse['data'][];
-    failed: Array<{ fileName: string; error: string }>;
-    count: { total: number; successful: number; failed: number };
-  };
+
+interface ConvertBase64Options {
+  category?: string;
+  productId?: string;
 }
 ```
 
@@ -156,28 +129,21 @@ interface MultipleImageResponse {
 
 **Feature này phụ thuộc vào:**
 
-- `lib/api-client` — HTTP requests với `Content-Type: multipart/form-data`
-- `@tanstack/react-query` — mutations + queries
+- `lib/api-client` — HTTP requests
+- `@tanstack/react-query` — mutations
 
 **Feature này được dùng bởi:**
 
-- `features/admin` — product images: `useUploadImageMutation`, `useConvertBase64ToImageMutation`, `useCleanupOrphanedFilesMutation`
-- `features/users` — avatar: `useUploadSingleMutation` (type `'user'`)
-- `components/common/ImageUpload` — dùng `useUploadSingleMutation`
+- `features/admin` — product form (CreateProductPage, EditProductPage): `useConvertBase64ToImageMutation`; CreateProductPage còn dùng `useDeleteImageMutation`
 
 ---
 
 # 8. Gotchas & Edge Cases
 
-- **2 paths hoàn toàn khác nhau:**
-  - `image-api.ts` → `/images/` — rich, có thumbnails + category + optimize
-  - **Dùng `image-api.ts`** khi: product images (cần thumbnails), admin operations
-- **`generateThumbs: true`** tạo 3 sizes (150px/300px/600px = small/medium/large). Chỉ dùng cho product images — không dùng cho avatar.
-- **`optimize: true`** → WebP conversion + compression. Tốn CPU — không dùng cho bulk upload hoặc avatar.
-- **`useConvertBase64ToImageMutation`** dùng trong admin product form khi user paste image từ clipboard vào rich text editor. Logic trong `utils/description-image-processor.ts`.
-- **`useCleanupOrphanedFilesMutation`** chỉ dùng trong admin maintenance — không expose ra user-facing UI.
-- **Tất cả mutations dùng `FormData`** — `apiClient` interceptor tự set `Content-Type: multipart/form-data`.
-- **`options.skip`** trong queries là compat cũ (invert của `enabled`). Dùng `{ enabled: !!id }` cho code mới.
+- **Upload file thật KHÔNG ở feature này:** `components/common/ImageUpload.tsx` gọi thẳng `fetch` đến `/uploads/:type/...`. Feature `upload` chỉ lo image management (delete + convert base64).
+- **`useConvertBase64ToImageMutation`** dùng trong admin product form khi user paste image từ clipboard vào rich text editor. Logic gọi qua `utils/description-image-processor.ts` (nhận hàm `uploadImageFn` được inject từ page, không import hook trực tiếp).
+- **`imageKeys` không export** — chỉ dùng nội bộ để `invalidateQueries` sau mutation.
+- **Mutation `convert/base64` gửi JSON** (`{ base64Data, category, productId }`), không phải FormData.
 
 ---
 

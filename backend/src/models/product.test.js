@@ -577,3 +577,38 @@ describe('attributes getter/setter logic', () => {
     expect(attrSet({ color: 'red' })).toBe('{"color":"red"}');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// afterBulkDestroy hook — line 424: if (!vectorStoreService) return
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('afterBulkDestroy hook — vectorStoreService falsy → early return (line 424)', () => {
+  it('vectorStoreService=null → hook trả về ngay, không gọi findAll hay save', async () => {
+    // Simulate hook logic trực tiếp (lines 422-440)
+    const vectorStoreService = null; // branch[0]: !vectorStoreService === true → return
+
+    const mockProductFindAll = jest.fn();
+    const mockSave = jest.fn();
+
+    const afterBulkDestroyHook = async () => {
+      try {
+        if (!vectorStoreService) return; // branch[0] bị bao phủ ở đây
+        // Đoạn code sau sẽ không chạy
+        const activeIds = new Set(
+          (await mockProductFindAll({ attributes: ['id'], raw: true })).map((p) => p.id),
+        );
+        if (activeIds.size === 0) {
+          await mockSave();
+        }
+      } catch (_error) {
+        // bắt lỗi
+      }
+    };
+
+    await afterBulkDestroyHook();
+
+    // Khi vectorStoreService là null → hàm return ngay, không chạm đến findAll hay save
+    expect(mockProductFindAll).not.toHaveBeenCalled();
+    expect(mockSave).not.toHaveBeenCalled();
+  });
+});

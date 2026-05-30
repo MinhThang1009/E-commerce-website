@@ -58,6 +58,9 @@ Route → Page → Components
 | Motion | Framer Motion v12 |
 | Validation | Zod v4 (form schemas) |
 | Icons | Lucide React |
+| Date | dayjs v1 |
+| Excel export | ExcelJS v4.4 |
+| Maps | Leaflet v1 |
 
 ## 1.3 13 features — mỗi feature = 1 domain cô lập
 
@@ -89,7 +92,7 @@ src/features/<name>/
 | Layouts (Header, Footer, MainLayout) | `src/components/layout/` |
 | Route guards | `src/components/routing/` |
 | Zustand stores | `src/stores/` |
-| Global hooks (useTokenRefresh, useAntdToast...) | `src/hooks/` |
+| Global hooks (useTokenRefresh, useNotifications...) | `src/hooks/` |
 | Axios client, QueryClient config | `src/lib/` |
 | Utility functions | `src/utils/` |
 | TypeScript types dùng chung | `src/types/` |
@@ -221,7 +224,7 @@ src/components/
   sections/      ← HomePage sections (HeroSection)
   icons/         ← Custom icon components
 
-src/hooks/       ← Global hooks (6 hook files, 8 exported hooks):
+src/hooks/       ← Global hooks (5 hook files, 5 exported hooks):
   use-token-refresh.ts  ← Auto-refresh JWT trước khi hết hạn
   use-debounce.ts       ← Debounce value
   use-notifications.ts  ← Notification queue + toast logic
@@ -296,14 +299,14 @@ frontend/src/
   stores/CLAUDE.md                           ← 6 Zustand stores
   routes/CLAUDE.md                           ← paths.ts, AppRoutes.tsx, lazy loading
   components/CLAUDE.md                       ← shared UI components
-  hooks/CLAUDE.md                            ← 8 global hooks
+  hooks/CLAUDE.md                            ← 5 global hooks
   pages/CLAUDE.md                            ← static/marketing pages
   utils/CLAUDE.md                            ← 14 utility files
   types/CLAUDE.md                            ← global TypeScript types
   styles/CLAUDE.md                           ← SCSS tokens, global styles, chart tokens
   constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING, chart-colors
   schemas/CLAUDE.md                          ← Zod validation schemas (auth, checkout)
-  __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 18 suites)
+  __tests__/CLAUDE.md                        ← Component tests (Jest + RTL, 21 suites)
   features/admin/CLAUDE.md                   ← Admin dashboard, CRUD pages
   features/ai/CLAUDE.md                      ← AI chatbot widget
   features/auth/CLAUDE.md                    ← Login, register, forgot password

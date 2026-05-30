@@ -1386,3 +1386,519 @@ describe('upsertProduct — metadata specs & variants', () => {
     expect(store.items[0].metadata.tags).toEqual([]);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Uncovered branches — Section 6
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ============================================================
+// Line 81: buildEmbeddingText specKeyMap = {} — default-arg branch[0]
+// — gọi không truyền specKeyMap → dùng default {}
+// ============================================================
+
+describe('buildEmbeddingText — line 81: default specKeyMap = {}', () => {
+  it('gọi buildEmbeddingText không có specKeyMap → không crash, dùng default {}', () => {
+    const product = {
+      name: 'iPhone 15 Pro',
+      baseName: 'Apple',
+      categories: [{ name: 'Điện thoại' }],
+      shortDescription: 'Flagship Apple',
+      basePrice: 29990000,
+      inStock: true,
+      specifications: { battery_capacity: '3274mAh' },
+    };
+
+    // buildEmbeddingText là static method trên HybridVectorStore
+    // Module export singleton nên truy cập qua VectorStore.constructor
+    const VectorStore = require('./vector-store');
+    const text = VectorStore.constructor.buildEmbeddingText(product);
+
+    // Không truyền specKeyMap → dùng default {} → không crash
+    expect(typeof text).toBe('string');
+    expect(text.length).toBeGreaterThan(0);
+    // Tên sản phẩm phải xuất hiện trong text
+    expect(text).toContain('iPhone 15 Pro');
+    // spec key được localize qua default {} → fallback snake→space
+    expect(text).toContain('battery capacity');
+  });
+});
+
+// ============================================================
+// Line 88: v.variantName || v.displayName — branch[1]
+// variantName falsy → dùng displayName
+// Line 93: v.attributes || {} (colors) — branch[1] → attributes undefined
+// Line 101: v.attributes || {} (storages) — branch[1] → attributes undefined
+// ============================================================
+
+describe('buildEmbeddingText — variants branches (L88, L93, L101)', () => {
+  let store;
+  let mockEn;
+
+  beforeEach(async () => {
+    jest.resetModules();
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
+    mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
+    jest.mock('@services/embedding/unified-embedding', () => ({
+      generateEmbedding: mockEn,
+      activeName: 'mock-model',
+    }));
+    jest.mock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(false),
+      mkdirSync: jest.fn(),
+      writeFileSync: jest.fn(),
+      readFileSync: jest.fn().mockReturnValue('{}'),
+      promises: { readFile: jest.fn(), writeFile: jest.fn().mockResolvedValue(undefined) },
+    }));
+    store = require('./vector-store');
+    await store.loadPromise;
+  });
+
+  it('L88 branch[1]: variantName = undefined → dùng displayName thay thế', async () => {
+    // variantName falsy → v.variantName || v.displayName → displayName
+    const product = {
+      id: 300,
+      name: 'Laptop Pro',
+      slug: 'laptop-pro',
+      basePrice: 20000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: undefined, // falsy → branch[1]: dùng displayName
+          displayName: 'Core i7 16GB',
+          attributes: { color: 'Silver' },
+        },
+      ],
+    };
+
+    await store.upsertProduct(product);
+
+    const embedArg = mockEn.mock.calls[0][0];
+    // displayName được dùng → xuất hiện trong text
+    expect(embedArg).toContain('Core i7 16GB');
+  });
+
+  it('L88 branch[1]: variantName = null và displayName cũng null → cả hai bị filter(Boolean)', async () => {
+    const product = {
+      id: 301,
+      name: 'Phone X',
+      slug: 'phone-x',
+      basePrice: 5000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: null, // null → falsy
+          displayName: null, // null → filter(Boolean) loại bỏ
+          attributes: {},
+        },
+      ],
+    };
+
+    // Không crash dù cả hai đều null
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
+  });
+
+  it('L93 branch[1]: attributes = undefined → dùng {} thay thế, không crash khi lấy color', async () => {
+    // v.attributes || {} → branch[1]: attributes undefined → {}
+    // a.color và a['Màu sắc'] đều undefined → filter(Boolean) → colors = []
+    const product = {
+      id: 302,
+      name: 'Watch Z',
+      slug: 'watch-z',
+      basePrice: 3000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: 'Standard',
+          attributes: undefined, // undefined → || {} → branch[1]
+        },
+      ],
+    };
+
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
+    const embedArg = mockEn.mock.calls[0][0];
+    // Không có màu sắc → không có "Màu:" trong text
+    expect(embedArg).not.toContain('Màu:');
+  });
+
+  it('L101 branch[1]: attributes = null → dùng {}, storages rỗng', async () => {
+    // Bao phủ cả L93 và L101: attributes null → || {} ở cả colors và storages
+    const product = {
+      id: 303,
+      name: 'Tablet Pro',
+      slug: 'tablet-pro',
+      basePrice: 8000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: '64GB',
+          attributes: null, // null → || {} → branch[1] ở cả colors (L93) và storages (L101)
+        },
+      ],
+    };
+
+    await expect(store.upsertProduct(product)).resolves.not.toThrow();
+    const embedArg = mockEn.mock.calls[0][0];
+    expect(embedArg).not.toContain('Cấu hình:');
+  });
+});
+
+// ============================================================
+// Line 123: product.descriptionEn ? ... : '' — cond-expr branch[0]
+// descriptionEn truthy → strip HTML và thêm vào text (đã có test L122 cho false,
+// bổ sung true branch tại L123)
+// ============================================================
+
+describe('buildEmbeddingText — line 123: descriptionEn truthy branch[0]', () => {
+  let store;
+  let mockEn;
+
+  beforeEach(async () => {
+    jest.resetModules();
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
+    mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
+    jest.mock('@services/embedding/unified-embedding', () => ({
+      generateEmbedding: mockEn,
+      activeName: 'mock-model',
+    }));
+    jest.mock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(false),
+      mkdirSync: jest.fn(),
+      writeFileSync: jest.fn(),
+      readFileSync: jest.fn().mockReturnValue('{}'),
+      promises: { readFile: jest.fn(), writeFile: jest.fn().mockResolvedValue(undefined) },
+    }));
+    store = require('./vector-store');
+    await store.loadPromise;
+  });
+
+  it('L123 branch[0]: descriptionEn có giá trị → strip HTML rồi thêm vào embedding text', async () => {
+    const product = {
+      id: 400,
+      name: 'iPhone 15 Pro',
+      slug: 'iphone-15-pro',
+      basePrice: 29990000,
+      inStock: true,
+      descriptionEn: '<p>Best iPhone ever with <b>titanium</b> design</p>',
+    };
+
+    await store.upsertProduct(product);
+
+    const embedArg = mockEn.mock.calls[0][0];
+    // HTML được strip → "Best iPhone ever with titanium design" có trong text
+    expect(embedArg).toContain('Best iPhone ever');
+    expect(embedArg).toContain('titanium');
+    expect(embedArg).not.toContain('<p>');
+    expect(embedArg).not.toContain('<b>');
+  });
+
+  it('L123 branch[1] (false): descriptionEn = undefined → không thêm vào text', async () => {
+    const product = {
+      id: 401,
+      name: 'Samsung Galaxy',
+      slug: 'samsung-galaxy',
+      basePrice: 15000000,
+      inStock: true,
+      descriptionEn: undefined, // falsy → '' → không thêm
+    };
+
+    await store.upsertProduct(product);
+    const embedArg = mockEn.mock.calls[0][0];
+    // Không có descriptionEn content
+    expect(typeof embedArg).toBe('string');
+    expect(embedArg.length).toBeGreaterThan(0);
+  });
+});
+
+// ============================================================
+// Line 144: Array.isArray(product.tags) ? ... : product.tags — cond-expr branch[1]
+// tags không phải array (string) → dùng trực tiếp product.tags
+// ============================================================
+
+describe('buildEmbeddingText — line 144: tags không phải array → dùng string trực tiếp', () => {
+  let store;
+  let mockEn;
+
+  beforeEach(async () => {
+    jest.resetModules();
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
+    mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
+    jest.mock('@services/embedding/unified-embedding', () => ({
+      generateEmbedding: mockEn,
+      activeName: 'mock-model',
+    }));
+    jest.mock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(false),
+      mkdirSync: jest.fn(),
+      writeFileSync: jest.fn(),
+      readFileSync: jest.fn().mockReturnValue('{}'),
+      promises: { readFile: jest.fn(), writeFile: jest.fn().mockResolvedValue(undefined) },
+    }));
+    store = require('./vector-store');
+    await store.loadPromise;
+  });
+
+  it('L144 branch[1]: tags là string → dùng trực tiếp (không join)', async () => {
+    // tags.length truthy (string có độ dài > 0)
+    // Array.isArray('flagship, 5g') = false → branch[1]: product.tags (string trực tiếp)
+    const product = {
+      id: 500,
+      name: 'iPhone 15 Pro',
+      slug: 'iphone-15-pro',
+      basePrice: 29990000,
+      inStock: true,
+      tags: 'flagship, 5g, titanium', // string, không phải array → branch[1]
+    };
+
+    await store.upsertProduct(product);
+
+    const embedArg = mockEn.mock.calls[0][0];
+    // String được dùng trực tiếp
+    expect(embedArg).toContain('flagship, 5g, titanium');
+    expect(embedArg).toContain('Tags:');
+  });
+
+  it('L144 branch[0]: tags là array → join(", ")', async () => {
+    const product = {
+      id: 501,
+      name: 'Samsung Galaxy',
+      slug: 'samsung-galaxy',
+      basePrice: 15000000,
+      inStock: true,
+      tags: ['android', '5g', 'foldable'], // array → branch[0]: join(', ')
+    };
+
+    await store.upsertProduct(product);
+
+    const embedArg = mockEn.mock.calls[0][0];
+    expect(embedArg).toContain('android, 5g, foldable');
+  });
+});
+
+// ============================================================
+// Line 272: product.basePrice != null ? Number(basePrice) : null — cond-expr branch[1]
+// basePrice = null → metadata.price = null
+// Line 273: product.compareAtPrice != null ? Number(compareAtPrice) : null — cond-expr branch[1]
+// compareAtPrice = null → metadata.compareAtPrice = null
+// ============================================================
+
+describe('upsertProduct metadata — lines 272-273: basePrice/compareAtPrice = null', () => {
+  let store;
+  let mockEn;
+
+  beforeEach(async () => {
+    jest.resetModules();
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
+    mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
+    jest.mock('@services/embedding/unified-embedding', () => ({
+      generateEmbedding: mockEn,
+      activeName: 'mock-model',
+    }));
+    jest.mock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(false),
+      mkdirSync: jest.fn(),
+      writeFileSync: jest.fn(),
+      readFileSync: jest.fn().mockReturnValue('{}'),
+      promises: { readFile: jest.fn(), writeFile: jest.fn().mockResolvedValue(undefined) },
+    }));
+    store = require('./vector-store');
+    await store.loadPromise;
+  });
+
+  it('L272 branch[1]: basePrice = null → metadata.price = null', async () => {
+    const product = {
+      id: 600,
+      name: 'Free Product',
+      slug: 'free-product',
+      basePrice: null, // null → != null is false → branch[1]: null
+      compareAtPrice: null,
+      inStock: true,
+    };
+
+    await store.upsertProduct(product);
+
+    const meta = store.items[0].metadata;
+    expect(meta.price).toBeNull(); // branch[1] của L272
+    expect(meta.compareAtPrice).toBeNull(); // branch[1] của L273
+  });
+
+  it('L272 branch[0]: basePrice có giá trị → metadata.price = Number(basePrice)', async () => {
+    const product = {
+      id: 601,
+      name: 'Regular Product',
+      slug: 'regular',
+      basePrice: 10000000, // có giá trị → branch[0]: Number(10000000)
+      compareAtPrice: 12000000,
+      inStock: true,
+    };
+
+    await store.upsertProduct(product);
+
+    const meta = store.items[0].metadata;
+    expect(meta.price).toBe(10000000);
+    expect(meta.compareAtPrice).toBe(12000000);
+  });
+
+  it('L272 branch[1]: basePrice = undefined → metadata.price = null', async () => {
+    const product = {
+      id: 602,
+      name: 'No Price',
+      slug: 'no-price',
+      basePrice: undefined, // undefined → != null is false → null
+      inStock: true,
+    };
+
+    await store.upsertProduct(product);
+
+    expect(store.items[0].metadata.price).toBeNull();
+  });
+});
+
+// ============================================================
+// Line 299: v.price != null ? Number(v.price) : null — branch[1] trong variant map
+// Line 305: v.attributes || {} trong variant map — branch[1]
+// (v.attributes undefined/null trong upsertProduct variant mapping)
+// ============================================================
+
+describe('upsertProduct metadata variants — lines 299, 305', () => {
+  let store;
+  let mockEn;
+
+  beforeEach(async () => {
+    jest.resetModules();
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    }));
+    mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
+    jest.mock('@services/embedding/unified-embedding', () => ({
+      generateEmbedding: mockEn,
+      activeName: 'mock-model',
+    }));
+    jest.mock('fs', () => ({
+      existsSync: jest.fn().mockReturnValue(false),
+      mkdirSync: jest.fn(),
+      writeFileSync: jest.fn(),
+      readFileSync: jest.fn().mockReturnValue('{}'),
+      promises: { readFile: jest.fn(), writeFile: jest.fn().mockResolvedValue(undefined) },
+    }));
+    store = require('./vector-store');
+    await store.loadPromise;
+  });
+
+  it('L299 branch[1]: variant.price = null → metadata.variants[0].price = null', async () => {
+    const product = {
+      id: 700,
+      name: 'Laptop Pro',
+      slug: 'laptop-pro',
+      basePrice: 20000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: 'Base',
+          price: null, // null → != null false → branch[1]: null
+          compareAtPrice: null,
+          stockQuantity: 5,
+          isDefault: false,
+          attributes: { color: 'Black' },
+        },
+      ],
+    };
+
+    await store.upsertProduct(product);
+
+    const v = store.items[0].metadata.variants[0];
+    expect(v.price).toBeNull(); // branch[1] của L299
+  });
+
+  it('L299 branch[1]: variant.price = undefined → null', async () => {
+    const product = {
+      id: 701,
+      name: 'Phone Y',
+      slug: 'phone-y',
+      basePrice: 8000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: 'Default',
+          price: undefined, // undefined → != null false → null
+          compareAtPrice: undefined,
+          stockQuantity: 3,
+        },
+      ],
+    };
+
+    await store.upsertProduct(product);
+
+    const v = store.items[0].metadata.variants[0];
+    expect(v.price).toBeNull();
+    expect(v.compareAtPrice).toBeNull();
+  });
+
+  it('L305 branch[1]: variant.attributes = undefined → metadata.variants[0].attributes = {}', async () => {
+    const product = {
+      id: 702,
+      name: 'Watch Pro',
+      slug: 'watch-pro',
+      basePrice: 5000000,
+      inStock: true,
+      variants: [
+        {
+          variantName: 'Standard',
+          price: 5000000,
+          stockQuantity: 2,
+          isDefault: true,
+          attributes: undefined, // undefined → || {} → branch[1]: {}
+        },
+      ],
+    };
+
+    await store.upsertProduct(product);
+
+    const v = store.items[0].metadata.variants[0];
+    expect(v.attributes).toEqual({}); // branch[1] của L305
+  });
+
+  it('L305 branch[1]: variant.attributes = null → {}', async () => {
+    const product = {
+      id: 703,
+      name: 'Earphone X',
+      slug: 'earphone-x',
+      basePrice: 1500000,
+      inStock: true,
+      variants: [
+        {
+          variantName: 'ANC',
+          price: 1500000,
+          stockQuantity: 10,
+          attributes: null, // null → || {} → {}
+        },
+      ],
+    };
+
+    await store.upsertProduct(product);
+
+    expect(store.items[0].metadata.variants[0].attributes).toEqual({});
+  });
+});

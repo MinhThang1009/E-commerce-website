@@ -62,4 +62,4 @@ Require `@models` trực tiếp (không nhận DI). Tự định nghĩa associat
 - **`generateProductName` trả `baseName` ngay nếu `selectedAttributes` rỗng hoặc không có attribute nào `affectsName=true`** — không throw.
 - **`batchGenerateNames` là sequential** — mỗi item chờ item trước xong mới chạy. Cho nhiều items → chậm hơn Promise.all, nhưng tránh quá tải DB.
 - **`productId` trong `getNameAffectingAttributes` không được dùng** — param nhận nhưng `whereCondition` không lọc theo productId (có thể là placeholder cho tương lai).
-- **Cross-module import bị hook block** — `attribute` module không được require `product-name-generator` trực tiếp; phải nhận qua DI/setter từ `app.js`.
+- **Cross-module import bị hook block** — `attribute` module không được require `product-name-generator` trực tiếp trong service; phải nhận qua setter, với `require` + `setNameGenerator()` thực hiện trong `attribute/module.js` (tránh circular import tại load time).

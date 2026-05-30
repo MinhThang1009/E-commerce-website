@@ -600,6 +600,16 @@ const EditProductPage: React.FC = () => {
       ? [categoriesResponse.data]
       : [];
 
+  // Watch reactive values cho stepper (phải khai báo trước early return)
+  const watchName = form._rhf.watch('name') as string;
+  const watchDesc = form._rhf.watch('description') as string;
+  const watchShortDesc = form._rhf.watch('shortDescription') as string;
+  const watchPrice = form._rhf.watch('price');
+  const watchCategoryIds = form._rhf.watch('categoryIds') as string[];
+  const watchSpecs = form._rhf.watch('specifications') as unknown[];
+  const watchFaqs = form._rhf.watch('faqs') as unknown[];
+  const watchSeoTitle = form._rhf.watch('seoTitleVi') as string;
+
   // Xử lý trạng thái loading và error
   if (isLoadingProduct) {
     return (
@@ -689,7 +699,42 @@ const EditProductPage: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-6">
               {/* Vertical stepper trái */}
               <aside className="lg:sticky lg:top-[88px] lg:self-start">
-                <ProductFormStepper steps={steps} activeStep={activeTab} onSelect={setActiveTab} />
+                <ProductFormStepper
+                  steps={steps}
+                  activeStep={activeTab}
+                  completedSteps={
+                    !isLoadingProduct
+                      ? {
+                          basic:
+                            !!watchName?.trim() && !!watchDesc?.trim() && !!watchShortDesc?.trim(),
+                          attributes: attributes.length > 0,
+                          variants: variants.length > 0,
+                          specifications: Array.isArray(watchSpecs) && watchSpecs.length > 0,
+                          pricing: variants.length > 0 || Number(watchPrice) > 0,
+                          category: Array.isArray(watchCategoryIds) && watchCategoryIds.length > 0,
+                          images: true,
+                          seo: true,
+                          faqs: true,
+                        }
+                      : undefined
+                  }
+                  filledSteps={
+                    !isLoadingProduct
+                      ? {
+                          specifications: Array.isArray(watchSpecs) && watchSpecs.length > 0,
+                          attributes: attributes.length > 0,
+                          variants: variants.length > 0,
+                          images: true,
+                          faqs: Array.isArray(watchFaqs) && watchFaqs.length > 0,
+                          seo: !!watchSeoTitle?.trim(),
+                        }
+                      : undefined
+                  }
+                  optionalSteps={
+                    new Set(['specifications', 'attributes', 'variants', 'images', 'faqs', 'seo'])
+                  }
+                  onSelect={setActiveTab}
+                />
               </aside>
 
               {/* Nội dung bước phải */}

@@ -80,3 +80,9 @@ dump.rdb
 backend/server_err.txt
 backend/server_out*.log
 backend/src/modules/uploads/
+
+# Debug/audit screenshots (chrome-devtools) — không commit binary bloat
+.screenshots/
+frontend/.screenshots/
+# Junk jest output (broken Windows path filename)
+frontend/C*Tempjest_out*.txt

@@ -4,10 +4,11 @@
  * @feature catalog
  * @description UI component cho feature catalog
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Plus, Trash2, Info } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useUiStore } from '@/stores/ui-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -71,6 +72,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
   initialSpecifications = [],
 }) => {
   const { t } = useTranslation();
+  const addNotification = useUiStore((s) => s.addNotification);
   const [specifications, setSpecifications] = useState<Specification[]>(initialSpecifications);
 
   const specificationCategories = [
@@ -99,6 +101,23 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
     }
   }, [initialSpecifications]);
 
+  // Sync từ RHF store khi fill dữ liệu mẫu (form.setValue từ bên ngoài)
+  const formSpecs = form.watch('specifications');
+  const lastSyncedRef = useRef<string>('');
+  useEffect(() => {
+    if (!formSpecs || !Array.isArray(formSpecs) || formSpecs.length === 0) return;
+    const serialized = JSON.stringify(formSpecs);
+    if (serialized === lastSyncedRef.current) return; // không re-sync nếu cùng data
+    lastSyncedRef.current = serialized;
+    setSpecifications(
+      formSpecs.map((spec: Specification, i: number) => ({
+        ...spec,
+        id: spec.id || `spec-${Date.now()}-${i}`,
+        category: normalizeCategory(spec.category),
+      })),
+    );
+  }, [formSpecs]);
+
   useEffect(() => {
     form.setValue('specifications', specifications);
   }, [specifications, form]);
@@ -112,6 +131,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       category: 'Thông số chung',
     };
     setSpecifications([...specifications, newSpec]);
+    addNotification({ message: t('admin.products.specs.addSuccess'), type: 'success' });
   };
 
   const updateSpecification = (id: string, field: keyof Specification, value: string) => {
@@ -122,6 +142,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
 
   const removeSpecification = (id: string) => {
     setSpecifications((specs) => specs.filter((spec) => spec.id !== id));
+    addNotification({ message: t('admin.products.specs.deleteSuccess'), type: 'info' });
   };
 
   return (
@@ -129,6 +150,7 @@ const ProductSpecificationsForm: React.FC<ProductSpecificationsFormProps> = ({
       <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
         <Info className="size-5" />
         {t('admin.products.specs.title')}
+        <span className="text-[var(--color-danger)]">*</span>
       </h3>
       <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">
         {t('admin.products.specs.subtitle')}

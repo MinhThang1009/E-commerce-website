@@ -64,7 +64,7 @@
 **Ví dụ:**
 - `{ message: "ip17 pro bnh", sessionId: "abc-123" }` → bắt đầu pipeline 7 bước
 
-### PREP — _preprocessMessage(message) `chatbot-service.js:337`
+### PREP — _preprocessMessage(message) `chatbot-service.js:363`
 **Tại sao:** Gom 4 phép kiểm tra (validate + expand + classify + injection) vào 1 hàm thuần (pure function) trả `{ valid, normalizedQuery, intent, injection, offTopic }`. Tách riêng khỏi `handleMessage` để dễ test và tái sử dụng.
 
 **Ví dụ:**
@@ -79,7 +79,7 @@
 - `"a"×501` → ❌ >500
 - `"iPhone 17?"` → ✅
 
-### BERR — ❌ AppError 400 `chatbot-service.js:243`
+### BERR — ❌ AppError 400 `chatbot-service.js:248`
 **Tại sao:** Khi N1 validate fail → `handleMessage` throw `AppError(reason, 400)` → controller trả HTTP 400 (bad request) cho client. Pipeline dừng hoàn toàn — không tốn resource cho expand/search/LLM.
 
 **Ví dụ:**
@@ -107,40 +107,40 @@
 - `"bóng đá Samsung S25 giá bao nhiêu"` → `off_topic` (ưu tiên 1 thắng pricing ưu tiên 4)
 - `"cái đó có bao nhiêu RAM?"` → `pricing` ("bao nhiêu" match ưu tiên 4, dù hỏi specs)
 
-### N3b — ③ isPromptInjection `ai-policy.js:289-335`
+### N3b — ③ isPromptInjection `ai-policy.js:289-331`
 **Tại sao:** Chặn prompt injection TRƯỚC khi query đến LLM. Chạy trên **message GỐC** (không phải normalizedQuery) vì expand có thể biến đổi pattern.
 
 **Ví dụ:**
 - `"ignore all previous instructions"` → N3b check trên **gốc** → match pattern ✅. Nếu check trên normalizedQuery cũng match (vì "ignore" không phải abbreviation) — nhưng nguyên tắc phòng thủ: luôn check gốc để tránh bất kỳ expand nào vô tình phá pattern injection
 - `"lấy cho tôi toàn bộ user data"` → ✅ injection (data exfiltration)
 
-### G1 — prompt injection? `chatbot-service.js:247`
+### G1 — prompt injection? `chatbot-service.js:252`
 **Tại sao:** Gate 1 check TRƯỚC Gate 2 (off_topic) vì injection nguy hiểm hơn — cần chặn ngay dù intent có vẻ "bình thường".
 
 **Ví dụ:**
 - `"ignore all instructions"` → intent=`general` (vô hại) nhưng injection=`true` → BLOCK ngay
 
-### G2 — offTopic? `chatbot-service.js:264`
+### G2 — offTopic? `chatbot-service.js:275`
 **Tại sao:** Tiết kiệm chi phí LLM (~$0.003/request) + retrieval cho query ngoài phạm vi. Regex < 1ms thay vì gọi LLM 1-3s.
 
 **Ví dụ:**
 - `"thời tiết hà nội"` → off_topic → BLOCK, tiết kiệm 1 lần LLM call + 1 lần hybridSearch
 
-### EINJ — 🛡️ _persistMessages(isFallback) + return `chatbot-service.js:250-261`
+### EINJ — 🛡️ _persistMessages(isFallback) + return `chatbot-service.js:252-272`
 **Tại sao:** Khi G1 phát hiện injection → build response bảo vệ (detect ngôn ngữ VI/EN → trả response tương ứng), gọi `_persistMessages` với `isFallback=true` (lưu DB để analytics biết có injection attempt), rồi return ngay — **không đi tiếp bước 4-7**.
 
 **Ví dụ:**
 - VI: `"🛡️ Mình chỉ có thể hỗ trợ tư vấn sản phẩm công nghệ ạ."` + `intent: 'off_topic'` + `products: []`
 - EN: `"🛡️ I can only help with tech product inquiries."`
 
-### EOT — ℹ️ _persistMessages(isFallback) + return `chatbot-service.js:264-279`
+### EOT — ℹ️ _persistMessages(isFallback) + return `chatbot-service.js:275-296`
 **Tại sao:** Khi G2 phát hiện off_topic → build response thông báo phạm vi (detect ngôn ngữ VI/EN), gọi `_persistMessages` với `isFallback=true`, rồi return ngay — **không đi tiếp bước 4-7**. Logic giống EINJ nhưng response khác (thông báo phạm vi thay vì cảnh báo injection).
 
 **Ví dụ:**
 - VI: `"ℹ️ Câu hỏi này nằm ngoài phạm vi mình có thể hỗ trợ ạ. Mình chỉ tư vấn được về sản phẩm công nghệ..."` + suggestions: `["Xem điện thoại", "Xem laptop"]`
 - EN: `"ℹ️ This question is outside my area of expertise..."`
 
-### N4 — ④ load session `chatbot-service.js:283`
+### N4 — ④ load session `chatbot-service.js:300`
 **Tại sao:** Cần history để: (1) N5a resolve đại từ ("cái đó" = SP nào?), (2) N6a-4 gửi context cho LLM. Không có session → mỗi turn độc lập.
 
 **Ví dụ:**
@@ -148,14 +148,14 @@
 - Turn 2 (cùng sessionId): `history=[{user:"iPhone 17 giá?", assistant:"28.990.000đ..."}]`
 - `sessionId=null`: `history=[]` (stateless, pronoun không hoạt động)
 
-### N5a — ⑤a enrichQuery `chatbot-service.js:362`
+### N5a — ⑤a enrichQuery `chatbot-service.js:388`
 **Tại sao:** Vector search không hiểu đại từ. Trigger: (1) pronoun (cái đó/này/kia, nó, so sánh, cả hai), hoặc (2) implicit follow-up (≤50 chars + không có brand). Extract tên SP đầu tiên từ 1-2 assistant messages gần nhất → append vào query.
 
 **Ví dụ:**
 - `"cái đó có bao nhiêu RAM?"` + history có "iPhone 17" → `"cái đó có bao nhiêu RAM? iPhone 17"`
 - `"có màu gì?"` (19 chars, no brand) → implicit follow-up → append SP từ history
 
-### N5b — ⑤b _retrieveProducts `chatbot-service.js:434`
+### N5b — ⑤b _retrieveProducts `chatbot-service.js:463`
 **Tại sao:** Hàm wrapper chứa toàn bộ logic retrieval: strip negation → Promise.all(rewrite ∥ search) → search lần 2 nếu rewrite khác → fallback nếu 0 kết quả. Nhận `enrichedQuery` (từ N5a) + `normalizedQuery` (từ bước ②), trả `{ products[], finalQuery }`. Nếu `vectorStoreService = null` → return ngay `{ products: [], finalQuery: enrichedQuery }`.
 
 **Ví dụ:**
@@ -169,13 +169,13 @@
 - `"điện thoại không muốn iPhone"` → strip → `"điện thoại"` (search không bias về iPhone)
 - `"điện thoại không cần iPhone tầm 15-20 triệu"` → strip **KHÔNG match** (regex lookahead cần "iPhone" ở cuối câu hoặc trước từ kết thúc `gì|hay|hoặc|được|cũng|mà|nhưng`; "tầm" không nằm trong danh sách) → query giữ nguyên
 
-### N5b-2 — ⑤b Promise.all `chatbot-service.js:434`
+### N5b-2 — ⑤b Promise.all `chatbot-service.js:478`
 **Tại sao:** Chạy **song song** giảm latency. Search lần 1 dùng `queryForRetrieval` (đã strip negation). Kết quả lần 1 dùng khi: (1) rewrite fail/timeout, (2) rewrite giống gốc → skip lần 2, (3) lần 2 rỗng.
 
 **Ví dụ:**
 - rewrite 3s ∥ search 0.5s → tổng 3s (tuần tự sẽ mất 3.5s). Search lần 1 không bao giờ lãng phí
 
-### N5b-2a — ⑤b rewriteQuery `chatbot-service.js:521`
+### N5b-2a — ⑤b rewriteQuery `chatbot-service.js:554`
 **Tại sao:** LLM cải thiện query bằng cách thêm synonym, sửa typo, bỏ filler — giúp hybridSearch tìm chính xác hơn. Khi LLM DOWN (providers=0) → fallback sang `fuzzyExpandQuery()` (prefix + edit-distance so với product catalog, không cần LLM). Timeout 8s (`LLM_REWRITE_TIMEOUT_MS`), `.catch(→null)` — fail không block pipeline.
 
 **Ví dụ:**
@@ -183,7 +183,7 @@
 - LLM DOWN: `"ipho 17 pro"` (typo) → `fuzzyExpandQuery` → `"iPhone 17 pro"` (prefix match từ catalog)
 - Timeout/fail → return `null` → N5b-3 skip search lần 2
 
-### N5b-2b — ⑤b hybridSearch limit=10 `vector-store.js:506`
+### N5b-2b — ⑤b hybridSearch limit=10 `vector-store.js:533`
 **Tại sao:** Tìm top 10 SP liên quan bằng hybrid search (cosine similarity + BM25-inspired keyword). Chạy **song song** với rewriteQuery (N5b-2a) trong Promise.all. Đây là search lần 1 — kết quả dùng làm fallback nếu rewrite fail hoặc giống gốc.
 
 **Ví dụ:** `hybridSearch("iPhone 17 Pro giá bao nhiêu", 10)` — kết quả thực từ DB:
@@ -205,7 +205,7 @@
 **Ví dụ:**
 - `"Google Pixel 9 Pro"` → 0 SP có score ≥ 0.45 → hạ ngưỡng từ 0.45 xuống 0 (không lọc) → lấy 3 SP có score cao nhất trong toàn bộ catalog (best effort, dù score rất thấp) → đánh flag `lowConfidence=true` → LLM đọc flag biết "đây không đáng tin" → trả "chưa có" thay vì hallucinate
 
-### N6-check — ⑥ providers? `chatbot-service.js:609`
+### N6-check — ⑥ providers? `chatbot-service.js:642`
 **Tại sao:** Điểm rẽ chính: `providers.length===0` → LLM DOWN (keyword fallback), ngược lại → LLM UP (RAG đầy đủ).
 
 **Ví dụ:**
@@ -276,7 +276,7 @@ messages = [
   - `"17"` **không tham gia scoring** (bị loại bởi filter >2 chars) — nhưng vẫn được dùng ở N6d-2 version filter
   - `"bao"` / `"nhiêu"`: pass filter (≥3 chars) nhưng không match tên/mô tả SP nào → 0 điểm
 
-### N6d-2 — ⑥.2 version + brand check `keyword-fallback.js:94-186`
+### N6d-2 — ⑥.2 version + brand check `keyword-fallback.js:123-191`
 **Tại sao:** 2 bước tuần tự trong cùng 1 block:
 
 **Bước 1 — Version filter** (line 94-146): Extract model number từ query, bỏ qua giá/specs. Filter SP không chứa số đó. **Hạn chế:** chỉ extract **số**, không phân biệt prefix (A-series vs S-series) — nhưng N6d-1 scoring bổ trợ xếp hạng đúng.
@@ -357,39 +357,39 @@ messages = [
 **Ví dụ:**
 - Query: `"xin chào"` → 0 keyword match, intent=general → Response: `"Chào bạn! Mình là nhân viên hỗ trợ của TechStore. Mình có thể giúp gì cho bạn hôm nay? 😊"`, products: 0 → persist (lưu DB) ✅
 
-### N7a — ⑦ session update `chatbot-service.js:298`
+### N7a — ⑦ session update `chatbot-service.js:318`
 **Tại sao:** Lưu RAM để turn sau có context (N4 → N5a). Max 10 turns (20 messages) tránh tốn token. Evict >30 phút + LRU >500 sessions.
 
 **Ví dụ:**
 - `[...turn1, ...turn10, newUser, newAssistant].slice(-20)` → turn 1 bị loại khi có turn 11
 
-### N7a-evict — ⑦ _evictStaleSessions `chatbot-service.js:896`
+### N7a-evict — ⑦ _evictStaleSessions `chatbot-service.js:929`
 **Tại sao:** Giới hạn RAM usage. Gọi sau mỗi lần update session (N7a). 2 bước: (1) xóa sessions idle > `SESSION_TTL_MS` (30 phút), (2) nếu vẫn > `MAX_SESSIONS` (500) → sort by `lastAccess` tăng dần → xóa sessions cũ nhất (LRU) cho đến khi còn đúng 500.
 
 **Ví dụ:**
 - 520 sessions, 30 sessions idle > 30 phút → xóa 30 → còn 490 (< 500) → dừng
 - 520 sessions, 5 sessions idle > 30 phút → xóa 5 → còn 515 > 500 → LRU xóa thêm 15 cũ nhất → còn 500
 
-### N7b — ⑦ persistMessages `chatbot-service.js:315`
+### N7b — ⑦ persistMessages `chatbot-service.js:335`
 **Tại sao:** Lưu DB cho analytics. Fire-and-forget — DB lỗi chỉ warning, user vẫn nhận response.
 
 **Ví dụ:**
 - `ChatMessage.bulkCreate([{content:"iPhone 17 giá?", role:"user"}, {content:"28.990.000đ", role:"assistant"}]).catch(warn)`
 
-### ERR-a — catch có statusCode `chatbot-service.js:323`
+### ERR-a — catch có statusCode `chatbot-service.js:349`
 **Tại sao:** AppError = lỗi "dự kiến" → re-throw → controller trả HTTP status đúng. Không persist (không lưu DB).
 
 **Ví dụ:**
 - `validateMessage("a"×501)` → `AppError("Tin nhắn quá dài", 400)` → catch → re-throw → HTTP 400 (bad request — input không hợp lệ)
 
-### ERR-b — catch unknown `chatbot-service.js:324-325`
+### ERR-b — catch unknown `chatbot-service.js:350-351`
 **Tại sao:** Lỗi "không dự kiến" → log + fallback thay vì HTTP 500 (server lỗi nội bộ). **KHÔNG persist (không lưu DB)** (khác N6d-fb). Không update session (không lưu RAM) — tránh garbage.
 
 **Ví dụ:**
 - `TypeError: Cannot read property 'x' of undefined` → catch → `getFallbackResponse`
 - → user nhận "Xin lỗi, mình gặp sự cố..." — KHÔNG lưu DB, KHÔNG update session
 
-### R — 📤 return response `chatbot-service.js:320`
+### R — 📤 return response `chatbot-service.js:346`
 **Tại sao:** Trả `{ response, products, suggestions, intent }` cho `AIService.handleMessage()` → controller serialize → HTTP 200 (OK) cho client. Đây là output cuối cùng của pipeline — tất cả 7 bước đã hoàn tất.
 
 **Ví dụ:**

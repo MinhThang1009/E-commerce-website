@@ -36,7 +36,7 @@ Frontend tests xác minh:
 - Real API calls (mock toàn bộ)
 - Backend business logic
 
-**Baseline:** 18 suites, ~7s runtime, **100% coverage** tất cả metrics.
+**Baseline:** 21 suites, ~12s runtime, **coverage thresholds** trong `jest.config.cjs` (global 79%+, per-file 100% cho auth/schema).
 
 ---
 
@@ -48,6 +48,7 @@ Frontend tests xác minh:
 | `auth-pages-extra.test.tsx`       | Auth pages bổ sung (verify email, edge cases)                                         |
 | `auth-store.test.tsx`             | `auth-store.ts` — actions, state transitions, localStorage/sessionStorage persistence |
 | `auth-utils.test.tsx`             | `auth-utils.ts` — handleUnauthorizedError, handleAutoLogout, getErrorMessage          |
+| `cart-item.test.tsx`              | CartItem component — quantity control, stock states, attributes display               |
 | `cart-orders-pages.test.tsx`      | Cart page, Orders page, Order detail                                                  |
 | `catalog-pages.test.tsx`          | Shop page, Categories, Brands page                                                    |
 | `catalog-pages-extra.test.tsx`    | Catalog pages bổ sung (filters, sorting, pagination)                                  |
@@ -55,6 +56,8 @@ Frontend tests xác minh:
 | `catalog-chat-stores.test.tsx`    | Catalog store + Chat store — synergy, history management                              |
 | `checkout-payment-pages.test.tsx` | Checkout flow → Payment redirect                                                      |
 | `components.test.tsx`             | Shared components: Button, Modal, Input, Card, Badge, Pagination, Rating...           |
+| `premium-button.test.tsx`         | PremiumButton component — variants, sizes, icons, processing state                    |
+| `product-card.test.tsx`           | ProductCard component — wishlist toggle, badges, buyNow, viewDetails                  |
 | `content-pages.test.tsx`          | Contact page, TrackOrder page                                                         |
 | `stores.test.tsx`                 | Cart store, Wishlist store, UI store — actions + state                                |
 | `token-manager.test.tsx`          | Token refresh, auto-logout, deduplication logic                                       |
@@ -173,6 +176,6 @@ await new Promise((r) => setTimeout(r, 1000));
 - **TanStack Query isolation:** tạo `QueryClient` mới cho mỗi test — `new QueryClient({ defaultOptions: { queries: { retry: false } } })` — để tránh data bleeding giữa tests.
 - **Zustand stores:** reset trong `beforeEach` via `useStore.setState(initialState, true)` (second arg `true` = replace, không merge).
 - **i18n key assertions:** khi mock `t(key) => key`, assert bằng key (`t('auth.login.title')` → `'auth.login.title'`), không phải text Việt/Anh.
-- **Coverage 100%:** thêm code mới → phải kèm test. Không dùng `/* istanbul ignore */` trừ khi có lý do documented rõ ràng.
-- **React 18 act() warnings:** đã handle trong setup. Nếu vẫn xuất hiện → check `await` thiếu trước user event calls.
+- **Coverage gates:** thêm code mới → phải kèm test (ngưỡng `jest.config.cjs`: global 79%+, per-file 100% cho auth pages + schemas/auth.ts). Không dùng `/* istanbul ignore */` trừ khi có lý do documented rõ ràng.
+- **React act() warnings:** đã handle trong setup. Nếu vẫn xuất hiện → check `await` thiếu trước user event calls.
 - **localStorage mock:** Jest jsdom có `localStorage` global — test có side effects cần `beforeEach(() => localStorage.clear())`.

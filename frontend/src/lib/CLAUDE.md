@@ -93,7 +93,6 @@ import { queryClient } from '@lib/query-client';
 # 4. Key Gotchas
 
 - **Không dùng `axios` trực tiếp** trong feature code — luôn import `apiClient` để có token injection + interceptors.
-- **`chatbot-service.ts`** là ngoại lệ cũ (dùng axios trực tiếp). Không copy pattern này.
 - **`withCredentials: true`** cần thiết cho httpOnly cookie (refresh token flow) — nếu remove → refresh token endpoint nhận không có cookie → 401.
 - **Token refresh deduplication** trong `utils/token-manager.ts`: queue cơ chế dùng `failedQueue[]` — khi `isRefreshing = true`, requests mới push vào queue và chờ `processQueue()` gọi với token mới.
 - **`refetchOnWindowFocus: false`**: data không tự cập nhật khi user switch tab về. Cần manual `invalidateQueries` sau mutations.

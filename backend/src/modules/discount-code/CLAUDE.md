@@ -56,9 +56,9 @@ modules/discount-code/
   module.js
   routes.js                              — 2 routes: GET / (getAvailableDiscountCodes) và POST /apply
   controllers/
-    discount-code-controller.js          — functions xuất: getAllDiscountCodes, getById, create, update, delete, applyDiscountCode
+    discount-code-controller.js          — functions xuất: getAllDiscountCodes, getAvailableDiscountCodes, getDiscountCodeById, createDiscountCode, updateDiscountCode, deleteDiscountCode, applyDiscountCode
   services/
-    discount-code-service.js             — ~260 lines: validate + apply logic + admin CRUD (function exports, không phải class)
+    discount-code-service.js             — ~290 lines: validate + apply logic + admin CRUD (function exports, không phải class)
   repositories/
     sequelize-discount-code-repository.js — function exports: findAll, findById, findOne, create, remove, incrementUsedCount
     i-discount-code-repository.js         — interface

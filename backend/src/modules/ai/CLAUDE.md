@@ -74,6 +74,8 @@ modules/ai/
         language-detector.js                     — Detect Vietnamese / English input
       keyword/
         keyword-fallback.js                      — Fallback response khi LLM không available
+      query/
+        fuzzy-expander.js                        — Expand query (prefix + edit-distance) khi LLM unavailable
       prompt/
         prompt-builder.js                        — Build system prompt + RAG context
         response-parser.js                       — Parse structured JSON response từ LLM
@@ -116,11 +118,11 @@ modules/ai/
 
 1. `validateMessage()` — không rỗng, ≤500 ký tự → throw AppError 400 nếu không hợp lệ
 2. `expandAbbreviations()` — chuẩn hóa query (ip→iPhone, ss→Samsung...)
-3. `isPromptInjection` / `isOffTopic` → early return, không gọi retrieval hay LLM
+3. `isPromptInjection` → early return; off-topic check là `classifyIntent(normalizedQuery) === 'off_topic'` trong `_preprocessMessage`, KHÔNG gọi `isOffTopic` trực tiếp → early return, không gọi retrieval hay LLM
 4. Load session history từ `conversationHistory` Map
-5. **Retrieval**: `Promise.all(rewriteQuery + hybridSearch)` song song, refined search nếu rewrite khác, fallback minScore=0 topK=3 nếu rỗng
+5. **Retrieval**: `_enrichQueryFromHistory(normalizedQuery, conversationHistory)` chạy TRƯỚC `_retrieveProducts` (append product names từ history khi query có đại từ đó/này/kia/nó hoặc follow-up ngắn ≤50 ký tự), rồi `Promise.all(rewriteQuery + hybridSearch)` song song, refined search nếu rewrite khác, fallback minScore=0 topK=3 nếu rỗng
 6. **Generation**: `augmentAndGenerate()` → build prompt → LLM → parse JSON
-7. **Persist**: cập nhật session memory + `ChatMessage` DB (fire-and-forget)
+7. **Persist**: cập nhật session memory + `ChatMessage` DB (fire-and-forget). Assistant message lưu kèm `metadata = JSON.stringify({ products, suggestions })` — từ migration `2026052501-add-metadata-to-chat-messages.js`
 
 **Các concerns khác:**
 

@@ -1,6 +1,6 @@
-# Models — Sequelize ORM Models (26 models)
+# Models — Sequelize ORM Models (25 models)
 
-> 26 Sequelize models tại `src/models/`. Associations định nghĩa **toàn bộ** trong `index.js`.
+> 25 Sequelize models tại `src/models/`. Associations định nghĩa **toàn bộ** trong `index.js`.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -24,34 +24,34 @@ Associations chỉ được định nghĩa trong `index.js` — không lặp l�
 
 ## 2. Model — File — Table mapping
 
-| Model                 | File                       | Table                    | Ghi chú quan trọng                                                                                                                     |
-| --------------------- | -------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| User                  | user.js                    | users                    | `beforeCreate`: bcrypt password; `toJSON`: strip password/otp/resetToken                                                               |
-| Address               | address.js                 | addresses                | paranoid                                                                                                                               |
-| Category              | category.js                | categories               | `beforeValidate`: auto-slug từ `nameVi`; paranoid; fields: `isActive` (bool, default true), `sortOrder` (int, default 0)               |
-| Brand                 | brand.js                   | brands                   | `beforeValidate`: auto-slug từ `nameVi`; paranoid; fields: `descriptionVi`/`descriptionEn`, `website`, `isActive` (bool, default true) |
-| Product               | product.js                 | products                 | `afterCreate/Update/Destroy`: sync vectorStore; `beforeValidate`: auto-slug unique                                                     |
-| ProductVariant        | product-variant.js         | product_variants         | paranoid                                                                                                                               |
-| ProductImage          | product-image.js           | product_images           | paranoid; có `variantId` FK (nullable)                                                                                                 |
-| ProductAttribute      | product-attribute.js       | product_attributes       | —                                                                                                                                      |
-| ProductSpecification  | product-specification.js   | product_specifications   | —                                                                                                                                      |
-| ProductAttributeGroup | product-attribute-group.js | product_attribute_groups | junction (M-M Product ↔ AttributeGroup)                                                                                                |
-| ProductCategory       | product-category.js        | product_categories       | junction (M-M Product ↔ Category)                                                                                                      |
-| AttributeGroup        | attribute-group.js         | attribute_groups         | type: color/config/storage/size/custom                                                                                                 |
-| AttributeValue        | attribute-value.js         | attribute_values         | `colorCode` hex; `priceAdjustment`                                                                                                     |
-| Review                | review.js                  | product_reviews          | paranoid; `rating` 1–5 validated                                                                                                       |
-| Cart                  | cart.js                    | carts                    | status: active/merged/converted/abandoned                                                                                              |
-| CartItem              | cart-item.js               | cart_items               | `unitPrice` snapshot                                                                                                                   |
-| Order                 | order.js                   | orders                   | paranoid                                                                                                                               |
-| OrderItem             | order-item.js              | order_items              | `unitPrice/name/sku` snapshot (không cần join Product)                                                                                 |
-| DiscountCode          | discount-code.js           | discount_codes           | paranoid; type: percent/fixed                                                                                                          |
-| Wishlist              | wishlist.js                | wishlists                | junction (M-M User ↔ Product)                                                                                                          |
-| Feedback              | feedback.js                | feedbacks                | status: pending/reviewed/resolved                                                                                                      |
-| ChatMessage           | chat-message.js            | chat_messages            | role: user/assistant; messageType: ai_chatbot/support                                                                                  |
-| InventoryLog          | inventory-log.js           | inventory_logs           | **immutable** (`updatedAt: false`)                                                                                                     |
-| SearchHistory         | search-history.js          | search_histories         | **immutable** (`updatedAt: false`)                                                                                                     |
-| RecentlyViewed        | recently-viewed.js         | recently_viewed          | —                                                                                                                                      |
-| Image                 | image.js                   | images                   | associations đã xóa khỏi `index.js`; image module vẫn `require('@models/image')` trực tiếp                                             |
+| Model                 | File                       | Table                    | Ghi chú quan trọng                                                                                                                                |
+| --------------------- | -------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User                  | user.js                    | users                    | `beforeCreate`: bcrypt password; `toJSON`: strip password/otp/resetToken                                                                          |
+| Address               | address.js                 | addresses                | paranoid                                                                                                                                          |
+| Category              | category.js                | categories               | `beforeValidate`: auto-slug từ `nameVi`; paranoid; fields: `isActive` (bool, default true), `sortOrder` (int, default 0)                          |
+| Brand                 | brand.js                   | brands                   | `beforeValidate`: auto-slug từ `nameVi`; paranoid; fields: `descriptionVi`/`descriptionEn`, `website`, `isActive` (bool, default true)            |
+| Product               | product.js                 | products                 | `afterCreate/Update/Destroy`: sync vectorStore; `beforeValidate`: auto-slug unique                                                                |
+| ProductVariant        | product-variant.js         | product_variants         | paranoid                                                                                                                                          |
+| ProductImage          | product-image.js           | product_images           | paranoid; có `variantId` FK (nullable)                                                                                                            |
+| ProductAttribute      | product-attribute.js       | product_attributes       | —                                                                                                                                                 |
+| ProductSpecification  | product-specification.js   | product_specifications   | —                                                                                                                                                 |
+| ProductAttributeGroup | product-attribute-group.js | product_attribute_groups | junction (M-M Product ↔ AttributeGroup)                                                                                                           |
+| ProductCategory       | product-category.js        | product_categories       | junction (M-M Product ↔ Category)                                                                                                                 |
+| AttributeGroup        | attribute-group.js         | attribute_groups         | type: color/config/storage/size/custom                                                                                                            |
+| AttributeValue        | attribute-value.js         | attribute_values         | `colorCode` hex; `priceAdjustment`                                                                                                                |
+| Review                | review.js                  | product_reviews          | paranoid; `rating` 1–5 validated                                                                                                                  |
+| Cart                  | cart.js                    | carts                    | status: active/merged/converted/abandoned                                                                                                         |
+| CartItem              | cart-item.js               | cart_items               | `unitPrice` snapshot                                                                                                                              |
+| Order                 | order.js                   | orders                   | paranoid                                                                                                                                          |
+| OrderItem             | order-item.js              | order_items              | `unitPrice/name/sku` snapshot (không cần join Product)                                                                                            |
+| DiscountCode          | discount-code.js           | discount_codes           | paranoid; type: percent/fixed                                                                                                                     |
+| Wishlist              | wishlist.js                | wishlists                | junction (M-M User ↔ Product)                                                                                                                     |
+| Feedback              | feedback.js                | feedbacks                | status: pending/reviewed/resolved                                                                                                                 |
+| ChatMessage           | chat-message.js            | chat_messages            | role: user/assistant; messageType: ai_chatbot/support; `metadata` (TEXT nullable, JSON string `{ products, suggestions }` cho assistant messages) |
+| InventoryLog          | inventory-log.js           | inventory_logs           | **immutable** (`updatedAt: false`)                                                                                                                |
+| SearchHistory         | search-history.js          | search_histories         | **immutable** (`updatedAt: false`)                                                                                                                |
+| RecentlyViewed        | recently-viewed.js         | recently_viewed          | —                                                                                                                                                 |
+| Image                 | image.js                   | images                   | associations đã xóa khỏi `index.js`; image module vẫn `require('@models/image')` trực tiếp                                                        |
 
 ---
 
@@ -122,5 +122,8 @@ Các model này đã bị drop hoàn toàn. **Không reference lại:**
 - `LoyaltyHistory`, `loyalty_histories` — dropped (loyalty module removed)
 - `WarrantyPackage`, `warranty_packages` — dropped (warranty-package module removed)
 - `ProductWarranty`, `product_warranties` — dropped
+- `AuditLog`, `audit_logs` — dropped
+- `BrandCategory`, `brand_categories` — dropped
+- `ReviewFeedback`, `review_feedbacks` — dropped
 
 `Image` model (`image.js`) vẫn tồn tại nhưng **associations đã xóa khỏi `index.js`** (migration 2026051615). Image module require trực tiếp `@models/image` — không đi qua `index.js`.

@@ -29,7 +29,7 @@ File: `.github/workflows/ci.yml`
 
 | Event | Branches | paths-ignore |
 |---|---|---|
-| `push` | `main`, `phase-*`, `feat/*`, `fix/*` | `**.md`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `.gitignore`, `LICENSE` |
+| `push` | `main`, `phase-*`, `feat/*`, `fix/*`, `refactor/*` | `**.md`, `docs/**`, `.github/ISSUE_TEMPLATE/**`, `.gitignore`, `LICENSE` |
 | `pull_request` | target `main` | `**.md`, `docs/**` |
 
 ## 1.2 Jobs
@@ -60,7 +60,7 @@ Steps theo thứ tự:
 
 ### Job: frontend
 
-`name: Frontend (lint + typecheck + build)`, `timeout-minutes: 15`, `runs-on: ubuntu-latest`
+`name: Frontend (lint + typecheck + test + build)`, `timeout-minutes: 15`, `runs-on: ubuntu-latest`
 
 Steps theo thứ tự:
 
@@ -69,12 +69,20 @@ Steps theo thứ tự:
 3. **Install frontend deps** — `npm ci` trong `frontend/`
 4. **Lint frontend** — `npm run lint`
 5. **Typecheck** — `npm run typecheck` (`tsc --noEmit`)
-6. **Security audit** — `npm audit --audit-level=high --omit=dev` — `continue-on-error: true`
-7. **Build** — `npm run build` với `VITE_API_URL=http://localhost:8888/api`
-8. **Bundle size check** — fail nếu `dist/` > 10MB (`du -sm dist/`)
-9. **Upload artifact** — `frontend-dist` (3 ngày)
+6. **Run tests + coverage** — `npm run test:ci` — 21 suites, threshold gate (79% global, 100% per-file auth/schema)
+7. **Security audit** — `npm audit --audit-level=high --omit=dev` — `continue-on-error: true`
+8. **Build** — `npm run build` với `VITE_API_URL=http://localhost:8888/api`
+9. **Bundle size check** — fail nếu `dist/` > 10MB (`du -sm dist/`)
+10. **Upload artifact** — `frontend-dist` (3 ngày)
 
-**Lưu ý:** frontend **không có test step trong CI** — chỉ lint + typecheck + build + bundle size check.
+**FE coverage thresholds** (trong `frontend/jest.config.cjs`):
+
+| Metric | Global floor | Per-file (auth pages + schema) |
+|---|---|---|
+| Statements | ≥ 79% | 100% |
+| Branches | ≥ 67% | 100% |
+| Functions | ≥ 69% | 100% |
+| Lines | ≥ 79% | 100% |
 
 ### Job: summary
 
@@ -181,7 +189,7 @@ Chạy trước mỗi `git push`:
 - **`npm run lint:strict`** (backend) khác `npm run lint` (frontend) — backend dùng `--max-warnings 0`, frontend cũng dùng `--max-warnings 0` nhưng script tên khác.
 - **`scripts/lint-migrations.sh`** chạy ở root level — CI step không có `working-directory: backend`.
 - **`npm audit`** dùng `continue-on-error: true` — audit thất bại không block CI (chỉ warning).
-- **Frontend không có test step trong CI** — jest chỉ chạy local qua pre-push hook.
+- **Frontend có test step trong CI** — `npm run test:ci` với coverage threshold gate (step 6 trong frontend job). Jest chạy 21 suites, fail nếu dưới threshold.
 - **`DB_PASSWORD=''` trong CI** — empty string, không phải undefined. Sequelize với XAMPP local dev cũng dùng empty password.
 - **GitHub secrets:** `JWT_SECRET` và `JWT_REFRESH_SECRET` cần ≥32 chars. Fallback hardcoded trong CI đủ dài.
 - **Dependabot PRs:** cần review manual trước khi merge, đặc biệt major version bumps.

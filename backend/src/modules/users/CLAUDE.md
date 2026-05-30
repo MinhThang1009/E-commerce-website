@@ -73,7 +73,7 @@ modules/users/
 
 ## 3.1 updateProfile
 
-Update `firstName`, `lastName`, `phone`, `avatar` (URL string). Chỉ cập nhật field nào được cung cấp (truthy check — `undefined` giữ nguyên giá trị cũ).
+Update `firstName`, `lastName`, `phone`, `avatar` (URL string). `firstName`/`lastName`/`avatar` dùng truthy check (`value || user.x`) → chuỗi rỗng KHÔNG ghi đè. Riêng `phone` dùng `phone !== undefined ? phone : user.phone` → cho phép set `''` để xóa số điện thoại.
 
 ## 3.2 changePassword
 

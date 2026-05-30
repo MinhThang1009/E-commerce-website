@@ -18,7 +18,7 @@
 
 # 1. Mục đích & Trách nhiệm
 
-Trang profile (`/profile`) với 4 tabs: thông tin cá nhân, đổi mật khẩu, đơn hàng (redirect link), địa chỉ giao hàng. Xử lý CRUD địa chỉ và cập nhật thông tin profile. Export `useGetAddressesQuery` + `userKeys` để dùng bởi `CheckoutPage` (feature checkout).
+Trang profile (`/profile`) với 4 tabs: thông tin cá nhân, đổi mật khẩu, đơn hàng (redirect link), địa chỉ giao hàng. Xử lý CRUD địa chỉ và cập nhật thông tin profile. Export `useGetAddressesQuery` để dùng bởi `CheckoutPage` (feature checkout).
 
 ---
 
@@ -26,7 +26,7 @@ Trang profile (`/profile`) với 4 tabs: thông tin cá nhân, đổi mật kh�
 
 ```
 api/
-  user-api.ts              — TanStack Query hooks + export userKeys
+  user-api.ts              — TanStack Query hooks (userKeys nội bộ, không export)
 
 components/
   ProfileAddressesTab.tsx  — Tab quản lý địa chỉ giao hàng (extracted từ ProfilePage)
@@ -46,7 +46,8 @@ Không có `types/` riêng. UI inline trong `ProfilePage` hoặc từ `src/compo
 ## Server state (TanStack Query)
 
 ```typescript
-export const userKeys = {
+// userKeys là const nội bộ module (KHÔNG export) — chỉ dùng trong user-api.ts
+const userKeys = {
   all: ['user'] as const, // Lưu ý: 'user' số ít (không phải 'users')
   addresses: () => [...userKeys.all, 'addresses'] as const,
   currentUser: () => [...userKeys.all, 'current'] as const,
@@ -171,7 +172,7 @@ interface ChangePasswordRequest {
 
 **Feature này được dùng bởi:**
 
-- `features/checkout` — `useGetAddressesQuery`, `userKeys` để autofill + invalidate địa chỉ
+- `features/checkout` — `useGetAddressesQuery` để autofill shipping address từ địa chỉ đã lưu
 
 ---
 
@@ -183,7 +184,7 @@ interface ChangePasswordRequest {
 - **`useSetDefaultAddressMutation` dùng PATCH** — không phải PUT. Khác với `useUpdateAddressMutation` (PUT).
 - **`userKeys.all` là `['user']`** (số ít), không phải `['users']` — khi viết custom invalidation, không nhầm.
 - **Protected route:** `ProfilePage` nằm sau `ProtectedRoute` trong `AppRoutes.tsx` — không cần check auth trong component.
-- **`userKeys` được export** và dùng bởi `CheckoutPage` để invalidate danh sách địa chỉ sau khi thêm địa chỉ mới từ checkout.
+- **`userKeys` KHÔNG được export** — là `const` nội bộ trong `user-api.ts`. `CheckoutPage` chỉ import `useGetAddressesQuery`, không truy cập `userKeys` trực tiếp.
 - **Validate phone VN:** regex `/^(0|\+84)[0-9]{9}$/` sau khi remove spaces, dashes, dots. Phone không bắt buộc (optional field).
 
 ---

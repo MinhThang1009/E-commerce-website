@@ -62,7 +62,7 @@ modules/content/
 
 ## 3.1 Contact/Feedback
 
-- `sendFeedback({ payload })` — validate `name`, `email`, `subject`, `content` (required). Tạo `Feedback` record với `status: 'pending'`. Gửi email thông báo đến `adminEmail` fire-and-forget (lỗi email chỉ log warn, không fail request).
+- `sendFeedback({ payload })` — validate `name`, `email`, `subject`, `content` (required). Tạo `Feedback` record với `status: 'pending'`. Gửi email thông báo đến `adminEmail` fire-and-forget (lỗi email chỉ log error, không fail request).
 
 ---
 
@@ -94,7 +94,7 @@ Base path: `/api/contact`
 
 # 6. Gotchas & Edge Cases
 
-- **`adminEmail` fail silent**: Email failure chỉ log error, request vẫn trả 200. Không re-throw.
+- **`adminEmail` fail silent**: Email failure chỉ log error, request vẫn trả 201. Không re-throw.
 - **Banner và News đã bị xóa**: Model `Banner`, `News` đã drop. Routes `/api/banners` và `/api/news` không còn tồn tại. Không reference lại.
 
 ---

@@ -985,7 +985,9 @@
     "dashboard": {
       "title": "Admin dashboard",
       "lastUpdated": "Last updated",
-      "sparkline": { "needMoreData": "Need more data" },
+      "sparkline": {
+        "needMoreData": "Need more data"
+      },
       "stats": {
         "totalRevenue": "Total revenue",
         "totalOrders": "Total orders",
@@ -1268,7 +1270,10 @@
         "saving": "Saving draft...",
         "saved": "Auto-saved at {{time}}",
         "idle": "Not saved yet",
-        "restored": "Restored your unsaved draft"
+        "restored": "Restored your unsaved draft",
+        "clearDraft": "Clear draft",
+        "draftCleared": "Draft cleared. Form has been reset.",
+        "sampleFilled": "Sample data filled. Please select a category to complete."
       },
       "editTabs": {
         "basic": "1. Basic info",
@@ -1313,6 +1318,8 @@
         "title": "Product specifications",
         "subtitle": "Add detailed specifications so customers can compare and evaluate the product",
         "addButton": "Add specification",
+        "addSuccess": "Specification added",
+        "deleteSuccess": "Specification deleted",
         "addSample": "Add laptop sample",
         "listTitle": "Specifications list",
         "namePlaceholder": "Spec name (e.g., CPU, RAM...)",
@@ -1434,6 +1441,16 @@
           "q6": "Is this product durable?",
           "a6": "The product meets MIL-STD-810H military durability standards, withstanding impact, vibration, extreme temperatures, and high humidity. The chassis is made from carbon fiber and ultra-durable magnesium alloy."
         }
+      },
+      "variants": {
+        "addSuccess": "Variant added successfully",
+        "updateSuccess": "Variant updated successfully",
+        "deleteSuccess": "Variant deleted"
+      },
+      "attributes": {
+        "addSuccess": "Attribute added successfully",
+        "updateSuccess": "Attribute updated successfully",
+        "deleteSuccess": "Attribute deleted"
       }
     },
     "common": {
@@ -1791,7 +1808,8 @@
       "exportProducts": "Export products",
       "customize": "Customize",
       "fromDate": "From date",
-      "toDate": "To date"
+      "toDate": "To date",
+      "noData": "No data yet"
     },
     "chatbot": {
       "tab": "AI Chatbot",
@@ -2198,6 +2216,9 @@
       "attributes": "Attributes",
       "isDefault": "Default",
       "deleteConfirm": "Delete this variant?",
+      "addSuccess": "Variant added successfully",
+      "updateSuccess": "Variant updated successfully",
+      "deleteSuccess": "Variant deleted",
       "table": {
         "sku": "SKU",
         "name": "Variant name",
@@ -2220,6 +2241,8 @@
       "emptyValues": "Please enter at least one value",
       "emptyName": "Please enter an attribute name",
       "addSuccess": "Attribute added successfully",
+      "updateSuccess": "Attribute updated successfully",
+      "deleteSuccess": "Attribute deleted",
       "generatingVariants": "Generating variants..."
     },
     "faq": {
@@ -3493,6 +3516,7 @@
     "fieldPrice": "Selling price",
     "fieldStock": "Stock quantity",
     "fieldCategory": "Category",
+    "fieldSpecifications": "Technical specifications",
     "fieldAttributes": "Product attributes",
     "fieldVariants": "Product variants",
     "sampleName": "iPhone 17 Pro Smartphone",

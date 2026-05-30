@@ -56,7 +56,7 @@ Route guards nằm trong `src/components/routing/` (không thuộc feature này)
 ```
 features/auth/
   api/
-    auth-api.ts           — Tất cả TanStack Query hooks: login, register, logout, refresh, OTP, forgot/reset password
+    auth-api.ts           — Tất cả TanStack Query hooks: login, google login, register, logout, OTP, forgot/reset password, resend verification, getCurrentUser
 
   components/
     AuthProvider.tsx      — Provider khởi tạo auth state khi app mount (restore session từ storage)
@@ -103,18 +103,17 @@ Query key duy nhất: `['auth', 'currentUser']` cho `useGetCurrentUserQuery`.
 
 ## 4.1 Endpoints sử dụng
 
-| Method | Path                        | Mô tả                                                               |
-| ------ | --------------------------- | ------------------------------------------------------------------- |
-| POST   | `/auth/login`               | Đăng nhập email + password → `{ user, token }`                      |
-| POST   | `/auth/google`              | Đăng nhập Google OAuth (truyền Google ID token) → `{ user, token }` |
-| POST   | `/auth/register`            | Tạo tài khoản → gửi email xác minh                                  |
-| POST   | `/auth/logout`              | Đăng xuất; `onSuccess`: `queryClient.clear()`                       |
-| POST   | `/auth/refresh-token`       | Refresh access token                                                |
-| POST   | `/auth/forgot-password`     | Gửi email reset password                                            |
-| POST   | `/auth/reset-password`      | Đặt lại mật khẩu bằng token từ email                                |
-| POST   | `/auth/resend-verification` | Gửi lại email xác minh                                              |
-| POST   | `/auth/verify-otp`          | Xác minh OTP `{ email, otp }`                                       |
-| GET    | `/auth/me`                  | Lấy thông tin user hiện tại                                         |
+| Method | Path                        | Mô tả                                                                                      |
+| ------ | --------------------------- | ------------------------------------------------------------------------------------------ |
+| POST   | `/auth/login`               | Đăng nhập email + password → `{ user, token }`                                             |
+| POST   | `/auth/google`              | Đăng nhập Google OAuth (luồng implicit — truyền Google `access_token`) → `{ user, token }` |
+| POST   | `/auth/register`            | Tạo tài khoản → gửi email xác minh                                                         |
+| POST   | `/auth/logout`              | Đăng xuất; `onSuccess`: `queryClient.clear()`                                              |
+| POST   | `/auth/forgot-password`     | Gửi email reset password                                                                   |
+| POST   | `/auth/reset-password`      | Đặt lại mật khẩu bằng token từ email                                                       |
+| POST   | `/auth/resend-verification` | Gửi lại email xác minh                                                                     |
+| POST   | `/auth/verify-otp`          | Xác minh OTP `{ email, otp }`                                                              |
+| GET    | `/auth/me`                  | Lấy thông tin user hiện tại                                                                |
 
 ## 4.2 Query hooks
 
@@ -130,7 +129,6 @@ Query key duy nhất: `['auth', 'currentUser']` cho `useGetCurrentUserQuery`.
 - `useForgotPasswordMutation()` — gửi email reset
 - `useResetPasswordMutation()` — đặt lại mật khẩu với token
 - `useLogoutMutation()` — đăng xuất; `onSuccess` gọi `queryClient.clear()`
-- `useRefreshTokenMutation()` — refresh token (thường gọi qua api-client interceptor)
 - `useResendVerificationMutation()` — gửi lại OTP
 - `useVerifyOtpMutation()` — verify OTP 6 số
 
@@ -141,7 +139,7 @@ Query key duy nhất: `['auth', 'currentUser']` cho `useGetCurrentUserQuery`.
 | Component           | Mô tả                                                                                                                                                                    |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AuthProvider`      | Mount ở root app — khởi tạo auth state, restore session từ localStorage/sessionStorage. Không render UI.                                                                 |
-| `GoogleLoginButton` | Tích hợp Google OAuth. Server nhận Google ID token, trả về `{ user, token }` qua `POST /auth/google`.                                                                    |
+| `GoogleLoginButton` | Tích hợp Google OAuth (luồng implicit qua `@react-oauth/google`). Gửi `access_token` lên server, nhận `{ user, token }` qua `POST /auth/google`, rồi gọi `loginSuccess`. |
 | `useAuth` (hook)    | Wrap `authStore` + `useLogoutMutation`. Expose: `logout()` (full cleanup), `isAdmin()`, `hasRole(role)`, `getUserFullName()`, `isLoggedIn`, `hasToken`, `needsUserInfo`. |
 
 ---
@@ -187,14 +185,13 @@ interface AuthResponse {
 - `stores/cart-store` — `initializeCart()` khi logout (xóa local cart server data)
 - `stores/wishlist-store` — `clearWishlistLocal()` khi logout
 - `lib/query-client` — `queryClient.clear()` khi logout
-- `lib/api-client` — interceptor tự động gọi `useRefreshTokenMutation` khi 401
+- `lib/api-client` — request interceptor tự refresh token (qua `utils/token-manager.ts` → `getValidToken`/`refreshTokenIfNeeded`) khi token sắp hết hạn; response interceptor auto-logout khi nhận 401 (non-auth endpoint)
 
 ## 7.2 Used by
 
 - **Toàn app** — `useAuth()` hook dùng ở `AdminLayout`, `Header`, `ProtectedRoute`, `AdminRoute`, `CheckoutPage`, `CartPage`...
-- `features/cart/hooks/use-cart-merge.ts` — watch `justLoggedIn` để trigger merge
-- `features/cart/hooks/use-cart-sync.ts` — `isAuthenticated` để enable cart query
-- `features/ai/api/chatbot-service.ts` — `useAuthStore.getState()` để lấy token
+- `features/cart/hooks/use-cart-merge.ts` — watch `justLoggedIn` để trigger merge (nhận `isAuthenticated`/`justLoggedIn` từ `MainLayout`)
+- `features/ai/api/chatbot-api.ts` — `useAuthStore.getState()` để lấy token
 
 ---
 
@@ -203,7 +200,7 @@ interface AuthResponse {
 - **Form validation dùng Zod:** `LoginPage`, `RegisterPage`, `ForgotPasswordPage` dùng schemas từ `src/schemas/auth.ts`. Error messages tiếng Việt hardcoded trong schema (không qua i18n `t()`). Tests assert trực tiếp text tiếng Việt thay vì i18n key.
 - **Token storage:** access token lưu `sessionStorage` (mất khi đóng tab) — intentional security decision. User data lưu `localStorage` (persist để tránh re-fetch khi reload).
 - **`justLoggedIn` flag:** set `true` khi `loginSuccess` action chạy. `MainLayout` watch flag để trigger `useCartMerge`. Sau khi merge xong → gọi `clearJustLoggedIn()`. Không reset = merge lại mỗi lần navigate.
-- **Auto-refresh:** api-client interceptor (`src/lib/api-client.ts`) tự động refresh token khi nhận 401 — trừ các endpoint auth (`/auth/login`, `/auth/register`, etc.) để tránh infinite loop.
+- **Auto-refresh + auto-logout:** `src/lib/api-client.ts` — **request interceptor** refresh token PROACTIVE (`getValidToken` → `refreshTokenIfNeeded`) khi token hết hạn TRƯỚC khi gửi; **response interceptor** khi nhận 401 (non-auth endpoint) → `handleUnauthorizedError` auto-LOGOUT (KHÔNG refresh). Bỏ qua các endpoint auth (`/auth/login`, `/auth/register`...) để tránh loop.
 - **`useLogoutMutation` `onSuccess`** gọi `queryClient.clear()` — xóa toàn bộ TanStack Query data. `useAuth.logout()` còn thêm: clear `wishlistStore`, `cartStore`, xóa các `localStorage` keys (`wishlist`, `recentSearches`, `cartItems`).
 - **`PublicOnlyRoute`** bắt buộc cho login/register pages — nếu thiếu, user đã đăng nhập vào được trang login → race condition với authStore.
 - **Google OAuth flow:** server trả token trong response body — không phải query params. FE dùng `useGoogleLoginMutation` để nhận `{ user, token }`.

@@ -1361,30 +1361,11 @@ erDiagram
         datetime deleted_at
     }
 
-    images {
-        int id PK
-        varchar_255 original_name
-        varchar_255 file_name UK
-        varchar_500 file_path
-        int file_size
-        varchar_100 mime_type
-        int width
-        int height
-        enum category
-        int product_id FK
-        int user_id FK
-        tinyint is_active
-        datetime created_at
-        datetime updated_at
-    }
-
     products ||--o{ wishlists : "được lưu yêu thích"
     products ||--o{ recently_viewed : "được xem gần đây"
     products ||--o{ product_reviews : "nhận đánh giá"
     users ||--o{ product_reviews : "viết đánh giá"
     product_variants ||--o{ product_reviews : "đánh giá theo variant"
-    products ||--o{ images : "upload ảnh thô"
-    users ||--o{ images : "ảnh người dùng"
     users ||--o{ wishlists : "lưu yêu thích"
     users ||--o{ recently_viewed : "xem gần đây"
 ```
@@ -1576,9 +1557,9 @@ erDiagram
 
 ```mermaid
 flowchart TB
-    FE["FE — React 18 + TS + Vite<br/>port 5175 · 13 features"]
+    FE["FE — React 19 + TS + Vite 8<br/>port 5175 · 13 features"]
     API["API — Express 4 + Node.js 20<br/>port 8888 · 17 modules"]
-    DB[("DB — MySQL 8<br/>Sequelize 6 · 26 models")]
+    DB[("DB — MySQL 8<br/>Sequelize 6 · 25 models")]
     DISK[("DISK — /uploads/<br/>vector-db.json")]
     PAYMENT["PAYMENT<br/>VNPay + MoMo · IPN"]
     AI_EMBED["AI_EMBED<br/>Jina v3 + HF fallback<br/>1024d vectors"]

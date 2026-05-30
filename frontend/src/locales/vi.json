@@ -1395,7 +1395,10 @@
         "saving": "Đang lưu nháp...",
         "saved": "Đã tự lưu nháp lúc {{time}}",
         "idle": "Chưa lưu nháp",
-        "restored": "Đã khôi phục bản nháp đang soạn dở"
+        "restored": "Đã khôi phục bản nháp đang soạn dở",
+        "clearDraft": "Xóa nháp",
+        "draftCleared": "Đã xóa bản nháp. Form đã được reset.",
+        "sampleFilled": "Đã điền dữ liệu mẫu. Vui lòng chọn danh mục để hoàn tất."
       },
       "editTabs": {
         "basic": "1. Thông tin cơ bản",
@@ -1440,6 +1443,8 @@
         "title": "Thông số kỹ thuật sản phẩm",
         "subtitle": "Thêm các thông số kỹ thuật chi tiết để khách hàng có thể so sánh và đánh giá sản phẩm",
         "addButton": "Thêm thông số kỹ thuật",
+        "addSuccess": "Đã thêm thông số kỹ thuật",
+        "deleteSuccess": "Đã xóa thông số kỹ thuật",
         "addSample": "Thêm mẫu laptop",
         "listTitle": "Danh sách thông số",
         "namePlaceholder": "Tên thông số (VD: CPU, RAM...)",
@@ -1563,7 +1568,17 @@
         }
       },
       "allStatus": "Tất cả trạng thái",
-      "filterByStatus": "Lọc theo trạng thái"
+      "filterByStatus": "Lọc theo trạng thái",
+      "variants": {
+        "addSuccess": "Thêm biến thể thành công",
+        "updateSuccess": "Cập nhật biến thể thành công",
+        "deleteSuccess": "Đã xóa biến thể"
+      },
+      "attributes": {
+        "addSuccess": "Thêm thuộc tính thành công",
+        "updateSuccess": "Cập nhật thuộc tính thành công",
+        "deleteSuccess": "Đã xóa thuộc tính"
+      }
     },
     "common": {
       "search": "Tìm kiếm...",
@@ -1920,7 +1935,8 @@
       "exportProducts": "Xuất sản phẩm",
       "customize": "Tùy chỉnh",
       "fromDate": "Từ ngày",
-      "toDate": "Đến ngày"
+      "toDate": "Đến ngày",
+      "noData": "Chưa có dữ liệu"
     },
     "chatbot": {
       "tab": "AI Chatbot",
@@ -2286,6 +2302,9 @@
       "attributes": "Thuộc tính",
       "isDefault": "Mặc định",
       "deleteConfirm": "Xóa biến thể này?",
+      "addSuccess": "Thêm biến thể thành công",
+      "updateSuccess": "Cập nhật biến thể thành công",
+      "deleteSuccess": "Đã xóa biến thể",
       "table": {
         "sku": "SKU",
         "name": "Tên biến thể",
@@ -2308,6 +2327,8 @@
       "emptyValues": "Vui lòng nhập ít nhất một giá trị",
       "emptyName": "Vui lòng nhập tên thuộc tính",
       "addSuccess": "Thêm thuộc tính thành công",
+      "updateSuccess": "Cập nhật thuộc tính thành công",
+      "deleteSuccess": "Đã xóa thuộc tính",
       "generatingVariants": "Đang tạo biến thể..."
     },
     "faq": {
@@ -3495,6 +3516,7 @@
     "fieldCategory": "Danh mục",
     "fieldAttributes": "Thuộc tính sản phẩm",
     "fieldVariants": "Biến thể sản phẩm",
+    "fieldSpecifications": "Thông số kỹ thuật",
     "sampleName": "Điện thoại iPhone 17 Pro",
     "sampleDescription": "iPhone 17 Pro với chip Apple A19 Pro, hệ thống camera 50MP tiên tiến và màn hình Super Retina XDR 6.3 inch ProMotion 120Hz.",
     "sampleShortDesc": "iPhone 17 Pro — chip A19 Pro, camera 50MP, ProMotion 120Hz",

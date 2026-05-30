@@ -28,7 +28,7 @@
 
 ## 1.1 Purpose
 
-Tích hợp cổng thanh toán MoMo và VNPay: tạo payment URL để redirect user, nhận và xử lý IPN callback (server-to-server) và return URL (redirect sau thanh toán), cập nhật `Order.paymentStatus` sau payment, tăng `DiscountCode.usedCount` khi thanh toán online thành công, clear cart sau payment, và thực hiện hoàn tiền (chỉ VNPay).
+Tích hợp cổng thanh toán MoMo và VNPay: tạo payment URL để redirect user, nhận và xử lý IPN callback (server-to-server) và return URL (redirect sau thanh toán), cập nhật `Order.paymentStatus` sau payment (`'paid'` khi thành công / `'failed'` khi IPN báo thất bại — áp dụng cho cả MoMo lẫn VNPay), tăng `DiscountCode.usedCount` khi thanh toán online thành công, clear cart sau payment, và thực hiện hoàn tiền (chỉ VNPay).
 
 ## 1.2 DI Pattern
 
@@ -66,7 +66,7 @@ modules/payment/
     payment-controller.js                      — 7 handlers
     payment-controller.unit.test.js
   services/
-    payment-service.js                         — orchestration MoMo + VNPay (~309 lines)
+    payment-service.js                         — orchestration MoMo + VNPay (~318 lines)
     payment-service.test.js
     momo-service.js                            — Singleton: HMAC-SHA256, gọi MoMo API
     momo-service.test.js
@@ -109,7 +109,7 @@ modules/payment/
 ```
 1. momoGateway.verifySignature(body)  ← HMAC-SHA256, dùng crypto.timingSafeEqual
 2. Parse orderId từ extraData ("orderId=N")
-3. Nếu resultCode == 0 (loose equality, number):
+3. Nếu resultCode == 0 && orderId (loose equality, number) — success path:
    runInTransaction:
      lockOrder(orderId, tx)           ← SELECT FOR UPDATE
      Validate amount match (tolerance 0.01)
@@ -118,9 +118,14 @@ modules/payment/
      order.paymentStatus = 'paid'
      order.paymentTransactionId = transId
      order.paymentProvider = 'momo'
-4. Post-transaction (fire-and-forget):
-   _clearUserCart(userId)
-   _sendOrderConfirmationEmailSafe(orderId)
+   Post-transaction (fire-and-forget) nếu processed:
+     _incrementDiscountCodeUsage(processed.id)
+     _clearUserCart(processed.userId)
+     _sendOrderConfirmationEmailSafe(processed.id)
+4. else if (orderId) — failure path (resultCode != 0):
+   runInTransaction:
+     lockOrder(orderId, tx)
+     Nếu chưa 'paid' → order.paymentStatus = 'failed' (skip nếu đã paid — mirror VNPay)
 5. Response 204 nếu valid, 400 nếu signature fail
 ```
 
@@ -228,6 +233,7 @@ Payment module **không publish bất kỳ EventBus event nào**. Toàn bộ pos
 - **HMAC khác nhau giữa 2 gateway:** MoMo dùng HMAC-SHA256 (`momo-service.js`), VNPay dùng HMAC-SHA512 (`vnpay-service.js`). Không hoán đổi.
 - **Success code khác nhau:** MoMo check `resultCode == 0` (loose equality — là number). VNPay check `vnp_ResponseCode === '00'` (strict equality — là string). Đây là spec của từng gateway.
 - **MoMo return URL KHÔNG mutate state:** Chỉ redirect. State change xảy ra ở IPN handler (POST) có signature verification. VNPay return URL CÓ mutate state (theo VNPay spec).
+- **MoMo IPN failure mutate `paymentStatus='failed'`:** Nhánh `else if (orderId)` (resultCode != 0) lock order rồi set `paymentStatus='failed'` — mirror VNPay IPN failure. Skip nếu order đã `paid` (không downgrade trạng thái đã thanh toán).
 - **VNPay IPN là GET:** Route `GET /vnpay/ipn`. Tài liệu VNPay cũ ghi POST — đã deprecated.
 - **Idempotency bắt buộc:** `_canProcessPayment(order, transId)` check cả `paymentStatus !== 'paid'` và `transactionId chưa xử lý`. IPN có thể gửi nhiều lần — không bỏ check này.
 - **Discount `usedCount` tăng ở payment module:** Với online payments (momo/vnpay), `usedCount` tăng trong `payment-service.js` sau IPN/return success — không tăng trong `orders-service.js` khi tạo đơn.

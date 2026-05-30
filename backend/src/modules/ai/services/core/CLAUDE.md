@@ -23,7 +23,7 @@ Hai file nền tảng của AI module: `ai-service.js` là orchestration layer g
 
 ```
 core/
-  ai-service.js     — Orchestration layer; 4 methods; nhận DI từ module.js
+  ai-service.js     — Orchestration layer; 9 methods (4 core + 5 session delegators); nhận DI từ module.js
   ai-policy.js      — Pure functions: validate, normalize, classify intent, detect injection
 ```
 
@@ -37,7 +37,7 @@ core/
 
 Constructor deps: `{ aiRepository, chatbotService, logger }`.
 
-**4 methods:**
+**9 methods** (4 core + 5 session delegators wired tại `routes.js`):
 
 | Method               | Signature                                                                                 | Mô tả                                                                                              |
 | -------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -45,8 +45,13 @@ Constructor deps: `{ aiRepository, chatbotService, logger }`.
 | `getRecommendations` | `({ type='personal', limit=5 }) → Promise<Array>`                                         | `type='deals'` → `repo.findActiveDeals(limit)`; mọi type khác → `repo.findFeaturedProducts(limit)` |
 | `trackAnalytics`     | `({ event, userId, sessionId, productId, value, metadata, timestamp }) → Promise<Object>` | Ghi analytics event vào DB qua `repo.createAnalyticsEvent()`                                       |
 | `addToCart`          | `({ productId, variantId, quantity, sessionId, userId }) → Promise<Object>`               | Verify stock + insert CartItem + ghi analytics event `product_added_to_cart`                       |
+| `clearSession`       | `(sessionId) → ...`                                                                       | Delegate `chatbotService.clearSession()`                                                           |
+| `getSessionHistory`  | `(sessionId) → ...`                                                                       | Delegate `chatbotService.getSessionHistory()`                                                      |
+| `getSessionMessages` | `(sessionId) → Promise<...>`                                                              | Delegate `chatbotService.getSessionMessages()`                                                     |
+| `registerSession`    | `(sessionId) → ...`                                                                       | Delegate `chatbotService.registerSession()`                                                        |
+| `getLatestSession`   | `() → Promise<...>`                                                                       | Delegate `chatbotService.getLatestSession()`                                                       |
 
-**Business logic trong `addToCart`:** tổng stock = `sum(variants[].stockQuantity) || product.stockQuantity`. Throw `AppError 404` nếu product không tồn tại; `AppError 400` nếu `status !== 'active'` hoặc tổng stock ≤ 0.
+**Business logic trong `addToCart`:** tổng stock = `reduce(variants[].stockQuantity)`. Throw `AppError 404` nếu product không tồn tại; `AppError 400` nếu `status !== 'active'` HOẶC (tổng stock ≤ 0 VÀ `product.stockQuantity` ≤ 0) — tức chỉ chặn khi cả variants và product-level stock đều cạn.
 
 `limit` từ query string là string → `parseInt(limit, 10)` trước khi gọi repo.
 
@@ -62,7 +67,7 @@ Constructor deps: `{ aiRepository, chatbotService, logger }`.
 | `expandAbbreviations` | `(text) → string`                                 | Regex-based 3 lớp: (1) brand abbreviations `ip→iPhone, ss→Samsung, mb→MacBook, r5→AMD Ryzen 5, bnh→bao nhiêu, bh→bảo hành`; (2) EN→VI `smartphone→điện thoại, tablet→máy tính bảng`; (3) VI không dấu→có dấu `gia→giá, trieu→triệu, giao hang→giao hàng`... |
 | `isOffTopic`          | `(message) → boolean`                             | Regex check: thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức (cả vi + en)                                                                                                                                                                      |
 | `classifyIntent`      | `(normalizedText) → string`                       | 6 intents theo thứ tự ưu tiên (xem bên dưới)                                                                                                                                                                                                                |
-| `isPromptInjection`   | `(text) → boolean`                                | Detect 15 loại injection (28 regex, EN+VI) — đối chiếu OWASP LLM01:2025                                                                                                                                                                                     |
+| `isPromptInjection`   | `(text) → boolean`                                | Detect 15 loại injection (24 regex, EN+VI) — đối chiếu OWASP LLM01:2025                                                                                                                                                                                     |
 | `MAX_MESSAGE_LENGTH`  | `number`                                          | `500` (hằng số)                                                                                                                                                                                                                                             |
 
 **6 intents của `classifyIntent` (thứ tự ưu tiên):**

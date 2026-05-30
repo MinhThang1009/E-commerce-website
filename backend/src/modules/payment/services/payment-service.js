@@ -173,6 +173,15 @@ class PaymentService {
         await this._clearUserCart(processed.userId);
         await this._sendOrderConfirmationEmailSafe(processed.id);
       }
+    } else if (orderId) {
+      // Thanh toán MoMo thất bại — đồng bộ với VNPay IPN failure handling
+      await this.repo.runInTransaction(async (tx) => {
+        const order = await this.repo.lockOrder(orderId, tx);
+        if (!order || order.paymentStatus === 'paid') return;
+        order.paymentStatus = 'failed';
+        order.updatedAt = new Date();
+        await this.repo.saveOrder(order, { transaction: tx });
+      });
     }
     return { valid: true };
   }

@@ -64,10 +64,8 @@ modules/image/
   middlewares/
     upload-middleware.js                 — multer config: diskStorage → uploads/temp, fileFilter JPEG/PNG/GIF/WebP, max 10MB, 10 files
     image-proxy-router.js                — CDN proxy router: mount tại /api/img (không phải /api/images)
-  validators/
-    image-validator.js                   — validation helpers
   dtos/
-    image-dto.js                         — pass-through DTOs
+    image-dto.js                         — pass-through DTOs (toDto, toDtoList)
   CLAUDE.md
 ```
 
@@ -195,5 +193,4 @@ Singleton — không nhận inject qua DI. Require trực tiếp:
 | `controllers/image-controller.edge-cases-2.test.js`   | Unit | Edge cases batch 2            |
 | `middlewares/image-proxy-router.test.js`              | Unit | CDN proxy logic               |
 | `middlewares/image-proxy-router.edge-cases.test.js`   | Unit | Proxy edge cases              |
-| `validators/image-validator.test.js`                  | Unit | Validator                     |
 | `repositories/image-repository.test.js`               | Unit | Repository queries            |

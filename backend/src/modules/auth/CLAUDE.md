@@ -6,7 +6,7 @@
 
 - [1. Mục đích & Trách nhiệm](#1-mục-đích--trách-nhiệm)
   - [1.1 Purpose](#11-purpose)
-  - [1.2 DI Pattern (4 adapters)](#12-di-pattern-4-adapters)
+  - [1.2 DI Pattern (3 adapters)](#12-di-pattern-3-adapters)
 - [2. Cấu trúc Files](#2-cấu-trúc-files)
   - [2.1 File listing](#21-file-listing)
 - [3. Business Logic Chính](#3-business-logic-chính)
@@ -27,9 +27,9 @@
 
 Xử lý toàn bộ authentication: đăng ký tài khoản, đăng nhập email/Google OAuth, quản lý JWT access/refresh token pair, xác thực email qua OTP 6 chữ số, reset password qua OTP, và logout.
 
-## 1.2 DI Pattern (4 adapters)
+## 1.2 DI Pattern (3 adapters)
 
-Module dùng DI đầy đủ với adapter pattern — 4 adapters được định nghĩa **inline trong `module.js`** (không phải file riêng):
+Module dùng DI đầy đủ với adapter pattern — 3 adapters được định nghĩa **inline trong `module.js`** (không phải file riêng):
 
 ```js
 // module.js wires:
@@ -38,7 +38,7 @@ module.exports = ({ User, logger, emailService }) => {
   // googleVerifier → { verifyIdToken, verifyAccessToken }     (wraps OAuth2Client + axios)
   // tokenSigner    → { signAccessToken, signRefreshToken, verifyAccessToken, verifyRefreshToken }
   //                  (wraps jsonwebtoken)
-  // → new AuthService({ authRepository, emailGateway, googleVerifier, tokenSigner, ... })
+  // → new AuthService({ authRepository, emailGateway, googleVerifier, tokenSigner, logger })
   // → new AuthController({ authService })
   // → buildRoutes({ authController })
 };
@@ -65,9 +65,9 @@ modules/auth/
     sequelize-auth-repository.js           — User, OTP, RefreshToken Sequelize queries
   validators/
     auth-validator.js                      — Zod: registerSchema, loginSchema, forgotPasswordSchema,
-                                             resetPasswordSchema, emailSchema, otpSchema (exported nhưng không dùng trong routes)
+                                             resetPasswordSchema, emailSchema (tất cả dùng trong routes qua validateRequest)
   dtos/
-    auth-dto.js                            — toUserDto() loại bỏ password/OTP fields
+    auth-dto.js                            — toAuthUserDto() delegate vào user.toJSON() (toJSON loại bỏ password/OTP/resetToken)
   CLAUDE.md
 ```
 
@@ -81,7 +81,7 @@ modules/auth/
 
 **`auth-service.js`** xử lý toàn bộ:
 
-- `register({ email, password, firstName, lastName, phone })` — tạo User, gửi OTP qua email (không block nếu email fail), publish `auth.userRegistered` event
+- `register({ email, password, firstName, lastName, phone })` — tạo User, gửi OTP qua email (không block nếu email fail). KHÔNG publish event nào (xem §5.2).
 - `login({ email, password, ip })` — verify password (bcrypt), kiểm tra `isEmailVerified` + `isActive`, tạo access token + refresh token
 - `googleLogin({ token })` — verify `id_token` qua `OAuth2Client` (thử trước), fallback verify `accessToken` qua axios GET Google userinfo API. Auto-create user nếu chưa tồn tại. Merge account nếu email trùng.
 - `logout({ accessToken, refreshToken })` — **no-op server-side** (`void` cả 2 params); access token và refresh token vẫn valid cho đến hết TTL — client tự xóa khỏi storage
@@ -90,7 +90,7 @@ modules/auth/
 - `refreshToken({ refreshToken })` — verify refresh token (verifyRefreshToken), tạo cặp token mới (access + refresh token mới), trả về `{ token, refreshToken: newRefreshToken }`
 - `forgotPassword({ email })` — tạo hex token 64 ký tự (`crypto.randomBytes(32).toString('hex')`), TTL **15 phút**, lưu vào `user.resetPasswordToken + resetPasswordExpires`, gửi email chứa token
 - `resetPassword({ token, password })` — tìm user có `resetPasswordToken` khớp và chưa hết hạn, update password hash, clear token fields
-- `getCurrentUser(userId)` — query user từ DB (không tin vào JWT payload cho thông tin user)
+- `getCurrentUser({ userId })` — query user từ DB kèm `addresses` (`findByIdWithAddresses`); không tin vào JWT payload cho thông tin user
 
 ## 3.2 Business rules
 
@@ -132,7 +132,7 @@ Base path: `/api/auth`
 
 - `User` model — inject từ `app.js`, share với `users` module
 - `emailService` — gửi OTP email + reset password email (inject từ app.js)
-- `eventBus` — **không inject** qua `module.js`; `auth-service.js` có `if (this.eventBus)` guard nhưng thực tế không nhận dependency này
+- `eventBus` — **không inject** qua `module.js`; constructor `AuthService` có nhận param `eventBus` nhưng không có code publish nào dùng nó (luôn `undefined`)
 
 ## 5.2 Used by (module khác dùng module này)
 
@@ -141,7 +141,7 @@ Base path: `/api/auth`
 
 **Events published:**
 
-- `auth.userRegistered` — payload `{ userId, email }`. **Thực tế không bao giờ được publish** vì `eventBus` không được inject vào module (guard `if (this.eventBus)` trong service luôn false). Hiện không có subscriber nào.
+- Không có. `module.js` `subscribeEvents()` rỗng và `auth-service.js` không có code `publish` nào. (Tài liệu cũ nhắc `auth.userRegistered` — event này không tồn tại trong source.)
 
 ---
 

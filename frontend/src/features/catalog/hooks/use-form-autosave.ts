@@ -33,6 +33,7 @@ export function useFormAutosave({
   const [status, setStatus] = useState<AutosaveStatus>('idle');
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pausedRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -40,6 +41,7 @@ export function useFormAutosave({
       setStatus((prev) => (prev === 'saving' ? prev : 'saving'));
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
+        if (pausedRef.current) return; // Đã bị pause sau clearDraft
         try {
           const envelope: DraftEnvelope = {
             savedAt: new Date().toISOString(),
@@ -73,6 +75,12 @@ export function useFormAutosave({
   }, [storageKey]);
 
   const clearDraft = useCallback(() => {
+    // Cancel pending save trước khi xóa — tránh autosave timer ghi đè ngay sau clear
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    pausedRef.current = true;
     try {
       localStorage.removeItem(storageKey);
     } catch {
@@ -80,6 +88,10 @@ export function useFormAutosave({
     }
     setStatus('idle');
     setLastSavedAt(null);
+    // Re-enable autosave sau 3s (đủ để form reset xong)
+    setTimeout(() => {
+      pausedRef.current = false;
+    }, 3000);
   }, [storageKey]);
 
   return { status, lastSavedAt, getDraft, clearDraft };

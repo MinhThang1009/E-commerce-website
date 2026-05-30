@@ -1547,3 +1547,267 @@ describe('GET /api/admin/chatbot/stats', () => {
     });
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Branch coverage bổ sung — admin-product-service.js
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Line 262 binary-expr [1][2][3]: variantName fallback chain ────────────────
+
+describe('POST /api/admin/products — variantName fallback chain (line 262)', () => {
+  function setupCreateWithVariants(productId, variantOverrides) {
+    const createdProduct = makeProduct({ id: productId });
+    Product.create.mockResolvedValueOnce(createdProduct);
+    sequelize.query.mockResolvedValue([[], {}]);
+    Product.findByPk.mockResolvedValueOnce(makeProduct({ id: productId }));
+    ProductVariant.create.mockResolvedValue({ id: 99 });
+    return createdProduct;
+  }
+
+  it('variant không có name → dùng variantName khi name falsy (branch[1])', async () => {
+    setupCreateWithVariants(50);
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Product Variant Test',
+      basePrice: 10000000,
+      variants: [
+        {
+          name: '', // falsy → branch[1]
+          variantName: 'Màu Đỏ',
+          price: 10000000,
+          stock: 5,
+          sku: 'VAR-RED-001',
+          attributes: {},
+        },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(ProductVariant.create).toHaveBeenCalledWith(
+      expect.objectContaining({ variantName: expect.any(String) }),
+    );
+  });
+
+  it('variant không có name và variantName → dùng displayName (branch[2])', async () => {
+    setupCreateWithVariants(51);
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Product Fallback DisplayName',
+      basePrice: 10000000,
+      variants: [
+        {
+          name: '',
+          variantName: '', // cả hai falsy → branch[2]: displayName
+          displayName: 'Display Xanh',
+          price: 10000000,
+          stock: 3,
+          sku: 'VAR-BLUE-002',
+          attributes: {},
+        },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(ProductVariant.create).toHaveBeenCalled();
+  });
+
+  it('variant không có name, variantName, displayName → dùng variantSku (branch[3])', async () => {
+    setupCreateWithVariants(52);
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Product Fallback SKU',
+      basePrice: 10000000,
+      variants: [
+        {
+          name: '',
+          variantName: '',
+          displayName: '', // tất cả falsy → branch[3]: variantSku
+          price: 10000000,
+          stock: 2,
+          sku: 'VAR-SKU-003',
+          attributes: {},
+        },
+      ],
+    });
+    expect(res.status).toBe(201);
+    expect(ProductVariant.create).toHaveBeenCalled();
+  });
+});
+
+// ── Line 899 cond-expr[0]: sortBy=stockQuantity/stock dùng Sequelize.literal ──
+
+describe('GET /api/admin/products — sortBy=stockQuantity dùng literal order (line 899)', () => {
+  it('sortBy=stockQuantity → 200 và findAndCountAll được gọi', async () => {
+    Product.findAndCountAll.mockResolvedValueOnce({ count: 0, rows: [] });
+
+    const res = await request.get('/api/admin/products?sortBy=stockQuantity&sortOrder=asc');
+    expect(res.status).toBe(200);
+    expect(Product.findAndCountAll).toHaveBeenCalled();
+  });
+
+  it('sortBy=stock → 200 và findAndCountAll được gọi', async () => {
+    Product.findAndCountAll.mockResolvedValueOnce({ count: 0, rows: [] });
+
+    const res = await request.get('/api/admin/products?sortBy=stock&sortOrder=desc');
+    expect(res.status).toBe(200);
+    expect(Product.findAndCountAll).toHaveBeenCalled();
+  });
+});
+
+// ── Line 906 cond-expr[0]: sortBy=price → 'basePrice', sortBy=name → 'nameVi' ─
+
+describe('GET /api/admin/products — sortBy=price/name ánh xạ tên cột (line 906)', () => {
+  it('sortBy=price → 200 (ánh xạ basePrice)', async () => {
+    Product.findAndCountAll.mockResolvedValueOnce({ count: 0, rows: [] });
+
+    const res = await request.get('/api/admin/products?sortBy=price&sortOrder=asc');
+    expect(res.status).toBe(200);
+    expect(Product.findAndCountAll).toHaveBeenCalled();
+  });
+
+  it('sortBy=name → 200 (ánh xạ nameVi)', async () => {
+    Product.findAndCountAll.mockResolvedValueOnce({ count: 0, rows: [] });
+
+    const res = await request.get('/api/admin/products?sortBy=name&sortOrder=asc');
+    expect(res.status).toBe(200);
+    expect(Product.findAndCountAll).toHaveBeenCalled();
+  });
+});
+
+// ── Line 929 binary-expr[1]: product.variants rỗng → không tính stockQuantity ─
+
+describe('GET /api/admin/products — product không có variants (line 929)', () => {
+  it('variants=[]: stockQuantity không bị ghi đè, trả về 200', async () => {
+    const fakeProduct = {
+      toJSON: () => ({
+        id: 55,
+        name: 'Sản phẩm không variants',
+        basePrice: 5000000,
+        stockQuantity: 99,
+        productImages: [],
+        categories: [],
+        category: null,
+        variants: [], // length = 0 → branch[1] không chạy vào reduce
+      }),
+    };
+    Product.findAndCountAll.mockResolvedValueOnce({ count: 1, rows: [fakeProduct] });
+
+    const res = await request.get('/api/admin/products');
+    expect(res.status).toBe(200);
+    // stockQuantity giữ nguyên giá trị gốc (99), không bị reset về 0 từ reduce
+    expect(res.body.data.products[0].stockQuantity).toBe(99);
+  });
+});
+
+// ── Line 971 binary-expr[1]: sumProductVariantStock trả về null → fallback 0 ──
+
+describe('PATCH /api/admin/products/:id/stock — sumVariantStock null → fallback 0 (line 971)', () => {
+  it('sumProductVariantStock trả về null → product.update được gọi với 0', async () => {
+    const fakeProduct = makeProduct({ id: 70, stockQuantity: 10 });
+    const fakeVariant = {
+      id: 1,
+      stockQuantity: 5,
+      update: jest.fn().mockResolvedValue({}),
+    };
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    ProductVariant.findOne.mockResolvedValueOnce(fakeVariant);
+    // sum trả về null → (null || 0) = 0
+    ProductVariant.sum.mockResolvedValueOnce(null);
+
+    const res = await request
+      .patch('/api/admin/products/70/stock')
+      .send({ stockQuantity: 5, variantId: 1 });
+
+    expect(res.status).toBe(200);
+    // product.update phải nhận { stockQuantity: 0 } do null || 0
+    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 0 });
+  });
+});
+
+// ── Branch 145[1]: stockQuantity fallback khi stock và stockQuantity đều falsy ─
+
+describe('POST /api/admin/products — stockQuantity fallback chain (branch 145)', () => {
+  it('không truyền stock lẫn stockQuantity → stockQuantity=0 (nhánh || 0)', async () => {
+    const createdProduct = makeProduct({ id: 60 });
+    Product.create.mockResolvedValueOnce(createdProduct);
+    sequelize.query.mockResolvedValue([[], {}]);
+    Product.findByPk.mockResolvedValueOnce(makeProduct({ id: 60 }));
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Product Không Có Stock',
+      basePrice: 8000000,
+      // không truyền stock, stockQuantity → default = 0
+    });
+
+    expect(res.status).toBe(201);
+    // stockQuantity=0 được truyền vào Product.create (argument đầu tiên)
+    expect(Product.create).toHaveBeenCalledWith(
+      expect.objectContaining({ stockQuantity: 0 }),
+      expect.anything(),
+    );
+  });
+});
+
+// ── B145[1] line 642: variantImageData rỗng → if (variantImageData.length > 0) FALSE ──
+
+describe('PUT /api/admin/products/:id — variant images rỗng sau filter (B145[1])', () => {
+  it('variant có images là mảng URL rỗng → variantImageData = [] → bulkCreateProductImages không được gọi', async () => {
+    const { ProductImage } = require('@models');
+    const savedVariant = {
+      id: 80,
+      sku: 'V-EMPTY',
+      price: 10000,
+      stockQuantity: 3,
+      update: jest.fn().mockResolvedValue({ id: 80, stockQuantity: 3, price: 10000 }),
+    };
+    const fakeProduct = makeProduct({ id: 75 });
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductVariant.create.mockResolvedValueOnce(savedVariant);
+    ProductImage.destroy.mockResolvedValue(1);
+    ProductImage.bulkCreate.mockClear();
+    ProductVariant.sum.mockResolvedValue(3);
+
+    // images là mảng phần tử rỗng → sau filter(url && typeof url === 'string') → variantImageData = []
+    const res = await request.put('/api/admin/products/75').send({
+      variants: [
+        {
+          sku: 'V-EMPTY',
+          price: 10000,
+          stock: 3,
+          images: ['', null, undefined],
+        },
+      ],
+    });
+
+    expect(res.status).toBe(200);
+    // variantImageData rỗng → if (variantImageData.length > 0) FALSE → bulkCreate KHÔNG được gọi
+    expect(ProductImage.bulkCreate).not.toHaveBeenCalled();
+  });
+});
+
+// ── B191[1] line 929: v.stockQuantity || 0 — nhánh || 0 khi stockQuantity = 0 ──
+
+describe('GET /api/admin/products — variant stockQuantity = 0 → nhánh || 0 (B191[1])', () => {
+  it('variant có stockQuantity = 0 → v.stockQuantity || 0 dùng right side 0', async () => {
+    const fakeProduct = {
+      toJSON: () => ({
+        id: 88,
+        name: 'Sản phẩm stock zero',
+        basePrice: 5000000,
+        stockQuantity: 10,
+        productImages: [],
+        categories: [],
+        category: null,
+        variants: [
+          { id: 1, stockQuantity: 0 }, // falsy → || 0 (branch[1])
+          { id: 2, stockQuantity: 5 }, // truthy → || 0 not used
+        ],
+      }),
+    };
+    Product.findAndCountAll.mockResolvedValueOnce({ count: 1, rows: [fakeProduct] });
+
+    const res = await request.get('/api/admin/products');
+    expect(res.status).toBe(200);
+    // stockQuantity được tính: 0 + 5 = 5
+    expect(res.body.data.products[0].stockQuantity).toBe(5);
+  });
+});

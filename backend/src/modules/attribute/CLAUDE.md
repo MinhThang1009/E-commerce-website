@@ -35,13 +35,17 @@ Module là **singleton** — service và repository `require('@models')` trực 
 ```js
 // module.js
 const attributeService = require('@modules/attribute/services/attribute-service');
-const nameGenerator = require('@modules/ai/services/product/product-name-generator');
-attributeService.setNameGenerator(nameGenerator);
 
-return {
-  basePath: '/attributes',
-  router: require('@modules/attribute/routes'),
-  subscribeEvents() {},
+module.exports = () => {
+  // nameGenerator được require & inject TRONG factory để tránh circular import tại load time
+  const nameGenerator = require('@modules/ai/services/product/product-name-generator');
+  attributeService.setNameGenerator(nameGenerator);
+
+  return {
+    basePath: '/attributes',
+    router: require('@modules/attribute/routes'),
+    subscribeEvents() {},
+  };
 };
 ```
 
@@ -65,9 +69,6 @@ modules/attribute/
     i-attribute-repository.js             — Interface (tài liệu)
     sequelize-attribute-repository.js     — Queries: findAllGroups, findProductWithGroups, CRUD,
                                             findRecentVariants
-  validators/
-    attribute-validator.js                — Zod: createGroupSchema, updateGroupSchema,
-                                            addValueSchema, previewNameSchema
   dtos/
     attribute-dto.js
   CLAUDE.md

@@ -247,7 +247,7 @@ interface UIState {
 }
 
 interface Notification {
-  id: string; // auto-generated: Date.now().toString()
+  id: string; // auto-generated: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
   title?: string;

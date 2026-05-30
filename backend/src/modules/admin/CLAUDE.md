@@ -71,8 +71,8 @@ modules/admin/
     admin-stats-service.js                        — Dashboard stats, detailed stats (259 lines)
     admin-user-service.js                         — User CRUD: list, detail, update, delete (160 lines)
     admin-order-service.js                        — Order management: list, status, cancel, reviews (299 lines)
-    admin-product-service.js                      — Product CRUD, clone, stock, restock, vector sync (1201 lines)
-    admin-analytics-service.js                    — Analytics: order status, top products, revenue, growth, chatbot (418 lines)
+    admin-product-service.js                      — Product CRUD, clone, stock, restock, vector sync (1202 lines)
+    admin-analytics-service.js                    — Analytics: order status, top products, revenue, growth, chatbot (420 lines)
     product-import-service.js                     — Parse, validate, bulk insert CSV/JSON
   repositories/
     i-admin-repository.js                         — Interface (tài liệu)
@@ -95,7 +95,7 @@ modules/admin/
 
 ## 3.1 Dashboard & Analytics
 
-Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
+Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAnalytics` dùng raw SQL (`sequelize.query()`):
 
 - `getDashboardStats()` — tổng users/products/orders/revenue, so sánh với tháng trước
 - `getDetailedStats({ startDate, endDate, groupBy })` — stats theo khoảng thời gian, groupBy: `hour|day|week|month`
@@ -106,7 +106,7 @@ Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
 - `getPaymentMethodsAnalytics()` — phân bổ phương thức thanh toán
 - `getLowStockAnalytics()` — sản phẩm sắp hết hàng
 - `getChatbotStats()` — analytics chatbot AI (từ `ChatMessage` model)
-- `exportReport()` — export báo cáo tổng hợp
+- `exportReport()` — export CSV theo `?type=orders|products` (default `orders`; type sai → `AppError` 400; giới hạn 5000 records)
 
 ## 3.2 Product CRUD
 
@@ -138,7 +138,7 @@ Tất cả dùng Sequelize.fn aggregate (không phải raw SQL):
 
 - Admin không thể xóa chính mình — check `req.user.id !== targetUserId`
 - Vector store sync: **create/update** dùng direct `await` với try/catch (block response nhưng lỗi không ảnh hưởng status code); **import** dùng `setImmediate` fire-and-forget (response trả về trước khi sync xong)
-- `deepParseJSON()` / `deepParseJSONArray()` trong service: xử lý trường hợp field bị stringify nhiều lần (tối đa 5 lần)
+- `deepParseJSON()` trong service: xử lý trường hợp field bị stringify nhiều lần (tối đa 5 lần)
 
 ---
 
@@ -232,6 +232,7 @@ Không module nào depend vào admin (leaf node trong dependency graph).
 | `controllers/admin-import-controller.edge-cases-2.test.js` | Unit        | Import edge cases batch 2   |
 | `services/admin-service.unit.test.js`                      | Unit        | Service methods             |
 | `repositories/admin-repository.test.js`                    | Unit        | Repository queries          |
+| `validators/admin-validator.test.js`                       | Unit        | Validator schemas           |
 | `src/__integration__/admin.integration.test.js`            | Integration | DB integration (MySQL thật) |
 | `src/__api__/admin.http.test.js`                           | API HTTP    | End-to-end HTTP             |
 | `src/__api__/admin-extra.http.test.js`                     | API HTTP    | HTTP edge cases             |

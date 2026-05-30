@@ -5,7 +5,7 @@
  * @description Page component của feature catalog
  */
 import { ArrowLeft } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
@@ -61,7 +61,7 @@ const generateSku = (prefix = 'PRD') => {
   return `${prefix}-${rand}`;
 };
 
-const getDefaultFaqs = () => [
+const _getDefaultFaqs = () => [
   {
     question: i18next.t('admin.products.faq.defaults.q1'),
     answer: i18next.t('admin.products.faq.defaults.a1'),
@@ -100,6 +100,11 @@ const CreateProductPage: React.FC = () => {
       featured: false,
       categoryIds: [],
       specifications: [],
+      faqs: [],
+      seoTitleVi: '',
+      seoTitleEn: '',
+      seoDescriptionVi: '',
+      seoDescriptionEn: '',
       seoKeywords: '',
       images: '',
       thumbnail: '',
@@ -120,6 +125,22 @@ const CreateProductPage: React.FC = () => {
     seo: false,
   });
 
+  const OPTIONAL_STEPS_INIT: Record<string, boolean> = {
+    specifications: false,
+    attributes: false,
+    variants: false,
+    images: false,
+    faqs: false,
+    seo: false,
+  };
+  const [filledSteps, setFilledSteps] = useState<Record<string, boolean>>(OPTIONAL_STEPS_INIT);
+
+  // Watch values cần cho filledSteps (khai báo ở đây, useEffect ở dưới sau khi có attributes/variants)
+  const watchedFaqs = form._rhf.watch('faqs');
+  const watchedSpecs = form._rhf.watch('specifications');
+  const watchedSeoTitle = form._rhf.watch('seoTitleVi');
+  const watchedImages = form._rhf.watch('images');
+
   // State cho hierarchical attributes và variants nếu cần thiết trong tương lai
   const [_attributeGroups, _setAttributeGroups] = useState<AttributeGroup[]>([]);
   const [_hierarchicalVariants, _setHierarchicalVariants] = useState<ProductVariant[]>([]);
@@ -135,6 +156,7 @@ const CreateProductPage: React.FC = () => {
 
   const {
     attributes,
+    setAttributes,
     attributeModalVisible,
     editingAttribute,
     handleAddAttribute,
@@ -145,6 +167,7 @@ const CreateProductPage: React.FC = () => {
 
   const {
     variants,
+    setVariants,
     variantModalVisible,
     editingVariant,
     handleAddVariant,
@@ -161,6 +184,33 @@ const CreateProductPage: React.FC = () => {
     clearDraft,
   } = useFormAutosave({ form, storageKey: 'product-draft:create' });
 
+  const EXTRAS_KEY = 'product-draft:create:extras';
+  // Flag: chỉ save EXTRAS sau khi draft restore đã chạy (tránh overwrite trên mount)
+  const extrasReadyRef = React.useRef(false);
+
+  // Autosave attributes/variants vào localStorage khi thay đổi (chỉ sau khi restore xong)
+  useEffect(() => {
+    if (!extrasReadyRef.current) return;
+    try {
+      localStorage.setItem(EXTRAS_KEY, JSON.stringify({ attributes, variants }));
+    } catch {
+      /* ignore */
+    }
+  }, [attributes, variants]);
+
+  // Sync filledSteps trực tiếp từ form/state — tránh race condition qua performValidation
+  useEffect(() => {
+    setFilledSteps((prev) => ({
+      ...prev,
+      faqs: Array.isArray(watchedFaqs) && (watchedFaqs as unknown[]).length > 0,
+      specifications: Array.isArray(watchedSpecs) && (watchedSpecs as unknown[]).length > 0,
+      seo: !!(watchedSeoTitle as string)?.trim(),
+      images: !!(watchedImages as string)?.trim(),
+      attributes: attributes.length > 0,
+      variants: variants.length > 0,
+    }));
+  }, [watchedFaqs, watchedSpecs, watchedSeoTitle, watchedImages, attributes, variants]);
+
   // Khôi phục bản nháp đang soạn dở (chạy 1 lần sau mount, override default)
   const draftRestoredRef = React.useRef(false);
   useEffect(() => {
@@ -169,30 +219,34 @@ const CreateProductPage: React.FC = () => {
     const draft = getDraft();
     if (draft && Object.keys(draft).length > 0) {
       form.setFieldsValue(draft);
+      // Khôi phục attributes/variants từ localStorage riêng
+      try {
+        const raw = localStorage.getItem(EXTRAS_KEY);
+        if (raw) {
+          const extras = JSON.parse(raw);
+          if (extras.attributes?.length) setAttributes(extras.attributes);
+          if (extras.variants?.length) setVariants(extras.variants);
+        }
+      } catch {
+        /* ignore */
+      }
       addNotification({ message: t('admin.products.autosave.restored'), type: 'info' });
     }
-  }, [getDraft, form, addNotification, t]);
-
-  // Debug: Log attributes whenever they change - đặc biệt là để theo dõi khi xóa thuộc tính (vì thuộc tính bị xóa sẽ ảnh hưởng đến biến thể)
-  useEffect(() => {}, [attributes]);
-
-  // Debug: Log variants whenever they change - đặc biệt là để theo dõi khi xóa biến thể
-  useEffect(() => {
-    // Tự động set price = 0 khi có variants để tránh lỗi validation khi tạo sản phẩm có variants mà chưa nhập giá cho variants
-    if (variants.length > 0) {
-      form.setFieldValue('price', 0);
-    }
-  }, [variants, form]);
-
-  // Đặt FAQs mặc định sau mount (cần i18next đã sẵn sàng) — bỏ qua nếu draft đã khôi phục faqs
-  useEffect(() => {
-    const current = form.getFieldValue('faqs');
-    if (!Array.isArray(current) || current.length === 0) {
-      form.setFieldsValue({ faqs: getDefaultFaqs() });
-    }
-  }, [form]);
+    // Cho phép EXTRAS autosave chạy sau khi restore đã xong
+    extrasReadyRef.current = true;
+  }, [getDraft, form, addNotification, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Custom hooks cho form sản phẩm sẽ trả về các trạng thái và hàm cần thiết để quản lý form, validation, và submit
+  const productFormInitialValues = useMemo(
+    () => ({
+      status: 'active' as const,
+      featured: false,
+      stockQuantity: 0,
+      price: 0,
+    }),
+    [],
+  );
+
   const {
     isFormValid,
     activeTab,
@@ -203,19 +257,13 @@ const CreateProductPage: React.FC = () => {
     handleSubmit,
   } = useProductForm({
     form,
-    initialValues: {
-      status: 'active',
-      featured: false,
-      stockQuantity: 0,
-      price: 0,
-    },
+    initialValues: productFormInitialValues,
     attributes,
     variants,
+    setAttributes,
+    setVariants,
     onStepComplete: (step, isComplete) => {
-      setCompletedSteps((prev) => ({
-        ...prev,
-        [step]: isComplete,
-      }));
+      setCompletedSteps((prev) => ({ ...prev, [step]: isComplete }));
     },
     onSubmit: async (values: ProductFormData) => {
       // Theo dõi ID ảnh description đã upload để rollback nếu createProduct thất bại
@@ -491,7 +539,21 @@ const CreateProductPage: React.FC = () => {
                   steps={steps}
                   activeStep={activeTab}
                   completedSteps={completedSteps}
+                  filledSteps={filledSteps}
+                  optionalSteps={
+                    new Set(['specifications', 'attributes', 'variants', 'images', 'faqs', 'seo'])
+                  }
                   isStepAccessible={isTabAccessible}
+                  requiredSteps={
+                    new Set([
+                      'basic',
+                      'specifications',
+                      'attributes',
+                      'variants',
+                      'pricing',
+                      'category',
+                    ])
+                  }
                   onSelect={handleTabChange}
                 />
               </aside>
@@ -568,6 +630,35 @@ const CreateProductPage: React.FC = () => {
             onSaveDraft={() => submitWithStatus('draft')}
             onPublish={() => submitWithStatus('active')}
             onCancel={() => navigate('/admin/products')}
+            onClearDraft={() => {
+              clearDraft();
+              localStorage.removeItem(EXTRAS_KEY);
+              form.resetFields();
+              // Force-clear unregistered fields ngay lập tức — rhf.reset() không clear chúng
+              // Autosave sẽ pick up values này thay vì values cũ
+              form.setFieldsValue({
+                faqs: [],
+                specifications: [],
+                description: '',
+                name: '',
+                shortDescription: '',
+              });
+              setAttributes([]);
+              setVariants([]);
+              setCompletedSteps({
+                basic: false,
+                specifications: false,
+                attributes: false,
+                variants: false,
+                pricing: false,
+                category: false,
+                images: false,
+                faqs: false,
+                seo: false,
+              });
+              setFilledSteps(OPTIONAL_STEPS_INIT);
+              addNotification({ message: t('admin.products.autosave.draftCleared'), type: 'info' });
+            }}
             draftText={t('admin.products.submit.saveDraft')}
             publishText={t('admin.products.submit.publish')}
           />

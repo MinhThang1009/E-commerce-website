@@ -21,6 +21,15 @@ import {
 } from '@/components/ui/select';
 import { formatAttributeKey } from '../utils/product-naming';
 
+const formatNumber = (val: string) => {
+  const n = val.replace(/\D/g, '');
+  return n ? Number(n).toLocaleString('vi-VN') : '';
+};
+const parseNumber = (val: string) => {
+  const n = Number(val.replace(/\D/g, ''));
+  return isNaN(n) ? 0 : n;
+};
+
 const inputNumberClassName =
   'flex h-10 w-full rounded-xl border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm text-neutral-900 dark:text-neutral-100 shadow-sm transition-colors placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/40 focus-visible:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50';
 
@@ -185,12 +194,13 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 </Label>
                 <div className="flex">
                   <input
-                    type="number"
+                    type="text"
                     className={`${inputNumberClassName} rounded-r-none`}
-                    placeholder="1,000,000"
-                    min={0}
-                    step={1000}
-                    {...form.register('price', { required: t('variantModal.priceRequired') })}
+                    placeholder="1.000.000"
+                    value={formatNumber(String(form.watch('price') ?? ''))}
+                    onChange={(e) =>
+                      form.setValue('price', parseNumber(e.target.value), { shouldValidate: true })
+                    }
                   />
                   <span className="inline-flex items-center px-3 border border-l-0 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 rounded-r-xl text-sm text-neutral-600 dark:text-neutral-400">
                     {t('common.currencySymbol')}
@@ -215,12 +225,13 @@ const VariantModal: React.FC<VariantModalProps> = ({
                 </Label>
                 <div className="flex">
                   <input
-                    type="number"
+                    type="text"
                     className={`${inputNumberClassName} rounded-r-none`}
-                    placeholder="12,990,000"
-                    min={0}
-                    step={1000}
-                    {...form.register('compareAtPrice')}
+                    placeholder="12.990.000"
+                    value={formatNumber(String(form.watch('compareAtPrice') ?? ''))}
+                    onChange={(e) =>
+                      form.setValue('compareAtPrice', parseNumber(e.target.value) || null)
+                    }
                   />
                   <span className="inline-flex items-center px-3 border border-l-0 border-neutral-300 dark:border-neutral-600 bg-neutral-50 dark:bg-neutral-800 rounded-r-xl text-sm text-neutral-600 dark:text-neutral-400">
                     {t('common.currencySymbol')}

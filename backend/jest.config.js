@@ -22,7 +22,7 @@ module.exports = {
     '**/src/models/**/*.test.js',           // co-located model tests
     '**/src/jobs/**/*.test.js',             // co-located job tests
   ],
-  testPathIgnorePatterns: ['/node_modules/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.stryker-tmp/'],
   setupFiles: ['./src/__tests__/setup.js'],
   clearMocks: true,
   // Phase 44 partial — coverage threshold lock baseline làm floor.

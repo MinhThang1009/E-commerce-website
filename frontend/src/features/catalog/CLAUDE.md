@@ -55,9 +55,9 @@ Thứ tự đọc khuyến nghị: types → api → utils → hooks → compone
 ```
 features/catalog/
   api/
-    product-api.ts          — 13 hooks; tất cả responses qua transformProductsResponse(); export productKeys
-    category-api.ts         — 10 hooks (7 queries + 3 mutations admin); export categoryKeys
-    brand-api.ts            — 6 hooks (3 queries + 3 mutations admin)
+    product-api.ts          — 9 hooks; tất cả responses qua transformProductsResponse(); productKeys nội bộ (không export)
+    category-api.ts         — 8 hooks (5 queries + 3 mutations admin); categoryKeys nội bộ
+    brand-api.ts            — 4 hooks (1 query + 3 mutations admin)
     search-history-api.ts   — 4 hooks (1 query + 3 mutations)
     attribute-api.ts        — Class-based attributeService (KHÔNG phải hooks)
 
@@ -66,6 +66,8 @@ features/catalog/
     use-product-price-range.ts  — Tính price range hiển thị từ danh sách variants
     use-product-attributes.ts   — Quản lý attributes UI; debug mode qua localStorage
     use-product-form.ts         — Form state cho create/edit product (admin, multi-step)
+    use-form-adapter.ts         — Adapter map giữa ProductFormData và component form state (admin)
+    use-form-autosave.ts        — Tự động lưu nháp form theo interval (admin)
 
   utils/
     product-transform.ts    — transformProductsResponse(): normalize API responses về display format
@@ -95,8 +97,8 @@ features/catalog/
     ProductSeoForm.tsx            — Form SEO (admin)
     ProductFAQForm.tsx            — Form FAQ (admin)
     ProductFAQSection.tsx         — Section FAQ hiển thị (admin)
-    FormActions.tsx               — Action buttons cho form (admin)
-    TabNavigation.tsx             — Tab navigation component (admin)
+    ProductFormSaveBar.tsx        — Thanh action save/cancel cho form (admin)
+    ProductFormStepper.tsx        — Stepper điều hướng các bước form (admin)
     ValidationAlerts.tsx          — Alert validation errors (admin)
     Base64ImageWarning.tsx        — Warning khi dùng base64 image
 
@@ -114,7 +116,7 @@ features/catalog/
     product.types.ts       — Product, ProductVariant, ProductFilters interfaces
     category.types.ts      — Category interface
 
-  index.ts                 — Barrel export (productKeys, hooks, components, pages)
+  index.ts                 — Barrel export (hooks, components, types; KHÔNG export productKeys)
 ```
 
 ---
@@ -123,10 +125,10 @@ features/catalog/
 
 ## 3.1 Server state (React Query)
 
-Filter/sort/page dùng **URL search params** — không lưu trong store. `productKeys` exported để admin feature invalidate danh sách sản phẩm public.
+Filter/sort/page dùng **URL search params**. `productKeys` là `const` nội bộ product-api.ts (KHÔNG export) — admin invalidate danh sách public qua queryKey `['products']` trực tiếp.
 
 ```typescript
-export const productKeys = {
+const productKeys = {
   all: ['products'],
   lists: () => [...productKeys.all, 'list'],
   detail: (id) => [...productKeys.all, 'detail', id],
@@ -146,10 +148,11 @@ export const productKeys = {
 
 ## 3.2 Client state (Zustand)
 
-`catalogStore` (`src/stores/catalog-store.ts`) chỉ lưu:
+`catalogStore` (`src/stores/catalog-store.ts`) lưu:
 
 - `recentlyViewed: Product[]` — max 10 full Product objects, persist localStorage
 - `compareList: Product[]` — max 4 full Product objects, không persist
+- `filters: CatalogFilters` — `priceRange`/`categories`/`attributes`/`sortBy` (state có sẵn nhưng các page catalog hiện ưu tiên URL search params, không bind vào store filters này)
 
 `cartStore` — `addItem` từ ProductCard, ProductDetailPage (quick add).
 `wishlistStore` — toggle wishlist từ ProductCard.
@@ -160,61 +163,50 @@ export const productKeys = {
 
 ## 4.1 Endpoints sử dụng
 
-| Method | Path                            | Mô tả                                   |
-| ------ | ------------------------------- | --------------------------------------- |
-| GET    | `/products`                     | Danh sách sản phẩm có filter/pagination |
-| GET    | `/products/:id`                 | Chi tiết theo ID                        |
-| GET    | `/products/slug/:slug`          | Chi tiết theo slug (SEO)                |
-| GET    | `/products/featured`            | Sản phẩm nổi bật                        |
-| GET    | `/products/new-arrivals`        | Hàng mới về                             |
-| GET    | `/products/best-sellers`        | Bán chạy nhất                           |
-| GET    | `/products/deals`               | Đang giảm giá                           |
-| GET    | `/products/:id/related`         | Sản phẩm liên quan                      |
-| GET    | `/products/:id/variants`        | Danh sách variants                      |
-| GET    | `/products/:id/reviews/summary` | Tóm tắt rating                          |
-| GET    | `/products/search`              | Full-text search                        |
-| GET    | `/products/filters`             | Filter options có sẵn                   |
-| GET    | `/products/recently-viewed`     | Sản phẩm đã xem gần đây                 |
-| GET    | `/categories`                   | Danh sách danh mục                      |
-| GET    | `/categories/tree`              | Cây danh mục                            |
-| GET    | `/categories/:id`               | Chi tiết danh mục theo ID               |
-| GET    | `/categories/slug/:slug`        | Chi tiết danh mục theo slug             |
-| GET    | `/categories/featured`          | Danh mục nổi bật                        |
-| POST   | `/categories`                   | Admin: tạo danh mục                     |
-| PUT    | `/categories/:id`               | Admin: cập nhật danh mục                |
-| DELETE | `/categories/:id`               | Admin: xóa danh mục                     |
-| GET    | `/brands`                       | Danh sách thương hiệu                   |
-| GET    | `/brands/:slug`                 | Chi tiết thương hiệu theo slug          |
-| GET    | `/brands/:slug/products`        | Sản phẩm theo thương hiệu               |
-| POST   | `/brands`                       | Admin: tạo thương hiệu                  |
-| PUT    | `/brands/:id`                   | Admin: cập nhật thương hiệu             |
-| DELETE | `/brands/:id`                   | Admin: xóa thương hiệu                  |
-| GET    | `/search-history`               | Lịch sử tìm kiếm của user               |
-| POST   | `/search-history`               | Lưu search history                      |
-| DELETE | `/search-history/:id`           | Xóa 1 search item                       |
-| DELETE | `/search-history`               | Xóa toàn bộ search history              |
+| Method | Path                        | Mô tả                                    |
+| ------ | --------------------------- | ---------------------------------------- |
+| GET    | `/products`                 | Danh sách sản phẩm có filter/pagination  |
+| GET    | `/products/:id`             | Chi tiết theo ID (query `skuId`/`color`) |
+| GET    | `/products/featured`        | Sản phẩm nổi bật                         |
+| GET    | `/products/new-arrivals`    | Hàng mới về                              |
+| GET    | `/products/best-sellers`    | Bán chạy nhất                            |
+| GET    | `/products/deals`           | Đang giảm giá                            |
+| GET    | `/products/:id/related`     | Sản phẩm liên quan                       |
+| GET    | `/products/search`          | Full-text search                         |
+| GET    | `/products/recently-viewed` | Sản phẩm đã xem gần đây                  |
+| GET    | `/categories`               | Danh sách danh mục                       |
+| GET    | `/categories/tree`          | Cây danh mục                             |
+| GET    | `/categories/slug/:slug`    | Chi tiết danh mục theo slug              |
+| GET    | `/categories/:id/products`  | Sản phẩm trong danh mục                  |
+| POST   | `/categories`               | Admin: tạo danh mục                      |
+| PUT    | `/categories/:id`           | Admin: cập nhật danh mục                 |
+| DELETE | `/categories/:id`           | Admin: xóa danh mục                      |
+| GET    | `/brands`                   | Danh sách thương hiệu                    |
+| POST   | `/brands`                   | Admin: tạo thương hiệu                   |
+| PUT    | `/brands/:id`               | Admin: cập nhật thương hiệu              |
+| DELETE | `/brands/:id`               | Admin: xóa thương hiệu                   |
+| GET    | `/search-histories`         | Lịch sử tìm kiếm của user                |
+| POST   | `/search-histories`         | Lưu search history                       |
+| DELETE | `/search-histories/:id`     | Xóa 1 search item                        |
+| DELETE | `/search-histories`         | Xóa toàn bộ search history               |
 
 ## 4.2 Query hooks
 
-**product-api.ts (13 hooks):**
+**product-api.ts (9 hooks):**
 
 - `useGetProductsQuery(filters?)` — list với filter/pagination
 - `useGetProductByIdQuery(arg)` — arg polymorphic: `string` hoặc `{ id, skuId?, color? }`
-- `useGetProductBySlugQuery(slug)` — detail theo slug
 - `useGetFeaturedProductsQuery(params?)`
 - `useGetNewArrivalsQuery(params?)`
 - `useGetBestSellersQuery(params?)`
 - `useGetDealsQuery(params?)`
 - `useGetRelatedProductsQuery(id)`
-- `useGetProductVariantsQuery(id)`
-- `useGetProductReviewsSummaryQuery(id)`
 - `useSearchProductsQuery(params)`
-- `useGetProductFiltersQuery(params?)`
 - `useGetRecentlyViewedQuery(params?)`
 
-**category-api.ts:** `useGetAllCategoriesQuery`, `useGetCategoryTreeQuery`, `useGetCategoryByIdQuery(id)`, `useGetCategoryBySlugQuery(slug)`, `useGetFeaturedCategoriesQuery`, `useGetProductsByCategoryQuery(params)`, `useGetCategoriesQuery`, `useCreateCategoryMutation`, `useUpdateCategoryMutation`, `useDeleteCategoryMutation`
+**category-api.ts (8 hooks):** `useGetAllCategoriesQuery`, `useGetCategoryTreeQuery`, `useGetCategoryBySlugQuery(slug)`, `useGetProductsByCategoryQuery(params)`, `useGetCategoriesQuery`, `useCreateCategoryMutation`, `useUpdateCategoryMutation`, `useDeleteCategoryMutation`
 
-**brand-api.ts:** `useGetBrandsQuery`, `useGetBrandBySlugQuery(slug)`, `useGetProductsByBrandQuery(params)`, `useCreateBrandMutation`, `useUpdateBrandMutation`, `useDeleteBrandMutation`
+**brand-api.ts (4 hooks):** `useGetBrandsQuery`, `useCreateBrandMutation`, `useUpdateBrandMutation`, `useDeleteBrandMutation`
 
 **search-history-api.ts:** `useGetSearchHistoryQuery`, `useSaveSearchMutation`, `useDeleteSearchHistoryMutation`, `useClearAllSearchHistoryMutation`
 
@@ -255,16 +247,19 @@ interface Product {
   name: string;
   slug: string;
   price: number;
+  thumbnail: string;
   images: string[];
   categoryId: string;
-  brandId?: string;
+  brand?: string; // tên thương hiệu (string), không phải brandId
   variants?: ProductVariant[];
-  isActive: boolean;
-  specifications?: Array<{ name: string; value: string; category?: string }>;
-  faqs?: Array<{ question: string; answer: string }>;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  specifications?: Record<string, string | number | boolean>;
+  faqs?: FAQ[];
 }
 interface ProductVariant {
   id: string;
+  name: string;
   sku: string;
   price: number;
   stockQuantity: number;
@@ -272,13 +267,17 @@ interface ProductVariant {
   attributes: Record<string, string>; // { "Màu sắc": "Đen", "Dung lượng": "256GB" }
 }
 interface ProductFilters {
+  categoryId?: string;
+  search?: string;
   minPrice?: number;
   maxPrice?: number;
-  categories?: string[];
-  sortBy?: string;
+  sort?: 'price_asc' | 'price_desc' | 'newest' | 'popular';
   page?: number;
   limit?: number;
-  [key: string]: unknown; // Index signature cho dynamic attribute filters
+  brand?: string[];
+  color?: string[];
+  size?: string[];
+  [key: string]: string | string[] | number | boolean | undefined; // Index signature cho dynamic attribute filters
 }
 
 // types/category.types.ts
@@ -319,21 +318,21 @@ interface Category {
 
 # 8. Gotchas & Edge Cases
 
-- **`catalogStore` KHÔNG lưu filter state** — filter/sort/page dùng URL params. Store chỉ quản lý `recentlyViewed[]` (max 10) và `compareList[]` (max 4).
+- **Filter/sort/page của page catalog dùng URL params**, không bind vào store. `catalogStore` quản lý `recentlyViewed[]` (max 10), `compareList[]` (max 4) và có sẵn field `filters` (priceRange/categories/attributes/sortBy) — field này tồn tại nhưng page catalog hiện không dùng làm nguồn filter chính.
 - **`attribute-api.ts` là class-based service**, không phải TanStack Query — gọi `attributeService.method()`, không dùng như hook.
 - **`useGetProductByIdQuery` nhận polymorphic arg**: `string` (chỉ ID) hoặc `{ id, skuId?, color? }` (chọn variant cụ thể khi navigate từ search/AI).
 - **Sort backend** dùng `COALESCE(MIN(variant.price), base_price)` — không sort theo `basePrice` field. Không revert.
 - **`transformProductsResponse()`** phải áp dụng cho tất cả product API responses — khi thêm endpoint mới, wrap qua transform.
-- **`ProductFilters` type có index signature** `[key: string]: unknown` để cho phép dynamic attribute filters.
+- **`ProductFilters` type có index signature** `[key: string]: string | string[] | number | boolean | undefined` để cho phép dynamic attribute filters.
 - **`use-product-attributes.ts`** có debug mode toggle qua `localStorage` key — console logs lạ là do debug mode đang bật.
 - **`compareList` max 4** — thêm item thứ 5 bị reject với error toast.
-- **`productKeys` được export** — admin feature import để invalidate danh sách sản phẩm public sau khi sửa/xóa sản phẩm.
+- **`productKeys` KHÔNG được export** — là `const` nội bộ trong `product-api.ts` và không re-export qua barrel `index.ts`. Muốn invalidate danh sách public, dùng queryKey gốc `['products']`.
 - **Admin form components** nằm trong feature này vì chia sẻ types/utils với user-facing components — không phải kiến trúc lý tưởng nhưng giảm duplication.
 
 ---
 
 # 9. Tests
 
-- `frontend/src/__tests__/features/catalog/` — component tests ProductCard, ProductFilters, VariantSelector
-- `backend/__tests__/modules/catalog/` — unit tests catalog service
-- `backend/__api__/catalog.api.test.js` — API HTTP tests (products, categories, brands)
+- `frontend/src/__tests__/catalog-pages.test.tsx`, `catalog-pages-extra.test.tsx`, `catalog-detail-pages.test.tsx`, `product-card.test.tsx` — component/page tests
+- `backend/src/__tests__/cart-catalog-*.test.js` — unit tests catalog service
+- `backend/src/__api__/catalog*.http.test.js` — API HTTP tests (products, categories, brands)

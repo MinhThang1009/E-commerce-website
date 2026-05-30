@@ -12,6 +12,7 @@ import { PremiumButton } from '@/components/common';
 import Input from '@/components/common/Input';
 import { useResetPasswordMutation } from '../api/auth-api';
 import { getErrorMsg } from '@/utils/error-utils';
+import { resetPasswordSchema } from '@/schemas/auth';
 
 const ResetPasswordPage: React.FC = () => {
   const { t } = useTranslation();
@@ -41,30 +42,18 @@ const ResetPasswordPage: React.FC = () => {
   }, [token, navigate]);
 
   const validateForm = () => {
-    const newErrors: {
-      password?: string;
-      confirmPassword?: string;
-    } = {};
-    let isValid = true;
-
-    if (!password) {
-      newErrors.password = t('auth.resetPassword.validation.passwordRequired');
-      isValid = false;
-    } else if (password.length < 6) {
-      newErrors.password = t('auth.resetPassword.validation.passwordMinLength');
-      isValid = false;
+    // Dùng chung resetPasswordSchema (Zod) cho nhất quán với Login/Register/ForgotPassword
+    const result = resetPasswordSchema.safeParse({ password, confirmPassword });
+    if (!result.success) {
+      const fe = result.error.flatten().fieldErrors;
+      setErrors({
+        password: fe.password?.[0],
+        confirmPassword: fe.confirmPassword?.[0],
+      });
+      return false;
     }
-
-    if (!confirmPassword) {
-      newErrors.confirmPassword = t('auth.resetPassword.validation.confirmPasswordRequired');
-      isValid = false;
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = t('auth.resetPassword.validation.passwordsNotMatch');
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
+    setErrors({});
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -70,10 +70,8 @@ modules/upload/
     i-upload-repository.js
     filesystem-upload-repository.js            — wrap fs.promises (fileExists, deleteFile, readFileHeader)
     filesystem-upload-repository.test.js
-  validators/
-    upload-validator.js
   dtos/
-    upload-dto.js
+    upload-dto.js                              — toUploadFileDto (pass-through)
 ```
 
 ---
@@ -109,10 +107,10 @@ processMultipleUpload({ files, uploadType });
 deleteFile({ user, type, filenameRaw });
 ```
 
-1. `user.role !== 'admin'` → throw 403
+1. `!user || user.role !== 'admin'` → throw 403
 2. `uploadDirs[type]` không tồn tại → throw 400
-3. `path.basename(filenameRaw)` để strip directory components
-4. Path traversal guard: `filePath.startsWith(uploadDir + sep)`
+3. `path.basename(filenameRaw)` ≠ `filenameRaw` (có directory components) → throw 400
+4. Path traversal guard: `filePath.startsWith(uploadDir + sep)` (hoặc `=== uploadDir`) → throw 403
 5. `fileExists` check → throw 404 nếu không có
 6. `uploadRepository.deleteFile(filePath)`
 
@@ -194,4 +192,4 @@ Module không nhận Sequelize models — chỉ dùng `fs.promises`, `multer`, `
 | `controllers/upload-controller.test.js`             | Unit | HTTP layer, multer integration                             |
 | `controllers/upload-controller.edge-cases.test.js`  | Unit | Edge cases: bad type, path traversal                       |
 | `repositories/filesystem-upload-repository.test.js` | Unit | fs.promises wrapper                                        |
-| `src/__api__/image-upload.api.test.js`              | HTTP | End-to-end upload flow                                     |
+| `src/__api__/upload.http.test.js`                   | HTTP | End-to-end upload flow                                     |

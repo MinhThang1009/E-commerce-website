@@ -62,7 +62,7 @@ Working tree **sạch**. `.screenshots/` (untracked) là ảnh verify — không
 
 ## VERIFY (từ `frontend/`)
 
-`npm run typecheck` · `npm run lint` (--max-warnings 0) · `npm run test:ci` (18 suites / **550** tests) · `node ../scripts/check-i18n.js` (parity **100%**, 2960 key mỗi file).
+`npm run typecheck` · `npm run lint` (--max-warnings 0) · `npm run test:ci` (21 suites / **~680** tests, threshold gate) · `node ../scripts/check-i18n.js` (parity **100%**, ~2970+ key mỗi file).
 Dev: BE `:8888`, FE `:5175`. Admin: admin@techstore.vn / Admin@123. Screenshot 2 theme qua chrome-devtools MCP (lưu ý: navigate→screenshot dễ race, dùng `wait_for` text trước khi chụp; nếu báo "browser already running" → kill chrome process lọc theo path `chrome-devtools-mcp` rồi navigate lại).
 
 ## GOTCHAS

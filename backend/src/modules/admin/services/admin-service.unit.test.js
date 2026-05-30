@@ -566,6 +566,55 @@ describe('getLowStockAnalytics — tính tồn kho từ variants (lines 2603-261
     expect(res.body.data).toHaveLength(1);
     expect(res.body.data[0].id).toBe(21);
   });
+
+  // Line 240 branch[1]: v.stockQuantity là null/undefined → fallback về 0
+  test('variant có stockQuantity null → đóng góp 0 vào variantStock', async () => {
+    const product = {
+      toJSON: () => ({
+        id: 30,
+        nameVi: 'Sản phẩm có variant null stock',
+        stockQuantity: 0,
+        variants: [
+          { sku: 'V1', stockQuantity: null },
+          { sku: 'V2', stockQuantity: undefined },
+          { sku: 'V3', stockQuantity: 3 },
+        ],
+        productImages: [],
+      }),
+    };
+
+    Product.findAll.mockResolvedValueOnce([product]);
+
+    const res = await request.get('/api/admin/analytics/low-stock?threshold=5');
+
+    expect(res.status).toBe(200);
+    // null + undefined + 3 = 0 + 0 + 3 = 3
+    const item = res.body.data.find((p) => p.id === 30);
+    expect(item.stockQuantity).toBe(3);
+  });
+
+  // Line 246 branch[3]: nameVi, nameEn, name đều falsy → name = ''
+  test('sản phẩm không có nameVi, nameEn, name → trả về name rỗng', async () => {
+    const product = {
+      toJSON: () => ({
+        id: 31,
+        nameVi: null,
+        nameEn: null,
+        name: null,
+        stockQuantity: 1,
+        variants: [],
+        productImages: [],
+      }),
+    };
+
+    Product.findAll.mockResolvedValueOnce([product]);
+
+    const res = await request.get('/api/admin/analytics/low-stock?threshold=5');
+
+    expect(res.status).toBe(200);
+    const item = res.body.data.find((p) => p.id === 31);
+    expect(item.name).toBe('');
+  });
 });
 
 // ─── deleteUser ───────────────────────────────────────────────────────────────

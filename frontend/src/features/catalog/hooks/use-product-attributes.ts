@@ -6,8 +6,12 @@
  */
 import { useState } from 'react';
 import { ProductAttribute } from '@/types';
+import { useUiStore } from '@/stores/ui-store';
+import { useTranslation } from 'react-i18next';
 
 export const useProductAttributes = (initialAttributes: ProductAttribute[] = []) => {
+  const { t } = useTranslation();
+  const addNotification = useUiStore((s) => s.addNotification);
   const [attributes, setAttributes] = useState<ProductAttribute[]>(initialAttributes);
   const [attributeModalVisible, setAttributeModalVisible] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<ProductAttribute | null>(null);
@@ -15,20 +19,16 @@ export const useProductAttributes = (initialAttributes: ProductAttribute[] = [])
   // Các handler cho thuộc tính
   const handleAddAttribute = (attribute: ProductAttribute) => {
     if (editingAttribute) {
-      // Cập nhật thuộc tính đã tồn tại
       const updatedAttributes = attributes.map((attr) =>
         attr.id === editingAttribute.id ? { ...attribute, id: editingAttribute.id } : attr,
       );
       setAttributes(updatedAttributes);
+      addNotification({ message: t('admin.products.attributes.updateSuccess'), type: 'success' });
     } else {
-      // Thêm thuộc tính mới
       const newId = `attr-${attributes.length}-${Math.random().toString(36).substring(2, 9)}`;
-      const newAttributes = [...attributes, { ...attribute, id: attribute.id || newId }];
-      setAttributes(newAttributes);
+      setAttributes([...attributes, { ...attribute, id: attribute.id || newId }]);
+      addNotification({ message: t('admin.products.attributes.addSuccess'), type: 'success' });
     }
-
-    // Lưu vào localStorage để debug
-    localStorage.setItem('current_attributes', JSON.stringify(attributes));
 
     setAttributeModalVisible(false);
     setEditingAttribute(null);
@@ -36,6 +36,7 @@ export const useProductAttributes = (initialAttributes: ProductAttribute[] = [])
 
   const handleDeleteAttribute = (id: string) => {
     setAttributes(attributes.filter((attr) => attr.id !== id));
+    addNotification({ message: t('admin.products.attributes.deleteSuccess'), type: 'info' });
   };
 
   const openAttributeModal = (attribute?: ProductAttribute) => {

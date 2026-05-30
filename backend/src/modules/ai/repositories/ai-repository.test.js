@@ -108,3 +108,76 @@ describe('SequelizeAiRepository.findProductForCart', () => {
     expect(result).toBeNull();
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// addToCart
+// ════════════════════════════════════════════════════════════════════════════
+
+// Mock @models ở top-level để addToCart có thể require('@models') lazy
+const mockCart = {
+  findOne: jest.fn(),
+  create: jest.fn(),
+};
+const mockCartItem = {
+  findOne: jest.fn(),
+  create: jest.fn().mockResolvedValue({ id: 99 }),
+};
+
+jest.mock('@models', () => ({
+  Cart: mockCart,
+  CartItem: mockCartItem,
+}));
+
+describe('SequelizeAiRepository.addToCart', () => {
+  const defaultCart = { id: 1 };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockCart.findOne.mockResolvedValue(defaultCart);
+    mockCart.create.mockResolvedValue(defaultCart);
+    mockCartItem.findOne.mockResolvedValue(null); // không có item sẵn → tạo mới
+    mockCartItem.create.mockResolvedValue({ id: 99 });
+  });
+
+  test('variantId được cung cấp → KHÔNG gọi ProductVariant.findOne để tìm default (branch if(!resolvedVariantId) = false)', async () => {
+    // Branch 5 "undefined" if[1]: !resolvedVariantId là false khi variantId đã có
+    const mockVariantFindByPk = jest.fn().mockResolvedValue({ id: 7, price: 50000 });
+    const mockVariantFindOne = jest.fn();
+    const { repo } = makeRepo({
+      ProductVariant: {
+        findOne: mockVariantFindOne, // KHÔNG được gọi khi variantId đã có
+        findByPk: mockVariantFindByPk,
+      },
+    });
+
+    await repo.addToCart({ userId: 1, productId: 10, variantId: 7, quantity: 2 });
+
+    // variantId đã có → bỏ qua lookup default variant
+    expect(mockVariantFindOne).not.toHaveBeenCalled();
+    // ProductVariant.findByPk được gọi với variantId được cung cấp
+    expect(mockVariantFindByPk).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ attributes: ['price'] }),
+    );
+  });
+
+  test('variantId=null, defaultVariant không tìm thấy → resolvedVariantId=null, variant=null, unitPrice=0 (line 105 cond-expr[1])', async () => {
+    // Line 105 cond-expr[1]: resolvedVariantId là null → variant = null → unitPrice = 0
+    const mockVariantFindByPk = jest.fn();
+    const { repo } = makeRepo({
+      ProductVariant: {
+        findOne: jest.fn().mockResolvedValue(null), // defaultVariant không tồn tại
+        findByPk: mockVariantFindByPk,
+      },
+    });
+
+    await repo.addToCart({ userId: 1, productId: 10, variantId: null, quantity: 1 });
+
+    // resolvedVariantId vẫn null → ProductVariant.findByPk KHÔNG được gọi (variant = null)
+    expect(mockVariantFindByPk).not.toHaveBeenCalled();
+    // CartItem.create được gọi với variantId=null (unitPrice=0)
+    expect(mockCartItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: 10, variantId: null }),
+    );
+  });
+});

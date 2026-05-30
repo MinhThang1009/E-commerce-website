@@ -18,12 +18,12 @@
 
 # 1. Mục đích & Trách nhiệm
 
-Tích hợp cổng thanh toán: tạo URL redirect sang MoMo/VNPay, hiển thị trang QR chuyển khoản ngân hàng (VietQR) với countdown timer 15 phút, poll trạng thái thanh toán. Route: `/payment-qr`.
+Tích hợp cổng thanh toán: tạo URL redirect sang MoMo/VNPay, hiển thị trang trung gian với thông tin đơn hàng + countdown timer 15 phút + nút redirect VNPay, poll trạng thái thanh toán. Route: `/payment-qr`.
 
 **Payment flow tổng quát:**
 
-- **MoMo/VNPay:** `CheckoutPage` → mutation tạo URL → `window.location.href = payUrl` (redirect toàn trang) → callback → backend → redirect về `/orders?payment=success|failed`
-- **Bank transfer:** `CheckoutPage` → navigate `/payment-qr?orderId=&amount=&numberOrder=` → user chuyển khoản thủ công → poll `useGetOrderByIdQuery` mỗi 5s → auto-navigate về `/orders` khi `paymentStatus === 'paid'`
+- **MoMo:** `CheckoutPage` → `useCreateMomoUrlMutation` tạo URL → `window.location.href = payUrl` (redirect toàn trang) → callback → backend → redirect về `/orders`
+- **VNPay (qua `/payment-qr`):** `CheckoutPage` → navigate `/payment-qr?orderId=&amount=&numberOrder=` → user bấm "Thanh toán VNPay" → `useCreateVNPayUrlMutation` → `window.location.href = paymentUrl`. Song song poll `useGetOrderByIdQuery` mỗi 5s → auto-navigate về `/orders` khi `paymentStatus === 'paid'`
 
 ---
 
@@ -37,7 +37,7 @@ api/
 components/
 
 pages/
-  PaymentQRPage.tsx  — /payment-qr: QR + countdown 15 phút + poll status; DEV test card panel
+  PaymentQRPage.tsx  — /payment-qr: thông tin đơn hàng + countdown 15 phút + nút VNPay + poll status; DEV test card panel
 
 index.ts             — Barrel export
 ```
@@ -148,4 +148,4 @@ Không có `types/` directory riêng — types inline trong api files:
 - **Test card numbers** trong `PaymentQRPage` chỉ render khi `import.meta.env.DEV === true` — tree-shaken hoàn toàn ở production build. 3 test cards: NCB success, NCB error, Visa success.
 - **`PaymentQRPage` đọc params từ `useSearchParams()`** — thiếu `orderId` hoặc `amountParam` → render invalid link screen.
 - **Auto-cancel khi timeout** chỉ gọi khi chưa `isCancelling` và `order.status !== 'cancelled'` (tránh duplicate cancel call).
-- **VietQR URL format:** `https://img.vietqr.io/image/{bankCode}-{accountNumber}-compact.jpg` — `addInfo` là `numberOrder` (mã đơn hàng làm nội dung chuyển khoản), `roundedAmount` là số nguyên (không có decimal).
+- **Số tiền hiển thị** dùng `formatVND()` (Intl.NumberFormat `currency: 'VND'`, locale động theo `getLocale()`) — luôn VND, không hardcode USD/$.

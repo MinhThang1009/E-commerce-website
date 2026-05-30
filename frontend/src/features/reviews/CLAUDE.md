@@ -26,7 +26,7 @@ Hiển thị đánh giá sản phẩm (rating summary, danh sách với paginati
 
 ```
 api/
-  review-api.ts        — TanStack Query hooks + export reviewKeys
+  review-api.ts        — TanStack Query hooks (reviewKeys là const nội bộ, không export)
 
 components/
   ReviewSection.tsx    — Container chính — embed vào ProductDetailPage (catalog feature)
@@ -49,7 +49,8 @@ index.ts               — Barrel export
 ## Server state (TanStack Query)
 
 ```typescript
-export const reviewKeys = {
+// const nội bộ trong review-api.ts — KHÔNG export ra barrel
+const reviewKeys = {
   all: ['reviews'] as const,
   product: (productId: string) => [...reviewKeys.all, 'product', productId] as const,
   productFiltered: (productId: string, filters: ReviewFilters) =>

@@ -4,7 +4,7 @@
  * @feature catalog
  * @description Custom React hook cho feature catalog
  */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProductFormData } from '@/types';
 import { SAMPLE_LAPTOP_DATA } from '../utils/sample-product-data';
@@ -17,10 +17,14 @@ interface UseProductFormProps {
   onSubmit: (values: ProductFormData) => Promise<void>;
   isSubmitting: boolean;
   onStepComplete?: (step: string, isComplete: boolean) => void;
+  onStepFilled?: (step: string, isFilled: boolean) => void;
   attributes?: Array<{ name: string; value?: string; values?: string[] }>;
   variants?: Array<{ name: string; price: number; stock?: number; stockQuantity?: number }>;
-
-  isEditMode?: boolean; // Thêm prop để phân biệt edit vs create
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setAttributes?: (attrs: any) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setVariants?: (variants: any) => void;
+  isEditMode?: boolean;
 }
 
 export const useProductForm = ({
@@ -29,19 +33,35 @@ export const useProductForm = ({
   onSubmit,
   isSubmitting,
   onStepComplete,
+  onStepFilled,
   attributes = [],
   variants = [],
+  setAttributes,
+  setVariants,
   isEditMode = false,
 }: UseProductFormProps) => {
   const { t } = useTranslation();
   const addNotification = useUiStore((s) => s.addNotification);
+  const clearNotifications = useUiStore((s) => s.clearNotifications);
+
+  // Ref để performValidation luôn đọc variants/attributes mới nhất (tránh stale closure)
+  const variantsRef = useRef(variants);
+  const attributesRef = useRef(attributes);
+  useEffect(() => {
+    variantsRef.current = variants;
+  }, [variants]);
+  useEffect(() => {
+    attributesRef.current = attributes;
+  }, [attributes]);
   const [isFormValid, setIsFormValid] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
 
-  // Hàm validation độc lập
-  const performValidation = () => {
+  // Hàm validation độc lập — dùng refs để tránh stale closure
+  const performValidation = useCallback(() => {
     const values = form.getFieldsValue();
     const errors = form.getFieldsError();
+    const variants = variantsRef.current;
+    const attributes = attributesRef.current;
 
     // Validate và cập nhật completion cho từng step
     const validateStep = (step: string) => {
@@ -69,18 +89,21 @@ export const useProductForm = ({
           isStepValid = nameOk && shortDescOk && (descFormOk || descDomOk);
           break;
         }
-        case 'specifications':
-          // Specifications không bắt buộc, luôn valid
-          isStepValid = true;
+        case 'specifications': {
+          const specsLen = ((values['specifications'] as unknown[]) || []).length;
+          isStepValid = specsLen > 0;
+          if (onStepFilled) onStepFilled('specifications', isStepValid);
           break;
+        }
         case 'attributes':
-          // Attributes không bắt buộc, luôn valid
-          isStepValid = true;
+          isStepValid = attributes.length > 0;
+          if (onStepFilled) onStepFilled('attributes', isStepValid);
           break;
-        case 'variants':
-          // Variants không bắt buộc, luôn valid
-          isStepValid = true;
+        case 'variants': {
+          isStepValid = variants.length > 0;
+          if (onStepFilled) onStepFilled('variants', isStepValid);
           break;
+        }
         case 'pricing': {
           // Nếu có variants, stockQuantity có thể = 0 (vì variants sẽ có stock riêng)
           // Nếu không có variants, cần kiểm tra cả price và stockQuantity
@@ -118,16 +141,21 @@ export const useProductForm = ({
           break;
         }
         case 'images':
-          // Images không bắt buộc
           isStepValid = true;
+          if (onStepFilled) onStepFilled('images', !!(values['images'] as string)?.trim());
           break;
         case 'faqs':
-          // FAQs không bắt buộc
           isStepValid = true;
+          if (onStepFilled) onStepFilled('faqs', (values['faqs'] as unknown[])?.length > 0);
           break;
         case 'seo':
-          // SEO không bắt buộc
           isStepValid = true;
+          if (onStepFilled)
+            onStepFilled(
+              'seo',
+              !!(values['seoTitleVi'] as string)?.trim() ||
+                !!(values['seoTitleEn'] as string)?.trim(),
+            );
           break;
         default:
           isStepValid = false;
@@ -166,7 +194,7 @@ export const useProductForm = ({
     setIsFormValid(isValid);
 
     return currentStepValid;
-  };
+  }, [form, onStepComplete, onStepFilled, activeTab]);
 
   // Theo dõi sự thay đổi của activeTab, attributes, variants
   useEffect(() => {
@@ -257,83 +285,91 @@ export const useProductForm = ({
     // Sử dụng form.getFieldsValue() thay vì watchFormValues (có thể rỗng lần render đầu)
     const values = form.getFieldsValue() || {};
 
-    const fieldLabels = {
+    const fieldLabels: Record<string, string> = {
       name: t('productForm.fieldName'),
       shortDescription: t('productForm.fieldShortDesc'),
       description: t('productForm.fieldDesc'),
       price: t('productForm.fieldPrice'),
       stockQuantity: t('productForm.fieldStock'),
       categoryIds: t('productForm.fieldCategory'),
+      specifications: t('productForm.fieldSpecifications'),
       attributes: t('productForm.fieldAttributes'),
       variants: t('productForm.fieldVariants'),
     };
 
-    // Chỉ kiểm tra các trường form cơ bản, không kiểm tra attributes và variants
-    // vì chúng được quản lý trong state riêng biệt
-    const requiredFields = [
-      'name',
-      'shortDescription',
-      'description',
-      'price',
-      'stockQuantity',
-      'categoryIds',
-    ];
+    const missingFields: string[] = [];
 
-    const missingFields = requiredFields.filter((field) => {
+    // Kiểm tra các trường text bắt buộc
+    for (const field of ['name', 'shortDescription', 'description'] as const) {
       const value = values[field];
+      if (!value || (typeof value === 'string' && !value.trim())) missingFields.push(field);
+    }
 
-      if (field === 'categoryIds') {
-        const isValid = value && Array.isArray(value) && value.length > 0;
-        return !isValid;
-      }
-      if (field === 'price') {
-        // Nếu có variants, price có thể = 0 hoặc undefined
-        const hasVariants = variants.length > 0;
-        if (hasVariants) {
-          return false; // Không yêu cầu price khi có variants
-        }
-        const isValid =
-          value !== undefined && value !== null && value !== '' && parseFloat(value.toString()) > 0;
-        return !isValid;
-      }
-      if (field === 'stockQuantity') {
-        const isValid =
-          value !== undefined && value !== null && value !== '' && parseInt(value.toString()) >= 0;
-        return !isValid;
-      }
-      const isValid =
-        value !== undefined &&
-        value !== null &&
-        value !== '' &&
-        (typeof value === 'string' ? value.trim() !== '' : true);
-      return !isValid;
-    });
+    // Price: không bắt buộc nếu có variants
+    if (variants.length === 0) {
+      const price = values['price'];
+      if (!price || parseFloat(price.toString()) <= 0) missingFields.push('price');
+    }
 
-    // Attributes và variants không bắt buộc nữa
-    // Bỏ qua kiểm tra attributes và variants
+    // Stock luôn kiểm tra
+    const stock = values['stockQuantity'];
+    if (stock === undefined || stock === null || stock === '' || parseInt(stock.toString()) < 0) {
+      missingFields.push('stockQuantity');
+    }
 
-    return missingFields.map((field) => fieldLabels[field as keyof typeof fieldLabels]);
+    // Category
+    const cats = values['categoryIds'];
+    if (!cats || !Array.isArray(cats) || cats.length === 0) missingFields.push('categoryIds');
+
+    // Specifications — bắt buộc
+    const specs = (values['specifications'] as unknown[]) || [];
+    if (specs.length === 0) missingFields.push('specifications');
+
+    // Attributes — bắt buộc
+    if (attributes.length === 0) missingFields.push('attributes');
+
+    // Variants — bắt buộc
+    if (variants.length === 0) missingFields.push('variants');
+
+    return missingFields.map((f) => fieldLabels[f] ?? f);
   };
 
   // Điền dữ liệu mẫu MacBook Pro M3 Max
   const fillExampleData = () => {
+    clearNotifications();
+    if (setAttributes && SAMPLE_LAPTOP_DATA.attributes) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setAttributes(SAMPLE_LAPTOP_DATA.attributes as any);
+    }
     form.setFieldsValue({
       name: SAMPLE_LAPTOP_DATA.name,
       description: SAMPLE_LAPTOP_DATA.description,
       shortDescription: SAMPLE_LAPTOP_DATA.shortDescription,
-      price: SAMPLE_LAPTOP_DATA.basePrice,
-      compareAtPrice: SAMPLE_LAPTOP_DATA.salePrice,
+      price: SAMPLE_LAPTOP_DATA.price,
+      compareAtPrice: SAMPLE_LAPTOP_DATA.compareAtPrice,
       stockQuantity: SAMPLE_LAPTOP_DATA.stockQuantity,
       status: SAMPLE_LAPTOP_DATA.status,
       featured: SAMPLE_LAPTOP_DATA.featured,
       categoryIds: [],
-      seoTitle: SAMPLE_LAPTOP_DATA.metaTitle,
-      seoDescription: SAMPLE_LAPTOP_DATA.metaDescription,
-      seoKeywords: SAMPLE_LAPTOP_DATA.metaKeywords,
+      seoTitleVi: SAMPLE_LAPTOP_DATA.seoTitleVi,
+      seoTitleEn: SAMPLE_LAPTOP_DATA.seoTitleEn,
+      seoDescriptionVi: SAMPLE_LAPTOP_DATA.seoDescriptionVi,
+      seoDescriptionEn: SAMPLE_LAPTOP_DATA.seoDescriptionEn,
+      seoKeywords: SAMPLE_LAPTOP_DATA.seoKeywords,
+      specifications: SAMPLE_LAPTOP_DATA.specifications,
+      faqs: SAMPLE_LAPTOP_DATA.faqs,
     });
+
+    // Gọi setVariants SAU form.setFieldsValue để use-product-variants hook
+    // tính weighted price dựa trên giá đã được set ở trên
+    if (setVariants && SAMPLE_LAPTOP_DATA.variants) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setVariants(SAMPLE_LAPTOP_DATA.variants as any);
+    }
 
     setTimeout(() => {
       performValidation();
+      addNotification({ message: t('admin.products.autosave.sampleFilled'), type: 'success' });
     }, 100);
   };
 

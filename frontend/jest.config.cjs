@@ -20,6 +20,7 @@
  * Hiện tại (2026-05-05): 1 file .test.cjs / 20 tests / utils JSON parsing.
  */
 module.exports = {
+  maxWorkers: 2, // Giới hạn worker để tránh OOM trên Windows
   projects: [
     // Project 1: CommonJS utils tests (như trước)
     {
@@ -35,6 +36,8 @@ module.exports = {
       testMatch: ['**/__tests__/**/*.test.tsx', '**/?(*.)+(spec|test).tsx'],
       transform: { '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: { jsx: 'react-jsx' } }] },
       setupFiles: ['<rootDir>/jest.setup.cjs'],
+      // Loại shadcn/ui (wrapper Radix) khỏi coverage — đặt trong project vì coverage gom theo project
+      coveragePathIgnorePatterns: ['/node_modules/', '[\\\\/]components[\\\\/]ui[\\\\/]'],
       moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@features/(.*)$': '<rootDir>/src/features/$1',
@@ -57,4 +60,42 @@ module.exports = {
       },
     },
   ],
+  // shadcn/ui là wrapper Radix (vendored, storefront-shared) — loại khỏi coverage thay vì viết test rỗng.
+  // Regex tách biệt separator để chạy được cả Windows (\) lẫn POSIX (/).
+  coveragePathIgnorePatterns: ['/node_modules/', '[\\\\/]components[\\\\/]ui[\\\\/]'],
+  // Ngưỡng coverage — chặn regression ở CI (chỉ kích hoạt khi chạy --coverage, vd: npm run test:ci).
+  // global = sàn ở mức HIỆN TẠI (project chưa đạt 100% toàn bộ) → không cho tụt xuống thấp hơn.
+  // Per-file 100% = khoá các file đã phủ kín, không cho ai làm rớt coverage.
+  coverageThreshold: {
+    global: {
+      statements: 79,
+      branches: 67,
+      functions: 69,
+      lines: 79,
+    },
+    './src/schemas/auth.ts': {
+      statements: 100,
+      branches: 100,
+      functions: 100,
+      lines: 100,
+    },
+    './src/features/auth/pages/RegisterPage.tsx': {
+      statements: 100,
+      branches: 100,
+      functions: 100,
+      lines: 100,
+    },
+    './src/features/auth/pages/ResetPasswordPage.tsx': {
+      statements: 100,
+      branches: 100,
+      functions: 100,
+      lines: 100,
+    },
+    './src/features/auth/pages/VerifyEmailPage.tsx': {
+      statements: 100,
+      branches: 100,
+      functions: 100,
+      lines: 100,
+    },
+  },
 };

@@ -113,6 +113,7 @@ const BrandsPage: React.FC = () => {
                   {(() => {
                     const brandName = localizeField(brand, 'name', i18n.language);
                     const logoSrc = brand.logoUrl || brand.logo || getBrandLogoUrl(brandName);
+                    /* istanbul ignore next — getBrandLogoUrl luôn trả URL; no-logo block chỉ là fallback phòng thủ */
                     if (!logoSrc) {
                       return (
                         <div className="w-16 h-16 rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center text-2xl font-bold">
@@ -126,12 +127,15 @@ const BrandsPage: React.FC = () => {
                           src={proxyImg(logoSrc)}
                           alt={brandName}
                           className="max-h-10 max-w-[120px] object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300"
-                          onError={(e) => {
-                            const parent = e.currentTarget.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `<div class="w-12 h-12 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-xl font-bold">${brandName.charAt(0)}</div>`;
+                          onError={
+                            /* istanbul ignore next */ (e) => {
+                              const parent = e.currentTarget.parentElement;
+                              /* istanbul ignore next */
+                              if (parent) {
+                                parent.innerHTML = `<div class="w-12 h-12 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-xl font-bold">${brandName.charAt(0)}</div>`;
+                              }
                             }
-                          }}
+                          }
                         />
                       </div>
                     );

@@ -45,26 +45,17 @@ const ProductPricingForm: React.FC<ProductPricingFormProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
       {hasVariants && (
         <div className="col-span-2">
-          <Alert variant="warning" className="mb-4">
-            <AlertTitle>{t('admin.products.pricing.variantAlert')}</AlertTitle>
-            <AlertDescription>
-              <div>
-                <p>
-                  <strong>{t('admin.products.pricing.variantImportantNote')}</strong>{' '}
-                  {t('admin.products.pricing.variantStockDesc')}
-                </p>
-                <ul className="mb-0 pl-5">
-                  <li>
-                    <strong>{t('admin.products.pricing.variantStockLabel')}</strong>{' '}
-                    {t('admin.products.pricing.variantStockAuto')}
-                  </li>
-                </ul>
-                {variantsNeedPrices && (
-                  <p className="mt-2 text-[var(--color-danger)]">
-                    {t('admin.products.pricing.variantGoBack')}
-                  </p>
-                )}
-              </div>
+          <Alert variant="warning" className="mb-4 py-2.5">
+            <AlertDescription className="flex flex-col gap-1">
+              <span>
+                <strong>{t('admin.products.pricing.variantImportantNote')}</strong>{' '}
+                {t('admin.products.pricing.variantStockDesc')}
+              </span>
+              {variantsNeedPrices && (
+                <span className="text-[var(--color-danger)]">
+                  {t('admin.products.pricing.variantGoBack')}
+                </span>
+              )}
             </AlertDescription>
           </Alert>
         </div>

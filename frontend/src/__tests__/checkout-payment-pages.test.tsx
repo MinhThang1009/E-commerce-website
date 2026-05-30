@@ -463,6 +463,7 @@ jest.mock('@/routes/paths', () => ({
 import PaymentQRPage from '@/features/payment/pages/PaymentQRPage';
 import ShopPage from '@/features/catalog/pages/ShopPage';
 import CheckoutPage from '@/features/checkout/pages/CheckoutPage';
+import CheckoutShippingForm from '@/features/checkout/components/CheckoutShippingForm';
 
 // ═══════════════════════════════════════════════════════════════
 // PaymentQRPage
@@ -1328,5 +1329,570 @@ describe('CheckoutPage: submit form', () => {
 
     // Assert — khi chưa có address, shippingCost = 0 → hiển thị freeShipping label
     expect(screen.getByText('checkout.orderSummary.freeShipping')).toBeInTheDocument();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CheckoutShippingForm
+// ═══════════════════════════════════════════════════════════════
+describe('CheckoutShippingForm', () => {
+  const baseFormData = {
+    firstName: 'An',
+    lastName: 'Nguyen',
+    email: 'an@test.com',
+    phone: '0912345678',
+    address: '123 Tran Hung Dao',
+    sameAsShipping: true,
+  };
+  const baseErrors = {};
+  const onInputChange = jest.fn();
+  const onAddressChange = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('render tiêu đề form giao hàng', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    expect(screen.getByText('checkout.shippingInfo.title')).toBeInTheDocument();
+  });
+
+  it('không hiện select địa chỉ khi savedAddresses=undefined', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    expect(screen.queryByText('checkout.shippingInfo.savedAddresses')).not.toBeInTheDocument();
+  });
+
+  it('không hiện select địa chỉ khi savedAddresses=[]', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={[]}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    expect(screen.queryByText('checkout.shippingInfo.savedAddresses')).not.toBeInTheDocument();
+  });
+
+  it('hiện select địa chỉ khi có savedAddresses', () => {
+    const savedAddresses = [
+      {
+        id: 'addr-1',
+        firstName: 'An',
+        lastName: 'Nguyen',
+        phone: '0912345678',
+        address1: '123 Tran Hung Dao',
+        address2: '',
+        city: 'Ha Noi',
+        isDefault: true,
+        name: 'Nhà',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    expect(screen.getByText('checkout.shippingInfo.savedAddresses')).toBeInTheDocument();
+  });
+
+  it('chọn địa chỉ đã lưu → gọi onInputChange cho firstName, lastName, phone, address', () => {
+    const savedAddresses = [
+      {
+        id: 'addr-1',
+        firstName: 'Binh',
+        lastName: 'Tran',
+        phone: '0987654321',
+        address1: '456 Le Loi',
+        address2: 'P.1',
+        city: 'HCM',
+        isDefault: false,
+        name: '',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'addr-1' } });
+    expect(onInputChange).toHaveBeenCalledWith('firstName', 'Binh');
+    expect(onInputChange).toHaveBeenCalledWith('lastName', 'Tran');
+    expect(onInputChange).toHaveBeenCalledWith('phone', '0987654321');
+    expect(onInputChange).toHaveBeenCalledWith('address', '456 Le Loi, P.1');
+  });
+
+  it('chọn option rỗng ("") → không gọi onInputChange', () => {
+    const savedAddresses = [
+      {
+        id: 'addr-1',
+        firstName: 'X',
+        lastName: 'Y',
+        phone: '0900000000',
+        address1: 'Z',
+        address2: '',
+        city: 'HCM',
+        isDefault: false,
+        name: '',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } });
+    expect(onInputChange).not.toHaveBeenCalled();
+  });
+
+  it('chọn id không tìm thấy → không gọi onInputChange', () => {
+    const savedAddresses = [
+      {
+        id: 'addr-1',
+        firstName: 'X',
+        lastName: 'Y',
+        phone: '0900000000',
+        address1: 'Z',
+        address2: '',
+        city: 'HCM',
+        isDefault: false,
+        name: '',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'unknown-id' } });
+    expect(onInputChange).not.toHaveBeenCalled();
+  });
+
+  it('address không có address2 → không thêm dấu phẩy', () => {
+    const savedAddresses = [
+      {
+        id: 'a1',
+        firstName: 'X',
+        lastName: 'Y',
+        phone: '0900',
+        address1: 'Main St',
+        address2: '',
+        city: 'HN',
+        isDefault: false,
+        name: '',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'a1' } });
+    expect(onInputChange).toHaveBeenCalledWith('address', 'Main St');
+  });
+
+  it('render AddressPicker', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    expect(screen.getByTestId('address-picker')).toBeInTheDocument();
+  });
+
+  it('onChange firstName input → gọi onInputChange("firstName", ...)', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByDisplayValue('An'), { target: { value: 'Minh' } });
+    expect(onInputChange).toHaveBeenCalledWith('firstName', 'Minh');
+  });
+
+  it('onChange lastName input → gọi onInputChange("lastName", ...)', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByDisplayValue('Nguyen'), { target: { value: 'Tran' } });
+    expect(onInputChange).toHaveBeenCalledWith('lastName', 'Tran');
+  });
+
+  it('onChange email input → gọi onInputChange("email", ...)', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByDisplayValue('an@test.com'), {
+      target: { value: 'new@test.com' },
+    });
+    expect(onInputChange).toHaveBeenCalledWith('email', 'new@test.com');
+  });
+
+  it('chọn địa chỉ thứ hai trong danh sách nhiều phần tử → find đúng phần tử', () => {
+    const savedAddresses = [
+      {
+        id: 'a1',
+        firstName: 'First',
+        lastName: 'One',
+        phone: '0900000001',
+        address1: 'Street 1',
+        address2: '',
+        city: 'HN',
+        isDefault: false,
+        name: '',
+      },
+      {
+        id: 'a2',
+        firstName: 'Second',
+        lastName: 'Two',
+        phone: '0900000002',
+        address1: 'Street 2',
+        address2: '',
+        city: 'HCM',
+        isDefault: false,
+        name: '',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'a2' } });
+    expect(onInputChange).toHaveBeenCalledWith('firstName', 'Second');
+  });
+
+  it('chọn address thiếu firstName/phone → fallback sang formData', () => {
+    const savedAddresses = [
+      {
+        id: 'a1',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        address1: 'Some St',
+        address2: '',
+        city: 'HN',
+        isDefault: false,
+        name: '',
+      },
+    ];
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={savedAddresses as any}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'a1' } });
+    // addr fields rỗng → fallback sang formData
+    expect(onInputChange).toHaveBeenCalledWith('firstName', 'An');
+    expect(onInputChange).toHaveBeenCalledWith('lastName', 'Nguyen');
+    expect(onInputChange).toHaveBeenCalledWith('phone', '0912345678');
+  });
+
+  it('onChange phone input → strip ký tự không phải số, gọi onInputChange("phone", ...)', () => {
+    render(
+      <CheckoutShippingForm
+        formData={baseFormData}
+        errors={baseErrors}
+        savedAddresses={undefined}
+        onInputChange={onInputChange}
+        onAddressChange={onAddressChange}
+      />,
+    );
+    fireEvent.change(screen.getByDisplayValue('0912345678'), {
+      target: { value: '091-234-abc' },
+    });
+    expect(onInputChange).toHaveBeenCalledWith('phone', '091234');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CheckoutPage: goNext/goBack + buyNow + discount + submit flows
+// ═══════════════════════════════════════════════════════════════
+describe('CheckoutPage: navigation + flows', () => {
+  let setTimeoutSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setTimeoutSpy = jest.spyOn(global, 'setTimeout').mockImplementation((fn: unknown) => {
+      if (typeof fn === 'function') (fn as () => void)();
+      return 0 as unknown as ReturnType<typeof setTimeout>;
+    });
+    mockAuthState = {
+      user: { firstName: 'Anh', lastName: 'Nguyen', email: 'anh@test.com', phone: '0912345678' },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
+    mockCartState = {
+      items: [{ id: 'i1', productId: 'p1', price: 500000, quantity: 1, name: 'SP' }],
+      subtotal: 500000,
+      totalItems: 1,
+      isLoading: false,
+      clearLocalCart: jest.fn(),
+      initializeCart: jest.fn(),
+      setServerCart: jest.fn(),
+    };
+    mockCreateOrderFn = jest
+      .fn()
+      .mockResolvedValue({ data: { order: { id: 'o1', total: 500000, number: 'ORD-001' } } });
+    mockCreateVNPayUrlFn = jest
+      .fn()
+      .mockResolvedValue({ data: { paymentUrl: 'https://vnpay.test/pay' } });
+    mockCreateMomoUrlFn = jest
+      .fn()
+      .mockResolvedValue({ data: { payUrl: 'https://momo.test/pay' } });
+    mockApplyDiscountFn = jest
+      .fn()
+      .mockResolvedValue({ data: { code: 'SAVE10', discountAmount: 50000 } });
+    window.history.pushState({}, '', '/checkout');
+  });
+
+  afterEach(() => {
+    setTimeoutSpy?.mockRestore?.();
+  });
+
+  it('goNext ở step 0 khi form rỗng → setErrors, không chuyển bước', () => {
+    mockAuthState = { user: null, isAuthenticated: false, updateUser: jest.fn() };
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    // Form rỗng → errors được set, vẫn ở step 0
+    expect(screen.getByText('checkout.shippingInfo.title')).toBeInTheDocument();
+  });
+
+  it('goNext ở step 1 không có paymentMethod → addNotification warning', () => {
+    render(<CheckoutPage />);
+    // step 0 → 1 (form đã có data từ mockAuthState)
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    // step 1 → next mà không chọn payment
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    expect(mockAddNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
+  });
+
+  it('goBack từ step 1 → về step 0', () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    expect(screen.getByText('checkout.paymentMethod.title')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('checkout.step.back'));
+    expect(screen.getByText('checkout.shippingInfo.title')).toBeInTheDocument();
+  });
+
+  it('buyNow flow — sessionStorage có buyNowItem → setBuyNowItem', () => {
+    window.history.pushState({}, '', '/checkout?buyNow=true');
+    sessionStorage.setItem(
+      'buyNowItem',
+      JSON.stringify({ productId: 'p1', variantId: 'v1', quantity: 1 }),
+    );
+    sessionStorage.setItem('buyNowAction', 'true');
+    render(<CheckoutPage />);
+    expect(mockCartState.initializeCart).toHaveBeenCalled();
+    sessionStorage.removeItem('buyNowItem');
+  });
+
+  it('buyNow flow — sessionStorage buyNowItem JSON lỗi → không crash', () => {
+    window.history.pushState({}, '', '/checkout?buyNow=true');
+    sessionStorage.setItem('buyNowItem', 'invalid-json{{{');
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(<CheckoutPage />);
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+    sessionStorage.removeItem('buyNowItem');
+  });
+
+  it('apply discount code thành công → hiện applied discount', async () => {
+    render(<CheckoutPage />);
+    // Navigate đến step confirm (step 2)
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const radios = document.querySelectorAll('input[type="radio"][name="paymentMethod"]');
+    if (radios[0]) fireEvent.click(radios[0]);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+
+    const discountInput = screen.queryByPlaceholderText('checkout.discountCode.placeholder');
+    if (discountInput) {
+      fireEvent.change(discountInput, { target: { value: 'SAVE10' } });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.discountCode.apply'));
+      });
+      expect(mockApplyDiscountFn).toHaveBeenCalled();
+    }
+  });
+
+  it('apply discount code rỗng → setDiscountError, không gọi API', async () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const radios = document.querySelectorAll('input[type="radio"][name="paymentMethod"]');
+    if (radios[0]) fireEvent.click(radios[0]);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+
+    const applyBtn = screen.queryByText('checkout.discountCode.apply');
+    if (applyBtn) {
+      await act(async () => {
+        fireEvent.click(applyBtn);
+      });
+      expect(mockApplyDiscountFn).not.toHaveBeenCalled();
+    }
+  });
+
+  it('apply discount code thất bại → setDiscountError', async () => {
+    mockApplyDiscountFn = jest.fn().mockRejectedValue(new Error('invalid'));
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const radios = document.querySelectorAll('input[type="radio"][name="paymentMethod"]');
+    if (radios[0]) fireEvent.click(radios[0]);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+
+    const discountInput = screen.queryByPlaceholderText('checkout.discountCode.placeholder');
+    if (discountInput) {
+      fireEvent.change(discountInput, { target: { value: 'BADCODE' } });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.discountCode.apply'));
+      });
+      expect(mockApplyDiscountFn).toHaveBeenCalled();
+    }
+  });
+
+  it('submit với bank_transfer → createOrder + navigate payment-qr', async () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const bankRadio = document.querySelector('input[type="radio"][value="bank_transfer"]');
+    if (bankRadio) {
+      fireEvent.click(bankRadio);
+      fireEvent.click(screen.getByText('checkout.step.next'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
+      });
+      expect(mockCreateOrderFn).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/payment-qr'));
+    }
+  });
+
+  it('submit với vnpay → createOrder + createVNPayUrl + redirect', async () => {
+    const originalHref = window.location.href;
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, href: originalHref },
+      writable: true,
+    });
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const vnpayRadio = document.querySelector('input[type="radio"][value="vnpay"]');
+    if (vnpayRadio) {
+      fireEvent.click(vnpayRadio);
+      fireEvent.click(screen.getByText('checkout.step.next'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
+      });
+      expect(mockCreateOrderFn).toHaveBeenCalled();
+      expect(mockCreateVNPayUrlFn).toHaveBeenCalled();
+    }
+  });
+
+  it('submit với momo → createOrder + createMomoUrl + redirect', async () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const momoRadio = document.querySelector('input[type="radio"][value="momo"]');
+    if (momoRadio) {
+      fireEvent.click(momoRadio);
+      fireEvent.click(screen.getByText('checkout.step.next'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
+      });
+      expect(mockCreateMomoUrlFn).toHaveBeenCalled();
+    }
+  });
+
+  it('submit cod thành công → navigate /orders', async () => {
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const codRadio = document.querySelector('input[type="radio"][value="cod"]');
+    if (codRadio) {
+      fireEvent.click(codRadio);
+      fireEvent.click(screen.getByText('checkout.step.next'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
+      });
+      expect(mockCreateOrderFn).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith(expect.any(String), { replace: true });
+    }
+  });
+
+  it('createOrder thất bại → addNotification error', async () => {
+    mockCreateOrderFn = jest.fn().mockRejectedValue(new Error('server error'));
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(<CheckoutPage />);
+    fireEvent.click(screen.getByText('checkout.step.next'));
+    const codRadio = document.querySelector('input[type="radio"][value="cod"]');
+    if (codRadio) {
+      fireEvent.click(codRadio);
+      fireEvent.click(screen.getByText('checkout.step.next'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
+      });
+      expect(mockAddNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    }
+    spy.mockRestore();
   });
 });

@@ -64,8 +64,18 @@ features/admin/
 
   components/
     AdminLayout.tsx           — Layout wrapper: sidebar nav, header với dark mode toggle, responsive drawer mobile
+    AdminMobileCard.tsx       — Card hiển thị 1 record trên mobile (thay cho row table)
+    AdminPageHeader.tsx       — Header chuẩn cho mỗi admin page: title, breadcrumb, actions
+    AdminStatCard.tsx         — KPI stat card (icon + số liệu + delta)
     DashboardCharts.tsx       — Charts recharts: revenue line, category pie, order bar, top products
+    FlipNumber.tsx            — Animated number counter (flip transition)
+    GlassTooltip.tsx          — Tooltip glassmorphism dùng trong charts/stats
     ProductExportModal.tsx    — Modal export danh sách sản phẩm ra Excel (dùng exceljs)
+    Sparkline.tsx             — Mini line chart inline (trend trong stat card)
+    StatusPill.tsx            — Badge trạng thái (order/user/product) với màu theo status
+
+  hooks/
+    usePeriodComparison.ts    — So sánh KPI giữa 2 khoảng thời gian (dùng trong DashboardCharts)
 
   pages/
     DashboardPage.tsx         — /admin/dashboard: KPI cards + DashboardCharts + recent orders table + low-stock widget
@@ -76,10 +86,9 @@ features/admin/
 
     catalog/
       ProductsPage.tsx        — /admin/products: danh sách với filter (category, status, price, stock)
-      CreateProductPage.tsx   — /admin/products/create: dùng CreateProductForm
+      CreateProductPage.tsx   — /admin/products/create: dùng trực tiếp catalog sub-components
       EditProductPage.tsx     — /admin/products/:id/edit
       CategoriesPage.tsx      — /admin/categories: quản lý danh mục cây
-      CategoryPage.tsx        — /admin/categories/:id: chi tiết danh mục (file exists but not registered in AppRoutes.tsx — currently unreachable)
       BrandsPage.tsx          — /admin/brands: quản lý thương hiệu
 
     orders/
@@ -188,7 +197,6 @@ Tất cả mutations invalidate query key tương ứng sau khi thành công.
 | Component            | Mô tả                                                                                                                                                                                                                                                                            |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AdminLayout`        | Sidebar (8 mục nav: dashboard, products, categories, brands, orders, users, discount-codes, inventory), header với user dropdown + dark mode toggle. Responsive: Sheet (shadcn/ui) trên mobile, sidebar cố định trên desktop. Wrap ở route level — không import trong từng page. |
-| `CreateProductForm`  | Form nhiều tab với state phức tạp: basic info, variants (hierarchical), images, attributes (dynamic), SEO, FAQ. Dùng trong cả `CreateProductPage` và `EditProductPage`.                                                                                                          |
 | `DashboardCharts`    | Recharts wrapper: revenue line chart, category pie chart, order status bar chart, top products list. Data fetch nội bộ qua `useGetTopProductsAnalyticsQuery` và các hooks analytics.                                                                                             |
 | `ProductExportModal` | Chọn columns muốn export, filter range date, tạo file Excel qua `exceljs`.                                                                                                                                                                                                       |
 
@@ -328,7 +336,7 @@ interface User {
 - **`useGetAdminProductByIdQuery`** tự parse JSON string cho `attributes` và `variants.attributes` trong `queryFn` — data trả về đã là object, không cần parse lại.
 - **`useUpdateProductMutation` và `useDeleteProductMutation`** invalidate cả `['products']` (public catalog list) để user thấy thay đổi ngay.
 - **`useLazyGetAdminProductsQuery`** trả về `{ trigger }` không phải React Query instance — gọi `await trigger(filters)` thủ công.
-- **Admin pages catalog/orders/content** nằm trong `features/admin/pages/<domain>/`, không phải feature domain tương ứng.
+- **Admin pages catalog/orders** nằm trong `features/admin/pages/<domain>/`, không phải feature domain tương ứng (pages/content đã xóa — chỉ còn feedback).
 - **`AdminLayout`** wrap ở route level trong `AppRoutes.tsx` — không cần import trong từng page.
 - **Charts** dùng `recharts` — không dùng Chart.js hay D3.
 - **Export Excel** dùng `exceljs` — không dùng `xlsx` hay `sheetjs`.

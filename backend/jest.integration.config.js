@@ -14,7 +14,7 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/src/__integration__/**/*.integration.test.js'],
-  testPathIgnorePatterns: ['/node_modules/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.stryker-tmp/'],
   setupFiles: ['./src/__integration__/setup.js'],
   moduleNameMapper: {
     '^@modules/(.*)$':     '<rootDir>/src/modules/$1',

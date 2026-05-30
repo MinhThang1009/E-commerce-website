@@ -26,7 +26,7 @@ Hiển thị danh sách đơn hàng, xem chi tiết, hủy đơn, thanh toán l�
 
 ```
 api/
-  order-api.ts        — Tất cả TanStack Query hooks + export orderKeys; import cartKeys từ cart feature
+  order-api.ts        — Tất cả TanStack Query hooks + orderKeys (const internal, KHÔNG export khỏi module/barrel); import cartKeys từ cart feature
 
 components/
   OrderDetails.tsx    — Chi tiết đơn hàng: items, địa chỉ, payment info, tracking, trạng thái timeline (stepper)
@@ -174,7 +174,7 @@ interface CreateOrderRequest {
 }
 ```
 
-**Lưu ý:** `api/order-api.ts` có thêm `OrdersResponse`, `ApplyDiscountRequest`, `ApplyDiscountResponse`, `CreateOrderResponse`, `AvailableDiscountCode` types inline (không re-export từ `types/order.types.ts`). `AvailableDiscountCode` shape: `{ id, code, type, value, minOrderAmount, maxDiscountAmount, endDate }` — dùng bởi `CheckoutPage` khi render discount picker.
+**Lưu ý:** `api/order-api.ts` định nghĩa thêm `OrdersResponse`, `ApplyDiscountRequest`, `ApplyDiscountResponse`, `CreateOrderResponse`, `AvailableDiscountCode`. ⚠️ **Xung đột type ngầm `OrdersResponse`:** tồn tại 2 định nghĩa cùng tên — `types/order.types.ts:89` (`{ orders, totalPages }`) và `api/order-api.ts:80` (`{ status, data, total, page, limit }`). Barrel `index.ts` re-export CẢ HAI: wildcard `export * from './types/order.types'` + named `export type { OrdersResponse } from './api/order-api'` → bản named (api) THẮNG. Consumer phải dùng `.data` (KHÔNG phải `.orders`). `AvailableDiscountCode` shape: `{ id, code, type, value, minOrderAmount, maxDiscountAmount, endDate }` — dùng bởi `CheckoutPage` khi render discount picker.
 
 ---
 

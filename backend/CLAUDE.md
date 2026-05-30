@@ -39,7 +39,7 @@ Request → Express → Middleware stack → Module Router
 - `src/app.js` là nơi duy nhất khởi tạo và wiring dependencies
 
 **Shared infrastructure** (dùng chung, không thuộc module nào):
-- `src/models/` — 26 Sequelize models
+- `src/models/` — 25 Sequelize models (image.js tồn tại nhưng không export — Image model đã gỡ khỏi index.js)
 - `src/middlewares/` — authenticate, authorize, rate-limiter, detect-locale
 - `src/services/` — email, vector-store, embedding
 - `src/shared/` — EventBus, AppError, UnitOfWork
@@ -276,8 +276,8 @@ backend/src/
   config/CLAUDE.md                           ← sequelize, swagger config
   constants/CLAUDE.md                        ← Hằng số (shipping, OTP, JWT, cart)
   locales/CLAUDE.md                          ← i18n vi.json / en.json
-  models/CLAUDE.md                           ← 26 models, associations
-  migrations/CLAUDE.md                       ← 81 migrations, schema history
+  models/CLAUDE.md                           ← 25 models, associations
+  migrations/CLAUDE.md                       ← 61 migrations, schema history
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError, UnitOfWork
     shared/errors/CLAUDE.md                  ← Error class hierarchy

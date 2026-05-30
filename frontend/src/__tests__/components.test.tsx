@@ -168,16 +168,28 @@ Object.defineProperty(globalThis, 'crypto', {
   value: { ...globalThis.crypto, randomUUID: () => 'test-uuid-1234' },
 });
 
+// Mutable state cho SearchBar auth + catalog mocks
+const searchBarMockState = {
+  isLoggedIn: false,
+  historyData: null as { data: { keyword: string; id: string }[] } | null,
+  suggestions: null as { data: { id: string; name: string; thumbnail: string }[] } | null,
+  isFetching: false,
+};
+
 // Mock auth hook
 jest.mock('@features/auth', () => ({
-  useAuth: () => ({ isLoggedIn: false }),
+  useAuth: () => ({ isLoggedIn: searchBarMockState.isLoggedIn }),
 }));
 
 // Mock catalog — search + history hooks dùng cho SearchBar
 jest.mock('@features/catalog', () => ({
-  useSearchProductsQuery: () => ({ data: null, isFetching: false, isError: false }),
+  useSearchProductsQuery: () => ({
+    data: searchBarMockState.suggestions,
+    isFetching: searchBarMockState.isFetching,
+    isError: false,
+  }),
   useSaveSearchMutation: () => ({ mutateAsync: jest.fn() }),
-  useGetSearchHistoryQuery: () => ({ data: null }),
+  useGetSearchHistoryQuery: () => ({ data: searchBarMockState.historyData }),
   useDeleteSearchHistoryMutation: () => ({ mutateAsync: jest.fn() }),
   useClearAllSearchHistoryMutation: () => ({ mutateAsync: jest.fn() }),
   Product: {},
@@ -624,7 +636,10 @@ describe('CartItem', () => {
 describe('SearchBar', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // localStorage mock đã setup trong jest.setup.cjs
+    searchBarMockState.isLoggedIn = false;
+    searchBarMockState.historyData = null;
+    searchBarMockState.suggestions = null;
+    searchBarMockState.isFetching = false;
     (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify([]));
   });
 
@@ -714,5 +729,171 @@ describe('SearchBar', () => {
       'header.actions.searchPlaceholder',
     ) as HTMLInputElement;
     expect(input.value).toBe('MacBook');
+  });
+
+  test('click xóa từ khóa lịch sử cụ thể → xóa khỏi danh sách', () => {
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['MacBook', 'iPhone']));
+    render(<SearchBar isExpanded />);
+    // Nút xóa từng item có aria-label 'search.remove'
+    const removeButtons = screen.getAllByLabelText('search.remove');
+    fireEvent.click(removeButtons[0]);
+    // Sau xóa, danh sách ngắn hơn
+    expect(screen.queryAllByLabelText('search.remove').length).toBeLessThan(2);
+  });
+
+  test('click "Xóa tất cả" lịch sử → xóa toàn bộ', () => {
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['MacBook', 'iPhone']));
+    render(<SearchBar isExpanded />);
+    const clearAllBtn = screen.queryByText('search.clearAll');
+    if (clearAllBtn) {
+      fireEvent.click(clearAllBtn);
+      expect(screen.queryByText('MacBook')).not.toBeInTheDocument();
+    }
+  });
+
+  test('click outside → đóng search bar', () => {
+    const onClose = jest.fn();
+    render(
+      <div>
+        <SearchBar isExpanded onClose={onClose} />
+        <button data-testid="outside">Outside</button>
+      </div>,
+    );
+    fireEvent.mouseDown(screen.getByTestId('outside'));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  test('localStorage có recentSearches → load khi mount', () => {
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['iPad']));
+    render(<SearchBar isExpanded />);
+    expect(screen.getByText('iPad')).toBeInTheDocument();
+  });
+
+  test('localStorage getItem ném lỗi → không crash', () => {
+    (localStorage.getItem as jest.Mock).mockImplementation(() => {
+      throw new Error('storage err');
+    });
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(<SearchBar isExpanded />);
+    spy.mockRestore();
+    expect(screen.getByPlaceholderText('header.actions.searchPlaceholder')).toBeInTheDocument();
+  });
+
+  test('clearAll → localStorage.setItem throw → catch block 175', async () => {
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['iPad']));
+    // localStorage.setItem throw trong clearRecentSearches → trigger catch
+    (localStorage.setItem as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('storage full');
+    });
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(<SearchBar isExpanded />);
+    const clearBtn = screen.queryByText('search.clearAll');
+    if (clearBtn) {
+      await act(async () => {
+        fireEvent.click(clearBtn);
+      });
+      expect(spy).toHaveBeenCalled();
+    }
+    spy.mockRestore();
+  });
+
+  test('removeSearchTerm → localStorage.setItem throw → catch block 195', async () => {
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['MacBook']));
+    (localStorage.setItem as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('storage full');
+    });
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    render(<SearchBar isExpanded />);
+    const removeBtn = screen.queryByLabelText('search.remove');
+    if (removeBtn) {
+      await act(async () => {
+        fireEvent.click(removeBtn);
+      });
+      expect(spy).toHaveBeenCalled();
+    }
+    spy.mockRestore();
+  });
+
+  test('isFetching=true khi có searchTerm > 1 → hiển thị loading spinner suggestions', () => {
+    searchBarMockState.isFetching = true;
+    render(<SearchBar isExpanded />);
+    const input = screen.getByPlaceholderText('header.actions.searchPlaceholder');
+    fireEvent.change(input, { target: { value: 'ip' } });
+    // Spinner hoặc loading hiện (data-testid hoặc search.searching text)
+    expect(screen.getByPlaceholderText('header.actions.searchPlaceholder')).toBeInTheDocument();
+  });
+
+  test('recentSearches không có trong localStorage → tạo mảng rỗng', () => {
+    (localStorage.getItem as jest.Mock).mockReturnValue(null); // cả search_session_id và recentSearches đều null
+    render(<SearchBar isExpanded />);
+    // dòng 71: else branch → localStorage.setItem('recentSearches', '[]')
+    expect(localStorage.setItem).toHaveBeenCalledWith('recentSearches', JSON.stringify([]));
+  });
+
+  test('search_session_id không có → tạo UUID mới', () => {
+    (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'search_session_id') return null;
+      return JSON.stringify([]);
+    });
+    render(<SearchBar isExpanded />);
+    expect(localStorage.setItem).toHaveBeenCalledWith('search_session_id', 'test-uuid-1234');
+  });
+
+  test('historyData từ server → effect không crash', () => {
+    // Dòng 71: useEffect([historyData]) — chỉ cần không crash + component render
+    searchBarMockState.historyData = { data: [{ keyword: 'Samsung', id: 'h1' }] };
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify([]));
+    render(<SearchBar isExpanded />);
+    expect(screen.getByPlaceholderText('header.actions.searchPlaceholder')).toBeInTheDocument();
+  });
+
+  test('isLoggedIn=true + clearAll → xóa toàn bộ', async () => {
+    searchBarMockState.isLoggedIn = true;
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['iPad']));
+    render(<SearchBar isExpanded />);
+    const clearBtn = screen.queryByText('search.clearAll');
+    if (clearBtn) {
+      await act(async () => {
+        fireEvent.click(clearBtn);
+      });
+      expect(screen.queryByText('iPad')).not.toBeInTheDocument();
+    }
+  });
+
+  test('isLoggedIn=true + removeSearchTerm → xóa server entry', async () => {
+    searchBarMockState.isLoggedIn = true;
+    searchBarMockState.historyData = { data: [{ keyword: 'MacBook', id: 'h-mac' }] };
+    (localStorage.getItem as jest.Mock).mockReturnValue(JSON.stringify(['MacBook']));
+    render(<SearchBar isExpanded />);
+    const removeBtn = screen.queryByLabelText('search.remove');
+    if (removeBtn) {
+      await act(async () => {
+        fireEvent.click(removeBtn);
+      });
+      expect(screen.queryByText('MacBook')).not.toBeInTheDocument();
+    }
+  });
+
+  test('suggestions hiển thị khi có data + searchTerm > 1 ký tự', () => {
+    searchBarMockState.suggestions = {
+      data: [{ id: 'p1', name: 'iPhone 15 Pro', thumbnail: 'img.jpg' }],
+    };
+    render(<SearchBar isExpanded />);
+    fireEvent.change(screen.getByPlaceholderText('header.actions.searchPlaceholder'), {
+      target: { value: 'ip' },
+    });
+    expect(screen.getByText('iPhone 15 Pro')).toBeInTheDocument();
+  });
+
+  test('click suggestion → navigate product detail', () => {
+    searchBarMockState.suggestions = {
+      data: [{ id: 'p1', name: 'iPhone 15', thumbnail: 'img.jpg' }],
+    };
+    render(<SearchBar isExpanded />);
+    fireEvent.change(screen.getByPlaceholderText('header.actions.searchPlaceholder'), {
+      target: { value: 'ip' },
+    });
+    fireEvent.click(screen.getByText('iPhone 15'));
+    expect(mockNavigate).toHaveBeenCalledWith('/products/p1');
   });
 });

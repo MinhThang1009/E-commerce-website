@@ -26,7 +26,7 @@ Cho phép user thêm/xóa sản phẩm vào danh sách yêu thích và xem trang
 
 ```
 api/
-  wishlist-api.ts   — TanStack Query hooks + export wishlistKeys
+  wishlist-api.ts   — TanStack Query hooks (wishlistKeys là const nội bộ, không export)
 
 pages/
   WishlistPage.tsx  — /wishlist: grid sản phẩm đã lưu + nút clear all
@@ -43,7 +43,8 @@ Không có `components/`, `types/` riêng.
 ## Server state (TanStack Query)
 
 ```typescript
-export const wishlistKeys = {
+// const nội bộ trong wishlist-api.ts — KHÔNG export ra barrel
+const wishlistKeys = {
   all: ['wishlist'] as const,
   list: () => [...wishlistKeys.all, 'list'] as const,
   check: (productId: string) => [...wishlistKeys.all, 'check', productId] as const,
@@ -127,8 +128,8 @@ interface CheckWishlistResponse {
 - `features/catalog` — import `Product` type trong `wishlist-api.ts`; import `ProductCard` trong `WishlistPage`
 - `stores/wishlist-store` — `clearWishlistLocal()` trong `WishlistPage`
 - `components/common/LoadingSpinner` — loading state
-- `components/common/PremiumButton` — CTA button
-- `@heroicons/react/24/outline` — `HeartIcon`
+- `components/common/ErrorState` — `EmptyState` cho wishlist rỗng (CTA về shop)
+- `lucide-react` — icon `Heart`
 
 **Feature này được dùng bởi:**
 

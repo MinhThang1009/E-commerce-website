@@ -78,8 +78,6 @@ modules/inventory/
   repositories/
     sequelize-inventory-repository.js    — CRUD InventoryLog, stock queries
     i-inventory-repository.js            — interface
-  validators/
-    inventory-validator.js               — validation helpers
   dtos/
     inventory-dto.js                     — pass-through DTOs
   CLAUDE.md
@@ -144,7 +142,7 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 | POST   | `/products/:productId/restock` | authenticate + authorize('admin') | Nhập kho cho product hoặc variant cụ thể                               |
 | GET    | `/logs`                        | authenticate + authorize('admin') | Danh sách inventory logs (filter: productId, changeType; max 100/page) |
 
-> Cũng có `POST /api/admin/products/:productId/restock` trong `admin/routes.js` gọi cùng service method — 2 paths khác nhau, cùng logic.
+> Cũng có `POST /api/admin/products/:productId/restock` trong `admin/routes.js`. Đây là implementation RIÊNG BIỆT trong `admin-product-service.js` (hàm `restockProduct`) — **KHÔNG** gọi `inventoryService.restockProduct`. Logic tương tự (validate qty, find product/variant, sum variant stock, tạo `InventoryLog`) nhưng code khác và không đi qua DI (admin là singleton, `require('@models')` trực tiếp). Sửa logic ở một bên không tự động áp dụng cho bên kia.
 
 ---
 
@@ -180,6 +178,7 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 - **`subscribeEvents()` gọi sau tất cả modules init**: Nếu inventory module throw trong constructor → event subscription không xảy ra → `order.cancelled` sẽ không có inventory log. Kiểm tra logs khi deploy.
 - **Restock variant cộng tổng vào Product**: `sumVariantStockByProductId` tính tổng ALL variants, không phải chỉ variant vừa restock. Nếu muốn product.stockQuantity phản ánh đúng → phải restock qua service, không update variant trực tiếp.
 - **`saveStockable()` trong repository vs direct save**: Một số paths khác update `ProductVariant` trực tiếp (orders, admin) không qua inventory service → `Product.stockQuantity` có thể lệch. Sync chỉ đảm bảo khi đi qua `restockProduct`.
+- **`sumVariantStockByProductId` chạy NGOÀI transaction**: `inventory-service.js` truyền `opts` (chứa `transaction`) vào `this.repo.sumVariantStockByProductId(productId, opts)`, nhưng signature repository chỉ là `sumVariantStockByProductId(productId)` — `opts` bị bỏ qua silently. Hệ quả: query `SUM(stockQuantity)` chạy ngoài transaction đang mở, tiềm ẩn race condition (đọc tổng stock không nhất quán nếu có restock/giảm stock variant đồng thời). Nếu cần đọc trong transaction → phải sửa repository nhận và forward `opts`.
 - **InventoryLog `changeType: 'cancellation'` có amount dương**: `changeAmount = item.quantity` là dương (số lượng trả về kho) — convention ghi số lượng, không phải delta âm.
 
 ---

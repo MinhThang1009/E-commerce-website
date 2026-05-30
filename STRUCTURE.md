@@ -74,13 +74,20 @@ Giao tiếp giữa backend và frontend: HTTP REST API, JSON, JWT Bearer token. 
 | Logging | Winston | 3.x |
 | Cron jobs | node-cron | 4.x |
 | Image processing | Sharp + Multer | — |
-| Frontend framework | React | 18 |
-| Language | TypeScript | 5.2 |
-| Build tool | Vite | 5.1 |
-| UI libraries | Ant Design v5, Tailwind CSS v3, Framer Motion | — |
+| Frontend framework | React | 19 |
+| Language | TypeScript | ~5.8.0 |
+| Build tool | Vite | 8.0.14 |
+| UI libraries | Radix UI + shadcn/ui, Tailwind CSS v4, Framer Motion v12 | — |
+| Icons | lucide-react | 1.16 |
+| Charts | Recharts | 2.12 |
+| Rich text | @tiptap | 3.x |
+| Excel export | exceljs | 4.4 |
+| Maps | leaflet | 1.9.4 |
+| Date | dayjs | 1.11 |
+| XSS sanitize (client) | dompurify | 3.4 |
 | Client state | Zustand v5 + Immer | — |
 | Server state | TanStack Query | 5.x |
-| Routing | React Router | 6.22 |
+| Routing | React Router | 7.15.1 |
 | i18n | i18next + react-i18next | — |
 | LLM | OpenAI-compatible API (configurable endpoint + model) | — |
 | Embedding | Jina v3 → HF e5-instruct → HF e5-base (chain fallback) | 1024-dim |
@@ -122,7 +129,7 @@ backend/
 │   │       ├── services/          # Business logic
 │   │       ├── repositories/      # Sequelize queries
 │   │       └── validators/        # Zod schemas
-│   ├── models/              # 26 Sequelize models
+│   ├── models/              # 25 Sequelize models (image.js tồn tại nhưng không export — Image model đã gỡ khỏi index.js)
 │   │   ├── index.js         # Barrel + tất cả associations
 │   │   └── *.js             # Individual model files
 │   ├── shared/
@@ -168,7 +175,7 @@ backend/
 ├── docs/
 │   └── openapi.json         # Auto-generated OpenAPI spec
 ├── scripts/                 # rebuild-db.js, index-products.js, export-seed.js...
-├── migrations/              # 81 Sequelize migrations
+├── migrations/              # 61 Sequelize migrations
 ├── .env.example
 ├── .sequelizerc
 ├── jest.config.js           # Unit test config

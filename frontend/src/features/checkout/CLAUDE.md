@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Luồng thanh toán 3-step wizard (Giao hàng → Thanh toán → Xác nhận) với framer-motion `AnimatePresence` transition giữa các bước. Nhập địa chỉ giao hàng (hỗ trợ autofill từ địa chỉ đã lưu), chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản), áp mã giảm giá, xem order summary, xác nhận đơn hàng. Sau khi tạo đơn → redirect sang cổng thanh toán tương ứng hoặc trang orders.
+Luồng thanh toán 3-step wizard (Giao hàng → Thanh toán → Xác nhận) với framer-motion `AnimatePresence` transition giữa các bước. Nhập địa chỉ giao hàng (hỗ trợ autofill từ địa chỉ đã lưu), chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp), áp mã giảm giá, xem order summary, xác nhận đơn hàng. Sau khi tạo đơn → redirect sang cổng thanh toán tương ứng hoặc trang orders.
 
 Feature không có `api/`, `types/` riêng — dùng trực tiếp hooks từ các features khác. Có `components/` chứa 4 sub-components tách ra từ CheckoutPage.
 
@@ -58,7 +58,7 @@ features/checkout/
   pages/
     CheckoutPage.tsx            — 3-step wizard orchestrator: điều phối state + render step hiện tại qua AnimatePresence
 
-  index.ts                      — Barrel export (CheckoutPage + 3 sub-components)
+  index.ts                      — Barrel export (CheckoutPage + 3 sub-components: CheckoutOrderSummary, CheckoutPaymentMethod, CheckoutShippingForm). CheckoutStepIndicator KHÔNG trong barrel (import relative).
 ```
 
 ---
@@ -119,7 +119,7 @@ Không có endpoint riêng — dùng từ features khác:
 | Component               | Mô tả                                                                                                                                                  |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `CheckoutShippingForm`  | Step 0 — Form giao hàng: firstName, lastName, email, phone, address (qua `AddressPicker` với geocoding LocationIQ). Hỗ trợ autofill từ địa chỉ đã lưu. |
-| `CheckoutPaymentMethod` | Step 1 — Chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp, chuyển khoản). Có modal trả góp (Dialog + HTML table).                                |
+| `CheckoutPaymentMethod` | Step 1 — Chọn phương thức thanh toán (COD, VNPay, MoMo, trả góp). Có modal trả góp (Dialog + HTML table).                                              |
 | `CheckoutOrderSummary`  | Step 2 — Hiển thị items (`CartItem` từ `features/cart`, `isCheckout={true}`), áp mã giảm giá, tổng cộng, nút thanh toán (`PremiumButton`).             |
 | `CheckoutStepIndicator` | Animated progress bar hiển thị 3 bước với trạng thái completed/active/pending. Dùng framer-motion cho animation circle + check icon.                   |
 
@@ -163,7 +163,7 @@ Không có feature nào import từ checkout.
 
 # 8. Gotchas & Edge Cases
 
-- **Form validation dùng Zod:** `CheckoutPage.validateForm()` dùng `shippingSchema` từ `src/schemas/checkout.ts`. Phone VN regex: `(0|+84)[0-9]{9}`. Address cần >= 3 comma-separated parts. Billing fields validation vẫn manual (conditional, ngoài schema).
+- **Form validation dùng Zod:** `validateForm()` (local arrow closure trong `CheckoutPage`, không phải class method) dùng `shippingSchema` từ `src/schemas/checkout.ts`. Phone VN regex: `(0|+84)[0-9]{9}`. Address cần >= 3 comma-separated parts. Billing fields validation vẫn manual (conditional, ngoài schema).
 - **Checkout là protected route** — guest click checkout → redirect `/login` → redirect back `/checkout`.
 - **Payment flow MoMo/VNPay:** `CheckoutPage` → `useCreateOrderMutation` → `useCreateMomoUrlMutation/VNPay` → `window.location.href = payUrl` (redirect toàn trang ra cổng thanh toán). Callback → backend → redirect về `/orders/:id`.
 - **Repay flow:** query param `?repayOrder=<id>&amount=<amount>` → skip form địa chỉ, set `currentOrder = { id, total, isRepay: true }`, trực tiếp tạo payment URL cho đơn đã có.
@@ -180,5 +180,5 @@ Không có feature nào import từ checkout.
 
 # 9. Tests
 
-- `frontend/src/__tests__/features/checkout/` — component tests CheckoutPage (form validation, payment selection)
+- `frontend/src/__tests__/checkout-payment-pages.test.tsx` — component tests CheckoutPage (form validation, payment selection)
 - `backend/__api__/orders.api.test.js` — API tests tạo đơn hàng, discount code

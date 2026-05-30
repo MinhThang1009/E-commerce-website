@@ -8,8 +8,6 @@
   - [1.1 Danh sách files](#11-danh-sách-files)
 - [2. use-api-state.ts](#2-use-api-statets)
   - [2.1 useApiState — Standardized async state wrapper](#21-useapistate--standardized-async-state-wrapper)
-  - [2.2 usePaginatedApiState — Async state với pagination](#22-usepaginatedapistate--async-state-với-pagination)
-  - [2.3 useSubmissionState — Form submission guard](#23-usesubmissionstate--form-submission-guard)
 - [3. use-notifications.ts](#3-use-notificationsts)
   - [3.1 Wrapper ngắn gọn cho uiStore](#31-wrapper-ngắn-gọn-cho-uistore)
 - [4. use-token-refresh.ts](#4-use-token-refreshts)
@@ -24,13 +22,13 @@
 
 # 1. Tổng quan
 
-5 hook files (6 exported hooks — `use-api-state.ts` exports 1: `useApiState`).
+5 hook files (5 exported hooks — `use-api-state.ts` exports 1: `useApiState`).
 
 ## 1.1 Danh sách files
 
 ```
 hooks/
-  use-api-state.ts       — 3 hooks: useApiState, usePaginatedApiState, useSubmissionState
+  use-api-state.ts       — 1 hook: useApiState
   use-notifications.ts   — Wrapper ngắn gọn cho ui-store notifications
   use-token-refresh.ts   — Auto-refresh JWT mỗi 5 phút + khi tab focus
   use-scroll-to-top.ts   — Scroll to top on route change
@@ -70,35 +68,6 @@ const { data, isLoading, isError, isSuccess, isEmpty, error, retry, canRetry } =
 | `error` | `unknown` | Error object gốc |
 | `retry` | `() => void` | Gọi `refetch` nếu `canRetry` |
 | `canRetry` | `boolean` | `true` khi error là `NETWORK_ERROR` hoặc `SERVER_ERROR` |
-
-## 2.2 usePaginatedApiState — Async state với pagination
-
-```ts
-const { items, pagination, isLoading, isError, isEmpty, retry } = usePaginatedApiState({
-  data: query.data,
-  isLoading: query.isLoading,
-  error: query.error,
-  refetch: query.refetch,
-});
-
-// pagination: { currentPage, totalPages, totalItems, hasNextPage, hasPreviousPage }
-// items: T[] — extracted từ data.data hoặc data (nếu là array trực tiếp)
-```
-
-## 2.3 useSubmissionState — Form submission guard
-
-Chống double-submit, quản lý loading/error/success state cho mutations không qua TanStack.
-
-```ts
-const { isSubmitting, submitError, submitSuccess, handleSubmit, reset } = useSubmissionState();
-
-// handleSubmit wrap async function, tự manage states
-await handleSubmit(() => apiClient.post('/products', data), {
-  onSuccess: (result) => navigate('/admin/products'),
-  onError: (error) => toast.error(getErrorMessage(error)),
-  resetAfter: 2000, // Auto-reset success state sau N ms
-});
-```
 
 ---
 
@@ -187,6 +156,5 @@ Generic — hoạt động với mọi type `T`. Standard delay: **300ms**.
 
 - **`useTokenRefresh` mount 1 lần duy nhất** ở App level (`App.tsx`). Nếu mount nhiều lần → nhiều intervals đồng thời → multiple refresh calls.
 - **`useScrollToTop` mount trong `MainLayout`** — không mount trong từng page vì MainLayout wrap tất cả user routes.
-- **`useSubmissionState` cho non-TanStack mutations** — nếu đã dùng `useMutation()` của TanStack Query → dùng `isPending`, `isError`, `isSuccess` của nó, không cần hook này.
 - **`useDebounce` delay 300ms** là standard — chỉ thay đổi khi có lý do cụ thể (slow network testing, accessibility).
 - **`useApiState.canRetry`** chỉ `true` cho `NETWORK_ERROR` + `SERVER_ERROR` — không retry 4xx errors (client errors).

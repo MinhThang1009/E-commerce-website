@@ -169,7 +169,7 @@ Nếu status không phải 'shipped' hoặc 'processing' → throw 422
 order.status = 'delivered'
 Nếu COD → order.paymentStatus = 'paid'
 saveOrder() + reload()
-Trả về { data: order }
+Trả về { message: 'orders.deliveryConfirmed', data: { id, number, status } }  ← partial, không phải full order
 ```
 
 ## 3.5 repayOrder
@@ -178,7 +178,7 @@ Chỉ hoạt động khi `status === 'pending'` hoặc `status === 'cancelled'` 
 
 ## 3.6 trackOrder (public)
 
-Không cần auth. Query params: `?number=ORD-...&email=user@email.com`. Trả về tracking steps và current status. Yêu cầu email khớp với email user của đơn hàng.
+Không cần auth. Query params: `?orderNumber=ORD-...&email=user@email.com` (service destructure `{ orderNumber, email }`). Trả về tracking steps và current status. Yêu cầu email khớp với email user của đơn hàng.
 
 ## 3.7 estimateShipping
 
@@ -216,7 +216,7 @@ Base path: `/api/orders`
 
 | Method | Path                 | Auth               | Mô tả                                               |
 | ------ | -------------------- | ------------------ | --------------------------------------------------- |
-| GET    | `/track`             | — (public)         | Tracking đơn theo `?number=ORD-...&email=...`       |
+| GET    | `/track`             | — (public)         | Tracking đơn theo `?orderNumber=ORD-...&email=...`  |
 | POST   | `/`                  | authenticate       | Tạo đơn hàng mới                                    |
 | GET    | `/`                  | authenticate       | Lịch sử đơn hàng của user (paginated, max 100/page) |
 | GET    | `/shipping-estimate` | authenticate       | Ước tính phí vận chuyển                             |
@@ -228,7 +228,7 @@ Base path: `/api/orders`
 | GET    | `/admin/all`         | authorize('admin') | Tất cả đơn hàng (có filter `?status=...`)           |
 | PATCH  | `/admin/:id/status`  | authorize('admin') | Cập nhật trạng thái đơn                             |
 
-**Body `POST /`:** `createOrderSchema` (Zod) — shippingAddress, billingAddress, paymentMethod, discountCode?, pointsToUse?, items? (buy-now)
+**Body `POST /`:** `createOrderSchema` (Zod) — flat fields: shippingFirstName...shippingPhone, billingFirstName...billingPhone (KHÔNG phải nested object), paymentMethod, notes?, discountCode?, shippingCost?, status? (default `'pending'`), items? (buy-now)
 
 **Body `PATCH /admin/:id/status`:** `{ status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' }`
 
@@ -271,7 +271,7 @@ Inject từ `app.js`:
 - **`emailGateway` là adapter:** Wrap `emailService` để dễ mock trong tests. Không gọi `emailService` trực tiếp trong service.
 - **`confirmReceived` không idempotent:** Nếu `order.status === 'delivered'` → throw 422. Chỉ cho phép từ `shipped` hoặc `processing`.
 - **productImages mapping:** `getUserOrders()` và `getOrderById()` map `productImages[]` → `thumbnail` + `images[]` + delete `productImages`. FE expect shape này.
-- **`orders-service.js` dài:** Đọc `createOrder()` trước (lines 1–490), sau đó `updateOrderStatus()` + `cancelOrder()`. Helpers `_calcShippingCost`, `_buildTrackingSteps`, `_canCancel`... ở đầu file.
+- **`orders-service.js` dài:** Đọc `createOrder()` trước (~lines 63–397), sau đó `cancelOrder()` (~482–537) + `updateOrderStatus()` (~558–588). Helpers `_buildTrackingSteps`, `_canCancel`, `_canRepay`, `_canConfirmReceived` là file-level functions ở đầu file (~lines 21–40). Không có `_calcShippingCost` — phí ship thực tế tính qua method `estimateShipping({ subtotal })`.
 
 ---
 

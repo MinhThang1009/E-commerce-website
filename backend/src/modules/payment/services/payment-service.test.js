@@ -342,8 +342,9 @@ describe('PaymentService.handleMomoIPN', () => {
     expect(repo.saveOrder).not.toHaveBeenCalled();
   });
 
-  it('trả về {valid: true} nhưng không xử lý khi resultCode != 0', async () => {
-    const repo = buildMockRepo({ lockOrder: jest.fn() });
+  it('trả về {valid: true} và cập nhật paymentStatus=failed khi resultCode != 0', async () => {
+    const order = buildOrder({ paymentStatus: 'pending' });
+    const repo = buildMockRepo({ lockOrder: jest.fn().mockResolvedValue(order) });
     const svc = buildService({ paymentRepository: repo });
 
     const result = await svc.handleMomoIPN({
@@ -355,7 +356,21 @@ describe('PaymentService.handleMomoIPN', () => {
     });
 
     expect(result).toEqual({ valid: true });
-    expect(repo.lockOrder).not.toHaveBeenCalled();
+    expect(repo.lockOrder).toHaveBeenCalledWith('42', expect.anything());
+    expect(order.paymentStatus).toBe('failed');
+    expect(repo.saveOrder).toHaveBeenCalled();
+  });
+
+  it('không cập nhật order khi resultCode != 0 nhưng order đã paid (idempotency)', async () => {
+    const order = buildOrder({ paymentStatus: 'paid' });
+    const repo = buildMockRepo({ lockOrder: jest.fn().mockResolvedValue(order) });
+    const svc = buildService({ paymentRepository: repo });
+
+    await svc.handleMomoIPN({
+      body: { resultCode: 9, extraData: 'orderId=42', transId: 'TX-FAIL' },
+    });
+
+    expect(repo.saveOrder).not.toHaveBeenCalled();
   });
 
   it('không publish event sau khi xử lý thành công (payment.succeeded đã xóa)', async () => {
@@ -438,6 +453,23 @@ describe('PaymentService.handleVnPayReturn', () => {
     });
 
     expect(redirectUrl).toContain('code=unknown');
+    expect(redirectUrl).not.toContain('<script>');
+  });
+
+  it('responseCode hợp lệ 2 chữ số (vd "07") → dùng code thật, không phải "unknown"', async () => {
+    // Kiểm tra nhánh ternary: /^\d{2}$/.test(responseCode) === true → dùng responseCode
+    const svc = buildService();
+
+    const { redirectUrl } = await svc.handleVnPayReturn({
+      vnp_Params: {
+        vnp_TxnRef: 'ORD-X',
+        vnp_ResponseCode: '07',
+        vnp_TransactionNo: '',
+      },
+    });
+
+    expect(redirectUrl).toContain('code=07');
+    expect(redirectUrl).not.toContain('code=unknown');
   });
 
   it('không cập nhật order đã paid (idempotency)', async () => {

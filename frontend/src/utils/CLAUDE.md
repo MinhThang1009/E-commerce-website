@@ -5,7 +5,7 @@
 ## Mục lục
 
 - [1. Tổng quan](#1-tổng-quan)
-  - [1.1 Danh sách 12 files](#11-danh-sách-12-files)
+  - [1.1 Danh sách 13 files](#11-danh-sách-13-files)
 - [2. Hay dùng nhất](#2-hay-dùng-nhất)
   - [2.1 cn — Tailwind class merging](#21-cn--tailwind-class-merging)
   - [2.2 format.ts — Format display](#22-formatts--format-display)
@@ -19,7 +19,7 @@
 
 # 1. Tổng quan
 
-## 1.1 Danh sách 12 files
+## 1.1 Danh sách 13 files
 
 ```
 utils/
@@ -35,6 +35,7 @@ utils/
   localize.ts                     — Bilingual field extraction (Vi/En)
   export-utils.ts                 — Excel/CSV export via exceljs
   description-image-processor.ts  — Base64 → upload trong Rich Text Editor
+  motion.ts                       — Framer Motion variants (fadeUp, stagger, itemFade)
 ```
 
 Import qua `@utils/`:
@@ -61,7 +62,7 @@ cn('p-4 text-sm', condition && 'p-8 font-bold', 'text-red-500');
 ## 2.2 format.ts — Format display
 
 ```ts
-import { formatPrice, formatDate, formatNumber, parsePrice } from '@utils/format';
+import { formatPrice, formatPriceUSD, formatDate, formatNumber, parsePrice } from '@utils/format';
 
 formatPrice(1299000); // → "1.299.000 ₫" (luôn dùng vi-VN locale cho VND)
 formatPriceUSD(29.99); // → "$29.99"
@@ -90,12 +91,10 @@ import { ErrorType } from '@utils/error-utils';
 ## 2.4 localize.ts — Bilingual fields
 
 ```ts
-import { localizeField, translateValue } from '@utils/localize';
+import { localizeField } from '@utils/localize';
 
 localizeField(category, 'name', i18n.language);
-// → category.nameVi (vi) hoặc category.nameEn ?? category.nameVi (en)
-
-translateValue('Đen', 'en'); // → "Black" (color translation table)
+// en → nameEn ?? nameVi ?? name; vi → nameVi ?? name (fallback chuỗi rỗng)
 ```
 
 ---
@@ -108,16 +107,16 @@ translateValue('Đen', 'en'); // → "Black" (color translation table)
 | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `cn.ts`                          | `cn(...inputs)`                                                                                                                                                                                           | Merge Tailwind classes conditionally — bắt buộc dùng khi có conditional class            |
 | `format.ts`                      | `formatPrice(n)`, `formatDate(d)`, `formatNumber(n)`, `parsePrice(s)`, `formatPriceUSD(n)`                                                                                                                | Hiển thị giá VND, ngày giờ, số                                                           |
-| `price-utils.ts`                 | `calculatePriceRange(variants)` → `PriceInfo`; `calculateDiscountPercentage(original, sale)`                                                                                                              | Tính price range + discount % từ variants                                                |
+| `price-utils.ts`                 | `calculatePriceRange(basePrice, variants?)` → `PriceInfo`; `calculateDiscountPercentage(original, sale)`; `formatCurrency(amount)`                                                                        | Tính price range + discount % từ variants                                                |
 | `error-utils.ts`                 | `parseError(err)`, `getErrorMessage(err)`, `isRetryableError(err)`, `getErrorMsg(err, fallback?)`, `createErrorHandler(fn?)`, `retryWithBackoff(fn, maxRetries, baseDelay)`, `formatErrorForLogging(err)` | Parse/classify Axios errors, lấy user-friendly message, retry logic                      |
 | `auth-utils.ts`                  | `handleUnauthorizedError(error)`, `handleAutoLogout(msg?, delay?)`, `setNavigateFunction(navigate)`, `logoutManager`                                                                                      | 401 handling trong `api-client.ts`. `setNavigateFunction` gọi 1 lần trong App.tsx        |
 | `token-manager.ts`               | `getValidToken()`, `isTokenExpired(token)`, `refreshTokenIfNeeded()`                                                                                                                                      | Token injection trong API request interceptor. **Deduplicate** nhiều concurrent requests |
-| `image-utils.ts`                 | `getCategoryImage(name, slug?)`, `createCategoryImageErrorHandler(name)`                                                                                                                                  | Category image mapping, fallback handler                                                 |
-| `proxy-img.ts`                   | `proxyImg(url)` → `/api/img?url=<encoded>`                                                                                                                                                                | Bypass hotlink protection của TGDD/Cellphones/CellphoneS                                 |
+| `image-utils.ts`                 | `getCategoryImage(name, slug)`, `createCategoryImageErrorHandler(name)`                                                                                                                                   | Category image mapping, fallback handler                                                 |
+| `proxy-img.ts`                   | `proxyImg(url)` → `/api/img?url=<encoded>`                                                                                                                                                                | Bypass hotlink protection của TGDD/Cellphones                                            |
 | `upload-url.ts`                  | `getUploadUrl(path)` → full URL                                                                                                                                                                           | Construct URL cho uploaded files (`/uploads/...` → full URL với domain)                  |
-| `localize.ts`                    | `localizeField(obj, field, lang)`, `translateValue(value, lang)`                                                                                                                                          | Extract đúng ngôn ngữ từ object có `nameVi` + `nameEn`                                   |
-| `export-utils.ts`                | `exportToExcel(data, headers, filename)`, `exportToCSV(data, headers, filename)`                                                                                                                          | Export admin reports/danh sách (dùng `exceljs`)                                          |
-| `description-image-processor.ts` | `processDescriptionImages(html: string): Promise<string>`                                                                                                                                                 | Convert base64 ảnh trong Rich Text Editor HTML → upload + replace URL trước khi submit   |
+| `localize.ts`                    | `localizeField(obj, field, lang)`                                                                                                                                                                         | Extract đúng ngôn ngữ từ object có `nameVi` + `nameEn`                                   |
+| `export-utils.ts`                | `exportToExcel(data, fileName, sheetName?)`, `exportToCSV(data, fileName)` — headers tự suy từ `Object.keys(data[0])`                                                                                     | Export admin reports/danh sách (dùng `exceljs`)                                          |
+| `description-image-processor.ts` | `processDescriptionImages(description, options): Promise<ProcessDescriptionResult>`; `hasBase64Images(html)`, `countBase64Images(html)`                                                                   | Convert base64 ảnh trong Rich Text Editor HTML → upload + replace URL trước khi submit   |
 
 ---
 
@@ -125,8 +124,8 @@ translateValue('Đen', 'en'); // → "Black" (color translation table)
 
 - **`cn()` bắt buộc** khi có conditional Tailwind classes — `clsx(...)` một mình không deduplicate conflicting classes (`p-4` + `p-8` → giữ cả 2 với clsx). Dùng `cn('p-4', condition && 'p-8')`.
 - **`formatPrice()` luôn dùng `vi-VN` locale** bất kể user đang xem tiếng Anh — VND display chuẩn là "1.299.000 ₫" (suffix, dấu chấm ngàn). `en-US` locale với VND cho prefix "₫1,299,000" — không đúng.
-- **`proxyImg()` chỉ cần** cho ảnh từ `thegioididong.com`, `cellphones.com.vn`, `cellphoness.com.vn`. Ảnh self-hosted không cần proxy.
+- **`proxyImg()` chỉ cần** cho ảnh chứa `tgdd.vn` hoặc `cellphones.com.vn` (match substring). Ảnh self-hosted không cần proxy.
 - **`token-manager.ts` deduplicate:** `isRefreshing` flag + `failedQueue[]`. Khi 5 requests trigger refresh đồng thời → chỉ 1 fetch `/refresh-token`, 4 request còn lại queue và nhận token mới từ `processQueue()`.
-- **`description-image-processor.ts` async** — phải `await processDescriptionImages(html)` trước khi submit form có Rich Text Editor.
+- **`description-image-processor.ts` async** — phải `await processDescriptionImages(html, { uploadImageFn, ... })` (truyền `uploadImageFn` để upload base64) trước khi submit form có Rich Text Editor; trả về `ProcessDescriptionResult` (`processedDescription`, `uploadedImages`, `hasChanges`).
 - **`auth-utils.ts` singleton `logoutManager`** — ngăn multiple auto-logout calls. `isLoggingOut` flag reset sau khi navigate hoàn tất.
 - **`export-utils.ts` dùng `exceljs`** — không phải `xlsx`. Columns, styles, formatting theo pattern trong admin features.

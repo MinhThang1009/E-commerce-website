@@ -53,17 +53,15 @@ modules/wishlist/
     wishlist-controller.js
     wishlist-controller.test.js
   services/
-    wishlist-service.js                        — ~81 lines: getWishlist, addToWishlist, removeFromWishlist, checkWishlist, clearWishlist
+    wishlist-service.js                        — ~90 lines: getWishlist, addToWishlist, removeFromWishlist, checkWishlist, clearWishlist
     wishlist-service.test.js
     wishlist-service.unit.test.js
   repositories/
     i-wishlist-repository.js
     sequelize-wishlist-repository.js
     wishlist-repository.test.js
-  validators/
-    wishlist-validator.js
   dtos/
-    wishlist-dto.js
+    wishlist-dto.js                            — pass-through DTO (service đã build product shape)
 ```
 
 ---
@@ -151,11 +149,11 @@ Inject từ `app.js`:
 
 # 7. Tests
 
-| File                                               | Loại        | Mô tả                                      |
-| -------------------------------------------------- | ----------- | ------------------------------------------ |
-| `services/wishlist-service.test.js`                | Unit        | Happy path: get, add, remove, check, clear |
-| `services/wishlist-service.unit.test.js`           | Unit        | Isolated unit tests                        |
-| `controllers/wishlist-controller.test.js`          | Unit        | HTTP layer                                 |
-| `repositories/wishlist-repository.test.js`         | Unit        | Repository queries                         |
-| `src/__integration__/wishlist.integration.test.js` | Integration | DB integration                             |
-| `src/__api__/wishlist.api.test.js`                 | HTTP        | End-to-end HTTP                            |
+| File                                                                        | Loại        | Mô tả                                      |
+| --------------------------------------------------------------------------- | ----------- | ------------------------------------------ |
+| `services/wishlist-service.test.js`                                         | Unit        | Happy path: get, add, remove, check, clear |
+| `services/wishlist-service.unit.test.js`                                    | Unit        | Isolated unit tests                        |
+| `controllers/wishlist-controller.test.js`                                   | Unit        | HTTP layer                                 |
+| `repositories/wishlist-repository.test.js`                                  | Unit        | Repository queries                         |
+| `src/__integration__/wishlist.integration.test.js`                          | Integration | DB integration                             |
+| `src/__api__/wishlist.http.test.js` + `wishlist-comprehensive.http.test.js` | HTTP        | End-to-end HTTP                            |

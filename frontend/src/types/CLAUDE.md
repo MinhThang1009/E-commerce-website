@@ -47,16 +47,16 @@ import type { CartItem, AuthResponse, Notification } from '@/types';
 
 ## 2.2 Re-exports từ features (index.ts)
 
-| Type                                                                                     | Nguồn                                                     |
-| ---------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `Product`, `ProductVariant`, `Category`, `Brand`, `ProductWithVariants`                  | `features/catalog/types/product.types` + `category.types` |
-| `Cart`, `CartItem`, `ServerCart`, `ServerCartItem`, `CartState`, `UpdateCartItemPayload` | `features/cart/types/cart.types`                          |
-| `Order`, `OrderItem`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`                    | `features/orders/types/order.types`                       |
-| `Review`, `ReviewsResponse`                                                              | `features/reviews/types/review.types`                     |
-| `AuthState`, `AuthResponse`                                                              | `features/auth/types/auth.types`                          |
-| `User`, `Address`                                                                        | `./user.types`                                            |
-| `PaginatedResponse`, `ApiError`, `ApiResponse`, `PaginationParams`                       | `./common.types`                                          |
-| `Notification`, `UIState`, `AddNotificationPayload`                                      | `./ui.types`                                              |
+| Type                                                                                                 | Nguồn                                                     |
+| ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| `Product`, `ProductVariant`, `Category`, `ProductWithVariants`                                       | `features/catalog/types/product.types` + `category.types` |
+| `CartItem`, `ServerCart`, `ServerCartItem`, `CartState`, `AddToCartPayload`, `UpdateCartItemPayload` | `features/cart/types/cart.types`                          |
+| `Order`, `OrderItem`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`                                | `features/orders/types/order.types`                       |
+| `Review`, `ReviewsResponse`                                                                          | `features/reviews/types/review.types`                     |
+| `AuthState`, `AuthResponse`                                                                          | `features/auth/types/auth.types`                          |
+| `User`, `Address`                                                                                    | `./user.types`                                            |
+| `PaginatedResponse`, `ApiError`, `ApiResponse`, `PaginationParams`                                   | `./common.types`                                          |
+| `Notification`, `UIState`, `AddNotificationPayload`                                                  | `./ui.types`                                              |
 
 ---
 
@@ -98,24 +98,33 @@ type ThemeMode = 'light' | 'dark';
 ```typescript
 interface User {
   id: string;
+  email: string;
   firstName: string;
   lastName: string;
-  email: string;
+  name?: string; // Họ tên đầy đủ (firstName + lastName)
   phone?: string;
   avatar?: string;
   role: 'customer' | 'admin';
-  isEmailVerified: boolean;
-  createdAt: string;
+  addresses?: Address[];
+  defaultAddressId?: string;
+  wishlist?: string[]; // Mảng ID sản phẩm
+  isEmailVerified?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface Address {
   id: string;
+  name?: string; // Nhãn địa chỉ (ví dụ: "Nhà", "Công ty")
   firstName: string;
   lastName: string;
+  company?: string;
   address1: string;
   address2?: string;
   city: string;
   state: string;
+  zip: string;
+  country: string;
   phone?: string;
   isDefault: boolean;
 }
@@ -155,13 +164,17 @@ interface DiscountCode {
   id: string;
   code: string;
   type: 'percent' | 'fixed';
-  value: number;
-  minOrderAmount?: number;
-  maxDiscountAmount?: number;
+  value: string | number; // BE có thể trả string cho decimal
+  minOrderAmount: string | number;
+  maxDiscountAmount?: string | number;
+  startDate?: string;
+  endDate?: string;
   usageLimit?: number;
-  usageCount: number;
-  expiresAt?: string;
+  usedCount: number;
   isActive: boolean;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 ```
 

@@ -7,7 +7,7 @@
  */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Loader2, CloudOff, CheckCircle2, Save, Send } from 'lucide-react';
+import { Loader2, CloudOff, CheckCircle2, Save, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export type AutosaveStatus = 'idle' | 'saving' | 'saved';
@@ -20,6 +20,7 @@ interface ProductFormSaveBarProps {
   onSaveDraft: () => void;
   onPublish: () => void;
   onCancel: () => void;
+  onClearDraft?: () => void;
   draftText: string;
   publishText: string;
 }
@@ -31,6 +32,7 @@ const ProductFormSaveBar: React.FC<ProductFormSaveBarProps> = ({
   onSaveDraft,
   onPublish,
   onCancel,
+  onClearDraft,
   draftText,
   publishText,
 }) => {
@@ -68,7 +70,22 @@ const ProductFormSaveBar: React.FC<ProductFormSaveBarProps> = ({
 
   return (
     <div className="sticky bottom-0 z-20 -mx-5 -mb-5 mt-6 flex flex-col items-center justify-between gap-3 border-t border-[var(--border-default)] bg-[var(--bg-base)]/90 px-5 py-3.5 backdrop-blur-md sm:flex-row dark:bg-white/[0.04]">
-      {renderAutosave()}
+      <div className="flex items-center gap-3">
+        {renderAutosave()}
+        {onClearDraft && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onClearDraft}
+            disabled={isSubmitting}
+            className="text-[var(--color-danger)] hover:text-[var(--color-danger)] opacity-70 hover:opacity-100"
+          >
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" strokeWidth={2.25} />
+            {t('admin.products.autosave.clearDraft')}
+          </Button>
+        )}
+      </div>
       <div className="flex items-center gap-2">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={isSubmitting}>
           {t('common.cancel')}

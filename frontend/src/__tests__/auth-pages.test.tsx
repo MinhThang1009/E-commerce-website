@@ -15,12 +15,14 @@ jest.mock('react-i18next', () => ({
 
 // ── Mock react-router-dom ───────────────────────────────────────
 const mockNavigate = jest.fn();
+// location.state mutable — test redirect theo `from` (vd from=/admin tránh loop)
+let mockLocationState: unknown = null;
 jest.mock('react-router-dom', () => {
   const R = require('react');
   return {
     ...jest.requireActual('react-router-dom'),
     useNavigate: () => mockNavigate,
-    useLocation: () => ({ search: '', pathname: '/login', state: null }),
+    useLocation: () => ({ search: '', pathname: '/login', state: mockLocationState }),
     useSearchParams: () => [new URLSearchParams(), jest.fn()],
     Link: ({ to, children }: { to: string; children: unknown }) =>
       R.createElement('a', { href: to }, children),
@@ -54,15 +56,28 @@ jest.mock('react-helmet-async', () => ({
 const mockLoginMutateAsync = jest.fn();
 const mockResendMutateAsync = jest.fn();
 const mockForgotPasswordMutateAsync = jest.fn();
+// error/isPending của useLoginMutation — mutable để test banner lỗi + guard double-submit
+let mockLoginError: unknown = null;
+let mockLoginPending = false;
+let mockResendPending = false;
+let mockForgotSuccess = false;
+let mockForgotError: unknown = null;
 
 jest.mock('@/features/auth/api/auth-api', () => ({
-  useLoginMutation: () => ({ mutateAsync: mockLoginMutateAsync, isPending: false, error: null }),
-  useResendVerificationMutation: () => ({ mutateAsync: mockResendMutateAsync, isPending: false }),
+  useLoginMutation: () => ({
+    mutateAsync: mockLoginMutateAsync,
+    isPending: mockLoginPending,
+    error: mockLoginError,
+  }),
+  useResendVerificationMutation: () => ({
+    mutateAsync: mockResendMutateAsync,
+    isPending: mockResendPending,
+  }),
   useForgotPasswordMutation: () => ({
     mutateAsync: mockForgotPasswordMutateAsync,
     isPending: false,
-    isSuccess: false,
-    error: null,
+    isSuccess: mockForgotSuccess,
+    error: mockForgotError,
   }),
 }));
 
@@ -100,6 +115,7 @@ jest.mock('@/components/common/Input', () => {
       onChange,
       error,
       id,
+      rightIcon,
     }: {
       type?: string;
       placeholder?: string;
@@ -121,6 +137,7 @@ jest.mock('@/components/common/Input', () => {
           onChange,
           id,
         }),
+        rightIcon ?? null,
         error ? R.createElement('span', { 'data-testid': 'input-error' }, error) : null,
       ),
   };
@@ -219,6 +236,20 @@ jest.mock('@/routes/paths', () => ({
 import LoginPage from '@/features/auth/pages/LoginPage';
 import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage';
 
+// Reset state mutable + impl mutation trước mỗi test (clearAllMocks không reset impl/biến thường)
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockLoginError = null;
+  mockLoginPending = false;
+  mockResendPending = false;
+  mockForgotSuccess = false;
+  mockForgotError = null;
+  mockLocationState = null;
+  mockLoginMutateAsync.mockReset();
+  mockResendMutateAsync.mockReset();
+  mockForgotPasswordMutateAsync.mockReset();
+});
+
 // ═══════════════════════════════════════════════════════════════
 // LoginPage
 // ═══════════════════════════════════════════════════════════════
@@ -278,6 +309,154 @@ describe('LoginPage', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// LoginPage: submit + luồng xác thực email
+// ═══════════════════════════════════════════════════════════════
+describe('LoginPage: submit + OTP flow', () => {
+  const fillCredentials = () => {
+    fireEvent.change(screen.getByPlaceholderText('auth.login.emailPlaceholder'), {
+      target: { value: 'a@b.com' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('auth.login.passwordPlaceholder'), {
+      target: { value: 'secret1' },
+    });
+  };
+
+  it('đăng nhập hợp lệ (customer) → loginSuccess + navigate về trang chủ', async () => {
+    mockLoginMutateAsync.mockResolvedValue({ user: { role: 'customer' } });
+    render(<LoginPage />);
+    fillCredentials();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(mockLoginMutateAsync).toHaveBeenCalledWith({ email: 'a@b.com', password: 'secret1' });
+    expect(mockLoginSuccess).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+
+  it('đăng nhập hợp lệ (admin) → navigate /admin', async () => {
+    mockLoginMutateAsync.mockResolvedValue({ user: { role: 'admin' } });
+    render(<LoginPage />);
+    fillCredentials();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('/admin', { replace: true });
+  });
+
+  it('đăng nhập thất bại → catch, không crash, không gọi loginSuccess', async () => {
+    mockLoginMutateAsync.mockRejectedValue(new Error('sai mật khẩu'));
+    render(<LoginPage />);
+    fillCredentials();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(mockLoginSuccess).not.toHaveBeenCalled();
+    expect(screen.getByText('auth.login.title')).toBeInTheDocument();
+  });
+
+  it('toggle ẩn/hiện mật khẩu', () => {
+    render(<LoginPage />);
+    const toggle = screen.getByLabelText('auth.login.showPassword');
+    fireEvent.click(toggle);
+    expect(screen.getByLabelText('auth.login.hidePassword')).toBeInTheDocument();
+  });
+
+  it('lỗi cần xác thực email → bấm "nhập OTP" → navigate verify-email', () => {
+    mockLoginError = { data: { message: 'Vui lòng xác thực email trước' } };
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('auth.login.enterOtp'));
+    expect(mockNavigate).toHaveBeenCalledWith('/verify-email');
+  });
+
+  it('gửi lại OTP khi email rỗng → báo lỗi email bắt buộc', () => {
+    mockLoginError = { data: { message: 'xác thực email' } };
+    render(<LoginPage />);
+    fireEvent.click(screen.getByText('auth.login.resendVerification'));
+    expect(screen.getByText('auth.login.emailRequired')).toBeInTheDocument();
+  });
+
+  it('gửi lại OTP thành công → hiện thông báo + bấm "nhập OTP ngay" navigate', async () => {
+    mockLoginError = { data: { message: 'xác thực email' } };
+    mockResendMutateAsync.mockResolvedValue({});
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.login.emailPlaceholder'), {
+      target: { value: 'a@b.com' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('auth.login.resendVerification'));
+    });
+    expect(screen.getByText('auth.login.resendOtpSuccess')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('auth.login.enterOtpNow'));
+    expect(mockNavigate).toHaveBeenCalledWith('/verify-email?email=a@b.com');
+  });
+
+  it('gửi lại OTP thất bại → hiển thị lỗi resend', async () => {
+    mockLoginError = { data: { message: 'xác thực email' } };
+    mockResendMutateAsync.mockRejectedValue(new Error('fail'));
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.login.emailPlaceholder'), {
+      target: { value: 'a@b.com' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('auth.login.resendVerification'));
+    });
+    expect(screen.getByText('auth.login.resendOtpError')).toBeInTheDocument();
+  });
+
+  it('lỗi đăng nhập thường (không phải xác thực email) → không hiện nút OTP', () => {
+    mockLoginError = { data: { message: 'Sai mật khẩu' } };
+    render(<LoginPage />);
+    expect(screen.getByText('auth.login.errors.invalidCredentials')).toBeInTheDocument();
+    expect(screen.queryByText('auth.login.enterOtp')).not.toBeInTheDocument();
+  });
+
+  it('lỗi không có field data → không crash, không hiện nút OTP', () => {
+    mockLoginError = { message: 'lỗi không rõ' };
+    render(<LoginPage />);
+    expect(screen.queryByText('auth.login.enterOtp')).not.toBeInTheDocument();
+  });
+
+  it('lỗi có data nhưng thiếu message → fallback chuỗi rỗng, không hiện nút OTP', () => {
+    mockLoginError = { data: {} };
+    render(<LoginPage />);
+    expect(screen.queryByText('auth.login.enterOtp')).not.toBeInTheDocument();
+  });
+
+  it('đang gửi lại OTP (isResending) → nút hiển thị "đang gửi"', () => {
+    mockLoginError = { data: { message: 'xác thực email' } };
+    mockResendPending = true;
+    render(<LoginPage />);
+    expect(screen.getByText('auth.login.resending')).toBeInTheDocument();
+  });
+
+  it('đang đăng nhập (isLoading) → submit form bị chặn double-submit', async () => {
+    mockLoginPending = true;
+    render(<LoginPage />);
+    const form = screen.getByPlaceholderText('auth.login.emailPlaceholder').closest('form')!;
+    await act(async () => {
+      fireEvent.submit(form);
+    });
+    expect(mockLoginMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('login customer với from=/admin → tránh loop, navigate về /', async () => {
+    mockLocationState = { from: { pathname: '/admin' } };
+    mockLoginMutateAsync.mockResolvedValue({ user: { role: 'customer' } });
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.login.emailPlaceholder'), {
+      target: { value: 'a@b.com' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('auth.login.passwordPlaceholder'), {
+      target: { value: 'secret1' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
 // ForgotPasswordPage
 // ═══════════════════════════════════════════════════════════════
 describe('ForgotPasswordPage', () => {
@@ -328,6 +507,44 @@ describe('ForgotPasswordPage', () => {
     const links = screen.getAllByText('auth.forgotPassword.backToLogin');
     expect(links.length).toBeGreaterThan(0);
     expect(links[0].closest('a')).toHaveAttribute('href', '/login');
+  });
+
+  it('submit email hợp lệ (bấm nút) → gọi forgotPassword', async () => {
+    mockForgotPasswordMutateAsync.mockResolvedValue({});
+    render(<ForgotPasswordPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.forgotPassword.emailPlaceholder'), {
+      target: { value: 'a@b.com' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(mockForgotPasswordMutateAsync).toHaveBeenCalledWith({ email: 'a@b.com' });
+  });
+
+  it('submit nhưng API lỗi → catch console.error, không crash', async () => {
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    mockForgotPasswordMutateAsync.mockRejectedValue(new Error('fail'));
+    render(<ForgotPasswordPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.forgotPassword.emailPlaceholder'), {
+      target: { value: 'a@b.com' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(spy).toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it('isSuccess=true → hiển thị màn thành công', () => {
+    mockForgotSuccess = true;
+    render(<ForgotPasswordPage />);
+    expect(screen.getByText('auth.forgotPassword.successMessage')).toBeInTheDocument();
+  });
+
+  it('có error → hiển thị banner lỗi gửi', () => {
+    mockForgotError = new Error('boom');
+    render(<ForgotPasswordPage />);
+    expect(screen.getByText('auth.forgotPassword.errors.sendFailed')).toBeInTheDocument();
   });
 });
 

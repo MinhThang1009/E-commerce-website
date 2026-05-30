@@ -33,6 +33,8 @@ chatbot/
     response-parser.js        — Parse JSON response từ LLM, fallback nếu malformed
   keyword/
     keyword-fallback.js       — Fallback khi LLM không khả dụng hoặc parse fail
+  query/
+    fuzzy-expander.js         — Expand viết tắt từ product catalog (prefix + edit-distance); fallback khi không có LLM provider
   language/
     language-detector.js      — Detect vi/en từ text (dấu → vi, keyword list → vi, else en)
 ```
@@ -47,9 +49,12 @@ POST /api/chatbot/message
       → chatbotService.handleMessage(message, userId, sessionId)
             ① validateMessage (AppError 400 nếu không hợp lệ)
             ② expandAbbreviations (ip → iPhone, ss → Samsung...)
-            ③ isPromptInjection / isOffTopic → early return, không retrieve
+            ③ isPromptInjection → early return; offTopic = classifyIntent(normalizedQuery)==='off_topic' via _preprocessMessage, KHÔNG gọi isOffTopic trực tiếp
             ④ load conversationHistory từ Map (session memory)
-            ⑤ parallel: rewriteQuery LLM + hybridSearch(normalizedQuery)
+            ⑤ _enrichQueryFromHistory(normalizedQuery, history) TRƯỚC parallel
+                 → append tên SP từ ≤2 assistant messages gần nhất khi query
+                   có đại từ chỉ định (đó/này/kia/nó) hoặc follow-up ngắn ≤50 ký tự → enrichedQuery
+               parallel: rewriteQuery LLM + hybridSearch(enrichedQuery)
                → nếu rewrite khác → hybridSearch lại, chọn kết quả tốt hơn
                → fallback minScore=0 topK=3 nếu 0 kết quả
             ⑥ augmentAndGenerate() → promptBuilder.buildAugmentedPrompt(msg, products)
@@ -57,6 +62,8 @@ POST /api/chatbot/message
                   → responseParser.parseLLMOutput(llmText, products)
                   → fallback: keywordFallback.simpleKeywordMatch()
             ⑦ persist: cập nhật session Map + ChatMessage DB (fire-and-forget)
+               → assistant message lưu kèm metadata=JSON.stringify({products,suggestions})
+                 khi KHÔNG phải fallback/off-topic
 ```
 
 ---
@@ -82,7 +89,7 @@ Pure function `buildAugmentedPrompt(userMessage, products)`.
 
 Inject product list (tên, giá, stock, category, brand, slug) + store info + matching rules + version warning vào system prompt. Không dùng instance state.
 
-## 4.4 prompt/response-parser.js
+## 4.3 prompt/response-parser.js
 
 `parseLLMOutput(rawLLMOutput, products, userMessage)`:
 

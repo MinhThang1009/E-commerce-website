@@ -84,12 +84,12 @@ Sau mọi mutation → invalidate `cartKeys.all` + `cartKeys.count` để Header
 `cartStore` (`src/stores/cart-store.ts`):
 
 - `items: CartItem[]` — persist `localStorage` key `cartItems` (guest cart)
-- `isOpen: boolean` — sidebar drawer state (dùng ở Header)
+- `isOpen: boolean` — sidebar drawer state (action `toggleCart`/`openCart`/`closeCart` có sẵn nhưng hiện chưa render drawer ở đâu)
 - `serverCart: BackendCart | null` — snapshot từ server
 - `totalItems`, `subtotal` — derived từ items
 - `isLoading: boolean`
 
-Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializeCart`, `setServerCart`.
+Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializeCart`, `setServerCart`, `mergeWithLocalCart`, `toggleCart`/`openCart`/`closeCart`, `setLoading`.
 
 `authStore` — kiểm tra `isAuthenticated` (enable query), đọc `justLoggedIn` (trigger merge).
 
@@ -108,7 +108,6 @@ Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializ
 | PUT    | `/cart/items/:id` | Cập nhật quantity; body: `{ quantity }`                     |
 | DELETE | `/cart/items/:id` | Xóa 1 item                                                  |
 | DELETE | `/cart`           | Xóa toàn bộ giỏ                                             |
-| POST   | `/cart/sync`      | Đẩy local items lên server (ghi đè)                         |
 | POST   | `/cart/merge`     | Merge guest session cart + server cart (server deduplicate) |
 
 ## 4.2 Query hooks
@@ -125,7 +124,6 @@ Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializ
 - `useUpdateCartItemMutation()` — cập nhật quantity `{ id, data: { quantity } }`
 - `useRemoveCartItemMutation()` — xóa 1 item theo id
 - `useClearCartMutation()` — xóa toàn bộ giỏ server
-- `useSyncCartMutation()` — push local items lên server (đăng nhập lần đầu/thiết bị mới)
 - `useMergeCartMutation()` — merge guest + server cart (gọi sau login nếu không có local items)
 
 ---
@@ -137,7 +135,7 @@ Actions: `addItem`, `removeItem`, `updateQuantity`, `clearLocalCart`, `initializ
 | `CartItem` | Row item: thumbnail (link đến product detail), tên, variant attributes (badges), quantity stepper (disable khi >= maxStock), giá × quantity, nút xóa. Props: `isCheckout` (readonly mode), `maxStock`. |
 | `CartPage` | Danh sách `CartItem` (2/3 layout), order summary bên phải với: voucher input (gọi `useApplyDiscountCodeMutation` từ feature orders), subtotal, discount, total, nút checkout.                          |
 
-Cart sidebar (mini drawer) render trong `Header` component (`src/components/layout/`) — không phải component riêng của feature này.
+`Header` (`src/components/layout/`) chỉ render cart icon + badge số lượng (link sang `/cart`) — không có mini drawer hiển thị danh sách item.
 
 ---
 
@@ -217,13 +215,13 @@ interface AddToCartRequest {
 - `features/checkout/pages/CheckoutPage.tsx` — `CartItem` component (readonly mode), `cartKeys`, `useGetCartCountQuery`, `useClearCartMutation`
 - `features/orders` — invalidate `cartKeys.all` sau khi tạo đơn hàng
 - `features/ai/api/chatbot-api.ts` — `useAddToCartViaChatbotMutation` invalidate `['cart']`
-- `src/components/layout/Header.tsx` — `useGetCartCountQuery` (badge), `cartStore` (drawer items)
+- `src/components/layout/Header.tsx` — `useGetCartCountQuery` (badge), `cartStore` (`totalItems` cho badge + `initializeCart`)
 
 ---
 
 # 8. Gotchas & Edge Cases
 
-- **Guest cart:** khi chưa login, cartStore dùng `localStorage`. Khi login → `use-cart-merge.ts` tự động add từng local item lên server (không dùng `useSyncCartMutation` vì sync ghi đè, thay vào đó dùng `addToCart` cho từng item), sau đó gọi `useMergeCartMutation` để deduplicate nếu không có local items.
+- **Guest cart:** khi chưa login, cartStore dùng `localStorage`. Khi login → `use-cart-merge.ts` tự động add từng local item lên server bằng `useAddToCartMutation` (cộng dồn, không ghi đè cart server); nếu không có local item thì gọi `useMergeCartMutation` để server tự deduplicate.
 - **`useGetCartQuery` chỉ enable khi login:** luôn pass `{ enabled: isAuthenticated }` — nếu quên, query bắn request lúc guest → 401.
 - **`useValidateCartQuery`** gọi trước khi bước vào checkout để bắt items hết hàng hoặc giá thay đổi — không skip.
 - **Không còn warranty packages:** CartItem không có `warrantyPackageIds`. Warranty module đã bị xóa.

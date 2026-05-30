@@ -11,7 +11,7 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/src/__e2e__/**/*.e2e.test.js'],
-  testPathIgnorePatterns: ['/node_modules/'],
+  testPathIgnorePatterns: ['/node_modules/', '/.stryker-tmp/'],
   setupFiles: ['./src/__e2e__/setup.js'],
   moduleNameMapper: {
     '^@modules/(.*)$':     '<rootDir>/src/modules/$1',

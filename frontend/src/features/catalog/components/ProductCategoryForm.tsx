@@ -42,7 +42,9 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
   return (
     <div className="grid grid-cols-1 gap-4">
       <div>
-        <Label className="mb-1.5 block">{t('admin.products.category.label')}</Label>
+        <Label className="mb-1.5 block">
+          {t('admin.products.category.label')} <span className="text-[var(--color-danger)]">*</span>
+        </Label>
         {isLoading ? (
           <div className="shimmer h-10 rounded-xl" />
         ) : (

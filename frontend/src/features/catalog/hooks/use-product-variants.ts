@@ -6,6 +6,8 @@
  */
 import { ProductVariant } from '@/types';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useUiStore } from '@/stores/ui-store';
 import type { FormAdapter } from './use-form-adapter';
 
 /**
@@ -49,6 +51,8 @@ import type { FormAdapter } from './use-form-adapter';
  * - `closeVariantModal` — Đóng modal và xóa `editingVariant`.
  */
 export const useProductVariants = (initialVariants: ProductVariant[] = [], form?: FormAdapter) => {
+  const { t } = useTranslation();
+  const addNotification = useUiStore((s) => s.addNotification);
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
   const [variantModalVisible, setVariantModalVisible] = useState(false);
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
@@ -73,34 +77,22 @@ export const useProductVariants = (initialVariants: ProductVariant[] = [], form?
       return runningTotal + (isNaN(stock) ? 0 : stock);
     }, 0);
 
-    // Tính giá trung bình theo trọng số tồn kho (weighted average price):
-    // Chỉ tính các variant có stock > 0 VÀ price > 0 để tránh chia cho 0
-    // và tránh variants chưa nhập giá kéo lệch kết quả.
-    let weightedPriceSum = 0;
-    let totalWeightedStock = 0;
-    variants.forEach((variant) => {
-      const stock = parseInt(variant.stock?.toString() || '0');
-      // Cap giá tại 99999999.99 — giới hạn của trường price trong DB (DECIMAL(10,2))
-      const price = Math.min(parseFloat(variant.price?.toString() || '0'), 99999999.99);
-      if (stock > 0 && price > 0) {
-        weightedPriceSum += price * stock;
-        totalWeightedStock += stock;
-      }
-    });
+    // Lấy giá thấp nhất trong các variants có giá > 0 (khớp với convention DB: base_price = min variant price)
+    const validPrices = variants
+      .map((v) => Math.min(parseFloat(v.price?.toString() || '0'), 99999999.99))
+      .filter((p) => p > 0);
+    const minVariantPrice = validPrices.length > 0 ? Math.min(...validPrices) : 0;
 
-    // Nếu tất cả variants đều có stock = 0, không có cơ sở tính weighted average
-    // → giữ nguyên giá hiện tại trong form thay vì ghi 0
-    const weightedAveragePrice = totalWeightedStock > 0 ? weightedPriceSum / totalWeightedStock : 0;
-    const newPrice =
-      weightedAveragePrice > 0
-        ? Math.round(weightedAveragePrice)
-        : form.getFieldValue('price') || 0;
+    const currentPrice = Number(form.getFieldValue('price')) || 0;
+    const newPrice = minVariantPrice > 0 ? minVariantPrice : currentPrice;
 
     // Chỉ update form nếu giá trị thực sự thay đổi — tránh trigger watchFormValues loop
     const currentStock = form.getFieldValue('stockQuantity');
-    const currentPrice = form.getFieldValue('price');
-    if (currentStock !== totalStock || currentPrice !== newPrice) {
-      form.setFieldsValue({ stockQuantity: totalStock, price: newPrice });
+    if (currentStock !== totalStock) {
+      form.setFieldValue('stockQuantity', totalStock);
+    }
+    if (newPrice > 0 && currentPrice !== newPrice) {
+      form.setFieldValue('price', newPrice);
     }
   }, [variants, form]);
 
@@ -118,7 +110,6 @@ export const useProductVariants = (initialVariants: ProductVariant[] = [], form?
    */
   const handleAddVariant = (variant: ProductVariant) => {
     if (editingVariant) {
-      // Chế độ sửa: thay thế variant cũ, giữ nguyên id gốc để không mất liên kết với DB
       setVariants(
         variants.map((existingVariant) =>
           existingVariant.id === editingVariant.id
@@ -126,24 +117,19 @@ export const useProductVariants = (initialVariants: ProductVariant[] = [], form?
             : existingVariant,
         ),
       );
+      addNotification({ message: t('admin.products.variants.updateSuccess'), type: 'success' });
     } else {
-      // Chế độ tạo mới: sinh id tạm thời cho variant chưa có id từ server
       const temporaryId = `var-${variants.length}-${Math.random().toString(36).substring(2, 9)}`;
       setVariants([...variants, { ...variant, id: variant.id || temporaryId }]);
+      addNotification({ message: t('admin.products.variants.addSuccess'), type: 'success' });
     }
     setVariantModalVisible(false);
     setEditingVariant(null);
   };
 
-  /**
-   * Xóa variant khỏi danh sách theo ID.
-   * Sau khi xóa, useEffect sẽ tự động tính lại `stockQuantity` và `price`
-   * trong form dựa trên danh sách variants còn lại.
-   *
-   * @param id - ID của variant cần xóa (có thể là id từ server hoặc id tạm thời).
-   */
   const handleDeleteVariant = (id: string) => {
     setVariants(variants.filter((variant) => variant.id !== id));
+    addNotification({ message: t('admin.products.variants.deleteSuccess'), type: 'info' });
   };
 
   /**

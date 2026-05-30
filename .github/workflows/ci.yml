@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'phase-*', 'feat/*', 'fix/*']
+    branches: [main, 'phase-*', 'feat/*', 'fix/*', 'refactor/*']
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -102,7 +102,7 @@ jobs:
 
 # ─── FRONTEND ────────────────────────────────────────────────────────────────
   frontend:
-    name: Frontend (lint + typecheck + build)
+    name: Frontend (lint + typecheck + test + build)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -127,6 +127,10 @@ jobs:
       - name: Typecheck
         working-directory: frontend
         run: npm run typecheck
+
+      - name: Run tests + coverage (threshold gate)
+        working-directory: frontend
+        run: npm run test:ci
 
       - name: Security audit
         working-directory: frontend

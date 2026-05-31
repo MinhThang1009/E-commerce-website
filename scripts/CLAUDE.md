@@ -33,6 +33,8 @@
 | `msg-editor.py` | Edit commit message trong interactive rebase | Git history cleanup |
 | `seq-editor.py` | Edit todo sequence trong interactive rebase | Git history cleanup |
 | `rewrite-commits.py` | Rewrite commit history (filter-branch wrapper) | Git history cleanup |
+| `verify-doc-nodes.js` | Workflow max-strict: verify per-node/element 1 doc vs code (Discovery + N-of-M quorum + Tier-2 + evidence) | Audit node graph / sequence / flow diagram khớp codebase |
+| `verify-doc-evidence.py` | Companion TẤT ĐỊNH: grep-verify evidence (chống bịa quote) + completeness + omission | Sau `verify-doc-nodes`, fact-check bằng chứng bằng Bash |
 
 ---
 
@@ -164,6 +166,23 @@ python scripts/rewrite-commits.py
 ```
 
 **Cảnh báo:** chỉ dùng trên branch chưa push lên remote. Không rewrite history đã share — xem `git-workflow.md §Forbidden Commands`.
+
+## 2.9 verify-doc-nodes.js + verify-doc-evidence.py
+
+Bộ đôi **max-strict** verify tài liệu (node graph / sequence diagram / pipeline flow) khớp code thật, chống 2 kiểu gian lận của LLM agent: **bỏ sót node** + **bịa quote**.
+
+```bash
+# GĐ1 — workflow (LLM): per-element verdict + thu thập {sourceRef, codeEvidence}
+#   Workflow({ scriptPath: "scripts/verify-doc-nodes.js", args: {
+#     docPath, batches:[{id,items,hint}], sourceNote, gotchas?, quorum:3, strict:true } })
+# GĐ2 — companion (Bash, TẤT ĐỊNH): fact-check bằng chứng
+python scripts/verify-doc-evidence.py --results <wf-result.json> --root . \
+       [--doc <doc> --marker '<regex>'] [--code <files> --symbol '<regex>']
+```
+
+**Tầng strict:** Discovery (completeness) · N-of-M quorum (M agent vote) · Tier-2 independent re-verify · evidence-audit · **grep-verify TẤT ĐỊNH** (`verify-doc-evidence.py` — bắt quote bịa chắc chắn 100%, đã test). Hạn chế: verdict ngữ nghĩa vẫn là LLM (quorum giảm lỗi, không tuyệt đối); regex `--marker`/`--symbol` phải đúng per-doc.
+
+> **TODO(audit):** DIAGRAMS.md §1/§3/§5/§6 đã per-element audit (2026, fix + Tier-4 pass). CÒN §2 Usecase Phân Rã, §7 State Diagrams, §8 Component **chưa per-element** — dùng bộ đôi trên khi cần.
 
 ---
 

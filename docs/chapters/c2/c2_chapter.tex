@@ -1,0 +1,255 @@
+\chapter{Nền tảng và công nghệ sử dụng}
+\label{chap:c2_theory}
+
+\section{Tổng quan thương mại điện tử}
+\label{sec:c2_ecommerce_overview}
+
+\subsection{Khái niệm và đặc điểm thương mại điện tử}
+
+Thương mại điện tử (Electronic Commerce, viết tắt là e-commerce) là hình thức kinh doanh và trao đổi hàng hóa, dịch vụ thông qua mạng internet và các phương tiện điện tử. Khác với thương mại truyền thống, thương mại điện tử cho phép giao dịch diễn ra không phụ thuộc vào thời gian và địa lý, với khả năng phục vụ đồng thời hàng triệu người dùng~\cite{turban2018electronic}. Thị trường thương mại điện tử Việt Nam liên tục tăng trưởng hai chữ số mỗi năm, trong đó mảng thiết bị công nghệ là một trong những danh mục sản phẩm có tốc độ tăng trưởng cao nhất~\cite{vecom2023}.
+
+Một hệ thống thương mại điện tử hiện đại thường bao gồm các thành phần chức năng cốt lõi: danh mục sản phẩm với khả năng tìm kiếm và lọc, quản lý giỏ hàng, quy trình đặt hàng và thanh toán trực tuyến, quản lý tài khoản người dùng, hệ thống đánh giá sản phẩm và bảng điều khiển quản trị toàn diện. Ngoài ra, xu hướng gần đây là tích hợp AI Chatbot để tư vấn sản phẩm nhằm nâng cao trải nghiệm người dùng~\cite{chen2021conversational}.
+
+\subsection{Kiến trúc Modular Monolith}
+
+Kiến trúc của các hệ thống thương mại điện tử đã trải qua nhiều giai đoạn phát triển. Kiến trúc nguyên khối (monolithic) truyền thống đặt toàn bộ logic nghiệp vụ trong một ứng dụng duy nhất, đơn giản để triển khai nhưng khó mở rộng và bảo trì khi hệ thống lớn lên. Kiến trúc microservices chia nhỏ hệ thống thành các dịch vụ độc lập triển khai riêng biệt, giải quyết được vấn đề khả năng mở rộng nhưng tăng đáng kể độ phức tạp vận hành, đặc biệt với đội nhóm nhỏ~\cite{newman2015building}.
+
+\textbf{Modular Monolith} là kiến trúc cân bằng giữa hai hướng trên: hệ thống vẫn được triển khai như một ứng dụng đơn nhất nhưng được tổ chức nội bộ thành các module với ranh giới rõ ràng, mỗi module tự đóng gói HTTP layer, business logic, database queries và event handlers riêng~\cite{richter2020modular}. Các module giao tiếp thông qua ba cơ chế: EventBus (pub/sub bất đồng bộ cho side effects), shared models (inject qua DI khi cần query dữ liệu module khác), và shared services (email, vector store, được truyền tường minh qua constructor). Kiến trúc này phù hợp với giai đoạn phát triển ban đầu và có thể chuyển sang microservices trong tương lai khi cần thiết.
+
+\section{Kỹ thuật RAG (Retrieval-Augmented Generation)}
+\label{sec:c2_rag}
+
+\subsection{Mô hình ngôn ngữ lớn và giới hạn kiến thức}
+
+Mô hình ngôn ngữ lớn (Large Language Model -- LLM) là các mô hình học sâu được huấn luyện trên tập dữ liệu văn bản khổng lồ với hàng tỷ tham số, có khả năng hiểu và sinh văn bản tự nhiên trong nhiều ngữ cảnh phức tạp. Các mô hình tiêu biểu bao gồm GPT-4 (OpenAI), Claude (Anthropic), Gemini (Google) và các mô hình mã nguồn mở như LLaMA và Mistral~\cite{brown2020language}.
+
+Tuy nhiên, LLM có một hạn chế cơ bản: kiến thức của mô hình bị đóng băng tại thời điểm huấn luyện (knowledge cutoff) và không thể cập nhật theo thời gian thực. Đây là vấn đề nghiêm trọng trong các ứng dụng thực tế như tư vấn sản phẩm, khi giá cả, tình trạng tồn kho và danh mục sản phẩm thay đổi liên tục. Ngoài ra, LLM còn có xu hướng ``ảo giác'' (hallucination), tức hiện tượng sinh ra thông tin nghe có vẻ hợp lý nhưng thực tế sai, khi không có dữ liệu tham chiếu đủ cụ thể~\cite{ji2023survey}.
+
+\subsection{Nguyên lý RAG}
+
+RAG (Retrieval-Augmented Generation) là kỹ thuật được giới thiệu bởi Lewis và cộng sự nhằm giải quyết các hạn chế của LLM thuần túy~\cite{lewis2020rag}. Trước khi pipeline hoạt động, dữ liệu nguồn (sản phẩm, chính sách, FAQ) phải được xử lý và vector hóa offline để lưu vào vector store; bước chuẩn bị này thường được gọi là \textit{Indexing}. Tại runtime, pipeline gồm ba giai đoạn chính.
+
+\textbf{Giai đoạn Retrieval} (truy xuất): Khi nhận câu hỏi từ người dùng, query được vector hóa và so sánh với các vector trong store để tìm ra các tài liệu liên quan nhất theo độ tương đồng ngữ nghĩa.
+
+\textbf{Giai đoạn Augmentation} (tăng cường ngữ cảnh): Các tài liệu truy xuất được ghép vào câu hỏi gốc để xây dựng prompt đầy đủ gửi lên LLM. Đây là bước tạo ra sự khác biệt cốt lõi của RAG: thay vì chỉ dựa vào tham số đã học, LLM nhận được ngữ cảnh thực tế cụ thể trong mỗi lần suy luận.
+
+\textbf{Giai đoạn Generation} (sinh văn bản): LLM tiếp nhận prompt đã được tăng cường và sinh phản hồi dựa trên dữ liệu tham chiếu được cung cấp, giảm thiểu hiện tượng ảo giác (hallucination) so với LLM không có retrieval.
+
+So với fine-tuning (huấn luyện lại mô hình trên dữ liệu miền), RAG có ưu điểm không đòi hỏi tài nguyên tính toán lớn, dễ cập nhật khi dữ liệu thay đổi, có thể trích dẫn nguồn gốc thông tin, và dễ kiểm soát chất lượng~\cite{gao2023retrieval}.
+
+\subsection{Vector Embedding và không gian ngữ nghĩa}
+
+\textbf{Vector embedding} là phương pháp ánh xạ văn bản sang không gian vector số thực nhiều chiều, sao cho các văn bản có nội dung tương đồng được biểu diễn bằng các vector gần nhau theo độ đo khoảng cách cosine~\cite{mikolov2013word2vec}. Chất lượng của embedding quyết định trực tiếp chất lượng của bước retrieval.
+
+Sentence-BERT~\cite{reimers2019sentencebert} là mô hình embedding tiêu biểu cho văn bản đơn ngữ, với số chiều phụ thuộc vào kiến trúc cụ thể của từng biến thể mô hình. Mô hình multilingual-e5-large của HuggingFace~\cite{wang2022text} mở rộng khả năng này sang đa ngôn ngữ trong không gian vector 1024 chiều, phù hợp với dữ liệu sản phẩm tiếng Việt lẫn tiếng Anh. Mô hình Jina Embeddings v3~\cite{sturua2024jina} cũng xuất vector 1024 chiều, được tối ưu hóa đặc biệt cho tác vụ retrieval với cơ chế attention cải tiến.
+
+Độ tương đồng giữa hai vector thường được đo bằng \textbf{cosine similarity}:
+
+\begin{equation}
+\text{cosine\_sim}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u} \cdot \mathbf{v}}{\|\mathbf{u}\| \|\mathbf{v}\|}
+\label{eq:cosine_similarity}
+\end{equation}
+
+Giá trị cosine similarity nằm trong khoảng $[-1, 1]$, với giá trị gần 1 cho thấy hai văn bản tương đồng cao về ngữ nghĩa. Trong TechStore, ngưỡng mặc định là 0.45; các kết quả có cosine similarity dưới ngưỡng này bị loại trừ khỏi ngữ cảnh gửi cho LLM.
+
+\subsection{Hybrid Search -- kết hợp tìm kiếm ngữ nghĩa và từ khóa}
+\label{sec:c2_hybrid_search}
+
+Tìm kiếm ngữ nghĩa thuần túy (dense retrieval) đôi khi bỏ sót các tài liệu khớp chính xác về mặt từ ngữ nhưng có vector không thực sự gần nhau. Ngược lại, tìm kiếm từ khóa truyền thống (sparse retrieval) không nắm bắt được ngữ nghĩa. Để khắc phục, \textbf{Hybrid Search} kết hợp cả hai phương pháp~\cite{ma2021replication}.
+
+BM25 (Best Matching 25)~\cite{robertson1994okapi} là thuật toán tìm kiếm từ khóa hiệu quả, tính điểm dựa trên tần suất từ (TF) và tần suất nghịch đảo tài liệu (IDF) với chuẩn hóa độ dài:
+
+\begin{equation}
+\text{BM25}(q, d) = \sum_{t \in q} \text{IDF}(t) \cdot \frac{tf(t,d) \cdot (k_1 + 1)}{tf(t,d) + k_1 \cdot \left(1 - b + b \cdot \frac{|d|}{\overline{dl}}\right)}
+\label{eq:bm25}
+\end{equation}
+
+Trong đó $k_1$ kiểm soát độ bão hòa tần suất từ, $b$ kiểm soát chuẩn hóa độ dài tài liệu, và $\overline{dl}$ là độ dài tài liệu trung bình.
+
+Trong hệ thống TechStore, Hybrid Search được triển khai với trọng số ưu tiên cho tên sản phẩm (nhân 3) so với nội dung mô tả (nhân 1), dựa trên quan sát rằng người dùng thường tìm kiếm theo tên thương hiệu và model cụ thể. Các kết quả xuất hiện ở cả hai tìm kiếm được tăng điểm thêm 0.05 (overlap boost), trong khi kết quả chỉ từ tìm kiếm từ khóa được đánh dấu \texttt{lowConfidence=true}.
+
+\subsection{Query Rewriting trong RAG nâng cao}
+
+\textbf{Query Rewriting} là kỹ thuật mở rộng của RAG: sử dụng LLM để phân tích câu hỏi gốc và viết lại thành dạng tối ưu hơn cho việc tìm kiếm~\cite{ma2023query}. Ví dụ, câu hỏi ``ip14 bnh'' được viết lại thành ``iPhone 14 giá bao nhiêu'' (dạng đầy đủ hơn, giúp tìm kiếm chính xác hơn). Trong TechStore, quá trình rewriting chạy \textbf{song song} với hybridSearch qua \texttt{Promise.all}: LLM rewrite và tìm kiếm ngữ nghĩa diễn ra đồng thời, giảm độ trễ so với tuần tự, sau đó kết quả tốt hơn được ưu tiên sử dụng.
+
+\section{Công nghệ backend}
+\label{sec:c2_backend_tech}
+
+\subsection{Node.js và Express}
+
+Node.js~\cite{tilkov2010node} là môi trường chạy JavaScript phía server, nổi bật với mô hình I/O không chặn (non-blocking I/O) và vòng lặp sự kiện (event loop), phù hợp xử lý nhiều kết nối đồng thời với tải nhẹ. Phiên bản yêu cầu tối thiểu là 20; dự án phát triển và kiểm thử trên phiên bản 22 LTS, hỗ trợ ES modules gốc và nhiều cải tiến hiệu năng. Express 4 là web framework tối giản và linh hoạt, cho phép cấu hình middleware theo dạng chuỗi (chain) tường minh trước mỗi endpoint.
+
+\subsection{Sequelize ORM và MySQL 8}
+
+Sequelize~\cite{sequelize_docs} là ORM cho Node.js hỗ trợ nhiều hệ quản trị cơ sở dữ liệu quan hệ, cung cấp migrations (quản lý phiên bản schema), associations (quan hệ giữa bảng), và transactions. MySQL 8 được chọn nhờ hỗ trợ tốt cho kiểu dữ liệu JSON, cơ chế khóa hàng (row-level locking) phục vụ xử lý đồng thời, và charset utf8mb4 để lưu trữ đầy đủ ký tự Unicode bao gồm emoji.
+
+\subsection{JWT và bcrypt}
+
+JWT (JSON Web Token)~\cite{jones2015jwt} là tiêu chuẩn mã hóa mở cho xác thực stateless. TechStore dùng chiến lược dual-token: access token (15 phút) và refresh token (7 ngày, lưu trong httpOnly cookie chống XSS). bcrypt~\cite{provos1999bcrypt} là thuật toán băm mật khẩu có tích hợp salt ngẫu nhiên và cost factor điều chỉnh được (TechStore dùng cost=12), giúp chống tấn công rainbow table và brute force.
+
+\subsection{Zod -- Schema Validation}
+
+Zod~\cite{zod_docs} là thư viện validation schema cho TypeScript với API fluent và khả năng suy luận kiểu tự động. Trong TechStore, mỗi endpoint có một Zod schema riêng validate request body, query params và path params. Middleware \texttt{validateRequest} tự động trả về lỗi 400 với thông báo chi tiết khi dữ liệu không hợp lệ, loại bỏ hoàn toàn code validation thủ công trong controller.
+
+\subsection{Nodemailer và Winston}
+
+Nodemailer~\cite{nodemailer_docs} là thư viện gửi email trong Node.js, hỗ trợ SMTP với TLS. TechStore dùng Gmail SMTP để gửi email xác thực OTP, xác nhận đơn hàng và thông báo cập nhật trạng thái. Winston~\cite{winston_docs} là thư viện logging cho Node.js hỗ trợ nhiều transport (console, file) và định dạng log linh hoạt, được dùng để ghi nhật ký toàn bộ request, lỗi và sự kiện quan trọng.
+
+\subsection{Multer và xử lý upload file}
+
+Multer~\cite{multer_docs} là middleware Express chuyên xử lý request có kiểu \texttt{multipart/form-data}, định dạng bắt buộc khi trình duyệt gửi file lên server. TechStore cấu hình Multer với \texttt{diskStorage} để lưu file tạm vào hệ thống tệp: tên file được sinh tự động bằng \texttt{uuid()} ghép với phần mở rộng gốc viết thường, đảm bảo không bao giờ xảy ra xung đột tên. \texttt{fileFilter} giới hạn MIME type chỉ chấp nhận \texttt{image/jpeg}, \texttt{image/jpg}, \texttt{image/png} và \texttt{image/webp}; các kiểu file khác bị từ chối ngay ở tầng middleware trước khi dữ liệu được ghi lên disk. Giới hạn kích thước được đặt là 5\,MB mỗi file và tối đa 10 file mỗi request (riêng loại \texttt{reviews} giới hạn 5 file).
+
+Tuy nhiên, kiểm tra MIME type của Multer chỉ là lớp bảo vệ đầu tiên và không đủ: kẻ tấn công có thể gửi một file thực thi (ví dụ \texttt{.exe}) kèm theo header \texttt{Content-Type: image/jpeg} để qua mặt bộ lọc này. Vì vậy, sau khi Multer lưu file xuống disk, hệ thống thực hiện thêm bước xác minh \textbf{magic bytes}: đọc 12 byte đầu tiên của file và đối chiếu với chữ ký nhị phân đặc trưng của từng định dạng ảnh. Cụ thể, file JPEG hợp lệ phải bắt đầu bằng ba byte \texttt{FF D8 FF}; file PNG phải có tám byte \texttt{89 50 4E 47 0D 0A 1A 0A} ở phần header; file WebP phải có chuỗi \texttt{RIFF} tại offset 0 và chuỗi \texttt{WEBP} tại offset 8. Nếu magic bytes không khớp với bất kỳ định dạng hợp lệ nào, file bị xóa ngay khỏi disk và server trả về lỗi HTTP 400. Thiết kế hai lớp bảo vệ này ngăn chặn hiệu quả các tấn công upload file độc hại mà một kiểm tra MIME type đơn lẻ không thể phòng ngừa.
+
+\section{Công nghệ frontend}
+\label{sec:c2_frontend_tech}
+
+\subsection{React 19 và TypeScript}
+
+React~\cite{react_docs} là thư viện JavaScript xây dựng giao diện người dùng theo mô hình component-based. React 19 (^19.2.6) bổ sung Actions API, hook \texttt{use()} cho phép đọc Promise và context trong render, cùng các hook \texttt{useTransition} và \texttt{useOptimistic} hỗ trợ cập nhật bất đồng bộ và optimistic UI, cải thiện hiệu năng khi tải dữ liệu bất đồng bộ. TypeScript~\cite{typescript_handbook} mở rộng JavaScript với kiểu tĩnh (static typing), giúp phát hiện lỗi sớm trong quá trình phát triển và tăng khả năng bảo trì codebase.
+
+\subsection{Vite và Code Splitting}
+
+Vite~\cite{vite_docs} là công cụ build frontend thế hệ mới, dùng ES modules gốc trong development để đạt tốc độ hot-reload gần như tức thì. Kết hợp với \texttt{React.lazy} và \texttt{Suspense}, Vite tự động chia nhỏ bundle (code splitting) theo từng feature, giảm kích thước file tải ban đầu.
+
+\subsection{Zustand và TanStack Query}
+
+\textbf{Zustand}~\cite{zustand_docs} là thư viện quản lý client state với API tối giản, không cần boilerplate. TechStore sử dụng 6 Zustand store kết hợp Immer middleware: auth-store, cart-store, chat-store, catalog-store, wishlist-store và ui-store. \textbf{TanStack Query}~\cite{tanstack_query_docs} quản lý server state (dữ liệu từ API) với caching tự động, background refetching và xử lý loading/error state, config mặc định staleTime 5 phút và gcTime 10 phút.
+
+\subsection{shadcn/ui và Tailwind CSS}
+
+shadcn/ui là bộ component React được xây dựng trên Radix UI (các primitive accessible, headless như Dialog, Dropdown, Popover) kết hợp với \texttt{cva} (class-variance-authority) để quản lý biến thể style theo dạng utility. Khác với thư viện component đóng gói sẵn, shadcn/ui cung cấp source code trực tiếp vào dự án, cho phép tùy chỉnh hoàn toàn. Tailwind CSS~\cite{tailwindcss_docs} phiên bản 4 là framework CSS utility-first cho phép style trực tiếp trong JSX. TechStore kết hợp cả hai: shadcn/ui trên nền Radix UI cho các component tương tác phức tạp ở cả trang quản trị lẫn giao diện người dùng, Tailwind CSS cho layout và tùy chỉnh giao diện chi tiết.
+
+\subsection{Framer Motion}
+
+Framer Motion~\cite{framer_motion_docs} là thư viện animation cho React, cung cấp API khai báo (\texttt{motion.div}, \texttt{variants}) để tạo hiệu ứng chuyển động mượt mà dựa trên trạng thái component. TechStore sử dụng Framer Motion cho HeroSection trang chủ với hiệu ứng parallax (useScroll, useTransform) và các animation xuất hiện khi cuộn trang, nâng cao trải nghiệm người dùng so với CSS transitions thuần túy.
+
+\subsection{React Router v7}
+
+React Router v7~\cite{react_router_docs} (^7.15.1) là thư viện routing cho React SPA, cung cấp client-side routing với lazy loading. TechStore khai báo tất cả routes trong \texttt{AppRoutes.tsx} với \texttt{React.lazy} cho mỗi feature, kết hợp các route bảo vệ (\texttt{ProtectedRoute}, \texttt{AdminRoute}) để kiểm soát quyền truy cập.
+
+\subsection{i18next và react-i18next}
+
+i18next~\cite{i18next_docs} là framework quốc tế hóa (internationalization -- i18n) cho JavaScript, hỗ trợ đa ngôn ngữ với nhiều chiến lược nạp file dịch khác nhau. TechStore sử dụng react-i18next, bản tích hợp React của i18next, để quản lý chuỗi văn bản trong giao diện người dùng. Các file dịch (\texttt{en.json}, \texttt{vi.json}) được import tĩnh và bundle cùng ứng dụng, phù hợp với quy mô hiện tại; người dùng chuyển ngôn ngữ tức thì mà không cần thêm request mạng. Các component dùng hook \texttt{useTranslation()} để lấy chuỗi theo ngôn ngữ hiện tại, giúp tách biệt nội dung hiển thị khỏi logic component.
+
+\subsection{Axios và cơ chế quản lý token}
+
+Axios~\cite{axios_docs} là thư viện HTTP client phổ biến cho JavaScript, cung cấp API dựa trên Promise với hỗ trợ interceptor và hủy request. Thay vì để mỗi feature tự tạo instance Axios riêng (vì điều đó dễ dẫn đến thiếu nhất quán về cấu hình và bỏ sót xác thực), TechStore tạo duy nhất một instance trong \texttt{src/lib/api-client.ts} và yêu cầu toàn bộ API call phải đi qua instance này. Instance được cấu hình với \texttt{baseURL} trỏ đến backend (đọc từ biến môi trường \texttt{VITE\_API\_URL}), \texttt{timeout} 10 giây, \texttt{withCredentials: true} để trình duyệt tự động gửi kèm httpOnly cookie chứa refresh token, và \texttt{Content-Type: application/json} mặc định.
+
+Hai interceptor được đăng ký trên instance này xử lý toàn bộ vòng đời xác thực mà không cần mỗi component tự quản lý. \textbf{Request interceptor} tự động inject header \texttt{Authorization: Bearer <token>} vào mọi request đi ra. Token được lấy qua hàm \texttt{getValidToken()} trong \texttt{utils/token-manager.ts}: hàm này decode JWT payload để kiểm tra trường \texttt{exp}, nếu token còn hạn thì trả về ngay, nếu đã hết hạn thì tự động gọi endpoint \texttt{/api/auth/refresh-token} để lấy token mới trước khi tiếp tục. \textbf{Response interceptor} lắng nghe phản hồi HTTP 401: nếu endpoint gây lỗi không phải các endpoint xác thực (login, register, refresh-token, google), interceptor gọi \texttt{handleUnauthorizedError()} để xóa thông tin phiên và điều hướng về trang đăng nhập; ngược lại, lỗi 401 trên chính endpoint xác thực được trả thẳng về component để hiển thị thông báo lỗi phù hợp.
+
+Điểm thiết kế đáng chú ý nhất là cơ chế \textbf{deduplication khi refresh token}: trong các ứng dụng SPA, nhiều request có thể đồng thời nhận lỗi 401 nếu access token hết hạn đúng lúc. Nếu mỗi request đều tự gọi endpoint refresh, server sẽ nhận nhiều yêu cầu lấy token mới song song, vừa lãng phí vừa có thể gây race condition làm hỏng refresh token. Để tránh điều này, \texttt{token-manager.ts} dùng cờ \texttt{isRefreshing} kết hợp mảng \texttt{failedQueue}: request đầu tiên nhận 401 đặt \texttt{isRefreshing = true} và thực sự gọi API refresh; các request tiếp theo phát hiện \texttt{isRefreshing} đang bật liền tự đưa mình vào \texttt{failedQueue} và chờ. Khi refresh thành công, hàm \texttt{processQueue()} được gọi để lần lượt giải phóng tất cả request trong hàng đợi với token mới, đảm bảo mọi request đều hoàn thành mà chỉ tốn đúng một lần gọi refresh.
+
+\section{Các công nghệ backend bổ sung}
+\label{sec:c2_backend_extra}
+
+\subsection{Google OAuth 2.0}
+
+Google OAuth 2.0~\cite{google_oauth_docs} là giao thức xác thực cho phép người dùng đăng nhập bằng tài khoản Google thay vì tạo mật khẩu riêng. Trong TechStore, luồng OAuth 2.0 hoạt động theo phương thức token exchange: frontend nhận Google ID token từ Google Sign-In SDK, gửi token này lên backend, và backend dùng thư viện \texttt{google-auth-library} để xác minh token với Google API. Sau khi xác thực thành công, hệ thống tạo hoặc tra cứu tài khoản TechStore tương ứng, rồi phát hành JWT access/refresh token theo cơ chế thống nhất với đăng nhập email thông thường. Cách triển khai này tránh việc lưu trữ mật khẩu Google và đảm bảo bảo mật nhờ Google chịu trách nhiệm xác thực danh tính.
+
+\subsection{Sharp -- Xử lý ảnh phía server}
+
+Sharp~\cite{sharp_docs} là thư viện xử lý ảnh hiệu năng cao cho Node.js, dựa trên thư viện C libvips. TechStore sử dụng Sharp trong module \texttt{image} để chuẩn hóa ảnh sản phẩm sau khi upload: resize về kích thước chuẩn, tự động xoay theo metadata EXIF, chuyển đổi định dạng sang JPEG/WebP với chất lượng kiểm soát được, và xóa metadata EXIF (bảo vệ quyền riêng tư của người bán). Nhờ Sharp, hệ thống đảm bảo ảnh sản phẩm hiển thị nhất quán và tối ưu kích thước file.
+
+\subsection{node-cron -- Tác vụ định kỳ}
+
+node-cron~\cite{node_cron_docs} là thư viện lập lịch tác vụ tự động theo cú pháp cron trong Node.js. TechStore đăng ký hai cron job trong \texttt{src/jobs/cleanup.js}: job chạy mỗi ngày lúc 2 giờ sáng (\texttt{0 2 * * *}) dọn dẹp giỏ hàng bỏ dở, OTP hết hạn, token reset mật khẩu hết hạn, discount code hết hạn, và lưu trữ tin nhắn chatbot cũ (archive sau 90 ngày); job chạy mỗi tuần lúc 3 giờ sáng Chủ nhật (\texttt{0 3 * * 0}) dọn dẹp file ảnh mồ côi không còn liên kết với sản phẩm. Các tác vụ nền này giúp hệ thống tự duy trì dữ liệu gọn gàng mà không cần can thiệp thủ công.
+
+\subsection{Swagger/OpenAPI -- Tài liệu API tự động}
+
+Swagger/OpenAPI~\cite{swagger_docs} là tiêu chuẩn mô tả API RESTful theo định dạng JSON/YAML có thể đọc bởi máy và con người. TechStore tích hợp \texttt{swagger-jsdoc} để sinh tài liệu OpenAPI 3.0 từ JSDoc comment trực tiếp trong file route, và \texttt{swagger-ui-express} để phục vụ giao diện tương tác tại endpoint \texttt{/api-docs}. Thiết kế này đảm bảo tài liệu luôn đồng bộ với code vì được sinh tự động từ source, đồng thời cho phép kiểm thử API trực tiếp qua trình duyệt mà không cần Postman.
+
+\section{Bảng tổng quan tech stack}
+\label{sec:c2_tech_summary}
+
+Bảng~\ref{tab:tech_stack} tổng hợp toàn bộ các công nghệ được sử dụng trong dự án TechStore, phân theo nhóm chức năng.
+
+\begin{table}[H]
+  \centering
+  \caption{Tổng quan công nghệ sử dụng trong hệ thống TechStore}
+  \label{tab:tech_stack}
+  \begin{tabular}{|l|l|p{6.5cm}|}
+    \hline
+    \textbf{Nhóm} & \textbf{Công nghệ} & \textbf{Mục đích} \\
+    \hline
+    \multirow{6}{*}{Backend} & Node.js 22 LTS & Runtime server, non-blocking I/O \\
+    \cline{2-3}
+    & Express 4 & Web framework, middleware chain \\
+    \cline{2-3}
+    & Sequelize 6 + MySQL 8 & ORM, migration, giao dịch \\
+    \cline{2-3}
+    & JWT + bcrypt & Xác thực, băm mật khẩu \\
+    \cline{2-3}
+    & Zod & Validation schema tự động \\
+    \cline{2-3}
+    & google-auth-library & Xác minh Google ID token \\
+    \hline
+    \multirow{4}{*}{Backend -- AI} & Jina Embeddings v3 & Embedding provider ưu tiên \\
+    \cline{2-3}
+    & HF multilingual-e5 & Embedding provider dự phòng \\
+    \cline{2-3}
+    & OpenAI-compatible API & LLM generation \\
+    \cline{2-3}
+    & Vector DB (JSON) & Lưu trữ embedding sản phẩm \\
+    \hline
+    \multirow{4}{*}{Backend -- Hạ tầng} & Sharp & Xử lý và chuẩn hóa ảnh \\
+    \cline{2-3}
+    & node-cron & Tác vụ định kỳ (cleanup) \\
+    \cline{2-3}
+    & Nodemailer & Gửi email OTP và xác nhận \\
+    \cline{2-3}
+    & Swagger/OpenAPI 3.0 & Tài liệu API tự động \\
+    \hline
+    \multirow{10}{*}{Frontend} & React 19 + TypeScript 5 & UI framework, kiểu tĩnh \\
+    \cline{2-3}
+    & Vite 8 & Build tool, HMR tức thì \\
+    \cline{2-3}
+    & React Router v7 & Client-side routing, lazy loading \\
+    \cline{2-3}
+    & shadcn/ui (Radix UI + cva) & Component UI accessible, headless \\
+    \cline{2-3}
+    & TanStack Query & Server state, cache tự động \\
+    \cline{2-3}
+    & Zustand (6 stores) & Client state \\
+    \cline{2-3}
+    & Framer Motion & Animation và hiệu ứng UI \\
+    \cline{2-3}
+    & i18next + react-i18next & Quốc tế hóa (i18n) \\
+    \cline{2-3}
+    & exceljs 4.4 + leaflet 1.9.4 & Xuất Excel, bản đồ tương tác \\
+    \cline{2-3}
+    & dayjs 1.11 & Xử lý ngày giờ (thay moment) \\
+    \hline
+    \multirow{3}{*}{Kiểm thử / CI} & Jest 29 + Supertest & Unit, integration, API test \\
+    \cline{2-3}
+    & GitHub Actions & CI/CD pipeline tự động \\
+    \cline{2-3}
+    & Husky + lint-staged & Pre-commit hooks \\
+    \hline
+    \multirow{2}{*}{Thanh toán} & VNPay (HMAC-SHA512) & Cổng thanh toán nội địa \\
+    \cline{2-3}
+    & MoMo (HMAC-SHA256) & Ví điện tử \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Bảng~\ref{tab:tech_stack} cho thấy TechStore sử dụng stack công nghệ JavaScript/TypeScript thuần nhất trên cả hai tầng backend và frontend, giúp chia sẻ kiến thức giữa hai phía và giảm chi phí chuyển đổi ngữ cảnh trong quá trình phát triển.
+
+\section{Kiểm thử và công cụ đảm bảo chất lượng}
+\label{sec:c2_quality}
+
+\subsection{Chiến lược kiểm thử đa tầng}
+
+Test Pyramid~\cite{fowler2012test_pyramid} là mô hình tổ chức kiểm thử trong đó unit tests (tầng dưới cùng, nhiều nhất) kiểm tra logic trong isolation, integration tests kiểm tra sự phối hợp giữa các component với database thật, và E2E tests (tầng trên cùng, ít nhất) kiểm tra luồng người dùng hoàn chỉnh. TechStore triển khai đầy đủ 5 tầng: unit, integration, API HTTP, E2E và component test.
+
+\subsection{Jest 29 và Supertest}
+
+Jest~\cite{jest_docs} là framework kiểm thử JavaScript hỗ trợ mocking, snapshot testing và coverage. Supertest~\cite{supertest_docs} là thư viện gửi HTTP request đến Express app trong môi trường test. Trong TechStore, integration tests và API HTTP tests sử dụng Supertest với MySQL database thật (\texttt{techstore\_test}), đảm bảo test phản ánh đúng hành vi thực tế.
+
+\subsection{GitHub Actions và Husky}
+
+GitHub Actions~\cite{github_actions_docs} cung cấp CI/CD pipeline tự động: mỗi push hoặc pull request kích hoạt quy trình lint, typecheck, build và unit test. Husky~\cite{husky_docs} quản lý Git hooks pre-commit: tự động quét secret, kiểm tra kiến trúc (service không import Sequelize trực tiếp, controller không touch ORM) và chạy lint-staged trước mỗi commit.
+
+\subsection{ESLint, Prettier và module-alias}
+
+ESLint~\cite{eslint_docs} phân tích tĩnh code phát hiện lỗi tiềm ẩn và vi phạm quy ước. Prettier~\cite{prettier_docs} định dạng code tự động. \texttt{module-alias}~\cite{module_alias_docs} cho phép sử dụng alias ngắn gọn (\texttt{@models}, \texttt{@shared}, \texttt{@services}) thay vì đường dẫn tương đối dài trong codebase backend.

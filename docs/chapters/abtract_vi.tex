@@ -1,0 +1,17 @@
+\begin{center}
+\textbf{\large{Tóm tắt}}
+\end{center}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+
+\begin{small}
+
+Thương mại điện tử đang phát triển mạnh mẽ tại Việt Nam, tuy nhiên phần lớn các nền tảng hiện tại vẫn thiếu khả năng tư vấn sản phẩm thông minh, phụ thuộc vào việc người dùng tự tìm kiếm và lọc sản phẩm. Khóa luận này trình bày quá trình xây dựng hệ thống website thương mại điện tử \textbf{TechStore} chuyên bán thiết bị công nghệ, tích hợp AI Chatbot sử dụng kỹ thuật RAG (Retrieval-Augmented Generation) để tư vấn sản phẩm theo thời gian thực.
+
+Hệ thống được xây dựng theo kiến trúc Modular Monolith với 17 module backend độc lập, giao tiếp nội bộ qua Event-Driven pattern. Frontend được phát triển theo mô hình Feature-Based với 13 features riêng biệt. AI Chatbot là thành phần trọng tâm, sử dụng pipeline RAG kết hợp giữa Hybrid Search (cosine similarity và BM25) với mô hình ngôn ngữ lớn tương thích OpenAI để sinh phản hồi tiếng Việt tự nhiên. Hệ thống embedding sử dụng chiến lược chain fallback qua ba nhà cung cấp (Jina v3, HuggingFace e5-instruct, HuggingFace e5-base) với vector 1024 chiều.
+
+Hệ thống cung cấp đầy đủ các chức năng thương mại điện tử: quản lý sản phẩm và danh mục, giỏ hàng cho cả khách vãng lai và người dùng đã đăng nhập, quy trình đặt hàng và thanh toán trực tuyến qua MoMo và VNPay, đánh giá sản phẩm, quản lý tồn kho, và trang quản trị toàn diện. Bộ kiểm thử gồm 5.479 test case phân bố trên 5 tầng (unit, integration, API HTTP, E2E và component test), đạt mức coverage 100\% lines và 99,81\% branches cho unit tests.
+
+\vspace*{0.5cm}
+\textbf{Từ khóa}: Thương mại điện tử, RAG (Retrieval-Augmented Generation), AI Chatbot, Modular Monolith, Hybrid Vector Search.
+
+\end{small}

@@ -87,3 +87,21 @@ frontend/.screenshots/
 # Junk jest output (broken Windows path filename)
 frontend/C*Tempjest_out*.txt
 backend/coverage-tmp/
+
+# LaTeX build artifacts (generated — không commit)
+docs/*.aux
+docs/*.bbl
+docs/*.blg
+docs/*.fdb_latexmk
+docs/*.fls
+docs/*.synctex.gz
+docs/*.pdf
+docs/*.out
+docs/*.toc
+docs/*.lof
+docs/*.lot
+docs/*.log
+docs/.ruff_cache/
+# Thesis images — nặng (~13MB), để untracked (commit source text only)
+docs/figures/
+docs/admin-redesign/

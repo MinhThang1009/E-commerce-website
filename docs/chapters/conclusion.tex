@@ -1,0 +1,40 @@
+\chapter*{Kết luận và Hướng phát triển}
+\addcontentsline{toc}{chapter}{Kết luận và Hướng phát triển}
+\label{chap:conclusion}
+
+\section*{Tổng kết kết quả đạt được}
+\addcontentsline{toc}{section}{Tổng kết kết quả đạt được}
+
+Khóa luận đã hoàn thành mục tiêu đề ra là xây dựng hệ thống website thương mại điện tử TechStore chuyên bán thiết bị công nghệ, tích hợp AI Chatbot sử dụng kỹ thuật RAG để tư vấn sản phẩm theo thời gian thực. Những kết quả chính đạt được gồm năm điểm sau.
+
+Thứ nhất, về thành phần trọng tâm là chatbot AI RAG, khóa luận đã nghiên cứu và cài đặt thành công pipeline RAG Hybrid gồm 7 bước với điểm đặc trưng là tìm kiếm kết hợp giữa cosine similarity (dense retrieval, ngưỡng 0.45) và BM25-inspired keyword scoring (sparse retrieval, trọng số tên sản phẩm nhân 3) cùng overlap boost +0.05. Chiến lược chain fallback qua ba nhà cung cấp embedding (Jina v3, HuggingFace e5-large-instruct, HuggingFace e5-large), tất cả tạo vector 1024 chiều, đảm bảo tính sẵn sàng cao. Pipeline hoạt động tốt cho các câu hỏi tìm kiếm ngữ nghĩa, tên model cụ thể và câu hỏi viết tắt tiếng Việt.
+
+Thứ hai, về kiến trúc backend, hệ thống được xây dựng theo Modular Monolith với 17 module nghiệp vụ độc lập, áp dụng Dependency Injection tường minh qua factory functions, EventBus pub/sub cho side effects bất đồng bộ, và UnitOfWork với SELECT FOR UPDATE để đảm bảo tính toàn vẹn dữ liệu trong các giao dịch đồng thời.
+
+Thứ ba, về kiến trúc frontend, giao diện được phát triển theo mô hình Feature-Based với 13 feature riêng biệt, kết hợp TanStack Query quản lý server state và 6 Zustand store quản lý client state. Floating chat widget tích hợp chatbot AI trên mọi trang, cho phép người dùng thêm sản phẩm vào giỏ hàng trực tiếp qua giao diện chat.
+
+Thứ tư, về tích hợp thanh toán, hệ thống tích hợp đầy đủ hai cổng VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) với luồng IPN callback đúng chuẩn và cơ chế idempotency ngăn xử lý trùng lặp. Máy trạng thái đơn hàng (FSM) đảm bảo tính nhất quán dữ liệu xuyên suốt vòng đời đơn hàng.
+
+Thứ năm, về chất lượng phần mềm, bộ kiểm thử gồm 5.479 test cases phân bố trên 5 tầng (unit 3.737, integration 184, API HTTP 700, E2E 100, FE component 758) với coverage 100\% lines, 99,81\% branches và trên 99\% cho statements và functions của unit tests. CI/CD pipeline tự động hóa quy trình kiểm tra chất lượng, Husky pre-commit hooks kiểm tra kiến trúc và phát hiện secret key trước mỗi commit.
+
+\section*{Hạn chế của hệ thống}
+\addcontentsline{toc}{section}{Hạn chế của hệ thống}
+
+Bên cạnh những kết quả đạt được, hệ thống hiện tại còn một số hạn chế cần nhìn nhận thẳng thắn.
+
+Về chatbot AI, lịch sử hội thoại được lưu trong bộ nhớ server (in-memory Map) và mất khi server khởi động lại -- thiết kế này phù hợp với quy mô demo nhưng không phù hợp cho môi trường sản xuất nhiều instance. Chatbot chưa xử lý tốt các câu hỏi cần context nhiều lượt khi người dùng dùng đại từ thay thế. Ngoài ra, vector store dạng file JSON không tối ưu cho catalog lớn hơn 10.000 sản phẩm.
+
+Về hệ thống tổng thể, chưa tích hợp logistics thực tế và tracking đơn hàng từ đơn vị vận chuyển. Hệ thống gợi ý sản phẩm (collaborative filtering dựa trên lịch sử hành vi) chưa được triển khai -- chatbot RAG chỉ dựa trên truy vấn hiện tại mà không học từ hành vi người dùng. Quản lý kho hàng vật lý (physical warehouse management) cũng nằm ngoài phạm vi hiện tại.
+
+\section*{Hướng phát triển trong tương lai}
+\addcontentsline{toc}{section}{Hướng phát triển trong tương lai}
+
+Dựa trên những hạn chế xác định ở trên, một số hướng mở rộng được đề xuất.
+
+Về nâng cấp chatbot AI, hướng ưu tiên nhất là chuyển vector store từ file JSON sang cơ sở dữ liệu vector chuyên dụng như Chroma, Qdrant hoặc pgvector (PostgreSQL extension) để hỗ trợ catalog lớn hơn với hiệu năng tốt hơn. Tích hợp conversation memory persistent vào MySQL cho phép lịch sử hội thoại duy trì qua nhiều phiên đăng nhập. Bổ sung khả năng multimodal -- người dùng gửi ảnh sản phẩm và chatbot nhận diện để tư vấn -- là hướng tiên tiến nhưng khả thi với các mô hình vision-language hiện đại.
+
+Về hệ thống gợi ý, kết hợp RAG với collaborative filtering tạo ra hệ thống hybrid recommendation có thể cá nhân hóa gợi ý dựa trên cả truy vấn hiện tại lẫn lịch sử hành vi. Phân tích log hội thoại từ bảng \texttt{chat\_messages} cũng mở ra khả năng fine-tuning prompt để cải thiện chất lượng phản hồi theo thời gian.
+
+Về kiến trúc hệ thống, khi quy mô tăng, Modular Monolith có thể được tách dần thành microservices -- bắt đầu từ module AI vì đây là module có tài nguyên sử dụng cao nhất và có thể deploy độc lập. Thêm Redis cho caching phân tán và session storage giúp hỗ trợ nhiều instance server đồng thời.
+
+Về tính năng thương mại điện tử, tích hợp logistics API (GHN, GHTK) cho tracking đơn hàng thời gian thực, bổ sung hệ thống loyalty points và voucher phức tạp, và phát triển ứng dụng mobile (React Native) chia sẻ business logic với web là những tính năng cần thiết để chuyển từ demo sang sản phẩm thực tế.

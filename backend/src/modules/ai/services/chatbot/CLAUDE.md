@@ -77,7 +77,8 @@ POST /api/chatbot/message
 Responsibilities:
 
 - **Full RAG pipeline** trong `handleMessage()` — 7 bước (xem Request Flow)
-- LLM HTTP calls với **provider rotation** (env: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL_1` primary + `LLM_MODEL_2` fallback)
+- LLM HTTP calls với **provider rotation** (env: `LLM_API_KEY`, `LLM_BASE_URL`, `LLM_MODEL_1` primary + `LLM_MODEL_2` fallback). Provider dùng `LLM_BASE_URL` (OpenAI-compatible, vd llm.chiasegpu.vn) — KHÔNG phải OpenRouter (OpenRouter là của translate-service)
+- **Ngân sách tổng LLM** `LLM_TOTAL_TIMEOUT_MS` (env, mặc định = `LLM_REQUEST_TIMEOUT_MS` 30s) bọc `augmentAndGenerate` qua `Promise.race` — quá hạn → fallback `simpleKeywordMatch` (chống treo khi endpoint chậm + rotation cộng dồn). `LLM_REQUEST_TIMEOUT_MS`/`LLM_REWRITE_TIMEOUT_MS` cũng env-configurable
 - **Session memory**: `Map<sessionId, { messages[], lastAccess }>` — reset khi restart
   - `MAX_HISTORY_TURNS = 10` (20 messages), `MAX_SESSIONS = 500`, `SESSION_TTL_MS = 30 phút`
 - **Catalog data**: brands + categories load từ DB, cache **TTL 5 phút** (`_catalogCacheExpiry = now + 5 * 60 * 1000`)

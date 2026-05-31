@@ -6,7 +6,8 @@
  * ChatbotService — trung tâm điều phối giao tiếp với LLM và quản lý lịch sử hội thoại.
  *
  * Service này làm 3 việc chính:
- *   1. **Gọi LLM (augmentAndGenerate)**: gửi request đến OpenRouter/OpenAI-compatible API,
+ *   1. **Gọi LLM (augmentAndGenerate)**: gửi request đến API OpenAI-compatible (cấu hình qua
+ *      LLM_BASE_URL — vd llm.chiasegpu.vn; OpenRouter là của translate-service, KHÔNG phải chatbot),
  *      có cơ chế tự động chuyển provider khi gặp lỗi (provider rotation).
  *   2. **Quản lý lịch sử hội thoại (session memory)**: lưu trữ các tin nhắn trong
  *      phiên hội thoại, giới hạn số lượng để tránh tốn quá nhiều bộ nhớ.
@@ -102,7 +103,7 @@ const LLM_MAX_TOKENS = 800;
  * 30 giây đủ cho LLM xử lý prompt phức tạp và trả về JSON response đầy đủ.
  * Nếu timeout → provider đó bị coi là lỗi, chuyển sang provider tiếp theo.
  */
-const LLM_REQUEST_TIMEOUT_MS = 30000;
+const LLM_REQUEST_TIMEOUT_MS = Number(process.env.LLM_REQUEST_TIMEOUT_MS) || 30000;
 
 /**
  * Số token tối đa cho response của LLM khi rewrite query.
@@ -116,7 +117,15 @@ const LLM_REWRITE_MAX_TOKENS = 80;
  * Ngắn hơn LLM_REQUEST_TIMEOUT_MS vì rewrite chạy song song với vector search.
  * Nếu rewrite mất > 8 giây → bỏ qua, dùng query gốc, không block request chính.
  */
-const LLM_REWRITE_TIMEOUT_MS = 8000;
+const LLM_REWRITE_TIMEOUT_MS = Number(process.env.LLM_REWRITE_TIMEOUT_MS) || 8000;
+
+/**
+ * Ngân sách TỔNG (milliseconds) cho pha sinh câu trả lời (augmentAndGenerate),
+ * tính trên TẤT CẢ providers cộng lại — chống treo khi endpoint LLM chậm và provider
+ * rotation cộng dồn (vd 2 provider × LLM_REQUEST_TIMEOUT_MS). Quá hạn → trả fallback
+ * keyword match thay vì để user chờ. Mặc định = LLM_REQUEST_TIMEOUT_MS, override qua env.
+ */
+const LLM_TOTAL_TIMEOUT_MS = Number(process.env.LLM_TOTAL_TIMEOUT_MS) || LLM_REQUEST_TIMEOUT_MS;
 
 // ════════════════════════════════════════════════════════════════════════════════
 // CLASS DEFINITION
@@ -308,11 +317,21 @@ class ChatbotService {
       );
 
       // ── Bước 6: Generation — gọi LLM để sinh câu trả lời ────────────────────
-      const aiResponse = await this.augmentAndGenerate(
-        finalQuery,
-        relevantProducts,
-        conversationHistory,
-      );
+      // Ngân sách tổng: nếu LLM (cộng dồn provider rotation) vượt LLM_TOTAL_TIMEOUT_MS
+      // → trả fallback keyword match thay vì để user chờ/treo. Mỗi axios provider vẫn
+      // tự timeout LLM_REQUEST_TIMEOUT_MS ở augmentAndGenerate.
+      let _budgetTimer;
+      const aiResponse = await Promise.race([
+        this.augmentAndGenerate(finalQuery, relevantProducts, conversationHistory),
+        new Promise((resolve) => {
+          _budgetTimer = setTimeout(() => {
+            logger.warn(
+              `[Chatbot] LLM vượt ngân sách ${LLM_TOTAL_TIMEOUT_MS}ms — trả fallback keyword match`,
+            );
+            resolve(this.simpleKeywordMatch(finalQuery, relevantProducts));
+          }, LLM_TOTAL_TIMEOUT_MS);
+        }),
+      ]).finally(() => clearTimeout(_budgetTimer));
 
       // ── Bước 7: Persist — cập nhật session memory + lưu DB ──────────────────
       if (sessionId) {

@@ -377,6 +377,35 @@ describe('ChatbotService.handleMessage', () => {
     expect(result).toHaveProperty('intent');
     expect(Array.isArray(result.suggestions)).toBe(true);
   });
+
+  test('vượt ngân sách LLM_TOTAL_TIMEOUT_MS → trả fallback keyword (budget timeout)', async () => {
+    jest.useFakeTimers();
+    try {
+      vectorStoreService.hybridSearch.mockResolvedValue([]);
+      // augmentAndGenerate treo (không resolve) → chỉ budget timer mới kết thúc Promise.race
+      const genSpy = jest
+        .spyOn(chatbotService, 'augmentAndGenerate')
+        .mockReturnValue(new Promise(() => {}));
+      const kwSpy = jest.spyOn(chatbotService, 'simpleKeywordMatch').mockReturnValue({
+        response: '__budget_fallback__',
+        products: [],
+        suggestions: [],
+        intent: 'general',
+      });
+
+      const promise = chatbotService.handleMessage('tìm iphone', null, null);
+      // Đẩy fake timer vượt LLM_TOTAL_TIMEOUT_MS (mặc định 30s) → setTimeout budget fire
+      await jest.advanceTimersByTimeAsync(31000);
+      const result = await promise;
+
+      expect(result.response).toBe('__budget_fallback__');
+      expect(kwSpy).toHaveBeenCalled();
+      genSpy.mockRestore();
+      kwSpy.mockRestore();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
 });
 
 // ============================================================

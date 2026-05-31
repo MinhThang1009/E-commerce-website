@@ -16,3 +16,9 @@ process.env.JWT_SECRET = 'api-test-jwt-secret-minimum-32-chars-ok';
 process.env.JWT_REFRESH_SECRET = 'api-test-refresh-secret-minimum-32-chars';
 process.env.OPENROUTER_API_KEY = 'demo-key';
 process.env.PORT = '9997';
+
+// LLM endpoint thật chậm/treo trong test → ép timeout nhỏ để fail-fast (fallback keyword),
+// tránh treo quá jest timeout 30s. Override được nếu cần test LLM thật.
+process.env.LLM_REQUEST_TIMEOUT_MS = process.env.LLM_REQUEST_TIMEOUT_MS || '6000';
+process.env.LLM_REWRITE_TIMEOUT_MS = process.env.LLM_REWRITE_TIMEOUT_MS || '3000';
+process.env.LLM_TOTAL_TIMEOUT_MS = process.env.LLM_TOTAL_TIMEOUT_MS || '6000';

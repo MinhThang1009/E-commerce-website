@@ -56,7 +56,13 @@ const CheckoutPage: React.FC = () => {
     const searchParams = new URLSearchParams(window.location.search);
     const isBuyNowFlow =
       searchParams.get('buyNow') === 'true' || sessionStorage.getItem('buyNowAction') === 'true';
-    return isBuyNowFlow && itemStr ? JSON.parse(itemStr) : null;
+    if (!isBuyNowFlow || !itemStr) return null;
+    try {
+      return JSON.parse(itemStr);
+    } catch (error) {
+      console.error('Error parsing buyNowItem:', error);
+      return null;
+    }
   });
 
   // Thống nhất danh sách items hiển thị trong checkout - nếu là mua ngay thì chỉ hiển thị 1 item, còn lại hiển thị toàn bộ giỏ hàng

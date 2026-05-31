@@ -281,7 +281,7 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
             { role: 'user', content: queryForRetrieval },
           ],
           max_tokens: 80, temperature: 0,
-        }, { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: 8000 });
+        }, { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: Number(process.env.LLM_REWRITE_TIMEOUT_MS) || 8000 });
         const rw = rwRes.data.choices?.[0]?.message?.content?.trim();
         if (rw && rw.toLowerCase() !== normalized.toLowerCase()) llmRewrite = rw;
         console.log(kv('  rewriteQuery:', llmRewrite
@@ -431,43 +431,60 @@ QUY TẮC BẮT BUỘC:
       console.log(kv('  B. buildAugmentedPrompt:', `${augPrompt.length} ký tự  (${products.length} SP + store info)`));
       console.log(kv('  C. messages[]:', `[system(6 rules), ${conversationHistory.length} history, user+RAG_context]`));
 
-      let llmSuccess = false;
-      for (let pi = 0; pi < demoProviders.length; pi++) {
-        const p = demoProviders[pi];
-        console.log(kv('  D. LLM call:', `${p.model}  (provider ${pi + 1}/${demoProviders.length})  |  temp=0.3  |  max_tokens=800`));
-        console.log(sub(`POST -> ${p.url}  (đang chờ...)`));
-        const t2 = Date.now();
-        try {
-          const res = await axios.post(p.url,
-            { model: p.model, messages, response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 800 },
-            { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: 30000 }
-          );
-          const raw = res.data.choices?.[0]?.message?.content || '';
-          if (!raw) { console.log(warn(`Provider ${pi + 1} trả về rỗng → thử tiếp`)); continue; }
-          console.log(ok(`Nhận phản hồi  (${Date.now() - t2}ms  |  ${raw.length} ký tự JSON)`));
-          console.log(kv('  E. parseLLMOutput:', 'extractJSON -> map names -> dedup -> extractProductsFromText'));
-          aiResponse = responseParser.parseLLMOutput(raw, products, finalQuery);
-          console.log(ok('Hoàn thành'));
-          llmSuccess = true;
-          break;
-        } catch (err) {
-          const status = err.response?.status;
-          // 400/401: lỗi cố định → break ngay (chatbot-service.js:698-704)
-          if (status === 400 || status === 401) {
-            console.log(warn(`Provider ${pi + 1} lỗi cố định (${status}) → dừng retry`));
-            break;
+      // Timeout per-call (axios mỗi provider) + ngân sách TỔNG (Promise.race quanh toàn bộ generation)
+      // — mirror chatbot-service.js handleMessage:319-334. Env-configurable, fallback default.
+      const LLM_REQUEST_TIMEOUT_MS = Number(process.env.LLM_REQUEST_TIMEOUT_MS) || 30000;
+      const LLM_TOTAL_TIMEOUT_MS = Number(process.env.LLM_TOTAL_TIMEOUT_MS) || LLM_REQUEST_TIMEOUT_MS;
+      const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
+      console.log(kv('  Ngân sách tổng:', `LLM_TOTAL_TIMEOUT_MS=${LLM_TOTAL_TIMEOUT_MS}ms  (Promise.race bọc provider rotation)`));
+
+      // Provider rotation loop tách thành hàm để Promise.race với budget timer
+      const runGeneration = async () => {
+        for (let pi = 0; pi < demoProviders.length; pi++) {
+          const p = demoProviders[pi];
+          console.log(kv('  D. LLM call:', `${p.model}  (provider ${pi + 1}/${demoProviders.length})  |  temp=0.3  |  max_tokens=800`));
+          console.log(sub(`POST -> ${p.url}  (đang chờ...)`));
+          const t2 = Date.now();
+          try {
+            const res = await axios.post(p.url,
+              { model: p.model, messages, response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 800 },
+              { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: LLM_REQUEST_TIMEOUT_MS }
+            );
+            const raw = res.data.choices?.[0]?.message?.content || '';
+            if (!raw) { console.log(warn(`Provider ${pi + 1} trả về rỗng → thử tiếp`)); continue; }
+            console.log(ok(`Nhận phản hồi  (${Date.now() - t2}ms  |  ${raw.length} ký tự JSON)`));
+            console.log(kv('  E. parseLLMOutput:', 'extractJSON -> map names -> dedup -> extractProductsFromText'));
+            console.log(ok('Hoàn thành'));
+            return responseParser.parseLLMOutput(raw, products, finalQuery);
+          } catch (err) {
+            const status = err.response?.status;
+            // 400/401: lỗi cố định → break ngay (chatbot-service.js:762-768)
+            if (status === 400 || status === 401) {
+              console.log(warn(`Provider ${pi + 1} lỗi cố định (${status}) → dừng retry`));
+              break;
+            }
+            // 429/402/500/503/network → thử provider tiếp
+            if (pi + 1 < demoProviders.length)
+              console.log(warn(`Provider ${pi + 1} lỗi (${status || err.code}) → thử provider ${pi + 2}`));
+            else
+              console.log(warn(`Tất cả providers lỗi → fallback simpleKeywordMatch`));
           }
-          // 429/402/500/503/network → thử provider tiếp
-          if (pi + 1 < demoProviders.length)
-            console.log(warn(`Provider ${pi + 1} lỗi (${status || err.code}) → thử provider ${pi + 2}`));
-          else
-            console.log(warn(`Tất cả providers lỗi → fallback simpleKeywordMatch`));
         }
-      }
-      if (!llmSuccess) {
-        const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
-        aiResponse = simpleKeywordMatch(finalQuery, products);
-      }
+        // Hết providers (lỗi hoặc 400/401 break) → fallback keyword
+        return simpleKeywordMatch(finalQuery, products);
+      };
+
+      // Ngân sách tổng: generation vượt LLM_TOTAL_TIMEOUT_MS → fallback keyword (chống treo)
+      let _budgetTimer;
+      aiResponse = await Promise.race([
+        runGeneration(),
+        new Promise((resolve) => {
+          _budgetTimer = setTimeout(() => {
+            console.log(warn(`LLM vượt ngân sách ${LLM_TOTAL_TIMEOUT_MS}ms → fallback simpleKeywordMatch`));
+            resolve(simpleKeywordMatch(finalQuery, products));
+          }, LLM_TOTAL_TIMEOUT_MS);
+        }),
+      ]).finally(() => clearTimeout(_budgetTimer));
     }
   }
 

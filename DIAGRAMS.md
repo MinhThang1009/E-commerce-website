@@ -888,11 +888,13 @@ sequenceDiagram
         Policy->>Policy: classifyIntent(normalizedQuery) → off_topic<br/>isPromptInjection(message)
 
         alt prompt injection (guard 1 — check TRƯỚC off_topic)
+            API->>API: detectLanguage(message) → VI hoặc EN
             API->>DB: _persistMessages isFallback async (vẫn log)
-            API-->>CW: 🛡️ "Chỉ hỗ trợ tư vấn SP" — return, không gọi LLM
+            API-->>CW: 🛡️ "Chỉ hỗ trợ tư vấn SP" (VI/EN) — return, không gọi LLM
         else off_topic (guard 2 — intent==='off_topic')
+            API->>API: detectLanguage(message) → VI hoặc EN
             API->>DB: _persistMessages isFallback async (vẫn log)
-            API-->>CW: ℹ️ "Ngoài phạm vi" — return, không gọi LLM
+            API-->>CW: ℹ️ "Ngoài phạm vi" (VI/EN) — return, không gọi LLM
         else Tất cả intents khác
             API->>API: load session history + _enrichQueryFromHistory<br/>(append tên SP từ history khi query có đại từ đó/này/kia/nó<br/>hoặc follow-up ≤50 ký tự) → enrichedQuery
             API->>API: _retrieveProducts: strip mệnh đề phủ định<br/>(không cần/không muốn X) → queryForRetrieval
@@ -925,7 +927,7 @@ sequenceDiagram
             Note over LLM: Provider rotation retry<br/>on 402/429/500/503 + network errors<br/>400/401 → stop immediately
 
             alt LLM thành công
-                API->>API: parseResponse 4-step matching<br/>exact → version check → number check<br/>→ 80% word overlap
+                API->>API: parseLLMOutput 4-step matching<br/>exact → version check → number check<br/>→ 80% word overlap
             else Providers fail hoặc vượt ngân sách tổng
                 API->>API: simpleKeywordMatch fallback<br/>name +10 desc +5<br/>top-5 text top-3 cards
             end
@@ -1639,7 +1641,7 @@ flowchart TD
     C -->|Không hợp lệ| D([400 Bad Request])
     C -->|Hợp lệ| E["expandAbbreviations<br/>12 mục brand/hội thoại tiêu biểu (xem bảng) — ABBREV_MAP còn section EN→VI và VI không dấu→có dấu"]
     E --> F{"Guard 1: isPromptInjection (check TRƯỚC)<br/>Guard 2: classifyIntent === off_topic<br/>Rule-based regex, 0 API call"}
-    F -->|"injection → 🛡️ / off_topic → ℹ️ (text khác)"| G["Fixed response<br/>_persistMessages isFallback async<br/>KHÔNG update chat history"]
+    F -->|"injection → 🛡️ / off_topic → ℹ️ (text khác)"| G["Response cố định (VI/EN qua detectLanguage)<br/>_persistMessages isFallback async<br/>KHÔNG update chat history"]
     G --> H([Trả kết quả])
     F -->|pass| I([Sang sơ đồ 6b: Retrieval])
 ```
@@ -1673,7 +1675,7 @@ flowchart TD
     E -->|Không| F["Fallback minScore=0 topK=3<br/>lowConfidence=true"]
     E -->|Có| G["LLM generate<br/>temp=0.3 max=800 timeout=30s/call + ngân sách tổng<br/>json_object, provider rotation"]
     F --> G
-    G -->|Thành công| H["parseResponse<br/>exact→version→number→80% overlap<br/>→ update history TTL 30m + DB log"]
+    G -->|Thành công| H["parseLLMOutput<br/>exact→version→number→80% overlap<br/>→ update history TTL 30m + DB log"]
     G -->|Providers fail hoặc vượt ngân sách| I["simpleKeywordMatch name+10 desc+5<br/>top-5 text, top-3 products cards<br/>→ update history + DB log"]
     H --> J(["{response products suggestions}"])
     I --> J

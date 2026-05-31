@@ -167,7 +167,7 @@ Hình~\ref{fig:seq_chatbot} minh họa luồng xử lý đầy đủ của một
 
 Bước quan trọng trong \texttt{chatbot-service.js} là việc dùng \texttt{Promise.all} để chạy song song \texttt{rewriteQuery} và \texttt{hybridSearch}. Điều này giúp giảm độ trễ tổng thể xuống còn bằng bước nào lâu hơn (thường là embedding ~500ms) thay vì tổng cộng hai bước. Timeout cho \texttt{rewriteQuery} được đặt là 8 giây -- nếu LLM không phản hồi trong thời gian này, kết quả được set về \texttt{null} và query gốc được dùng thay thế, đảm bảo pipeline không bị chặn.
 
-\texttt{parseAIResponse} xử lý phản hồi JSON từ LLM qua 4 bước khớp sản phẩm theo thứ tự giảm dần độ tin cậy: (1) khớp chính xác tên (lowercase), (2) khớp tên phiên bản, (3) khớp số model, (4) khớp 80\% từ trong tên. LLM được yêu cầu trả về tên sản phẩm thay vì ID, và chiến lược này giúp chịu lỗi khi LLM trả về tên hơi khác nhưng rõ ràng là cùng sản phẩm.
+\texttt{parseLLMOutput} xử lý phản hồi JSON từ LLM qua 4 bước khớp sản phẩm theo thứ tự giảm dần độ tin cậy: (1) khớp chính xác tên (lowercase), (2) khớp tên phiên bản, (3) khớp số model, (4) khớp 80\% từ trong tên. LLM được yêu cầu trả về tên sản phẩm thay vì ID, và chiến lược này giúp chịu lỗi khi LLM trả về tên hơi khác nhưng rõ ràng là cùng sản phẩm.
 
 \subsection{Cài đặt session memory và catalog cache}
 
@@ -508,9 +508,9 @@ Bảng~\ref{tab:rag_latency} trình bày thời gian xử lý trung bình của 
     \hline
     rewriteQuery & LLM viết lại câu hỏi & 500--2000ms & API call, song song \\
     \hline
-    generateResponse & LLM sinh phản hồi & 1000--4000ms & Phụ thuộc độ dài context \\
+    augmentAndGenerate & LLM sinh phản hồi & 1000--4000ms & Phụ thuộc độ dài context \\
     \hline
-    parseResponse & Phân tích kết quả JSON & $<$5ms & CPU-bound \\
+    parseLLMOutput & Phân tích kết quả JSON & $<$5ms & CPU-bound \\
     \hline
     \textbf{Tổng (trung bình)} & & \textbf{2--5s} & Cảm nhận người dùng \\
     \hline

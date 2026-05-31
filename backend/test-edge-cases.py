@@ -63,7 +63,7 @@ def ask(msg, sid):
         BASE, data=payload, headers={"Content-Type": "application/json"}, method="POST"
     )
     try:
-        with urllib.request.urlopen(req, timeout=45) as r:
+        with urllib.request.urlopen(req, timeout=120) as r:
             body = json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         body = json.loads(e.read().decode("utf-8"))

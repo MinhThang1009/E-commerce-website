@@ -144,7 +144,7 @@ flowchart TB
         A1["POST /api/auth/register<br/>Đăng ký, gửi OTP TTL 10 phút"]
         A2["POST /api/auth/verify-otp<br/>Xác thực OTP → verified=true"]
         A3["POST /api/auth/resend-verification<br/>Gửi lại OTP (otpLimiter)"]
-        A4["POST /api/auth/login<br/>→ JWT 15m + refreshToken"]
+        A4["POST /api/auth/login<br/>→ JWT (TTL theo env) + refreshToken"]
         A5["POST /api/auth/google<br/>OAuth2 → upsert user + tokens"]
         A6["POST /api/auth/forgot-password<br/>Gửi link reset, hex 32 bytes"]
         A7["POST /api/auth/reset-password<br/>→ hash mới bcrypt cost=12"]
@@ -171,7 +171,7 @@ flowchart TB
     subgraph USER_ACC["User — Quản lý tài khoản"]
         direction TB
         U1["POST /api/auth/refresh-token<br/>Rotate refreshToken"]
-        U2["POST /api/auth/logout<br/>Clear httpOnly cookie"]
+        U2["POST /api/auth/logout<br/>No-op server-side, client tự xóa token"]
         U3["GET /api/auth/me<br/>Lấy thông tin user hiện tại"]
         U4["PUT /api/users/profile<br/>Cập nhật tên, phone, avatar"]
         U5["POST /api/users/change-password<br/>Xác minh cũ → hash mật khẩu mới"]
@@ -231,7 +231,7 @@ flowchart TB
     subgraph DETAIL["Catalog — Chi tiết & Lọc"]
         direction TB
         B1["GET /api/products/filters<br/>priceRange, brands, colors"]
-        B2["GET /api/products/slug/:slug<br/>Chi tiết → tăng view_count"]
+        B2["GET /api/products/slug/:slug<br/>Chi tiết, track recently-viewed nếu login"]
         B3["GET /api/products/:id<br/>Chi tiết (optionalAuthenticate)"]
         B4["GET /api/products/:id/variants<br/>Danh sách biến thể"]
         B5["GET /api/products/:id/related<br/>Liên quan cùng danh mục"]
@@ -324,7 +324,6 @@ flowchart TB
     Guest --> C4
     Guest --> C5
     Guest --> C7
-    Guest --> C8
     Guest --> C9
     Customer --> C6
     Customer --> C8
@@ -605,7 +604,7 @@ flowchart TB
         AD2["GET /api/admin/stats<br/>Doanh thu, groupBy day/week/month"]
         AD3["GET .../analytics/top-products<br/>Sản phẩm bán chạy"]
         AD4["GET .../analytics/order-status<br/>Phân bổ trạng thái đơn"]
-        AD5["GET .../analytics/revenue-by-cat<br/>Doanh thu theo danh mục"]
+        AD5["GET .../analytics/revenue-by-category<br/>Doanh thu theo danh mục"]
         AD6["GET .../analytics/user-growth<br/>Tăng trưởng users"]
         AD7["GET .../analytics/payment-methods<br/>Phân bổ phương thức thanh toán"]
         AD8["GET /api/admin/analytics/low-stock<br/>Sản phẩm sắp hết hàng"]
@@ -1695,7 +1694,7 @@ stateDiagram-v2
 
     pending --> cancelled : User cancel, hoàn stock
 
-    processing --> shipped : Admin: gán tracking
+    processing --> shipped : Admin cập nhật trạng thái
 
     processing --> cancelled : Admin: cancel order
 
@@ -1727,8 +1726,8 @@ stateDiagram-v2
     end note
 
     note right of cancelled
-        Stock restored inline trong tx
-        Guard: delivered không cancelable
+        User cancelOrder: chỉ pending/processing, restore stock inline trong tx
+        Admin updateOrderStatus: set bất kỳ status, KHÔNG restore stock
     end note
 ```
 
@@ -1864,7 +1863,7 @@ stateDiagram-v2
 flowchart TB
     ORDS_R["orders.routes<br/>POST /api/orders"]
     ORDS_C["orders.controller"]
-    ORDS_S["orders.service<br/>createOrder · getOrders"]
+    ORDS_S["orders.service<br/>createOrder · getUserOrders"]
     UOW["UnitOfWork<br/>runInTransaction · lockRow<br/>SELECT FOR UPDATE"]
     EBUS["EventBus<br/>pub/sub singleton"]
     INV_S["inventory.service<br/>EventBus subscriber"]
@@ -1934,7 +1933,7 @@ flowchart TB
     EBUS["EventBus<br/>pub/sub singleton<br/>order.cancelled → inventory"]
     UOW["UnitOfWork<br/>runInTransaction · lockRow<br/>SELECT FOR UPDATE"]
     ERR["AppError hierarchy<br/>ValidationError · NotFoundError<br/>BusinessError · DomainError"]
-    MW["authenticate middleware<br/>verifyToken · authorize<br/>dùng bởi tất cả modules"]
+    MW["authenticate middleware<br/>jwt.verify · authorize<br/>dùng bởi tất cả modules"]
     DB[("MySQL 8<br/>transactions")]
 
     MODS -->|"publish/subscribe"| EBUS
@@ -1948,17 +1947,17 @@ flowchart TB
 
 | Module | Models inject | Shared services |
 |---|---|---|
-| auth | User | emailService · eventBus · GoogleOAuth |
+| auth | User | emailService · GoogleOAuth |
 | users | User · Address | eventBus |
 | catalog | Category · Brand · Product · Variant · ProductAttribute · ProductImage · ProductSpecification · Review · RecentlyViewed | — |
 | cart | Cart · CartItem · Product · Variant | — |
-| orders | Order · OrderItem · Cart · CartItem · Product · ProductVariant · User · DiscountCode · InventoryLog | emailService · UnitOfWork |
-| payment | Order · OrderItem · User · CartItem · DiscountCode | emailService · UnitOfWork |
-| reviews | Review · Product · User · Order | — |
+| orders | Order · OrderItem · Cart · CartItem · Product · ProductVariant · User · DiscountCode · InventoryLog | emailService · eventBus · sequelize (transaction) |
+| payment | Order · OrderItem · User · Cart · CartItem · DiscountCode | emailService · sequelize (transaction) · momoService · vnpayService |
+| reviews | Review · Product · User · Order · OrderItem | eventBus |
 | wishlist | Wishlist · Product | — |
-| inventory | Product · Variant · InventoryLog | EventBus · UnitOfWork |
+| inventory | Product · Variant · InventoryLog · User | eventBus · sequelize (transaction) |
 | content | Feedback | emailService |
-| ai | Product · Variant · Category | vectorStore · embeddingService |
+| ai | Product · Variant · Category | chatbotService · sequelize |
 | upload | — | multer |
 | admin | Singleton — delegates to other modules | — |
 | discount-code | Singleton | — |

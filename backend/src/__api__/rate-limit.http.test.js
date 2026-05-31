@@ -21,13 +21,16 @@ afterAll(async () => {
 });
 
 describe('chatbotLimiter — 20 req/60s', () => {
-  // Chatbot requests chậm (LLM timeout) → gửi đồng thời thay vì tuần tự
+  // Dùng message off-topic ("thời tiết...") để 20 request qua được rate-limiter
+  // trúng rule-based gate (isOffTopic, 0 API call) → trả về tức thì, không gọi LLM.
+  // Tránh timeout do 20 LLM call song song; vẫn test đúng rate-limit vì limiter
+  // đếm mọi request TRƯỚC controller.
   test('gửi 21 requests song song → ít nhất 1 request bị 429', async () => {
     // Gửi 21 requests đồng thời — rate limiter sẽ block vài cái
     const promises = Array.from({ length: 21 }, (_, i) =>
       request(app)
         .post('/api/chatbot/message')
-        .send({ message: `parallel ${i}` }),
+        .send({ message: `thời tiết hôm nay thế nào ${i}` }),
     );
     const results = await Promise.all(promises);
     const statuses = results.map((r) => r.status);

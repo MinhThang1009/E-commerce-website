@@ -206,6 +206,7 @@ npm run test:ci             # CI mode + coverage
 @config      → src/config
 @assets      → src/assets
 @styles      → src/styles
+# vite.config còn @contexts, @services nhưng dir chưa tồn tại (alias chết)
 ```
 
 ---

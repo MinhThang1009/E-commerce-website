@@ -100,7 +100,7 @@ flowchart TB
         C7[Quản lý danh sách yêu thích]
         C8[Quản lý hồ sơ và địa chỉ]
         C9[Xem lịch sử tìm kiếm]
-        C10[Upload ảnh sản phẩm/avatar]
+        C10[Upload ảnh avatar/đánh giá<br/>ảnh sản phẩm là tác vụ Admin]
     end
 
     Customer --> UC_CUSTOMER
@@ -720,7 +720,7 @@ sequenceDiagram
     API->>DB: SELECT user WHERE email = ?
     DB-->>API: null chưa tồn tại
     API->>DB: INSERT users isEmailVerified=false<br/>password hash bcrypt cost=12 (beforeCreate hook)<br/>otp_code otp_expires cùng lúc
-    API->>Mail: sendMail OTP async không block
+    API->>Mail: await sendOtpEmail trong try/catch<br/>lỗi gửi mail bị catch+log, KHÔNG block register
     Mail-->>User: Email OTP
     API-->>FE: 201 Created
     FE-->>User: Nhập mã OTP từ email
@@ -789,11 +789,12 @@ sequenceDiagram
     Customer->>FE: Xem giỏ hàng chọn địa chỉ
     Customer->>FE: Nhập mã giảm giá
     FE->>API: POST /api/discount-codes/apply code
-    API->>DB: SELECT discount_codes WHERE code + is_active + valid
+    API->>DB: SELECT discount_codes WHERE code + is_active
+    API->>API: validate JS: startDate/endDate + usageLimit + minOrder
     alt Mã không hợp lệ
         API-->>FE: 400 Mã giảm giá không hợp lệ
     else Mã hợp lệ
-        API-->>FE: discountAmount type value
+        API-->>FE: discountAmount + discountCodeId + code
     end
 
     Customer->>FE: Xác nhận đặt hàng
@@ -838,11 +839,11 @@ sequenceDiagram
 
     GW->>API: IPN GET /vnpay/ipn hoặc POST /momo/ipn
     API->>API: Verify HMAC signature
-    API->>DB: findOrderByNumber + lockOrder SELECT FOR UPDATE
+    API->>DB: VNPay findOrderByNumber+lockOrder · MoMo lockOrder(orderId từ extraData) — SELECT FOR UPDATE
     API->>API: Validate amount diff(total,vnp_Amount) > 0.01 → RspCode 04
 
     alt Signature sai
-        API-->>GW: 400 Bad Request
+        API-->>GW: VNPay RspCode 97 Checksum failed · MoMo valid=false
     else Giao dịch thất bại (VNPay / MoMo)
         API->>DB: UPDATE orders SET paymentStatus=failed
         Note over API,DB: VNPay IPN failure và MoMo IPN failure đều set paymentStatus=failed (skip nếu đã paid)<br/>KHÔNG cancel order KHÔNG restore stock
@@ -887,14 +888,19 @@ sequenceDiagram
         Policy->>Policy: expandAbbreviations<br/>ip→iPhone pm→Pro Max ss→Samsung<br/>mb→MacBook op→OPPO rl→realme<br/>r5→AMD Ryzen 5 r7→AMD Ryzen 7<br/>bnh→bao nhiêu bh→bảo hành
         Policy->>Policy: classifyIntent(normalizedQuery) → off_topic<br/>isPromptInjection(message)
 
-        alt Intent off_topic hoặc prompt injection
-            API->>DB: INSERT chat_messages async (vẫn log)
-            API-->>CW: Fixed response không gọi LLM<br/>KHÔNG update chat history Map
+        alt prompt injection (guard 1 — check TRƯỚC off_topic)
+            API->>DB: _persistMessages isFallback async (vẫn log)
+            API-->>CW: 🛡️ "Chỉ hỗ trợ tư vấn SP" — return, không gọi LLM
+        else off_topic (guard 2 — intent==='off_topic')
+            API->>DB: _persistMessages isFallback async (vẫn log)
+            API-->>CW: ℹ️ "Ngoài phạm vi" — return, không gọi LLM
         else Tất cả intents khác
+            API->>API: load session history + _enrichQueryFromHistory<br/>(append tên SP từ history khi query có đại từ đó/này/kia/nó<br/>hoặc follow-up ≤50 ký tự) → enrichedQuery
+            API->>API: _retrieveProducts: strip mệnh đề phủ định<br/>(không cần/không muốn X) → queryForRetrieval
             par Song song Promise.all
-                API->>LLM: rewriteQuery max_tokens 80<br/>temp 0 timeout 8s<br/>.catch → null nếu fail
+                API->>LLM: rewriteQuery(queryForRetrieval) max_tokens 80<br/>temp 0 timeout 8s<br/>.catch → null nếu fail
             and
-                API->>VS: hybridSearch normalizedQuery topK=10
+                API->>VS: hybridSearch queryForRetrieval topK=10
                 VS->>Embed: embed query type=query
                 Note over Embed: Jina v3 primary 1024d<br/>Fallback HF e5-large-instruct<br/>Fallback HF e5-large
                 Embed-->>VS: query vector 1024d
@@ -1633,8 +1639,8 @@ flowchart TD
     B --> C["validateMessage<br/>≤500 ký tự, phải có chữ/số"]
     C -->|Không hợp lệ| D([400 Bad Request])
     C -->|Hợp lệ| E["expandAbbreviations<br/>12 mục brand/hội thoại tiêu biểu (xem bảng) — ABBREV_MAP còn section EN→VI và VI không dấu→có dấu"]
-    E --> F{"classifyIntent === off_topic OR isPromptInjection<br/>Rule-based regex, 0 API call"}
-    F -->|off_topic / injection| G["Fixed response<br/>DB log async<br/>KHÔNG update chat history"]
+    E --> F{"Guard 1: isPromptInjection (check TRƯỚC)<br/>Guard 2: classifyIntent === off_topic<br/>Rule-based regex, 0 API call"}
+    F -->|"injection → 🛡️ / off_topic → ℹ️ (text khác)"| G["Fixed response<br/>_persistMessages isFallback async<br/>KHÔNG update chat history"]
     G --> H([Trả kết quả])
     F -->|pass| I([Sang sơ đồ 6b: Retrieval])
 ```
@@ -1660,7 +1666,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A([Từ 6a: query đã normalize]) --> B["Promise.all: hybridSearch normalizedQuery<br/>+ rewriteQuery LLM max_tokens=80 timeout=8s"]
+    A([Từ 6a: normalizedQuery → _enrichQueryFromHistory<br/>→ strip negation → queryForRetrieval]) --> B["Promise.all: hybridSearch queryForRetrieval<br/>+ rewriteQuery(queryForRetrieval) LLM max_tokens=80 timeout=8s"]
     B --> C{"rewrittenQuery != normalizedQuery?<br/>(case-insensitive)"}
     C -->|Có| D["hybridSearch rewrittenQuery topK=10<br/>dùng nếu non-empty, ngược lại dùng initial"]
     C -->|Không/null| E

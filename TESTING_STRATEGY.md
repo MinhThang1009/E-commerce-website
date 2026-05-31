@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 259 suites, ~5.479 test cases, coverage 100% lines / 99,81% branches (unit).
+> 5 tầng test, 259 suites, ~5.480 test cases, coverage 100% lines / 99,81% branches (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 158 | **3.737** | ~20s | `jest.config.js` |
+| BE Unit Tests | 158 | **3.738** | ~20s | `jest.config.js` |
 | BE Integration Tests | 36 | **184** | ~55s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **700** | ~230s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~25s | `jest.e2e.config.js` |
 | FE Component Tests | 21 | **758** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **259** | **5.479** | | |
+| **Tổng** | **259** | **5.480** | | |
 
 ---
 
@@ -53,7 +53,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (184)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.737 + 758)      │  ← Isolated logic + React components
+              │  Unit Tests (3.738 + 758)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -73,7 +73,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 158 test suites, 3.737 test cases.
+**Phạm vi**: 158 test suites, 3.738 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -423,12 +423,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 158 | 3.737 | ~20s |
+| BE Unit Tests | 158 | 3.738 | ~20s |
 | BE Integration Tests | 36 | 184 | ~55s |
 | BE API HTTP Tests | 39 | 700 | ~230s |
 | BE E2E Tests | 5 | 100 | ~25s |
 | FE Component Tests | 21 | 758 | ~12s |
-| **Tổng** | **259** | **5.479** | |
+| **Tổng** | **259** | **5.480** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)

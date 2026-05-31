@@ -1056,7 +1056,7 @@ sequenceDiagram
         else User hợp lệ
             API->>API: Sign accessToken + refreshToken mới
             API-->>FE: 200 { token } + refreshToken cookie
-            FE->>FE: Lưu accessToken mới (updateAccessToken); request đang chờ trong queue proceed với token mới
+            FE->>FE: Lưu accessToken mới (updateAccessToken), request trong queue proceed với token mới
         end
     end
 

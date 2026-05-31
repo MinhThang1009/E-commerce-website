@@ -286,6 +286,8 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
+RAG_CHATBOT_PIPELINE.md                      ← RAG pipeline 7 bước + 53 edge case (chatbot)
+PIPELINE_TRACE_EXAMPLES.md                   ← Trace 22 path + Node Reference 43 node (chatbot)
 TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.479 tests
 README.md                                    ← Project README, setup instructions
 

@@ -51,10 +51,10 @@ const CHECKS = [
     name: 'MAX_MESSAGE_LENGTH',
     actual: ACTUALS.MAX_MESSAGE_LENGTH,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /MAX_MESSAGE_LENGTH\s*=\s*(\d+)/g },
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /≤\s*(\d+)\s*ký tự.*MAX_MESSAGE/g },
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /a.*×\s*(\d+)\s*chars/g,  transform: v => v - 1 },
-      { file: 'src/modules/ai/CLAUDE.md',               pattern: /≤(\d+)\s*ký tự/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /MAX_MESSAGE_LENGTH\s*=\s*(\d+)/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /≤\s*(\d+)\s*ký tự.*MAX_MESSAGE/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /a.*×\s*(\d+)\s*chars/g,  transform: v => v - 1 },
+      { file: 'src/modules/ai/CLAUDE.md',               pattern: /không rỗng, ≤(\d+)\s*ký tự/g },
       { file: 'src/modules/ai/services/core/CLAUDE.md', pattern: /`(\d+)`\s*\(hằng số\)/g },
       { file: 'src/modules/ai/validators/ai-validator.js', pattern: /\.max\((\d+),/g },
     ],
@@ -63,15 +63,15 @@ const CHECKS = [
     name: 'MAX_HISTORY_TURNS',
     actual: ACTUALS.MAX_HISTORY_TURNS,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /MAX_HISTORY_TURNS\s*=?\s*(\d+)/g },
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /tối đa (\d+) turns/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /MAX_HISTORY_TURNS\s*=?\s*(\d+)/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /tối đa (\d+) turns/g },
     ],
   },
   {
     name: 'MAX_SESSIONS',
     actual: ACTUALS.MAX_SESSIONS,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: />\s*(\d+)\s*sessions/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: />\s*(\d+)\s*sessions/g },
       { file: 'src/modules/ai/CLAUDE.md', pattern: /Max\s+(\d+)\s+sessions/g },
     ],
   },
@@ -79,29 +79,29 @@ const CHECKS = [
     name: 'LLM_TEMPERATURE',
     actual: ACTUALS.LLM_TEMPERATURE,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /temperature\s+([\d.]+)/gi },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /temperature\s+([\d.]+)/gi },
     ],
   },
   {
     name: 'LLM_MAX_TOKENS',
     actual: ACTUALS.LLM_MAX_TOKENS,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /max_tokens\s+(\d+)/gi },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /max_tokens\s+(\d+)/gi },
     ],
   },
   {
     name: 'LLM_REWRITE_TIMEOUT (giây)',
     actual: ACTUALS.LLM_REWRITE_TIMEOUT_S,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /timeout\s+(\d+)s/gi },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /timeout\s+(\d+)s/gi },
     ],
   },
   {
     name: 'DEFAULT_MIN_SCORE',
     actual: ACTUALS.DEFAULT_MIN_SCORE,
     checks: [
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /DEFAULT_MIN_SCORE.*\*\*?([\d.]+)\*\*?/g },
-      { file: 'RAG_CHATBOT_PIPELINE.md',    pattern: /minScore.*=.*\*\*?(0\.\d+)\*\*?/gi },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /DEFAULT_MIN_SCORE.*\*\*?([\d.]+)\*\*?/g },
+      { file: '../RAG_CHATBOT_PIPELINE.md',    pattern: /minScore.*=.*\*\*?(0\.\d+)\*\*?/gi },
     ],
   },
   {
@@ -109,8 +109,8 @@ const CHECKS = [
     actual: ACTUALS.CHATBOT_SEARCH_TOPK,
     checks: [
       // Chỉ match "topK=10" đứng riêng, không match fallback topK=3
-      { file: 'RAG_CHATBOT_PIPELINE.md', pattern: /topK=10\b.*candidates/gi },
-      { file: 'RAG_CHATBOT_PIPELINE.md', pattern: /chatbot.*topK=(\d+)/gi },
+      { file: '../RAG_CHATBOT_PIPELINE.md', pattern: /topK=10\b.*candidates/gi },
+      { file: '../RAG_CHATBOT_PIPELINE.md', pattern: /chatbot.*topK=(\d+)/gi },
     ],
   },
 ];

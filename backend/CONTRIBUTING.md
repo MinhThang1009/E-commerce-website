@@ -26,8 +26,8 @@ npm run test:fast      # đảm bảo không có regression
 
 ### Nếu thay đổi logic AI pipeline
 
-- [ ] `RAG_CHATBOT_PIPELINE.md` §2.2 mô tả đúng bước xử lý mới
-- [ ] `RAG_CHATBOT_PIPELINE.md` §5 Pipeline Components Coverage đã update
+- [ ] `../RAG_CHATBOT_PIPELINE.md` §2.2 mô tả đúng bước xử lý mới
+- [ ] `../RAG_CHATBOT_PIPELINE.md` §5 Pipeline Components Coverage đã update
 - [ ] `src/modules/ai/services/chatbot/CLAUDE.md` đã reflect thay đổi
 
 ### Nếu thêm method / class mới

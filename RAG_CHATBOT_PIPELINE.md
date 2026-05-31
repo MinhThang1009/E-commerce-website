@@ -2,7 +2,7 @@
 
 > **53 edge cases** kiểm tra toàn bộ pipeline chatbot RAG dưới cả 2 điều kiện: LLM UP (full RAG) và LLM DOWN (keyword fallback).
 >
-> Script: [`test-edge-cases.py`](test-edge-cases.py) | Pipeline trace: [`scripts/preprocess-trace.js`](scripts/preprocess-trace.js)
+> Script: [`test-edge-cases.py`](backend/test-edge-cases.py) | Pipeline trace: [`scripts/preprocess-trace.js`](backend/scripts/preprocess-trace.js)
 
 ---
 
@@ -162,12 +162,12 @@ flowchart TD
 
 #### Bước 1-3: `_preprocessMessage(message)`
 
-> File: [`chatbot-service.js:363-373`](src/modules/ai/services/chatbot/chatbot-service.js#L363-L373)
-> Gọi tại: [`handleMessage:247`](src/modules/ai/services/chatbot/chatbot-service.js#L247)
+> File: [`chatbot-service.js:363-373`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L363-L373)
+> Gọi tại: [`handleMessage:247`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L247)
 
 Hàm thuần (pure function) thực hiện 4 bước (validate, normalize, classify, injection) + derive `offTopic` từ `intent`, trả về object `{ valid, normalizedQuery, intent, injection, offTopic }`:
 
-**① `validateMessage(message)`** — [`ai-policy.js:185-198`](src/modules/ai/services/core/ai-policy.js#L185-L198)
+**① `validateMessage(message)`** — [`ai-policy.js:185-198`](backend/src/modules/ai/services/core/ai-policy.js#L185-L198)
 
 Kiểm tra 3 điều kiện:
 1. Không rỗng sau khi trim (`!message || !message.trim()`)
@@ -176,7 +176,7 @@ Kiểm tra 3 điều kiện:
 
 Nếu fail → `handleMessage` throw `AppError(reason, 400)` → controller trả HTTP 400.
 
-**② `expandAbbreviations(text)`** — [`ai-policy.js:161-180`](src/modules/ai/services/core/ai-policy.js#L161-L180)
+**② `expandAbbreviations(text)`** — [`ai-policy.js:161-180`](backend/src/modules/ai/services/core/ai-policy.js#L161-L180)
 
 Duyệt qua `ABBREV_MAP` (3 sections, 50+ patterns) với flag `giu` (global + case-insensitive + Unicode):
 
@@ -192,7 +192,7 @@ Output: `normalizedQuery` (query đã expand).
 
 **Tại sao cần?** LLM hiểu viết tắt thông thường (ko, dc, ok) nhưng không hiểu viết tắt đặc thù ngành (ip16, ss25, mb). Expand trước khi search giúp cả vector search lẫn keyword match hoạt động đúng.
 
-**③ `classifyIntent(normalizedQuery)`** — [`ai-policy.js:244-280`](src/modules/ai/services/core/ai-policy.js#L244-L280)
+**③ `classifyIntent(normalizedQuery)`** — [`ai-policy.js:244-280`](backend/src/modules/ai/services/core/ai-policy.js#L244-L280)
 
 ⚠️ Chạy trên `normalizedQuery` (đã expand), không phải message gốc.
 
@@ -209,7 +209,7 @@ Phân loại vào 1 trong 6 intents theo thứ tự ưu tiên (intent đầu ti�
 
 **Thứ tự quan trọng:** `off_topic` check TRƯỚC `product_search` nên "bóng đá Samsung S25" → off_topic (không phải product_search dù có brand name).
 
-**④ `isPromptInjection(message)`** — [`ai-policy.js:289-331`](src/modules/ai/services/core/ai-policy.js#L289-L331)
+**④ `isPromptInjection(message)`** — [`ai-policy.js:289-331`](backend/src/modules/ai/services/core/ai-policy.js#L289-L331)
 
 ⚠️ Chạy trên `message` **GỐC** (không phải normalizedQuery) — vì injection patterns cần detect trên raw input, tránh expand làm mất pattern.
 
@@ -235,7 +235,7 @@ Phân loại vào 1 trong 6 intents theo thứ tự ưu tiên (intent đầu ti�
 
 **`offTopic = intent === 'off_topic'`** — derive trực tiếp từ intent, không gọi `isOffTopic()` riêng.
 
-**Gate check trong `handleMessage`** ([line 248-297](src/modules/ai/services/chatbot/chatbot-service.js#L248-L297)):
+**Gate check trong `handleMessage`** ([line 248-297](backend/src/modules/ai/services/chatbot/chatbot-service.js#L248-L297)):
 - `injection` check **TRƯỚC** `offTopic`
 - Cả hai: gọi `detectLanguage(message)` → trả response VI hoặc EN → `_persistMessages(isFallback=true)` → return ngay, **không đi tiếp Bước 4-7**
 
@@ -243,7 +243,7 @@ Phân loại vào 1 trong 6 intents theo thứ tự ưu tiên (intent đầu ti�
 
 #### Bước 4: Load Session History
 
-> [`handleMessage:300-301`](src/modules/ai/services/chatbot/chatbot-service.js#L300-L301)
+> [`handleMessage:300-301`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L300-L301)
 
 ```js
 const sessionEntry = sessionId ? this.conversationHistory.get(sessionId) : null;
@@ -256,11 +256,11 @@ const conversationHistory = sessionEntry ? sessionEntry.messages : [];
 
 #### Bước 5: Retrieve
 
-> [`handleMessage:303-308`](src/modules/ai/services/chatbot/chatbot-service.js#L303-L308)
+> [`handleMessage:303-308`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L303-L308)
 
 Gồm 2 sub-steps:
 
-**5a. `_enrichQueryFromHistory(normalizedQuery, conversationHistory)`** — [`chatbot-service.js:388`](src/modules/ai/services/chatbot/chatbot-service.js#L388)
+**5a. `_enrichQueryFromHistory(normalizedQuery, conversationHistory)`** — [`chatbot-service.js:388`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L388)
 
 Nếu query chứa đại từ (`cái đó`, `cái này`, `cái kia`, `nó`, `so sánh`, `cả hai`, `2 cái`, `hai cái`):
 - Lấy tên sản phẩm đầu tiên từ 1-2 assistant messages gần nhất
@@ -268,7 +268,7 @@ Nếu query chứa đại từ (`cái đó`, `cái này`, `cái kia`, `nó`, `so
 
 Regex: `PRONOUN_RE` dùng `[\p{L}\p{N}]*` (Unicode) thay vì `\w*` để match tiếng Việt có dấu.
 
-**5b. `_retrieveProducts(enrichedQuery, normalizedQuery)`** — [`chatbot-service.js:463`](src/modules/ai/services/chatbot/chatbot-service.js#L463)
+**5b. `_retrieveProducts(enrichedQuery, normalizedQuery)`** — [`chatbot-service.js:463`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L463)
 
 1. Strip negation phrases khỏi query (tránh embedding bias)
 2. `Promise.all`: LLM `rewriteQuery` (timeout 8s, `.catch(→null)`) + `hybridSearch(query, 10)`
@@ -285,16 +285,16 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
 
 #### Bước 6: Generation
 
-> [`handleMessage:311-315`](src/modules/ai/services/chatbot/chatbot-service.js#L311-L315)
+> [`handleMessage:311-315`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L311-L315)
 
 `handleMessage` luôn gọi `augmentAndGenerate()` — quyết định LLM UP/DOWN xảy ra **bên trong** hàm đó:
 
-**`augmentAndGenerate(finalQuery, products, history)`** — [`chatbot-service.js:640`](src/modules/ai/services/chatbot/chatbot-service.js#L640)
+**`augmentAndGenerate(finalQuery, products, history)`** — [`chatbot-service.js:640`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L640)
 
 **Path A — LLM DOWN** (`this.providers.length === 0`):
 - Return `simpleKeywordMatch(userMessage, products)` ngay lập tức
 
-`simpleKeywordMatch` ([`keyword-fallback.js:66-431`](src/modules/ai/services/chatbot/keyword/keyword-fallback.js#L66-L431)) gồm 8 bước:
+`simpleKeywordMatch` ([`keyword-fallback.js:66-431`](backend/src/modules/ai/services/chatbot/keyword/keyword-fallback.js#L66-L431)) gồm 8 bước:
 1. **Tokenize + scoring:** tách query thành từ, match với `product.name` (+10 điểm) + `product.shortDescription` (+5 điểm)
 2. **Version filter:** extract số model từ query (bỏ qua giá/specs) → lọc products chứa số đó
 3. **Brand coherence:** nếu brand token trong query không match kết quả → trả "chưa có"
@@ -314,7 +314,7 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
 **⑥a — Augment** (build prompt với context):
 1. `⑥a.1` `_getCatalogData()` — load brands + categories từ DB, cache TTL 5 phút
 2. `⑥a.2` `_sanitizeMessage(userMessage)` — replace `"` → `'`, collapse newlines, trim 500 chars
-3. `⑥a.3` `buildAugmentedPrompt(sanitizedMessage, products)` ([`prompt-builder.js:41`](src/modules/ai/services/chatbot/prompt/prompt-builder.js#L41)) — inject:
+3. `⑥a.3` `buildAugmentedPrompt(sanitizedMessage, products)` ([`prompt-builder.js:41`](backend/src/modules/ai/services/chatbot/prompt/prompt-builder.js#L41)) — inject:
    - Danh sách sản phẩm (với `⚠️[low confidence]` flag nếu có)
    - Version warning (số model trong query không khớp products)
    - Thông tin cửa hàng (env vars: WARRANTY, SHIPPING, RETURN, SUPPORT)
@@ -333,7 +333,7 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
 
 #### Bước 7: Persist
 
-> [`handleMessage:317-344`](src/modules/ai/services/chatbot/chatbot-service.js#L317-L344)
+> [`handleMessage:317-344`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L317-L344)
 
 **7a. Session memory update** (chỉ khi `sessionId` tồn tại):
 1. `_sanitizeMessage(finalQuery || message)` → sanitize content cho history (⚠️ gọi `_sanitizeMessage` lần thứ 2, khác với lần trong augmentAndGenerate)
@@ -346,7 +346,7 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
 - Fire-and-forget: `.catch()` chỉ log warning, không throw
 - Nếu DB lỗi → chatbot vẫn trả response được (analytics là "nice to have")
 
-**Error catch** ([line 321-326](src/modules/ai/services/chatbot/chatbot-service.js#L321-L326)):
+**Error catch** ([line 321-326](backend/src/modules/ai/services/chatbot/chatbot-service.js#L321-L326)):
 - `error.statusCode` tồn tại (AppError) → re-throw để controller trả đúng HTTP status
 - Lỗi không xác định → `logger.error` + return `getFallbackResponse(message)`
 

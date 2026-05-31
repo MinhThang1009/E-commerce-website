@@ -921,12 +921,12 @@ sequenceDiagram
             end
 
             API->>LLM: handleMessage context + products + history
-            Note over LLM: system prompt + catalog cache 5min<br/>temp 0.3 max_tokens 800 timeout 30s<br/>response_format json_object
+            Note over LLM: system prompt + catalog cache 5min<br/>temp 0.3 max_tokens 800 timeout 30s/call<br/>+ ngân sách tổng LLM_TOTAL_TIMEOUT_MS (Promise.race)<br/>response_format json_object
             Note over LLM: Provider rotation retry<br/>on 402/429/500/503 + network errors<br/>400/401 → stop immediately
 
             alt LLM thành công
                 API->>API: parseResponse 4-step matching<br/>exact → version check → number check<br/>→ 80% word overlap
-            else Tất cả providers fail
+            else Providers fail hoặc vượt ngân sách tổng
                 API->>API: simpleKeywordMatch fallback<br/>name +10 desc +5<br/>top-5 text top-3 cards
             end
 
@@ -1671,10 +1671,10 @@ flowchart TD
     C -->|Không/null| E
     D --> E{"Kết quả >= 1?<br/>minScore=0.45 Cosine+BM25"}
     E -->|Không| F["Fallback minScore=0 topK=3<br/>lowConfidence=true"]
-    E -->|Có| G["LLM generate<br/>temp=0.3 max=800 timeout=30s<br/>json_object, provider rotation"]
+    E -->|Có| G["LLM generate<br/>temp=0.3 max=800 timeout=30s/call + ngân sách tổng<br/>json_object, provider rotation"]
     F --> G
     G -->|Thành công| H["parseResponse<br/>exact→version→number→80% overlap<br/>→ update history TTL 30m + DB log"]
-    G -->|Tất cả providers fail| I["simpleKeywordMatch name+10 desc+5<br/>top-5 text, top-3 products cards<br/>→ update history + DB log"]
+    G -->|Providers fail hoặc vượt ngân sách| I["simpleKeywordMatch name+10 desc+5<br/>top-5 text, top-3 products cards<br/>→ update history + DB log"]
     H --> J(["{response products suggestions}"])
     I --> J
 ```

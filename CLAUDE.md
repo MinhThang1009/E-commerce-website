@@ -265,14 +265,14 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 157 | 3.724 | ~20s | `jest.config.js` |
+| BE Unit Tests | 158 | 3.737 | ~20s | `jest.config.js` |
 | BE Integration Tests | 36 | 184 | ~55s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 700 | ~230s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~25s | `jest.e2e.config.js` |
-| FE Component Tests | 21 | ~680 | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **258** | **~5.388** | | |
+| FE Component Tests | 21 | 758 | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **259** | **~5.479** | | |
 
-- **BE Coverage (local):** statements 99.73%, branches 99.76%, functions 99.26%, lines 99.77% (thresholds trong `jest.config.js`)
+- **BE Coverage (local):** statements 99.98%, branches 99.81%, functions 99.91%, **lines 100%** (thresholds trong `jest.config.js`)
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
 - **FE Coverage:** global 79%+, per-file 100% cho auth pages + schemas/auth.ts (thresholds trong `jest.config.cjs`)
 - **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — chạy BE Unit Tests + **FE lint/typecheck/test/build** (Integration/API/E2E không chạy trong CI vì không có MySQL service)
@@ -286,7 +286,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 CLAUDE.md                                    ← File này: navigation entry point
 STRUCTURE.md                                 ← Architecture, tech stack, data flow, schema
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.388 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.479 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace

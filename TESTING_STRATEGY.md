@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 258 suites, ~5.388 test cases, coverage 99.76% branches (unit).
+> 5 tầng test, 259 suites, ~5.479 test cases, coverage 100% lines / 99,81% branches (unit).
 
 ## Mục lục
 
@@ -34,12 +34,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 157 | **3.724** | ~20s | `jest.config.js` |
+| BE Unit Tests | 158 | **3.737** | ~20s | `jest.config.js` |
 | BE Integration Tests | 36 | **184** | ~55s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **700** | ~230s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~25s | `jest.e2e.config.js` |
-| FE Component Tests | 21 | **~680** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **258** | **5.388** | | |
+| FE Component Tests | 21 | **758** | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **259** | **5.479** | | |
 
 ---
 
@@ -53,7 +53,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (184)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.724 + ~680)     │  ← Isolated logic + React components
+              │  Unit Tests (3.737 + 758)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -73,7 +73,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 157 test suites, 3.724 test cases.
+**Phạm vi**: 158 test suites, 3.737 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -106,7 +106,7 @@ backend/src/
 
 **Mục đích**: Kiểm tra React components, Zustand stores, và utility functions trong môi trường jsdom.
 
-**Phạm vi**: 21 test suites, ~680 test cases.
+**Phạm vi**: 21 test suites, 758 test cases.
 - Zustand stores (auth, cart, chat, catalog, wishlist, ui) — state transitions
 - Utility functions (formatters, validators, token-manager)
 - React components (render, user interactions, conditional rendering)
@@ -231,10 +231,10 @@ Coverage được tính trên file `coverage/coverage-summary.json` sau khi ch�
 ```javascript
 coverageThreshold: {
   global: {
-    statements: 99,   // current: 99.73%
-    branches: 97,     // current: 99.76% (9 branches hard-to-test còn lại)
-    functions: 99,    // current: 99.26%
-    lines: 99,        // current: 99.77%
+    statements: 99.7, // current: 99.98%
+    branches: 99.7,   // current: 99.81%
+    functions: 99.4,  // current: 99.91%
+    lines: 99.7,      // current: 100%
   }
 }
 ```
@@ -424,18 +424,18 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 157 | 3.724 | ~20s |
+| BE Unit Tests | 158 | 3.737 | ~20s |
 | BE Integration Tests | 36 | 184 | ~55s |
 | BE API HTTP Tests | 39 | 700 | ~230s |
 | BE E2E Tests | 5 | 100 | ~25s |
-| FE Component Tests | 21 | 680 | ~12s |
-| **Tổng** | **258** | **5.388** | |
+| FE Component Tests | 21 | 758 | ~12s |
+| **Tổng** | **259** | **5.479** | |
 
 **Coverage (local unit tests)**:
-- Statements: 99,73% (threshold 99%)
-- Branches: 99,76% (threshold 97% — 9 nhánh hard-to-test còn lại là module singleton và internal functions)
-- Functions: 99,26% (threshold 99%)
-- Lines: 99,77% (threshold 99%)
+- Statements: 99,98% (threshold 99,7%)
+- Branches: 99,81% (threshold 99,7% — 7 nhánh hard-to-test còn lại: module-level guards, short-circuit ||/&& defensive)
+- Functions: 99,91% (threshold 99,4%)
+- Lines: **100%** (threshold 99,7%)
 
 **Ràng buộc khi thêm code mới**:
 - Mọi service method mới → phải có unit test tương ứng

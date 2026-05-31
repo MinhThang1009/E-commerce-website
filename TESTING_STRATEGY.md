@@ -448,21 +448,18 @@ npm run build
 
 ## 12.1 Mock patterns
 
-**Mock Sequelize model**:
+**Mock data layer qua DI** — unit test KHÔNG dùng `jest.mock('@models')`; service nhận `repository` là plain mock object qua constructor (Sequelize không bị mock trực tiếp):
 ```javascript
-// setup.js hoặc đầu file test
-jest.mock('@models', () => ({
-  User: {
-    findOne: jest.fn(),
-    create: jest.fn(),
-    findAll: jest.fn(),
-    update: jest.fn(),
-    destroy: jest.fn(),
-    count: jest.fn(),
-  },
-  // ... các models khác
-}));
+const repo = {
+  runInTransaction: jest.fn(async (work) => work({})),  // chạy callback với tx giả
+  findProductWithDefaultVariant: jest.fn(),
+  lockProduct: jest.fn(),
+  createOrder: jest.fn(),
+  // ... các method repo khác
+};
+const service = new OrdersService({ ordersRepository: repo, emailGateway, eventBus, logger, constants });
 ```
+> `jest.mock(...)` chỉ dùng cho external lib (vd `jest.mock('axios')`) + vài repository cụ thể — KHÔNG cho `@models`/`@shared/event-bus`/`@services/email`.
 
 **Mock service trong controller test**:
 ```javascript
@@ -476,34 +473,30 @@ const mockOrdersService = {
 const controller = new OrdersController({ ordersService: mockOrdersService });
 ```
 
-**Mock EventBus**:
+**Mock EventBus** — plain object inject qua DI (KHÔNG `jest.mock('@shared/event-bus')`):
 ```javascript
-jest.mock('@shared/event-bus', () => ({
-  publish: jest.fn().mockResolvedValue(undefined),
-  subscribe: jest.fn().mockReturnValue(() => {}),
-}));
+const eventBus = { publish: jest.fn().mockResolvedValue() };
+const service = new OrdersService({ ordersRepository: repo, eventBus, /* ... */ });
 ```
 
-**Mock email service** (7 exported functions):
+**Mock email** — qua `emailGateway` adapter object inject vào service (KHÔNG `jest.mock('@services/email')`). `email.js` export 7 hàm (`sendEmail`, `sendOtpEmail`, `sendResetPasswordEmail`, `sendOrderConfirmationEmail`, `sendOrderStatusUpdateEmail`, `sendOrderCancellationEmail`, `sendAdminFeedbackNotification`); test chỉ mock các hàm gateway cần dùng:
 ```javascript
-jest.mock('@services/email', () => ({
-  sendEmail: jest.fn().mockResolvedValue({ messageId: 'test-id' }),
-  sendOtpEmail: jest.fn().mockResolvedValue(true),
-  sendResetPasswordEmail: jest.fn().mockResolvedValue(true),
-  sendOrderConfirmationEmail: jest.fn().mockResolvedValue(true),
-  sendOrderStatusUpdateEmail: jest.fn().mockResolvedValue(true),
-  sendOrderCancellationEmail: jest.fn().mockResolvedValue(true),
-  sendAdminFeedbackNotification: jest.fn().mockResolvedValue(true),
-}));
+const emailGateway = {
+  sendOrderConfirmationEmail: jest.fn().mockResolvedValue(),
+  sendOrderCancellationEmail: jest.fn().mockResolvedValue(),
+  sendOrderStatusUpdateEmail: jest.fn().mockResolvedValue(),
+};
+const service = new OrdersService({ ordersRepository: repo, emailGateway, /* ... */ });
 ```
 
 **Arrange-Act-Assert pattern**:
 ```javascript
 test('tạo đơn hàng thành công khi tồn kho đủ', async () => {
   // Arrange
-  const mockOrder = { id: 1, status: 'pending', totalAmount: 500000 };
-  Order.create.mockResolvedValue(mockOrder);
-  ProductVariant.findOne.mockResolvedValue({ stockQuantity: 10 });
+  const mockOrder = { id: 1, status: 'pending', total: 500000 };
+  repo.findProductWithDefaultVariant.mockResolvedValue(product);
+  repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
+  repo.createOrder.mockResolvedValue(mockOrder);
 
   // Act
   const result = await ordersService.createOrder(createOrderDto, userId);

@@ -301,7 +301,7 @@ e-commerce-website/
 │   │   └── migrations/         # 61 Sequelize migrations
 │   ├── data/                   # vector-db.json, SQL dumps
 │   ├── docs/                   # openapi.json (auto-generated)
-│   └── scripts/                # rebuild-db.js, index-products.js, audit-architecture.sh
+│   └── scripts/                # rebuild-db.js, index-products.js, export-seed.js
 │
 ├── frontend/
 │   ├── src/
@@ -350,7 +350,7 @@ e-commerce-website/
 | `JWT_EXPIRES_IN` | Không | Mặc định 15m |
 | `EMAIL_USERNAME` | **Có** | Gmail address |
 | `EMAIL_PASSWORD` | **Có** | Gmail App Password |
-| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Không | OpenAI-compatible endpoint cho chatbot |
+| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_1`, `LLM_MODEL_2` | Không | OpenAI-compatible endpoint cho chatbot (2 model fallback) |
 | `JINA_API_KEY` | Không | Embedding provider chính (Jina v3) |
 | `HF_API_KEY` | Không | HuggingFace fallback embedding |
 | `DEEPL_API_KEY` | Không | Dịch nội dung tự động |

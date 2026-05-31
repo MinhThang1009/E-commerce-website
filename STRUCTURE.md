@@ -128,7 +128,8 @@ backend/
 │   │       ├── controllers/       # HTTP layer
 │   │       ├── services/          # Business logic
 │   │       ├── repositories/      # Sequelize queries
-│   │       └── validators/        # Zod schemas
+│   │       ├── validators/        # Zod schemas
+│   │       └── dtos/              # DTO mappers (output shape)
 │   ├── models/              # 25 Sequelize models (image.js tồn tại nhưng không export — Image model đã gỡ khỏi index.js)
 │   │   ├── index.js         # Barrel + tất cả associations
 │   │   └── *.js             # Individual model files
@@ -167,15 +168,15 @@ backend/
 │   ├── locales/
 │   │   ├── vi.json          # Tiếng Việt
 │   │   └── en.json          # English
-│   └── routes/
-│       └── index.js         # Health check endpoint (/api/health)
+│   ├── routes/
+│   │   └── index.js         # Health check endpoint (/api/health)
+│   └── migrations/          # 61 Sequelize migrations (src/migrations — xem .sequelizerc)
 ├── data/
 │   ├── vector-db.json       # AI vector store snapshot
 │   └── *.sql                # SQL dumps + seed files
 ├── docs/
 │   └── openapi.json         # Auto-generated OpenAPI spec
 ├── scripts/                 # rebuild-db.js, index-products.js, export-seed.js...
-├── migrations/              # 61 Sequelize migrations
 ├── .env.example
 ├── .sequelizerc
 ├── jest.config.js           # Unit test config
@@ -201,7 +202,8 @@ frontend/
 │   │   ├── layout/          # MainLayout, Header, Footer, Sidebar
 │   │   ├── routing/         # ProtectedRoute, PublicOnlyRoute, AdminRoute
 │   │   ├── sections/        # Reusable page sections
-│   │   └── icons/           # Custom icon components
+│   │   ├── icons/           # Custom icon components
+│   │   └── ui/              # shadcn/ui primitives (button, card, dialog, input...)
 │   ├── stores/              # 6 Zustand stores (xem mục 5.3)
 │   ├── routes/
 │   │   ├── AppRoutes.tsx    # Tất cả routes với lazy loading
@@ -365,24 +367,24 @@ Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables d
 | `users` | User | Tài khoản: email, password (bcrypt), googleId, role (customer/admin), otpCode, resetPasswordToken, resetPasswordExpires |
 | `addresses` | Address | Địa chỉ giao hàng của user (1 user N addresses) |
 | `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display); fields: `isActive` (default true), `sortOrder` (default 0) |
-| `brands` | Brand | Thương hiệu (name, slug, logo) |
-| `products` | Product | Sản phẩm: name, slug, basePrice, compareAtPrice, status (active/inactive/draft), thumbnail, categoryId, brandId |
-| `product_variants` | ProductVariant | Biến thể: name, price, stockQuantity, sku, attributes (JSON), isDefault |
+| `brands` | Brand | Thương hiệu (name, slug, logoUrl) |
+| `products` | Product | Sản phẩm: name (virtual→nameVi), slug, basePrice, compareAtPrice, status (active/inactive/draft/archived), categoryId, brandId (KHÔNG có cột thumbnail — thumbnail nằm ở ProductImage.isThumbnail) |
+| `product_variants` | ProductVariant | Biến thể: variantName, price, stockQuantity, sku, attributes (JSON), isDefault |
 | `product_attributes` | ProductAttribute | Key-value attributes gắn với sản phẩm (màu, size...) |
 | `product_specifications` | ProductSpecification | Thông số kỹ thuật dạng key-value (RAM, CPU...) |
-| `product_images` | ProductImage | Ảnh sản phẩm/biến thể (url, alt, isThumbnail, sortOrder) |
-| `carts` | Cart | Giỏ hàng: userId (nullable cho guest), sessionId, status (active/abandoned/converted) |
+| `product_images` | ProductImage | Ảnh sản phẩm/biến thể (imageUrl, isThumbnail, color, variantId) |
+| `carts` | Cart | Giỏ hàng: userId (nullable cho guest), sessionId, status (active/merged/converted/abandoned) |
 | `cart_items` | CartItem | Item trong giỏ: cartId, productId, variantId, quantity |
-| `orders` | Order | Đơn hàng: status, paymentMethod, paymentStatus, shippingAddress (JSON), totalAmount, discountCodeId |
-| `order_items` | OrderItem | Item đơn hàng: orderId, productId, variantId, quantity, price |
-| `product_reviews` | Review | Đánh giá: userId, productId, rating, comment, isVerifiedPurchase |
+| `orders` | Order | Đơn hàng: status, paymentMethod, paymentStatus, shipping fields phẳng (shippingFirstName…shippingAddress1/2), total, discountCodeId |
+| `order_items` | OrderItem | Item đơn hàng: orderId, productId, variantId, quantity, unitPrice |
+| `product_reviews` | Review | Đánh giá: userId, productId, rating, content, isVerified |
 | `wishlists` | Wishlist | Junction: userId + productId (many-to-many) |
-| `discount_codes` | DiscountCode | Mã giảm giá: code, type (percent/fixed), value, minOrderAmount, usedCount, maxUses, startDate, endDate |
+| `discount_codes` | DiscountCode | Mã giảm giá: code, type (percent/fixed), value, minOrderAmount, usedCount, usageLimit, startDate, endDate |
 | `feedbacks` | Feedback | Form liên hệ: name, email, subject, content, status |
 | `chat_messages` | ChatMessage | Lịch sử chat AI: userId (nullable), sessionId, role (user/assistant), content, isArchived |
 | `search_histories` | SearchHistory | Lịch sử tìm kiếm: userId (nullable), sessionId, keyword, resultsCount |
 | `recently_viewed` | RecentlyViewed | Sản phẩm đã xem: userId, productId, viewedAt |
-| `inventory_logs` | InventoryLog | Inventory log tồn kho: productId, variantId, orderId, changeType, quantityBefore, quantityAfter |
+| `inventory_logs` | InventoryLog | Inventory log tồn kho: productId, variantId, orderId, changeType, previousStock, newStock |
 
 ## 6.2 Junction & Log tables
 
@@ -410,7 +412,7 @@ HTTP Request
     ├─ Morgan logging (bỏ qua /health)
     ├─ Rate limiter (authLimiter cho /auth, apiLimiter cho production)
     ├─ detect-locale (Accept-Language → req.locale)
-    ├─ express.json() body parse (limit 2mb)
+    ├─ express.json() + urlencoded body parse (limit 2mb) + cookieParser (refreshToken cookie)
     ├─ sanitizeBody (strip HTML tags — chống XSS)
     ├─ compression
     │
@@ -452,7 +454,7 @@ User message ──▶ AIService.handleMessage()
                                 ├─ ③ isPromptInjection / isOffTopic → early return
                                 ├─ ④ load conversationHistory Map
                                 ├─ ⑤ Promise.all: rewriteQuery LLM + hybridSearch(normalizedQuery)
-                                │         ├─ _vectorSearch(): cosine similarity (threshold 0.45)
+                                │         ├─ _semanticSearch(): cosine similarity (threshold 0.45)
                                 │         ├─ _keywordSearch(): BM25-inspired (name×3, text×1)
                                 │         └─ merge: boost +0.05 overlap, inject keyword-only
                                 ├─ ⑥ Build prompt → LLM API (OpenAI-compatible)
@@ -490,7 +492,7 @@ cancelOrder()
 
 **Auth events**:
 ```
-register() ──▶ (event KHÔNG được publish — auth module không inject eventBus, guard `if (this.eventBus)` luôn false)
+register() ──▶ (KHÔNG publish event — register() không có dòng publish nào; auth module không inject eventBus → this.eventBus=undefined; auth.userRegistered không tồn tại trong source)
 logout()   ──▶ no-op server-side (clear refreshToken cookie Max-Age=0, client tự xóa access token)
 ```
 
@@ -550,7 +552,7 @@ inventory ◀── orders (subscribe: order.cancelled → ghi inventory log; or
 | `JWT_EXPIRES_IN` | Không | Mặc định 15m |
 | `JWT_REFRESH_SECRET` | **Có** | >= 32 ký tự ngẫu nhiên |
 | `JWT_REFRESH_EXPIRES_IN` | Không | Cookie maxAge default 7d (auth-controller.js). JWT `expiresIn` không có fallback nếu bỏ trống. |
-| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Không | OpenAI-compatible LLM endpoint |
+| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL_1`, `LLM_MODEL_2` | Không | OpenAI-compatible LLM endpoint (2 model fallback) |
 | `JINA_API_KEY` | Không | Jina v3 embedding (ưu tiên) |
 | `HF_API_KEY` | Không | HuggingFace embedding (fallback) |
 | `DEEPL_API_KEY` | Không | DeepL translation |

@@ -171,7 +171,7 @@ flowchart TB
     subgraph USER_ACC["User — Quản lý tài khoản"]
         direction TB
         U1["POST /api/auth/refresh-token<br/>Rotate refreshToken"]
-        U2["POST /api/auth/logout<br/>No-op server-side, client tự xóa token"]
+        U2["POST /api/auth/logout<br/>Xóa refreshToken cookie, server không revoke token"]
         U3["GET /api/auth/me<br/>Lấy thông tin user hiện tại"]
         U4["PUT /api/users/profile<br/>Cập nhật tên, phone, avatar"]
         U5["POST /api/users/change-password<br/>Xác minh cũ → hash mật khẩu mới"]

@@ -137,7 +137,7 @@
 **Tại sao:** Khi G2 phát hiện off_topic → build response thông báo phạm vi (detect ngôn ngữ VI/EN), gọi `_persistMessages` với `isFallback=true`, rồi return ngay — **không đi tiếp bước 4-7**. Logic giống EINJ nhưng response khác (thông báo phạm vi thay vì cảnh báo injection).
 
 **Ví dụ:**
-- VI: `"ℹ️ Câu hỏi này nằm ngoài phạm vi mình có thể hỗ trợ ạ. Mình chỉ tư vấn được về sản phẩm công nghệ..."` + suggestions: `["Xem điện thoại", "Xem laptop"]`
+- VI: `"ℹ️ Câu hỏi này nằm ngoài phạm vi mình có thể hỗ trợ ạ. Mình chỉ tư vấn được về sản phẩm công nghệ..."` + suggestions: `["Xem điện thoại", "Xem laptop", "Sản phẩm khuyến mãi", "Tư vấn thêm"]`
 - EN: `"ℹ️ This question is outside my area of expertise..."`
 
 ### N4 — ④ load session `chatbot-service.js:300`

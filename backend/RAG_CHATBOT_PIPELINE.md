@@ -70,85 +70,85 @@
 ```mermaid
 %%{init: {'flowchart': {'wrappingWidth': 400, 'padding': 15}}}%%
 flowchart TD
-    A["👤 User gửi message"]
+    A["A · 👤 User gửi message"]
     A --> PREP
 
     subgraph PREP["_preprocessMessage(message)"]
-        B["①  validateMessage"]
-        B -->|hợp lệ| C["②  expandAbbreviations"]
-        C --> D["③  classifyIntent"]
-        D --> D2["③  isPromptInjection<br/>(sequential sau classifyIntent)"]
+        B["N1 · ①  validateMessage"]
+        B -->|hợp lệ| C["N2 · ②  expandAbbreviations"]
+        C --> D["N3a · ③  classifyIntent"]
+        D --> D2["N3b · ③  isPromptInjection<br/>(sequential sau classifyIntent)"]
     end
 
-    B -->|không hợp lệ| BERR["❌ AppError 400 (bad request)"]
+    B -->|không hợp lệ| BERR["BERR · ❌ AppError 400 (bad request)"]
 
-    D2 --> E{"prompt injection?"}
-    E -->|Có| EINJ["🛡️ _persistMessages(isFallback) + return"]
-    E -->|Không| E2{"offTopic?<br/>(intent=='off_topic')"}
+    D2 --> E{"G1 · prompt injection?"}
+    E -->|Có| EINJ["EINJ · 🛡️ _persistMessages(isFallback) + return"]
+    E -->|Không| E2{"G2 · offTopic?<br/>(intent=='off_topic')"}
     D -.->|intent| E2
-    E2 -->|Có| EOT["ℹ️ _persistMessages(isFallback) + return"]
-    E2 -->|Không| G["④  load session history"]
+    E2 -->|Có| EOT["EOT · ℹ️ _persistMessages(isFallback) + return"]
+    E2 -->|Không| G["N4 · ④  load session history"]
 
-    G --> H["⑤a  _enrichQueryFromHistory"]
-    H --> I["⑤b  _retrieveProducts"]
+    G --> H["N5a · ⑤a  _enrichQueryFromHistory"]
+    H --> I["N5b · ⑤b  _retrieveProducts"]
 
     subgraph RETRIEVE["🔍 Retrieve (R trong RAG)"]
-        I --> ISTRIP["⑤b  strip negation phrases<br/>(tránh embedding bias)"]
-        ISTRIP --> PAR["⑤b  Promise.all"]
-        PAR --> I1["⑤b  rewriteQuery"]
-        PAR --> I2["⑤b  hybridSearch limit=10"]
-        I1 --> J{"rewrite khác?"}
+        I --> ISTRIP["N5b-1 · ⑤b  strip negation phrases<br/>(tránh embedding bias)"]
+        ISTRIP --> PAR["N5b-2 · ⑤b  Promise.all"]
+        PAR --> I1["N5b-2a · ⑤b  rewriteQuery"]
+        PAR --> I2["N5b-2b · ⑤b  hybridSearch limit=10"]
+        I1 --> J{"N5b-3 · rewrite khác?"}
         I2 --> J
         J -->|Có| J1["⑤b  hybridSearch lần 2<br/>(fallback → I2 nếu rỗng)"]
         J -->|Không| K
         J1 --> K
-        K{"products > 0?"}
+        K{"N5b-4 · products > 0?"}
         K -->|Không| K1["⑤b  fallback limit=3"]
     end
 
-    K -->|Có| M{"⑥  providers?"}
+    K -->|Có| M{"N6-check · ⑥  providers?"}
     K1 --> M
 
     subgraph AUGMENT["📝 Augment (A trong RAG)"]
-        N1["⑥a.1  _getCatalogData"]
-        N1 --> N2["⑥a.2  _sanitizeMessage"]
-        N2 --> N3["⑥a.3  buildAugmentedPrompt"]
-        N3 --> N4["⑥a.4  system + history + prompt"]
+        N1["N6a-1 · ⑥a.1  _getCatalogData"]
+        N1 --> N2["N6a-2 · ⑥a.2  _sanitizeMessage"]
+        N2 --> N3["N6a-3 · ⑥a.3  buildAugmentedPrompt"]
+        N3 --> N4["N6a-4 · ⑥a.4  system + history + prompt"]
     end
 
     M -->|"LLM UP"| N1
 
     subgraph GENERATE["⚡ Generate (G trong RAG)"]
-        N5["⑥b.1  LLM HTTP POST"]
-        N5 -->|thành công| N6["⑥b.2  parseLLMOutput"]
+        N5["N6b-1 · ⑥b.1  LLM HTTP POST"]
+        N5 -->|thành công| N6["N6b-2 · ⑥b.2  parseLLMOutput"]
     end
 
     N4 --> N5
     N5 -->|thất bại| N7
 
-    M -->|"LLM DOWN"| N7["⑥.1  simpleKeywordMatch<br/>name+10 desc+5 scoring"]
-    N7 --> N8["⑥.2  version + brand check"]
-    N8 -->|"0 kết quả"| NFOUND["🚫 notFoundResponse"]
-    N8 -->|"có kết quả"| N9a["⑥.3a  negation filter"]
-    N9a --> N9b["⑥.3b  price range filter"]
-    N9b --> N9c["⑥.3c  category prefix filter"]
-    N9c --> N9B["⑥.4  sort by score + dedup"]
-    N9B --> N10["⑥.5  intent-aware response<br/>💰📋🔍🌟"]
+    M -->|"LLM DOWN"| N7["N6d-1 · ⑥.1  simpleKeywordMatch<br/>name+10 desc+5 scoring"]
+    N7 --> N8["N6d-2 · ⑥.2  version + brand check"]
+    N8 -->|"0 kết quả"| NFOUND["N6d-nf · 🚫 notFoundResponse"]
+    N8 -->|"có kết quả"| N9a["N6d-4 · ⑥.3a  negation filter"]
+    N9a --> N9b["N6d-5 · ⑥.3b  price range filter"]
+    N9b --> N9c["N6d-6 · ⑥.3c  category prefix filter"]
+    N9c --> N9B["N6d-7 · ⑥.4  sort by score + dedup"]
+    N9B --> N10["N6d-8 · ⑥.5  intent-aware response<br/>💰📋🔍🌟"]
     N10 -->|"khớp"| O
-    N10 -->|"không khớp"| N10FALL["getFallbackResponse<br/>(keyword — no results)"]
+    N10 -->|"không khớp"| N10FALL["N6d-fb · getFallbackResponse<br/>(keyword — no results)"]
 
     N6 --> O{"⑦  sessionId?"}
     NFOUND --> O
     N10FALL --> O
-    O -->|Có| O1["⑦  sanitize + update history"]
-    O1 --> O2["⑦  _evictStaleSessions"]
+    O -->|Có| O1["N7a · ⑦  sanitize + update history"]
+    O1 --> O2["N7a-evict · ⑦  _evictStaleSessions"]
     O2 --> P
-    O -->|Không| P["⑦  _persistMessages"]
-    P --> R["📤 return response"]
+    O -->|Không| P["N7b · ⑦  _persistMessages"]
+    P --> R["R · 📤 return response"]
 
     R -.-> ERR{"catch error"}
-    ERR -->|có statusCode| ERR1["re-throw 400/404"]
-    ERR -->|lỗi khác| ERR2["getFallbackResponse"]
+    ERR -->|có statusCode| ERR1["ERR-a · re-throw 400/404"]
+    ERR -->|lỗi khác| ERR2["ERR-b · getFallbackResponse"]
 
     %% ── RAG color coding (subgraph nền) ──
     style RETRIEVE fill:#e3f2fd,stroke:#1565c0,color:#000

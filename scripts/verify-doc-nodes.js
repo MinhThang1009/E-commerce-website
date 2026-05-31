@@ -30,12 +30,19 @@ export const meta = {
 //        --doc <doc> --marker '<regex>' --code <files...> --symbol '<regex>'
 // ─────────────────────────────────────────────────────────────────────────
 
-const cfg = args || {}
+// Harness truyền `args` dưới dạng chuỗi JSON (không phải object) → parse lại nếu cần.
+let cfg = args || {}
+if (typeof cfg === 'string') {
+  try { cfg = JSON.parse(cfg) } catch { cfg = {} }
+}
 const docPath = cfg.docPath || ''
 const docSection = cfg.docSection || '(toàn file)'
 const sourceNote = cfg.sourceNote || '(chưa cung cấp sourceNote — agent tự tìm code)'
 const gotchas = cfg.gotchas ? `GROUND-TRUTH/GOTCHAS: ${cfg.gotchas}` : ''
 const strict = cfg.strict === true
+// Bỏ phase Evidence-audit trong workflow (LLM grep) — GĐ2 verify-doc-evidence.py grep tất định
+// đã authoritative, nên phase này dư thừa; bật skipAudit để tiết kiệm 1 agent/batch.
+const skipAudit = cfg.skipAudit === true
 const quorum = Math.max(1, Math.min(5, Number(cfg.quorum) || 1))
 const batches = Array.isArray(cfg.batches) ? cfg.batches : []
 
@@ -189,7 +196,7 @@ function auditBatch(r) {
     { label: `audit:${r.unit}`, phase: 'Evidence audit', schema: AUDIT_SCHEMA }
   ).then((a) => ({ unit: r.unit, audits: a.audits || [] })).catch(() => ({ unit: r.unit, audits: [] }))
 }
-const audits = await parallel(results.filter(Boolean).map((r) => () => auditBatch(r)))
+const audits = skipAudit ? [] : await parallel(results.filter(Boolean).map((r) => () => auditBatch(r)))
 
 // ── Phase 4: Consolidate ──
 phase('Consolidate')

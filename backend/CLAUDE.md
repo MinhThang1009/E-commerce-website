@@ -116,7 +116,7 @@ HTTP POST /api/orders
              authenticate → validateRequest(createOrderSchema) → ordersController.createOrder
           └→ OrdersController.createOrder(req, res)
               └→ OrdersService.createOrder({ userId, items, discountCode, ... })
-                  ├→ unitOfWork.runInTransaction(async (tx) => {
+                  ├→ this.repo.runInTransaction(async (tx) => {   ← repo tự wrap sequelize.transaction (KHÔNG qua shared unitOfWork)
                   │    SELECT FOR UPDATE ProductVariant rows
                   │    decrement stock
                   │    create Order + OrderItems

@@ -239,14 +239,14 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 - **Sort backend:** `COALESCE(MIN(variant.price), base_price)` — không sort theo `basePrice` trực tiếp. Không revert.
 - **`scripts/index-products.js`:** cần `require('module-alias/register')` ở đầu — không xóa.
-- **DB migrations:** dùng `npm run db:migrate`, không bao giờ re-enable `sequelize.sync()` (breaks "Too many keys").
+- **DB migrations:** dùng `npm run db:migrate` để đổi schema. `sequelize.sync({alter,foreignKeys:false})` chỉ bật qua `DB_SYNC=true` dev-only (server.js:82), KHÔNG dùng thay migrations (`foreignKeys:false` né lỗi "Too many keys").
 - **i18n bắt buộc:** tất cả user-visible strings qua `t('key')` (BE) / `useTranslation()` (FE). Key phải có trong cả `vi.json` và `en.json`.
 - **Test naming:** Vietnamese descriptions là policy (hội đồng bảo vệ đọc).
 - **Commit format:** `<type>(<scope>): <Vietnamese subject>` — xem `git-workflow.md`.
 - **Pre-commit hook** (`scripts/audit-architecture.sh`) block: service import Sequelize trực tiếp, controller touch ORM, cross-module deep import. Fix violation, không bypass `--no-verify`.
 - **New backend module:** `node scripts/new-module.mjs --name=<name> --type=simple|ddd-lite` — không copy thủ công.
 - **Rate limiters:** `chatbotLimiter` = 20 req/60s (không có dev override).
-- **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products. Log "Rebuilding vector store..." là bình thường.
+- **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products (server.js:125). Log "Vector store lệch >5% so với DB ... Tự động rebuild..." là bình thường.
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
 - **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, `ReviewFeedback`, `AuditLog`, `BrandCategory` — không reference lại.
 - **Stock decrement:** LUÔN trong transaction với SELECT FOR UPDATE — không decrement bên ngoài unitOfWork.

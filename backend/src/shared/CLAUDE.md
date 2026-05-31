@@ -86,7 +86,7 @@ eventBus.publish({ type: 'order.created', payload: { orderId }, occurredAt: new 
 
 ## 4. persistence/unit-of-work.js — Transaction Wrapper
 
-Service dùng thay vì gọi `sequelize.transaction()` trực tiếp.
+Helper bọc transaction + row lock, export qua `@shared`. **Lưu ý:** hiện KHÔNG service nào dùng helper này — các module bọc transaction ở tầng repository (`repo.runInTransaction` wrap `sequelize.transaction` + `lockVariant/lockProduct/lockOrder`); helper shared này hiện chỉ dùng trong test. Ví dụ dưới là API tham chiếu của helper:
 
 ```js
 const { unitOfWork } = require('@shared');

@@ -15,7 +15,7 @@
 
 # 1. Tổng quan
 
-`unit-of-work.js` cung cấp 2 helpers để quản lý database transactions và row locking. Được inject qua DI vào các module cần transaction safety.
+`unit-of-work.js` cung cấp 2 helpers để quản lý database transactions và row locking, export qua `@shared` barrel. **Lưu ý:** hiện KHÔNG module/service nào dùng helper này — các module hiện thực UnitOfWork pattern ở tầng repository (`repo.runInTransaction` wrap `sequelize.transaction` + `lockVariant/lockProduct/lockOrder`). Helper shared chỉ được dùng trong test (`__tests__/dtos-and-utils.test.js`). Phần dưới mô tả API tham chiếu của helper.
 
 ---
 
@@ -46,7 +46,7 @@ const variant = await unitOfWork.lockRow(ProductVariant, { id: variantId }, tran
 # 3. Usage
 
 ```javascript
-// orders-service.js
+// API tham chiếu của helper (module thật dùng repo.runInTransaction tương đương):
 await unitOfWork.runInTransaction(async (tx) => {
   const variant = await unitOfWork.lockRow(ProductVariant, { id }, tx);
   if (variant.stockQuantity < quantity) throw new BusinessError('Không đủ hàng');

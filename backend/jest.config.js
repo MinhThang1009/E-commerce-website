@@ -50,13 +50,14 @@ module.exports = {
     '!src/**/module.js',              // exclude DI wiring modules
     '!src/**/index.js',               // exclude barrel re-exports
     '!src/routes/imageProxy.js',      // proxy utility, not business logic
+    '!src/models/image.js',           // associations removed from index.js — model not used via @models
   ],
   coverageThreshold: {
     global: {
-      statements: 99,   // current: 100% post test-review session
-      branches: 97,     // branches khó cover tự nhiên (||, ??, ternary) — buffer 3%
-      functions: 99,    // current: 100%
-      lines: 99,        // current: 100%
+      statements: 99.7, // current: 99.8%
+      branches: 99.7,   // current: 99.79%
+      functions: 99.4,  // current: 99.51%
+      lines: 99.7,      // current: 99.82%
     },
   },
 };

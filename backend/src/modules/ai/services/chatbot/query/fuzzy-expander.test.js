@@ -397,6 +397,15 @@ describe('expandTokenWithSplit — firstChange score/method fallback (lines 172-
     expect(result.changes[0].score).toBeDefined(); // score được set bởi caller
   });
 
+  test('token gần đúng với prefix (edit-distance=1) → line 113: bestExpanded từ terms set', () => {
+    // "iphon" → edit-distance=1 với "iphone" → score=0.833 > threshold=0.7
+    // → vào nhánh if(score>bestScore) → line 113 chạy
+    const names = ['iPhone 15'];
+    const result = fuzzyExpandQuery('iphon', names);
+    expect(result.expanded.toLowerCase()).toContain('iphone');
+    expect(result.changed).toBe(true);
+  });
+
   test('token "ip" có 1 segment chữ expand thành công → firstChange.score từ expandLetterToken, không fallback 0.8', () => {
     // Token "ip" → 1 segment thuần chữ → segments=["ip"], length=2 < 6 → tiếp tục
     // expandLetterToken trả về score=1.0 khi exact_prefix 1 candidate

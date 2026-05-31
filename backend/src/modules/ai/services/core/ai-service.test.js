@@ -169,4 +169,47 @@ describe('AIService', () => {
       ).rejects.toMatchObject({ statusCode: 400 });
     });
   });
+
+  describe('session delegators', () => {
+    beforeEach(() => {
+      service.chatbotService = {
+        handleMessage: jest.fn(),
+        clearSession: jest.fn().mockReturnValue(true),
+        getSessionHistory: jest.fn().mockReturnValue([]),
+        getSessionMessages: jest.fn().mockResolvedValue([]),
+        registerSession: jest.fn().mockReturnValue('sess-1'),
+        getLatestSession: jest.fn().mockResolvedValue('sess-1'),
+      };
+    });
+
+    test('clearSession delegate sang chatbotService', () => {
+      const result = service.clearSession('sess-1');
+      expect(service.chatbotService.clearSession).toHaveBeenCalledWith('sess-1');
+      expect(result).toBe(true);
+    });
+
+    test('getSessionHistory delegate sang chatbotService', () => {
+      const result = service.getSessionHistory('sess-1');
+      expect(service.chatbotService.getSessionHistory).toHaveBeenCalledWith('sess-1');
+      expect(result).toEqual([]);
+    });
+
+    test('getSessionMessages delegate sang chatbotService', async () => {
+      const result = await service.getSessionMessages('sess-1');
+      expect(service.chatbotService.getSessionMessages).toHaveBeenCalledWith('sess-1');
+      expect(result).toEqual([]);
+    });
+
+    test('registerSession delegate sang chatbotService', () => {
+      const result = service.registerSession('sess-1');
+      expect(service.chatbotService.registerSession).toHaveBeenCalledWith('sess-1');
+      expect(result).toBe('sess-1');
+    });
+
+    test('getLatestSession delegate sang chatbotService', async () => {
+      const result = await service.getLatestSession();
+      expect(service.chatbotService.getLatestSession).toHaveBeenCalled();
+      expect(result).toBe('sess-1');
+    });
+  });
 });

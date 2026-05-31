@@ -100,4 +100,14 @@ describe('Product model: afterUpdate + afterDestroy hooks — vectorStoreService
       await expect(capturedHooks.afterDestroy({ id: 999 })).resolves.toBeUndefined();
     });
   });
+
+  // ── afterBulkDestroy: vectorStoreService = null → return sớm (line 424 false branch) ──
+
+  describe('afterBulkDestroy hook — vectorStoreService null → skip (line 424 false branch)', () => {
+    it('không throw và không làm gì khi vectorStoreService null', async () => {
+      const { capturedHooks } = loadProductWithNullVectorStore();
+
+      await expect(capturedHooks.afterBulkDestroy()).resolves.toBeUndefined();
+    });
+  });
 });

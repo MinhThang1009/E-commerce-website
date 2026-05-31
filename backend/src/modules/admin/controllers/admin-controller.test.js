@@ -60,6 +60,7 @@ jest.mock('@utils/product-helpers', () => ({
   updateProductTotalStock: jest.fn().mockResolvedValue(undefined),
   validateVariantAttributes: jest.fn().mockReturnValue([]),
   generateVariantSku: jest.fn().mockReturnValue('SKU-TEST-VAR'),
+  enrichProductData: jest.fn((x) => x),
 }));
 
 jest.mock('@services/vector-store/vector-store', () => ({
@@ -947,9 +948,13 @@ describe('POST /api/admin/products/:productId/restock', () => {
     const fakeProduct = {
       id: 8,
       stockQuantity: 10,
+      status: 'active',
+      toJSON: () => ({ id: 8, stockQuantity: 30, status: 'active' }),
       update: jest.fn().mockResolvedValue({ id: 8, stockQuantity: 30 }),
     };
-    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    Product.findByPk
+      .mockResolvedValueOnce(fakeProduct) // lần 1: load product để restock
+      .mockResolvedValueOnce(makeProduct({ id: 8, status: 'active' })); // lần 2: productForIndex để sync vector
     InventoryLog.create.mockResolvedValueOnce({ id: 1, changeType: 'restock' });
 
     const res = await request.post('/api/admin/products/8/restock').send({ quantity: 20 });

@@ -86,3 +86,4 @@ backend/src/modules/uploads/
 frontend/.screenshots/
 # Junk jest output (broken Windows path filename)
 frontend/C*Tempjest_out*.txt
+backend/coverage-tmp/

@@ -25,6 +25,7 @@
 |---|---|---|---|
 | `index-products.js` | `npm run ai:rebuild-vectors` | — | Re-index sản phẩm vào AI vector store |
 | `rebuild-db.js` | `npm run db:seed` | `node scripts/rebuild-db.js` | DROP + recreate DB từ SQL dumps |
+| `sync-test-db.js` | `npm run db:sync-test` | `node scripts/sync-test-db.js` | Copy `techstore` → `techstore_test` (bản sao data thật cho API tests; CHỈ đọc techstore) |
 | `db-cleanup.js` | — | `node scripts/db-cleanup.js` | Xóa hết data, giữ schema (dev) |
 | `db-cleanup-test-data.js` | `npm run db:cleanup-test-data` | — | Xóa data prefix `__INT_TEST_`, `__HTTP_`, `__E2E_` |
 | `sync-products.js` | — | `node scripts/sync-products.js` | Sync `data/products.json` → DB |

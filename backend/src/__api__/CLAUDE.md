@@ -106,7 +106,8 @@ Tất cả data tạo bởi helpers đều dùng prefix `__HTTP_` để cleanup 
 # 6. Cách chạy
 
 ```bash
-# Từ thư mục backend/ — MySQL phải chạy, DB 'techstore_test' phải có seed data
+# Từ thư mục backend/ — MySQL phải chạy, techstore_test phải có data:
+#   npm run db:test:setup  → build từ seed_data.sql  |  npm run db:sync-test → copy techstore (data thật)
 npm run test:api                              # Full 39 suites/700 tests (~190s)
 npm run test:api -- --testPathPattern=auth   # Chỉ auth tests
 npm run test:api -- --testPathPattern=catalog-deep  # Chỉ catalog-deep

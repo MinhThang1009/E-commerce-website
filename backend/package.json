@@ -29,6 +29,7 @@
     "test:integration": "jest --config jest.integration.config.js --runInBand --forceExit",
     "test:api": "jest --config jest.api.config.js --runInBand --forceExit",
     "db:test:setup": "node scripts/rebuild-test-db.js",
+    "db:sync-test": "node scripts/sync-test-db.js",
     "db:cleanup-test-data": "node scripts/db-cleanup-test-data.js",
     "test:e2e": "jest --config jest.e2e.config.js --runInBand --forceExit",
     "lint": "eslint . --max-warnings 0",

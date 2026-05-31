@@ -248,6 +248,7 @@ npm run ai:rebuild-vectors   # Re-index products cho AI search
 npm run docs:openapi         # Export Swagger JSON
 npm run i18n:translate       # Translate i18n keys
 npm run db:cleanup-test-data # Cleanup test data (__INT_TEST_, __HTTP_, __E2E_ prefixes)
+npm run db:sync-test         # Copy techstore → techstore_test (bản sao data thật cho API tests)
 npm run kill                 # Kill port 8888 process (Windows)
 ```
 

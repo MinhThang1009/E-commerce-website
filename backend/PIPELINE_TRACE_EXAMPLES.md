@@ -38,7 +38,7 @@
 
 ## Node Reference — Bản chất từng node
 
-### Tóm tắt 44 nodes theo 7 bước
+### Tóm tắt 43 nodes theo 7 bước
 
 | Bước | Nodes | Tóm tắt |
 |------|-------|---------|
@@ -83,8 +83,8 @@
 **Tại sao:** Khi N1 validate fail → `handleMessage` throw `AppError(reason, 400)` → controller trả HTTP 400 (bad request) cho client. Pipeline dừng hoàn toàn — không tốn resource cho expand/search/LLM.
 
 **Ví dụ:**
-- `"   "` → `AppError("Tin nhắn trống", 400)` → HTTP 400
-- `"a"×501` → `AppError("Tin nhắn quá dài", 400)` → HTTP 400
+- `"   "` → `AppError("Tin nhắn không được để trống", 400)` → HTTP 400
+- `"a"×501` → `AppError("Tin nhắn quá dài (tối đa 500 ký tự)", 400)` → HTTP 400
 
 ### N2 — ② expandAbbreviations `ai-policy.js:161`
 **Tại sao:** User VN hay viết tắt (`ip17`, `ss`, `bnh`) — nếu không expand, cả vector search lẫn keyword match đều không nhận diện được sản phẩm.
@@ -107,7 +107,7 @@
 - `"bóng đá Samsung S25 giá bao nhiêu"` → `off_topic` (ưu tiên 1 thắng pricing ưu tiên 4)
 - `"cái đó có bao nhiêu RAM?"` → `pricing` ("bao nhiêu" match ưu tiên 4, dù hỏi specs)
 
-### N3b — ③ isPromptInjection `ai-policy.js:289-331`
+### N3b — ③ isPromptInjection `ai-policy.js` (INJECTION_PATTERNS=289-329, isPromptInjection=331)
 **Tại sao:** Chặn prompt injection TRƯỚC khi query đến LLM. Chạy trên **message GỐC** (không phải normalizedQuery) vì expand có thể biến đổi pattern.
 
 **Ví dụ:**
@@ -145,7 +145,7 @@
 
 **Ví dụ:**
 - Turn 1: `history=[]`
-- Turn 2 (cùng sessionId): `history=[{user:"iPhone 17 giá?", assistant:"28.990.000đ..."}]`
+- Turn 2 (cùng sessionId): `history=[{user:"iPhone 17 giá?", assistant:"28.490.000đ..."}]`
 - `sessionId=null`: `history=[]` (stateless, pronoun không hoạt động)
 
 ### N5a — ⑤a enrichQuery `chatbot-service.js:388`
@@ -187,7 +187,7 @@
 **Tại sao:** Tìm top 10 SP liên quan bằng hybrid search (cosine similarity + BM25-inspired keyword). Chạy **song song** với rewriteQuery (N5b-2a) trong Promise.all. Đây là search lần 1 — kết quả dùng làm fallback nếu rewrite fail hoặc giống gốc.
 
 **Ví dụ:** `hybridSearch("iPhone 17 Pro giá bao nhiêu", 10)` — kết quả thực từ DB:
-- `Điện thoại iPhone 17 Pro` → score **0.7578**, `lowConf: false` — cosine 0.7078 + overlap boost 0.05 (match cả vector lẫn keyword → +0.05 vì 2 phương pháp cùng tìm ra = đáng tin hơn)
+- `Điện thoại iPhone 17 Pro` → score **0.7567**, `lowConf: false` — cosine 0.7067 + overlap boost 0.05 (match cả vector lẫn keyword → +0.05 vì 2 phương pháp cùng tìm ra = đáng tin hơn)
 - `Điện thoại iPhone 17 Pro Max` → score **0.7041**, `lowConf: false` — cosine 0.6541 + overlap boost 0.05
 - `Điện thoại iPhone 17e` → score **0.6916**, `lowConf: false` — cosine 0.6416 + overlap boost 0.05 (keyword match "iPhone")
 - `Điện thoại Xiaomi Redmi Note 15 Pro 5G` → score **0.4667**, `lowConf: true` — chỉ match keyword ("Pro" xuất hiện trong tên), vector không gần → inject vào kết quả với score thấp + flag lowConfidence
@@ -239,7 +239,7 @@
 messages = [
   {role:"system",    content:"Chỉ recommend SP trong list, trả JSON"},
   {role:"user",      content:"iPhone 17 giá?"},         ← history
-  {role:"assistant", content:"28.990.000đ..."},         ← history
+  {role:"assistant", content:"28.490.000đ..."},         ← history
   {role:"user",      content:"[augmented prompt]"}       ← câu hỏi mới + context
 ]
 ```
@@ -279,9 +279,9 @@ messages = [
 ### N6d-2 — ⑥.2 version + brand check `keyword-fallback.js:123-191`
 **Tại sao:** 2 bước tuần tự trong cùng 1 block:
 
-**Bước 1 — Version filter** (line 94-146): Extract model number từ query, bỏ qua giá/specs. Filter SP không chứa số đó. **Hạn chế:** chỉ extract **số**, không phân biệt prefix (A-series vs S-series) — nhưng N6d-1 scoring bổ trợ xếp hạng đúng.
+**Bước 1 — Version filter** (line 94-151): Extract model number từ query, bỏ qua giá/specs. Filter SP không chứa số đó. **Hạn chế:** chỉ extract **số**, không phân biệt prefix (A-series vs S-series) — nhưng N6d-1 scoring bổ trợ xếp hạng đúng.
 
-**Bước 2 — Brand coherence** (line 175-183): Sau version filter, check `brandDiscriminator` (token đầu tiên >3 chars, không phải số, có trong SP ban đầu) có trong kết quả không → nếu không → `notFoundResponse`. Tránh recommend SP sai brand.
+**Bước 2 — Brand coherence** (line 180-192): Sau version filter, check `brandDiscriminator` (token đầu tiên >3 chars, không phải số, có trong SP ban đầu) có trong kết quả không → nếu không → `notFoundResponse`. Tránh recommend SP sai brand.
 
 **Ví dụ xuyên suốt 2 bước:** Query `"Samsung S25 giá bao nhiêu"`, DB có 4 SP:
 
@@ -323,10 +323,10 @@ messages = [
 **Tại sao:** User kèm ngân sách → filter SP ngoài range. 4 patterns:
 
 **Ví dụ:**
-- Query: `"laptop tầm 20 triệu"` → approx ±20%: 16M–24M → products: `[Acer Gaming Nitro: 22.990.000đ]` (MacBook 27.9M bị loại, Vivobook 15.9M bị loại)
-- Query: `"laptop 15-20 triệu"` → range: 15M–20M → products: `[Asus Vivobook 15: 15.990.000đ]`
-- Query: `"laptop dưới 15 triệu"` → max: ≤15M → products: `[Lenovo IdeaPad: 12.990.000đ]`
-- Query: `"laptop trên 25 triệu"` → min: ≥25M → products: `[MacBook Air M4: 27.990.000đ]`
+- Query: `"laptop tầm 20 triệu"` → approx ±20%: 16M–24M → products: `[Acer Gaming Nitro V 15 ANV15-41: 18.690.000đ]` (MacBook Air M4 26.49M bị loại vì >24M, Vivobook 15 13.49M bị loại vì <16M)
+- Query: `"laptop 15-20 triệu"` → range: 15M–20M → products: `[Asus Vivobook 15 OLED A1505VA: 17.790.000đ]`
+- Query: `"laptop dưới 15 triệu"` → max: ≤15M → products: `[Lenovo IdeaPad Slim 3 15AMN8: 14.290.000đ]`
+- Query: `"laptop trên 25 triệu"` → min: ≥25M → products: `[MacBook Air 13 inch M4: 26.490.000đ]`
 
 ### N6d-6 — ⑥.3 category prefix `keyword-fallback.js`
 **Tại sao:** Detect category term → `product.name.startsWith()`. Chỉ áp dụng khi đúng 1 prefix (skip so sánh).
@@ -374,7 +374,7 @@ messages = [
 **Tại sao:** Lưu DB cho analytics. Fire-and-forget — DB lỗi chỉ warning, user vẫn nhận response.
 
 **Ví dụ:**
-- `ChatMessage.bulkCreate([{content:"iPhone 17 giá?", role:"user"}, {content:"28.990.000đ", role:"assistant"}]).catch(warn)`
+- `ChatMessage.bulkCreate([{content:"iPhone 17 giá?", role:"user"}, {content:"28.490.000đ", role:"assistant"}]).catch(warn)`
 
 ### ERR-a — catch có statusCode `chatbot-service.js:349`
 **Tại sao:** AppError = lỗi "dự kiến" → re-throw → controller trả HTTP status đúng. Không persist (không lưu DB).
@@ -509,7 +509,7 @@ messages = [
 | ⑥a | **N6a-3** | `buildAugmentedPrompt` → string ~1500 chars chứa SP + store info + câu hỏi | **AUGMENT**: nhồi context (retrieved products) vào prompt. Đây là bước "A" trong RAG |
 | ⑥a | **N6a-4** | `[system, ...history, {user: augmentedPrompt}]` | System prompt chứa rules: chỉ recommend SP trong list, trả JSON format |
 | ⑥b | **N6b-1** | `axios.post` → 200 OK | **GENERATE**: temp=0.3 (deterministic), 800 tokens, JSON format. Provider 1 thành công |
-| ⑥b | **N6b-2** | `parseLLMOutput` → `{response, matchedProducts, suggestions, intent}` | Parse JSON → match tên SP (phát hiện hallucination) → dedup |
+| ⑥b | **N6b-2** | `parseLLMOutput` → `{response, products, suggestions, intent}` | Parse JSON → match tên SP (phát hiện hallucination) → dedup |
 | ⑦ | **N7a** | Update history: `[user, assistant].slice(-20)`, evict stale >30 phút | Giữ max 10 turns. LRU evict khi >500 sessions |
 | ⑦ | **N7b** | `ChatMessage.bulkCreate` fire-and-forget | DB lỗi → chỉ warning. Analytics = nice to have |
 | **Kết quả** | | 📝 "Dựa trên yêu cầu nhẹ + pin lâu + ≤20M: 1) Laptop A (1.3kg, 12h pin)..." | LLM hiểu multi-criteria → sort/filter → response tự nhiên |
@@ -550,7 +550,7 @@ messages = [
 | ③ | **N3a** | intent = `pricing` | "cái đó có **bao nhiêu** RAM" → "bao nhiêu" match pricing regex (ưu tiên 4). Dù user thực ra hỏi specs, intent detection chỉ match keyword — không hiểu ngữ cảnh. N5a sẽ resolve pronoun "cái đó" |
 | ③ | **N3b** | injection = No | |
 | Gate | **G1→G2** | Pass | |
-| ④ | **N4** | `history = [{user: "iPhone 17 giá?", assistant: "iPhone 17 Pro giá 28.990.000₫..."}]` | History từ turn 1 — input quan trọng cho N5a |
+| ④ | **N4** | `history = [{user: "iPhone 17 giá?", assistant: "iPhone 17 Pro giá 28.490.000₫..."}]` | History từ turn 1 — input quan trọng cho N5a |
 | ⑤a | **N5a** | `"cái đó có bao nhiêu RAM?"` → **`"cái đó có bao nhiêu RAM? iPhone 17"`** | Pronoun **"cái đó"** detected bởi `PRONOUN_RE` → lấy "iPhone 17" từ assistant msg gần nhất → **append vào cuối query**. Không có N5a → vector search "cái đó bao nhiêu RAM" trả kết quả ngẫu nhiên |
 | ⑤b | **N5b-2** | hybridSearch(`"...RAM? iPhone 17"`, 10) → iPhone 17 found | "iPhone 17" ở cuối query → embedding gần iPhone 17 → search trả đúng SP |
 | ⑥ | **N6-check** | LLM UP | |
@@ -624,7 +624,7 @@ messages = [
 | ⑥.4 | **N6d-7** | Sort: iPhone 17 Pro score 30 → đứng đầu | |
 | ⑥.5 | **N6d-8** | Intent (10 từ đầu) → `pricing` + `isPriceQuery` → **💰 format** | 10 từ đầu tránh history context nhiễu intent. 💰: tên + giá + stock |
 | ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
-| **Kết quả** | | 💰 "iPhone 17 Pro — 28.990.000₫ — Còn hàng" | |
+| **Kết quả** | | 💰 "iPhone 17 Pro — 28.490.000₫ — Còn hàng" | |
 
 ---
 
@@ -647,7 +647,7 @@ messages = [
 | ⑥.4 | **N6d-7** | Sort + dedup | SP còn lại sau 3 filter |
 | ⑥.5 | **N6d-8** | Intent → product_search → **🔍 format** (list top 5) | |
 | ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
-| **Kết quả** | | 🔍 "Samsung A57 — 17.990.000₫, OPPO Reno15 — 16.990.000₫, ..." | Không iPhone, 15-20M, chỉ ĐT. 3 filter stack đúng |
+| **Kết quả** | | 🔍 "OPPO Reno15 5G — 15.690.000₫, ..." | Không iPhone, 15-20M, chỉ ĐT. 3 filter stack đúng |
 
 ---
 
@@ -758,7 +758,7 @@ messages = [
 | ⑥.3–4 | **N6d-4→7** | Filters skip. Sort by score | |
 | ⑥.5 | **N6d-8** | Detect **"mới nhất"** → **🌟 format**: **sort lại by `createdAt` desc** | 🌟 override sort của N6d-7. Thay vì sort by keyword score → sort by ngày nhập SP. Đúng ý "mới nhất" |
 | ⑦ | **N7a→b** | Session (lưu RAM) + persist (lưu DB) | |
-| **Kết quả** | | 🌟 "MacBook Pro M4 (2025) — 45.990.000₫ — Mới nhất" | SP mới nhất lên đầu |
+| **Kết quả** | | 🌟 "MacBook Pro 14 inch M5 — 41.990.000₫ — Mới nhất" | SP mới nhất lên đầu |
 
 ---
 

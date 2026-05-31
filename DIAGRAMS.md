@@ -204,7 +204,7 @@ flowchart TB
     subgraph BROWSE["Catalog — Duyệt sản phẩm"]
         direction TB
         B1["GET /api/products<br/>Danh sách, sort, filter, phân trang"]
-        B2["GET /api/products/search<br/>Full-text + AI → lưu history"]
+        B2["GET /api/products/search<br/>Full-text LIKE search"]
         B3["GET /api/products/suggestions<br/>Autocomplete prefix match name_vi"]
         B4["GET /api/products/featured<br/>Nổi bật is_featured=1"]
         B5["GET /api/products/new-arrivals<br/>Mới nhất ORDER BY createdAt"]
@@ -490,7 +490,7 @@ flowchart TB
     subgraph INVENTORY_INT["Logic nội bộ (không phải HTTP)"]
         direction TB
         I3["createOrder: stock decrement<br/>SELECT FOR UPDATE → ghi type=sale"]
-        I4["EventBus order.cancelled<br/>→ ghi type=return, restore inline"]
+        I4["EventBus order.cancelled<br/>→ ghi type=cancellation, restore inline"]
     end
 
     Admin --> I1
@@ -752,7 +752,7 @@ sequenceDiagram
     else Tài khoản bị vô hiệu hóa
         API-->>FE: 401 auth.accountDisabled
     else Đăng nhập thành công
-        API->>API: Sinh accessToken JWT 15m + refreshToken
+        API->>API: Sinh accessToken JWT (TTL theo env JWT_EXPIRES_IN) + refreshToken
         API-->>FE: 200 OK + token + refreshToken httpOnly cookie
     end
 
@@ -761,7 +761,12 @@ sequenceDiagram
     User->>FE: Nhấn Đăng nhập bằng Google
     FE->>API: POST /api/auth/google token googleIdToken
     API->>API: google-auth-library verifyIdToken
-    API->>DB: findOrCreate user WHERE google_id = ?
+    API->>DB: SELECT user WHERE google_id = ? OR email = ?
+    alt Tìm thấy user theo email
+        API->>DB: Merge (cập nhật googleId/avatar/isEmailVerified) rồi save
+    else Không có
+        API->>DB: createUser
+    end
     alt Tài khoản bị vô hiệu hóa
         API-->>FE: 401 auth.accountDisabled
     else Thành công
@@ -798,7 +803,7 @@ sequenceDiagram
 
     alt Không đủ hàng tồn kho
         API->>DB: ROLLBACK
-        API-->>FE: 422 Sản phẩm không đủ tồn kho
+        API-->>FE: 400 Sản phẩm không đủ tồn kho
     else Đủ hàng
         API->>API: _generateOrderNumber ORD-YYYYMMDD-random4digit
         API->>API: Tính subtotal + shipping - discountAmount
@@ -813,19 +818,20 @@ sequenceDiagram
             API->>DB: UPDATE carts SET status=converted
             API->>DB: DELETE cart_items
             API->>DB: COMMIT
-            API->>Mail: Email xác nhận đơn hàng async
-            API-->>FE: 201 Created orderId number
-        else VNPay
-            API->>API: Tạo VNPay URL HMAC-SHA512
+        else VNPay / MoMo (online)
             API->>DB: COMMIT
-            API-->>FE: 201 Created orderId vnpayUrl
-            FE->>Customer: Redirect đến VNPay
-        else MoMo
-            API->>API: Tạo MoMo request HMAC-SHA256
-            API->>DB: COMMIT
-            API-->>FE: 201 Created orderId momoPayUrl
-            FE->>Customer: Redirect đến MoMo
+            Note over API,DB: KHÔNG tăng used_count KHÔNG clear cart<br/>KHÔNG tạo URL trong luồng tạo đơn
         end
+        API->>Mail: Email xác nhận đơn hàng async
+        API-->>FE: 201 Created orderId number
+        Note over API,Mail: createOrder gửi email ngay cho mọi method<br/>online payment nhận thêm 1 email sau IPN success
+    end
+
+    opt Online payment (VNPay / MoMo) — bước riêng sau khi tạo đơn
+        FE->>API: POST /api/payments/{vnpay|momo}/create-url orderId
+        API->>API: Tạo VNPay URL HMAC-SHA512 / MoMo request HMAC-SHA256
+        API-->>FE: vnpayUrl / momoPayUrl
+        FE->>Customer: Redirect đến VNPay / MoMo
     end
 
     Note over Customer,Mail: IPN Callback server-to-server
@@ -837,9 +843,9 @@ sequenceDiagram
 
     alt Signature sai
         API-->>GW: 400 Bad Request
-    else VNPay giao dịch thất bại
+    else Giao dịch thất bại (VNPay / MoMo)
         API->>DB: UPDATE orders SET paymentStatus=failed
-        Note over API,DB: Chỉ VNPay set failed<br/>MoMo IPN failure không thay đổi DB<br/>KHÔNG cancel order KHÔNG restore stock
+        Note over API,DB: VNPay IPN failure và MoMo IPN failure đều set paymentStatus=failed (skip nếu đã paid)<br/>KHÔNG cancel order KHÔNG restore stock
         API-->>GW: 200 OK
     else Giao dịch thành công
         API->>DB: BEGIN TRANSACTION
@@ -872,14 +878,14 @@ sequenceDiagram
     Note over API: chatbotLimiter 20 req/60s<br/>optionalAuthenticate<br/>validateRequest Zod schema
 
     API->>Policy: validateMessage message
-    Note over Policy: không rỗng <=2000 ký tự<br/>phải có chữ hoặc số
+    Note over Policy: không rỗng <=500 ký tự<br/>phải có chữ hoặc số
 
     alt Message không hợp lệ
         Policy-->>API: valid=false reason
         API-->>CW: 400 Bad Request
     else Message hợp lệ
         Policy->>Policy: expandAbbreviations<br/>ip→iPhone pm→Pro Max ss→Samsung<br/>mb→MacBook op→OPPO rl→realme<br/>r5→AMD Ryzen 5 r7→AMD Ryzen 7<br/>bnh→bao nhiêu bh→bảo hành
-        Policy->>Policy: isOffTopic(normalizedQuery)<br/>isPromptInjection(message)
+        Policy->>Policy: classifyIntent(normalizedQuery) → off_topic<br/>isPromptInjection(message)
 
         alt Intent off_topic hoặc prompt injection
             API->>DB: INSERT chat_messages async (vẫn log)
@@ -941,8 +947,10 @@ sequenceDiagram
     API->>API: multer middleware validate MIME type
     API->>API: generate filename uuid-v4.ext
 
-    alt MIME type không hợp lệ hoặc quá lớn
+    alt MIME type không hợp lệ
         API-->>FE: 400 Bad Request
+    else File quá lớn (>5MB)
+        API-->>FE: 413 Payload Too Large
     else MIME hợp lệ
         API->>Disk: Lưu file vào /uploads/{type}/{filename}
         API->>API: validateMagicBytes 12 bytes header
@@ -992,7 +1000,7 @@ sequenceDiagram
     API-->>FE: Danh sách sản phẩm
 
     Admin->>FE: Upload ảnh sản phẩm trước
-    FE->>API: POST /api/uploads/product/multiple
+    FE->>API: POST /api/uploads/products/multiple
     API-->>FE: urls array
 
     Admin->>FE: Điền form tạo sản phẩm
@@ -1043,7 +1051,7 @@ sequenceDiagram
         else User hợp lệ
             API->>API: Sign accessToken + refreshToken mới
             API-->>FE: 200 { token } + refreshToken cookie
-            FE->>FE: Lưu token mới retry request gốc
+            FE->>FE: Lưu accessToken mới (updateAccessToken); request đang chờ trong queue proceed với token mới
         end
     end
 
@@ -1622,10 +1630,10 @@ flowchart TB
 ```mermaid
 flowchart TD
     A([User gửi câu hỏi]) --> B["POST /api/chatbot/message<br/>chatbotLimiter 20 req/60s<br/>optionalAuthenticate"]
-    B --> C["validateMessage<br/>≤2000 ký tự, phải có chữ/số"]
+    B --> C["validateMessage<br/>≤500 ký tự, phải có chữ/số"]
     C -->|Không hợp lệ| D([400 Bad Request])
-    C -->|Hợp lệ| E["expandAbbreviations<br/>11 entries — xem bảng bên dưới"]
-    E --> F{"isOffTopic OR isPromptInjection<br/>Rule-based regex, 0 API call"}
+    C -->|Hợp lệ| E["expandAbbreviations<br/>12 mục brand/hội thoại tiêu biểu (xem bảng) — ABBREV_MAP còn section EN→VI và VI không dấu→có dấu"]
+    E --> F{"classifyIntent === off_topic OR isPromptInjection<br/>Rule-based regex, 0 API call"}
     F -->|off_topic / injection| G["Fixed response<br/>DB log async<br/>KHÔNG update chat history"]
     G --> H([Trả kết quả])
     F -->|pass| I([Sang sơ đồ 6b: Retrieval])
@@ -1725,9 +1733,11 @@ stateDiagram-v2
     direction TB
     [*] --> pending : Tạo đơn hàng
 
-    pending --> paid : IPN ok (COD=delivered)
+    pending --> paid : Online IPN ok
 
-    pending --> failed : VNPay IPN code!=00 only
+    pending --> paid : COD delivered (orders-service)
+
+    pending --> failed : IPN code lỗi (MoMo & VNPay)
 
     failed --> pending : POST /orders/:id/repay
 
@@ -1740,7 +1750,7 @@ stateDiagram-v2
     note right of pending
         COD pending→paid khi delivered
         VNPay return CÓ mutate DB
-        MoMo return chỉ UX, IPN fail giữ pending
+        MoMo return chỉ UX; MoMo/VNPay IPN fail set paymentStatus=failed
     end note
 
     note right of paid
@@ -1771,6 +1781,10 @@ stateDiagram-v2
 
     inactive --> active : Admin toggle
 
+    active --> draft : Admin toggle status=draft
+
+    inactive --> draft : Admin toggle status=draft
+
     active --> soft_deleted : Admin xóa (paranoid)
 
     inactive --> soft_deleted : Admin xóa (paranoid)
@@ -1788,8 +1802,12 @@ stateDiagram-v2
     end note
 
     note right of inactive
-        archived enum exists in DB
-        nhưng không có transition UI
+        archived: enum hợp lệ, set được qua
+        POST/PUT /api/products (catalog) và
+        PUT /admin/products/:id (updateProduct);
+        KHÔNG có node/transition trong diagram,
+        không có toggle UI chuyên dụng
+        (toggleProductStatus chỉ active/inactive/draft)
     end note
 ```
 

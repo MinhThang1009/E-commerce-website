@@ -265,8 +265,7 @@ CI threshold thấp hơn local để không fail khi thêm file mới chưa có 
 
 Frontend chạy `npm run test:ci` để generate coverage.
 
-- `jest.config.cjs` không đặt `coverageThreshold` — không enforce minimum tự động
-- Theo convention dự án: target 100% (enforce qua code review, không qua config)
+- `jest.config.cjs` ĐẶT `coverageThreshold`: global floor (statements/lines 79%, branches 67%, functions 69%) + per-file 100% cho `src/schemas/auth.ts` và 3 auth pages (`RegisterPage`, `ResetPasswordPage`, `VerifyEmailPage`). CI fail nếu dưới ngưỡng.
 - Component tests dùng `@testing-library/react` + `@testing-library/user-event`
 
 ---
@@ -319,7 +318,7 @@ test('loginSucceeds', ...)         // không rõ điều kiện
 
 # 9. CI/CD Integration
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) chạy trên `push` đến `main`, `phase-*`, `feat/*`, `fix/*` và `pull_request` vào `main`.
+GitHub Actions workflow (`.github/workflows/ci.yml`) chạy trên `push` đến `main`, `phase-*`, `feat/*`, `fix/*`, `refactor/*` và `pull_request` vào `main`.
 
 **Backend job** (ubuntu-latest, Node 22, timeout 20 phút):
 1. `npm ci` — install dependencies

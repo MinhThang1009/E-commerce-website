@@ -318,7 +318,7 @@ e-commerce-website/
 │   │   ├── lib/                # api-client.ts (Axios), query-client.ts (TanStack)
 │   │   ├── hooks/              # 5 global hooks (use-api-state, use-debounce, use-notifications, use-scroll-to-top, use-token-refresh)
 │   │   ├── pages/              # Static pages (Home, About, FAQs, Privacy...)
-│   │   ├── utils/              # 14 utilities (token-manager, auth-utils...)
+│   │   ├── utils/              # 13 utilities (token-manager, auth-utils...)
 │   │   ├── types/              # Shared TypeScript types
 │   │   ├── styles/             # SCSS tokens, global CSS
 │   │   ├── config/             # i18n.ts initialization

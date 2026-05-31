@@ -209,9 +209,9 @@ frontend/
 │   ├── lib/
 │   │   ├── api-client.ts    # Axios instance + interceptors (token attach + 401 handle)
 │   │   └── query-client.ts  # TanStack QueryClient (staleTime 5m, gcTime 10m)
-│   ├── hooks/               # useTokenRefresh, + 6 hooks khác
+│   ├── hooks/               # 5 hooks (useTokenRefresh, useDebounce, useNotifications, useApiState, useScrollToTop)
 │   ├── pages/               # Static pages (Home, About, FAQs, Privacy, Terms...)
-│   ├── utils/               # 14 utilities (token-manager, auth-utils, formatters...)
+│   ├── utils/               # 13 utilities (token-manager, auth-utils, formatters...)
 │   ├── types/               # Shared TypeScript types (user.types, ui.types...)
 │   ├── styles/              # SCSS tokens (_tokens.scss, index.scss)
 │   ├── schemas/             # Zod validation schemas (auth.ts, checkout.ts)
@@ -604,17 +604,22 @@ Cấu hình trong `frontend/vite.config.ts` (`resolve.alias`):
 
 ```
 @            → src/
-@features    → src/features
+@assets      → src/assets
 @components  → src/components
-@stores      → src/stores
-@lib         → src/lib
+@config      → src/config
+@constants   → src/constants
+@contexts    → src/contexts    # dir chưa tồn tại (alias chết)
+@features    → src/features
 @hooks       → src/hooks
+@lib         → src/lib
 @pages       → src/pages
 @routes      → src/routes
-@utils       → src/utils
-@types       → src/types
-@constants   → src/constants
-@config      → src/config
-@assets      → src/assets
+@schemas     → src/schemas
+@services    → src/services    # dir chưa tồn tại (alias chết)
+@stores      → src/stores
 @styles      → src/styles
+@types       → src/types
+@utils       → src/utils
 ```
+
+> Tổng 17 alias trong `vite.config.ts`. `@contexts` và `@services` trỏ tới thư mục chưa được tạo (`src/contexts`, `src/services`) — nên xóa khỏi config hoặc tạo thư mục tương ứng.

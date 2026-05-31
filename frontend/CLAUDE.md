@@ -301,7 +301,7 @@ frontend/src/
   components/CLAUDE.md                       ← shared UI components
   hooks/CLAUDE.md                            ← 5 global hooks
   pages/CLAUDE.md                            ← static/marketing pages
-  utils/CLAUDE.md                            ← 14 utility files
+  utils/CLAUDE.md                            ← 13 utility files
   types/CLAUDE.md                            ← global TypeScript types
   styles/CLAUDE.md                           ← SCSS tokens, global styles, chart tokens
   constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING, chart-colors

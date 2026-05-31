@@ -140,7 +140,7 @@ modules/ai/
 - `expandAbbreviations(text)` — regex-based expansion cho brand/model abbreviations
 - `isOffTopic(msg)` — regex pattern: thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức
 - `classifyIntent(text)` — 6 intents: `off_topic`, `order_inquiry`, `policy`, `pricing`, `product_search`, `general`
-- `isPromptInjection(text)` — detect 15 loại injection (28 regex, EN+VI, OWASP LLM01:2025): direct override, data exfiltration, jailbreak, social engineering, stealth injection
+- `isPromptInjection(text)` — detect 15 loại injection (24 regex, EN+VI, OWASP LLM01:2025): direct override, data exfiltration, jailbreak, social engineering, stealth injection
 
 ## 3.5 Product Name Generator
 

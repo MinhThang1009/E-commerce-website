@@ -221,7 +221,7 @@ Unit tests chạy song song; integration/api/e2e tests `maxWorkers=1`.
 
 **Ports:** Unit=9999, Integration=9998, API=9997, E2E=9996
 
-**Coverage thresholds (local jest.config.js):** statements 99%, branches 97%, functions 99%, lines 99%
+**Coverage thresholds (local jest.config.js):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 
 **Coverage thresholds (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
 

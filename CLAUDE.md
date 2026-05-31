@@ -272,7 +272,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 | FE Component Tests | 21 | 758 | ~12s | `jest.config.cjs` (frontend/) |
 | **Tổng** | **259** | **~5.479** | | |
 
-- **BE Coverage (local):** statements 99.98%, branches 99.81%, functions 99.91%, **lines 100%** (thresholds trong `jest.config.js`)
+- **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
 - **FE Coverage:** global 79%+, per-file 100% cho auth pages + schemas/auth.ts (thresholds trong `jest.config.cjs`)
 - **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — chạy BE Unit Tests + **FE lint/typecheck/test/build** (Integration/API/E2E không chạy trong CI vì không có MySQL service)
@@ -350,7 +350,7 @@ frontend/src/
   components/CLAUDE.md                       ← shared components (common/, layout/, routing/, sections/, icons/)
   hooks/CLAUDE.md                            ← 5 hook files (5 exported hooks)
   pages/CLAUDE.md                            ← 8 static pages
-  utils/CLAUDE.md                            ← 14 utility files
+  utils/CLAUDE.md                            ← 13 utility files
   types/CLAUDE.md                            ← Type barrel, shared types
   styles/CLAUDE.md                           ← SCSS tokens, global CSS, Tailwind guidance
   constants/CLAUDE.md                        ← PAGINATION, UPLOAD, SHIPPING

@@ -258,7 +258,8 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 - **AI module basePath:** `/api/chatbot` (không phải `/api/ai`).
 - **Wishlist module basePath:** `/api/wishlists` (plural).
 - **Search history basePath:** `/api/search-histories`.
-- **Role ENUM:** `'manager'` đã xóa khỏi `users.role` (chỉ còn `customer`/`admin`, migration `2026052204`) — không hardcode `'manager'` trong `authorize()` hoặc seed.
+- **Role ENUM:** `users.role` = `('customer','staff','admin')` — `'manager'` đã xóa (migration `2026052204`), `'staff'` thêm sau (migration `2026060201`). Không hardcode `'manager'`.
+- **RBAC 4-actor** (guest/customer/staff/admin): back-office (`adminAuthenticate`) cho admin+staff vào panel; **staff** = CRUD nghiệp vụ (products/orders-status/inventory-restock/discount/reviews/catalog-write/payment-refund/attribute); **admin** = xem-only back-office + độc quyền users + `analytics/user-growth`. Guard per-route: `requireRole`/`requireSuperAdmin` (BE) + `AdminRoute allowedRoles` + `useAuth().isStaff()` ẩn nút write (FE). Chi tiết: [`backend/src/middlewares/CLAUDE.md §4`](backend/src/middlewares/CLAUDE.md).
 
 ---
 
@@ -266,12 +267,12 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 158 | 3.745 | ~20s | `jest.config.js` |
-| BE Integration Tests | 36 | 184 | ~55s | `jest.integration.config.js` |
+| BE Unit Tests | 158 | 3.758 | ~20s | `jest.config.js` |
+| BE Integration Tests | 36 | 188 | ~55s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 700 | ~230s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~25s | `jest.e2e.config.js` |
-| FE Component Tests | 21 | 758 | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **259** | **~5.487** | | |
+| FE Component Tests | 22 | 766 | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **260** | **~5.512** | | |
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -289,7 +290,7 @@ STRUCTURE.md                                 ← Architecture, tech stack, data 
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
 RAG_CHATBOT_PIPELINE.md                      ← RAG pipeline 7 bước + 53 edge case (chatbot)
 PIPELINE_TRACE_EXAMPLES.md                   ← Trace 22 path + Node Reference 43 node (chatbot)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.487 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.512 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace
@@ -298,7 +299,7 @@ backend/src/
   constants/CLAUDE.md                        ← Hằng số toàn cục (shipping, OTP, JWT)
   locales/CLAUDE.md                          ← i18n vi.json / en.json, conventions
   models/CLAUDE.md                           ← 25 models, associations, conventions
-  migrations/CLAUDE.md                       ← 61 migrations, phases, patterns
+  migrations/CLAUDE.md                       ← 62 migrations, phases, patterns
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError/errors, unit-of-work
   services/CLAUDE.md                         ← email, vector-store, embedding (shared, non-DI)

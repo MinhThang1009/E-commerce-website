@@ -47,11 +47,19 @@ module.exports = () => ({
 
 ## 1.3 Auth pattern
 
-Tất cả routes dùng `adminAuthenticate` (từ `@middlewares/admin-auth`) — **KHÔNG phải** `authenticate` + `authorize('admin')`. Apply ở router level nên cover toàn bộ routes:
+Tất cả routes dùng `adminAuthenticate` (từ `@middlewares/admin-auth`) — **KHÔNG phải** `authenticate` + `authorize('admin')`. Apply ở router level cho cả 2 role back-office (`admin` + `staff`):
 
 ```js
 router.use(adminAuthenticate);
 ```
+
+**Phân quyền chi tiết per-route** (sau `adminAuthenticate`) bằng `requireRole`:
+
+| Guard                                         | Role   | Áp cho                                                                           |
+| --------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
+| `requireSuperAdmin` (`adminOnly`)             | admin  | users CRUD, `analytics/user-growth`                                              |
+| `requireRole('staff')` (`staffOnly`)          | staff  | CRUD products/orders-status/reviews/discount/restock (admin → **403**, xem-only) |
+| `requireRole('admin','staff')` (`backoffice`) | cả hai | dashboard/stats/list/analytics/reports/chatbot-stats (admin xem-only)            |
 
 ---
 

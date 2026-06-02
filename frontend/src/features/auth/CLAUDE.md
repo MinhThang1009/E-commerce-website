@@ -44,7 +44,7 @@ Xác thực người dùng: đăng nhập email/password, Google OAuth, đăng k
 Route guards nằm trong `src/components/routing/` (không thuộc feature này):
 
 - `ProtectedRoute` — redirect `/login` nếu chưa đăng nhập
-- `AdminRoute` — redirect `ROUTES.UNAUTHORIZED` (`/unauthorized`) nếu `role !== 'admin'`
+- `AdminRoute` — redirect `ROUTES.UNAUTHORIZED` nếu `role ∉ allowedRoles` (mặc định `['admin','staff']`; trang users truyền `['admin']`)
 - `PublicOnlyRoute` — redirect `/` nếu đã đăng nhập
 
 ---
@@ -136,11 +136,11 @@ Query key duy nhất: `['auth', 'currentUser']` cho `useGetCurrentUserQuery`.
 
 # 5. Components chính
 
-| Component           | Mô tả                                                                                                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AuthProvider`      | Mount ở root app — khởi tạo auth state, restore session từ localStorage/sessionStorage. Không render UI.                                                                 |
-| `GoogleLoginButton` | Tích hợp Google OAuth (luồng implicit qua `@react-oauth/google`). Gửi `access_token` lên server, nhận `{ user, token }` qua `POST /auth/google`, rồi gọi `loginSuccess`. |
-| `useAuth` (hook)    | Wrap `authStore` + `useLogoutMutation`. Expose: `logout()` (full cleanup), `isAdmin()`, `hasRole(role)`, `getUserFullName()`, `isLoggedIn`, `hasToken`, `needsUserInfo`. |
+| Component           | Mô tả                                                                                                                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AuthProvider`      | Mount ở root app — khởi tạo auth state, restore session từ localStorage/sessionStorage. Không render UI.                                                                              |
+| `GoogleLoginButton` | Tích hợp Google OAuth (luồng implicit qua `@react-oauth/google`). Gửi `access_token` lên server, nhận `{ user, token }` qua `POST /auth/google`, rồi gọi `loginSuccess`.              |
+| `useAuth` (hook)    | Wrap `authStore` + `useLogoutMutation`. Expose: `logout()` (full cleanup), `isAdmin()`, `isStaff()`, `hasRole(role)`, `getUserFullName()`, `isLoggedIn`, `hasToken`, `needsUserInfo`. |
 
 ---
 
@@ -204,7 +204,7 @@ interface AuthResponse {
 - **`useLogoutMutation` `onSuccess`** gọi `queryClient.clear()` — xóa toàn bộ TanStack Query data. `useAuth.logout()` còn thêm: clear `wishlistStore`, `cartStore`, xóa các `localStorage` keys (`wishlist`, `recentSearches`, `cartItems`).
 - **`PublicOnlyRoute`** bắt buộc cho login/register pages — nếu thiếu, user đã đăng nhập vào được trang login → race condition với authStore.
 - **Google OAuth flow:** server trả token trong response body — không phải query params. FE dùng `useGoogleLoginMutation` để nhận `{ user, token }`.
-- **`AdminRoute`** chỉ cho phép role `admin`. `useAuth.isAdmin()` kiểm tra `role === 'admin'`.
+- **`AdminRoute`** cho phép back-office (`admin` + `staff`) qua prop `allowedRoles` (mặc định `['admin','staff']`); trang quản lý users truyền `allowedRoles={['admin']}`. `useAuth.isAdmin()` = `role === 'admin'`; `useAuth.isStaff()` = `role === 'staff'` (staff được thao tác nghiệp vụ, admin xem-only back-office).
 - **`parseAuthResponse`:** backend response có thể có dạng `{ status: 'success', user, token }` — được normalize về `{ user, token }` trước khi trả về từ mutation.
 
 ---

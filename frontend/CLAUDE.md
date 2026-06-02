@@ -171,7 +171,7 @@ export function useGetUserOrdersQuery() {
 | Guard | Logic |
 |---|---|
 | `ProtectedRoute` | Redirect `/login` nếu `!isAuthenticated` |
-| `AdminRoute` | Redirect `ROUTES.UNAUTHORIZED` (`/unauthorized`) nếu `role !== 'admin'` |
+| `AdminRoute` | Redirect `ROUTES.UNAUTHORIZED` nếu `role ∉ allowedRoles`. Prop `allowedRoles` mặc định `['admin','staff']` (back-office); trang quản lý users truyền `['admin']` |
 | `PublicOnlyRoute` | Redirect `/` nếu đã authenticated (login, register pages) |
 
 ## 5.2 Lazy loading

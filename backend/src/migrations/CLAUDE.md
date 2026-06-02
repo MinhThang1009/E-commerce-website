@@ -1,6 +1,7 @@
 # Migrations — TechStore Backend
 
-> 61 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
+> 62 Sequelize migration files tại `src/migrations/`. Schema hiện tại: `backend/data/migration.sql`.
+> ⚠️ Live DB build từ snapshot `data/migration.sql` (qua `rebuild-db.js`), `SequelizeMeta` rỗng — đổi schema phải sửa snapshot + ALTER trực tiếp, KHÔNG chạy `db:migrate` incremental.
 
 ← Quay lại [`backend/CLAUDE.md`](../../CLAUDE.md)
 
@@ -101,6 +102,7 @@
 2026052203-drop-audit-logs.js
 2026052204-remove-manager-role.js
 2026052501-add-metadata-to-chat-messages.js
+2026060201-add-staff-role.js
 ```
 
 ---
@@ -124,20 +126,21 @@
 
 # 5. Migrations gần nhất (cuối cùng)
 
-| File                                          | Nội dung                                                                             |
-| --------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `2026052501-add-metadata-to-chat-messages.js` | Add `metadata` (TEXT nullable) to `chat_messages` — JSON `{ products, suggestions }` |
-| `2026052204-remove-manager-role.js`           | ALTER `users.role` ENUM: remove `'manager'` (chỉ còn `'customer'`, `'admin'`)        |
-| `2026052203-drop-audit-logs.js`               | Drop `audit_logs`                                                                    |
-| `2026052202-add-fields-to-brands.js`          | Add `description_vi`, `description_en`, `website`, `is_active` to `brands`           |
-| `2026052201-add-is-active-to-categories.js`   | Add `is_active` to `categories`                                                      |
-| `2026052107-drop-warranty-tables.js`          | Re-run: drop `product_warranties`, `warranty_packages`                               |
-| `2026052106-drop-loyalty.js`                  | Re-run: drop `loyalty_histories`                                                     |
-| `2026052105-drop-banners-and-news.js`         | Re-run: drop `banners`, `news`                                                       |
-| `2026052104-drop-warranty-tables.js`          | Drop `product_warranties`, `warranty_packages` (loyalty/warranty module đã xóa)      |
-| `2026052103-drop-loyalty.js`                  | Drop `loyalty_histories`                                                             |
-| `2026052102-drop-banners-and-news.js`         | Drop `banners`, `news`                                                               |
-| `2026052101-drop-review-feedbacks.js`         | Drop `review_feedbacks`                                                              |
+| File                                          | Nội dung                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `2026060201-add-staff-role.js`                | ALTER `users.role` ENUM thêm `'staff'` → `('customer','staff','admin')` (nhân viên bán hàng) |
+| `2026052501-add-metadata-to-chat-messages.js` | Add `metadata` (TEXT nullable) to `chat_messages` — JSON `{ products, suggestions }`         |
+| `2026052204-remove-manager-role.js`           | ALTER `users.role` ENUM: remove `'manager'` (chỉ còn `'customer'`, `'admin'`)                |
+| `2026052203-drop-audit-logs.js`               | Drop `audit_logs`                                                                            |
+| `2026052202-add-fields-to-brands.js`          | Add `description_vi`, `description_en`, `website`, `is_active` to `brands`                   |
+| `2026052201-add-is-active-to-categories.js`   | Add `is_active` to `categories`                                                              |
+| `2026052107-drop-warranty-tables.js`          | Re-run: drop `product_warranties`, `warranty_packages`                                       |
+| `2026052106-drop-loyalty.js`                  | Re-run: drop `loyalty_histories`                                                             |
+| `2026052105-drop-banners-and-news.js`         | Re-run: drop `banners`, `news`                                                               |
+| `2026052104-drop-warranty-tables.js`          | Drop `product_warranties`, `warranty_packages` (loyalty/warranty module đã xóa)              |
+| `2026052103-drop-loyalty.js`                  | Drop `loyalty_histories`                                                                     |
+| `2026052102-drop-banners-and-news.js`         | Drop `banners`, `news`                                                                       |
+| `2026052101-drop-review-feedbacks.js`         | Drop `review_feedbacks`                                                                      |
 
 **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty` — không reference lại trong code mới.
 

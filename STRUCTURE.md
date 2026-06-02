@@ -364,7 +364,7 @@ Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables d
 
 | Table | Model | Mô tả |
 |---|---|---|
-| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (customer/admin), otpCode, resetPasswordToken, resetPasswordExpires |
+| `users` | User | Tài khoản: email, password (bcrypt), googleId, role (customer/staff/admin), otpCode, resetPasswordToken, resetPasswordExpires |
 | `addresses` | Address | Địa chỉ giao hàng của user (1 user N addresses) |
 | `categories` | Category | Danh mục sản phẩm (flat, có parentId cho nested display); fields: `isActive` (default true), `sortOrder` (default 0) |
 | `brands` | Brand | Thương hiệu (name, slug, logoUrl) |

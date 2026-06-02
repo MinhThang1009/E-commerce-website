@@ -278,7 +278,7 @@ backend/src/
   constants/CLAUDE.md                        ← Hằng số (shipping, OTP, JWT, cart)
   locales/CLAUDE.md                          ← i18n vi.json / en.json
   models/CLAUDE.md                           ← 25 models, associations
-  migrations/CLAUDE.md                       ← 61 migrations, schema history
+  migrations/CLAUDE.md                       ← 62 migrations, schema history
   middlewares/CLAUDE.md                      ← authenticate, authorize, rate-limiter
   shared/CLAUDE.md                           ← EventBus, AppError, UnitOfWork
     shared/errors/CLAUDE.md                  ← Error class hierarchy

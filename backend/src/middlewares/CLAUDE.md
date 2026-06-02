@@ -62,15 +62,20 @@ router.delete('/products/:id', authenticate, authorize('admin'), handler);
 
 ## 4. admin-auth.js
 
-JWT verify + role check dành cho admin panel. Tách riêng khỏi `authenticate.js`.
+JWT verify + role check dành cho back-office. Tách riêng khỏi `authenticate.js`.
+Cho phép **2 role**: `admin` (quản trị hệ thống) + `staff` (nhân viên bán hàng) — hằng `BACKOFFICE_ROLES`. Phân quyền chi tiết theo từng route bằng `requireRole`.
 
 ```js
-adminRouter.use(adminAuthenticate); // Tất cả admin routes
+adminRouter.use(adminAuthenticate); // Tất cả admin routes (admin + staff)
 adminRouter.delete('/users/:id', requireSuperAdmin, handler); // Chỉ role === 'admin'
+adminRouter.post('/products', requireRole('staff'), handler); // Chỉ staff (admin bị 403 — xem-only)
+adminRouter.get('/dashboard', requireRole('admin', 'staff'), handler); // Cả hai (xem chung)
 ```
 
-- `adminAuthenticate` — verify JWT + kiểm tra `role === 'admin'`
-- `requireSuperAdmin` — chỉ cho `role === 'admin'` (chain sau `adminAuthenticate`)
+- `adminAuthenticate` — verify JWT + kiểm tra `role ∈ {admin, staff}` (vào panel)
+- `requireRole(...roles)` — factory giới hạn route theo role cụ thể (chain sau `adminAuthenticate`)
+- `requireSuperAdmin` = `requireRole('admin')` — chỉ admin (users, analytics/user-growth)
+- **RBAC**: admin = xem-only back-office + quản lý users; staff = CRUD nghiệp vụ (products/orders/inventory/discount/reviews/catalog/payment-refund). Xem bảng canonical ở root `CLAUDE.md`.
 
 ---
 

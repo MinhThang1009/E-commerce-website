@@ -29,7 +29,7 @@
 
 ## 1.1 Purpose
 
-Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá. Tất cả pages trong feature này require role `admin`.
+Dashboard quản trị toàn bộ: xem analytics/KPIs, quản lý sản phẩm/đơn hàng/người dùng/tồn kho, tạo/xóa mã giảm giá. Pages trong feature này thuộc back-office (role `admin` + `staff`). **RBAC**: `staff` thao tác nghiệp vụ (CRUD products/orders/discount/inventory/reviews); `admin` **xem-only** (ẩn nút Tạo/Sửa/Xóa qua `useAuth().isStaff()` + hiển thị `ViewOnlyBanner`) + độc quyền quản lý users (`AdminRoute allowedRoles={['admin']}`).
 
 ## 1.2 Routes
 
@@ -304,7 +304,7 @@ interface User {
   lastName: string;
   phone?: string;
   avatar?: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'staff' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
   createdAt: string;
@@ -340,7 +340,7 @@ interface User {
 - **`AdminLayout`** wrap ở route level trong `AppRoutes.tsx` — không cần import trong từng page.
 - **Charts** dùng `recharts` — không dùng Chart.js hay D3.
 - **Export Excel** dùng `exceljs` — không dùng `xlsx` hay `sheetjs`.
-- **`AdminRoute`** trong `src/components/routing/` chỉ cho phép role `admin`.
+- **`AdminRoute`** trong `src/components/routing/` cho phép back-office (`admin` + `staff`) qua prop `allowedRoles` (mặc định `['admin','staff']`); route `/admin/users*` truyền `allowedRoles={['admin']}`. Nút thao tác (Tạo/Sửa/Xóa/cập-nhật-trạng-thái/restock) ẩn khi `!useAuth().isStaff()` (admin xem-only) — xem `ViewOnlyBanner`.
 - **Query keys có cấu trúc** (`adminDashboardKeys`, etc.) — không dùng inline string array như features nhỏ.
 - **`CategoriesPage` dùng `useGetCategoryTreeQuery`** (từ `features/catalog`) thay vì `useGetAllCategoriesQuery` — cần raw tree kể cả categories inactive/không có sản phẩm.
 

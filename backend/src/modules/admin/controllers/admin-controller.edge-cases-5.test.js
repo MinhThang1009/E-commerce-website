@@ -711,6 +711,27 @@ describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock',
       expect.anything(),
     );
   });
+
+  it('trả về 400 khi hủy đơn ĐÃ GIAO qua đổi trạng thái — KHÔNG hoàn kho (chống tồn ảo)', async () => {
+    const mockVariant = { stockQuantity: 5, update: jest.fn().mockResolvedValue(undefined) };
+    const order = {
+      id: 712,
+      status: 'delivered',
+      paymentStatus: 'paid',
+      paymentMethod: 'cod',
+      items: [{ variantId: 1, quantity: 3, ProductVariant: mockVariant, Product: null }],
+      update: jest.fn().mockResolvedValue(undefined),
+    };
+    Order.findByPk.mockResolvedValueOnce(order);
+
+    const res = await request.put('/api/admin/orders/712/status').send({ status: 'cancelled' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/không thể hủy/i);
+    // Đơn đã giao → KHÔNG được hoàn kho (nếu hoàn sẽ tạo tồn ảo)
+    expect(mockVariant.update).not.toHaveBeenCalled();
+    expect(order.update).not.toHaveBeenCalled();
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

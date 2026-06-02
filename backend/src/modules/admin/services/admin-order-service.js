@@ -220,6 +220,11 @@ const updateOrderStatus = catchAsync(async (req, res) => {
   }
 
   if (status === 'cancelled' && order.status !== 'cancelled') {
+    // Không cho hủy đơn đã giao qua đổi trạng thái — hàng đã đến tay khách,
+    // hoàn kho sẽ tạo tồn ảo. Đồng bộ với adminCancelOrder (cũng chặn delivered).
+    if (order.status === 'delivered') {
+      throw new AppError('Không thể hủy đơn hàng đã giao', 400);
+    }
     await sequelize.transaction(async (t) => {
       await order.update(updateData, { transaction: t });
       for (const item of order.items || []) {

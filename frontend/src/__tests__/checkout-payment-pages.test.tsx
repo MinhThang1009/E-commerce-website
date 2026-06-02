@@ -435,10 +435,17 @@ jest.mock('@/components/common/AddressPicker', () => {
       onChange,
       value,
     }: {
-      onChange?: (val: string, lat?: string, lon?: string, detail?: { city?: string; state?: string }) => void;
+      onChange?: (
+        val: string,
+        lat?: string,
+        lon?: string,
+        detail?: { city?: string; state?: string },
+      ) => void;
       value?: string;
     }) =>
-      R.createElement('div', { 'data-testid': 'address-picker' },
+      R.createElement(
+        'div',
+        { 'data-testid': 'address-picker' },
         R.createElement('input', {
           'data-testid': 'address-picker-input',
           value: value ?? '',
@@ -1773,7 +1780,9 @@ describe('CheckoutPage: navigation + flows', () => {
     fireEvent.click(screen.getByText('checkout.step.next')); // step 0 → 1
     expect(screen.getByText('checkout.paymentMethod.title')).toBeInTheDocument();
     fireEvent.click(screen.getByText('checkout.step.next')); // step 1 → 2 (cod default)
-    expect(mockAddNotification).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'warning' }));
+    expect(mockAddNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'warning' }),
+    );
   });
 
   it('goBack từ step 1 → về step 0', () => {
@@ -1870,11 +1879,15 @@ describe('CheckoutPage: navigation + flows', () => {
   it('submit với bank_transfer → createOrder + navigate payment-qr', async () => {
     render(<CheckoutPage />);
     fillAddress();
-    await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+    await act(async () => {
+      fireEvent.click(screen.getByText('checkout.step.next'));
+    });
     const bankRadio = document.querySelector('input[type="radio"][value="bank_transfer"]');
     if (bankRadio) {
       fireEvent.click(bankRadio);
-      await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.step.next'));
+      });
       await act(async () => {
         fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
       });
@@ -1888,11 +1901,15 @@ describe('CheckoutPage: navigation + flows', () => {
     // chỉ cần verify API được gọi, không cần mock location.href
     render(<CheckoutPage />);
     fillAddress();
-    await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+    await act(async () => {
+      fireEvent.click(screen.getByText('checkout.step.next'));
+    });
     const vnpayRadio = document.querySelector('input[type="radio"][value="vnpay"]');
     if (vnpayRadio) {
       fireEvent.click(vnpayRadio);
-      await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.step.next'));
+      });
       await act(async () => {
         fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
       });
@@ -1904,11 +1921,15 @@ describe('CheckoutPage: navigation + flows', () => {
   it('submit với momo → createOrder + createMomoUrl + redirect', async () => {
     render(<CheckoutPage />);
     fillAddress();
-    await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+    await act(async () => {
+      fireEvent.click(screen.getByText('checkout.step.next'));
+    });
     const momoRadio = document.querySelector('input[type="radio"][value="momo"]');
     if (momoRadio) {
       fireEvent.click(momoRadio);
-      await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.step.next'));
+      });
       await act(async () => {
         fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
       });
@@ -1919,11 +1940,15 @@ describe('CheckoutPage: navigation + flows', () => {
   it('submit cod thành công → navigate /orders', async () => {
     render(<CheckoutPage />);
     fillAddress();
-    await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+    await act(async () => {
+      fireEvent.click(screen.getByText('checkout.step.next'));
+    });
     const codRadio = document.querySelector('input[type="radio"][value="cod"]');
     if (codRadio) {
       fireEvent.click(codRadio);
-      await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.step.next'));
+      });
       await act(async () => {
         fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
       });
@@ -1937,11 +1962,15 @@ describe('CheckoutPage: navigation + flows', () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
     render(<CheckoutPage />);
     fillAddress();
-    await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+    await act(async () => {
+      fireEvent.click(screen.getByText('checkout.step.next'));
+    });
     const codRadio = document.querySelector('input[type="radio"][value="cod"]');
     if (codRadio) {
       fireEvent.click(codRadio);
-      await act(async () => { fireEvent.click(screen.getByText('checkout.step.next')); });
+      await act(async () => {
+        fireEvent.click(screen.getByText('checkout.step.next'));
+      });
       await act(async () => {
         fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
       });

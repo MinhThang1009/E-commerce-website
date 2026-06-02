@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff;
+         font-family: "Segoe UI", Arial, "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { display: inline-block; padding: 36px; background: #ffffff; max-width: 1180px; }
+  h2 { margin: 0 0 22px; font-size: 25px; color: #0f172a; font-weight: 800;
+       letter-spacing: -0.3px; display: flex; align-items: center; gap: 12px; }
+  h2::before { content: ""; width: 6px; height: 30px; border-radius: 4px; background: #1565c0; }
+  .card { border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(15,23,42,0.08); border: 1px solid #e5e7eb; }
+  table { border-collapse: separate; border-spacing: 0; font-size: 18px; color: #1e293b; width: 100%; }
+  thead th { background: #1565c0; color: #fff; font-size: 14px; font-weight: 700; text-align: left;
+             text-transform: uppercase; letter-spacing: 0.6px; padding: 15px 22px; }
+  tbody td { padding: 17px 22px; border-bottom: 1px solid #eef0f6; vertical-align: top; line-height: 1.55; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+  .crit { font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 10px; color: #0f172a; width: 220px; }
+  .ic { width: 30px; height: 30px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center;
+        background: #e3f2fd; color: #1565c0; font-size: 17px; flex: none; }
+  b.k { color: #0d47a1; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <h2>Yêu cầu phi chức năng</h2>
+  <div class="card"><table>
+    <thead><tr><th>Tiêu chí</th><th>Mô tả yêu cầu</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="crit"><span class="ic">⚡</span>Hiệu năng</span></td>
+        <td>API CRUD phản hồi <b class="k">&lt; 200ms</b> (dưới 100 người dùng đồng thời); Hybrid Search <b class="k">&lt; 50ms</b> (catalog &lt; 10.000 sản phẩm); Chatbot <b class="k">2–5s</b> do phụ thuộc LLM, có trạng thái loading.</td>
+      </tr>
+      <tr>
+        <td><span class="crit"><span class="ic">🔒</span>Bảo mật</span></td>
+        <td>JWT dual-token (access token 15 phút), hash mật khẩu bcrypt cost 12, chống CSRF qua httpOnly cookie, rate limit (chatbot <b class="k">20 req/60s</b>), HMAC cho callback cổng thanh toán.</td>
+      </tr>
+      <tr>
+        <td><span class="crit"><span class="ic">🛡️</span>Độ tin cậy</span></td>
+        <td>Giao dịch đặt hàng + trừ tồn kho đảm bảo nguyên tử <b class="k">ACID</b> (tránh overselling); idempotency cho IPN callback (chống xử lý trùng); chatbot có fallback khi LLM không khả dụng.</td>
+      </tr>
+      <tr>
+        <td><span class="crit"><span class="ic">🔧</span>Khả năng bảo trì</span></td>
+        <td>Kiến trúc <b class="k">Modular Monolith</b> 17 module ranh giới rõ ràng, phát triển &amp; kiểm thử độc lập; pipeline embedding chain fallback qua 3 nhà cung cấp → tính sẵn sàng cao.</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <div style="margin-top:13px;font-size:14px;color:#64748b">Nguồn: c3_chapter.tex §3.1 — Yêu cầu phi chức năng (hệ thống TechStore).</div>
+</div>
+</body>
+</html>

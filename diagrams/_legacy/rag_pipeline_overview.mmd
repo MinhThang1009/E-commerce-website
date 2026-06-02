@@ -1,0 +1,33 @@
+%%{init: {'flowchart': {'wrappingWidth': 200, 'padding': 8}}}%%
+flowchart TD
+
+    N1["① User Message"]
+
+    N2["② Preprocess<br/>Validate + Normalize<br/>Intent Classification"]
+
+    N3{"③ Guardrails<br/>Injection Check<br/>Off-topic Gate (intent==off_topic)"}
+
+    N4["④ Session Context<br/>Load History"]
+
+    N5["⑤ Retrieve<br/>Query Enrichment<br/>Rewrite + Hybrid Search"]
+
+    N6["⑥ Augment<br/>Build Context<br/>Prompt Construction"]
+
+    N7["⑦ Generate<br/>LLM Response<br/>or Fallback"]
+
+    N8["⑧ Persist<br/>Session History<br/>Messages"]
+
+    N9["⑨ Return Response"]
+
+    FB["Blocked Response<br/>Injection / Off-topic"]
+
+    N1 --> N2 --> N3
+    N3 -->|Blocked| FB
+    N3 -->|Passed| N4
+    N4 --> N5 --> N6 --> N7 --> N8 --> N9
+    FB --> N8
+
+    style N5 fill:#e3f2fd,stroke:#1565c0,color:#000
+    style N6 fill:#fffde7,stroke:#f9a825,color:#000
+    style N7 fill:#e8f5e9,stroke:#2e7d32,color:#000
+    style FB fill:#ffebee,stroke:#c62828,color:#000

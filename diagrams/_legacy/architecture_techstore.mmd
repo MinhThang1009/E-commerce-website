@@ -1,0 +1,66 @@
+%%{init: {'flowchart': {'wrappingWidth': 215, 'padding': 10}, 'themeVariables': {'fontSize': '16px'}}}%%
+flowchart LR
+    User(["👤 Khách / Khách hàng<br/>(Browser)"])
+    Admin(["👤 Quản trị viên"])
+
+    subgraph SYS["Hệ thống TechStore"]
+        direction TB
+        FE["Frontend — React 19 + Vite 8<br/>13 features · floating chat widget"]
+        API["API Server — Express 4 + Node.js 20<br/>Modular Monolith · 17 modules"]
+
+        subgraph RAGBOX["Module AI — RAG Chatbot"]
+            direction TB
+            RET["Retrieve<br/>Query Rewrite + Hybrid Search<br/>(cosine + BM25)"]
+            GEN["Generate<br/>Augment prompt → LLM → parse JSON"]
+        end
+
+        EMBSVC["Embedding Service<br/>(unified · 1024d)"]
+        DB[("MySQL 8<br/>Sequelize · 25 models")]
+        VEC[("Vector store<br/>vector-db.json · 1024d")]
+        DISK[("/uploads/")]
+    end
+
+    LLM["LLM<br/>(OpenAI-compatible)"]
+    PROV["Embedding Provider<br/>Jina v3 + HuggingFace fallback"]
+    PAY["Thanh toán<br/>MoMo · VNPay (IPN)"]
+    EXT["Google OAuth · Gmail SMTP"]
+
+    User <-->|"HTTP REST · Bearer + Cookie"| FE
+    Admin <-->|"HTTP REST"| FE
+    FE <--> API
+    API <-->|"Sequelize ORM"| DB
+    API -->|"upsert sản phẩm (Product hooks)"| VEC
+    API --> RET
+    GEN -.->|"kết quả tư vấn"| API
+    RET <-->|"hybrid search (vector + keyword)"| VEC
+    RET -->|"rewrite query"| LLM
+    LLM -.->|"query đã rewrite"| RET
+    RET -->|"finalQuery + products"| GEN
+    GEN -->|"prompt + context"| LLM
+    LLM -.->|"response JSON"| GEN
+    GEN -.->|"LLM lỗi → keyword fallback"| GEN
+    GEN <-.->|"đọc catalog · ghi ChatMessage"| DB
+    VEC -->|"embed text (query/passage)"| EMBSVC
+    EMBSVC -.->|"1024d vector"| VEC
+    EMBSVC -->|"HTTP (provider chain + fallback)"| PROV
+    PROV -.->|"1024d vector"| EMBSVC
+    API <-->|"fs read/write"| DISK
+    API <-->|"HMAC sign + IPN callback"| PAY
+    API <--> EXT
+
+    style SYS fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+    style RAGBOX fill:#e8eefb,stroke:#0d47a1,color:#0f172a
+    style FE fill:#e3f2fd,stroke:#1565c0,color:#0f172a
+    style API fill:#1565c0,stroke:#0d47a1,color:#fff
+    style RET fill:#e3f2fd,stroke:#1565c0,color:#0f172a
+    style GEN fill:#e3f2fd,stroke:#1565c0,color:#0f172a
+    style DB fill:#e1f0fb,stroke:#1976d2,color:#0f172a
+    style VEC fill:#e1f0fb,stroke:#1976d2,color:#0f172a
+    style DISK fill:#eef2f7,stroke:#94a3b8,color:#0f172a
+    style EMBSVC fill:#e0f2f1,stroke:#00897b,color:#0f172a
+    style PROV fill:#e8f5e9,stroke:#2e7d32,color:#0f172a
+    style LLM fill:#e8f5e9,stroke:#2e7d32,color:#0f172a
+    style PAY fill:#fff4e5,stroke:#b76e00,color:#0f172a
+    style EXT fill:#fff4e5,stroke:#b76e00,color:#0f172a
+    style User fill:#1976d2,stroke:#0d47a1,color:#fff
+    style Admin fill:#0d47a1,stroke:#0d47a1,color:#fff

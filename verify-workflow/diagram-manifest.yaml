@@ -1,0 +1,82 @@
+# diagram-manifest.yaml — 42 sơ đồ KLTN (denominator T1/T2). Nguồn: plan.md §D.1.
+# Khung duyệt manifest, mỗi entry chạy 3 tầng. type/seq/scope -> naming_template (PROJECT.yaml).
+# module = gate mapping (logic_heavy -> cần GATE-A/B/C/D). status: pending | drawn | verified | signed
+# (drawn=render xong; verified=qua adversarial T1 + vision T2; signed=qua GATE-D human).
+
+meta:
+  total: 42          # 28 NHÓM A (sai ký pháp, vẽ lại) + 14 NHÓM B (nâng tool)
+  source_doc: DIAGRAMS.md
+  output_root: diagrams/
+
+# ===== NHÓM A — use case (24): flowchart-giả -> actor/oval/association =====
+usecase:
+  - { seq: 1,  scope: overview-guest,             section: "§1.1", module: _overview, notation: UML, tool: plantuml, status: signed }   # mẫu, association sửa --
+  - { seq: 2,  scope: overview-customer,          section: "§1.2", module: _overview, notation: UML, tool: plantuml, status: pending }
+  - { seq: 3,  scope: overview-admin,             section: "§1.3", module: _overview, notation: UML, tool: plantuml, status: pending }
+  - { seq: 4,  scope: auth,                        section: "§2.1a", module: auth,     notation: UML, tool: plantuml, status: pending }
+  - { seq: 5,  scope: user,                        section: "§2.1b", module: users,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 6,  scope: catalog-browse,             section: "§2.2a", module: catalog,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 7,  scope: catalog-detail,             section: "§2.2b", module: catalog,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 8,  scope: catalog-category-brand,     section: "§2.2c", module: catalog,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 9,  scope: catalog-admin,              section: "§2.2d", module: catalog,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: pending }
+  - { seq: 11, scope: checkout,                    section: "§2.3b", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }
+  - { seq: 12, scope: orders-customer,            section: "§2.4a", module: orders,   notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: getByNumber gộp vào "Xem chi tiết" (quyết định A)
+  - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 14, scope: orders-admin,               section: "§2.4c", module: orders,   notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: staff status/cancel + admin xem-only, verify vs admin/routes
+  - { seq: 15, scope: reviews,                     section: "§2.5",  module: reviews,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 16, scope: inventory,                   section: "§2.6",  module: inventory, notation: UML, tool: plantuml, status: pending }
+  - { seq: 17, scope: ai-chatbot,                 section: "§2.7",  module: ai,       notation: UML, tool: plantuml, status: pending }
+  - { seq: 18, scope: wishlist-upload-discount,   section: "§2.8",  module: "wishlist+upload+discount-code", notation: UML, tool: plantuml, status: pending }
+  - { seq: 19, scope: attribute,                   section: "§2.8b", module: attribute, notation: UML, tool: plantuml, status: pending }
+  - { seq: 20, scope: content,                     section: "§2.9",  module: content,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 21, scope: admin-analytics,            section: "§2.10a", module: admin,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 22, scope: admin-users,                section: "§2.10b", module: admin,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 23, scope: admin-products,             section: "§2.10c", module: admin,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 24, scope: admin-misc,                 section: "§2.10d", module: admin,    notation: UML, tool: plantuml, status: pending }
+
+# ===== NHÓM A — component (4): flowchart-giả -> UML component (lollipop/port) =====
+component:
+  - { seq: 1, scope: orders-payment-inventory, section: "§8a", module: "orders+payment+inventory", notation: UML, tool: plantuml, status: pending }
+  - { seq: 2, scope: ai-pipeline,              section: "§8b", module: ai,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 3, scope: auth-users-admin,         section: "§8c", module: "auth+users+admin", notation: UML, tool: plantuml, status: pending }
+  - { seq: 4, scope: shared-infra,             section: "§8d", module: _shared, notation: UML, tool: plantuml, status: pending }
+
+# ===== NHÓM B — state (4): PlantUML =====
+state:
+  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: cancelled terminal sau fix F7 (repay không phải transition)
+  - { seq: 2, scope: payment, section: "§7.2", module: payment, notation: UML, tool: plantuml, status: pending }
+  - { seq: 3, scope: product, section: "§7.3", module: catalog, notation: UML, tool: plantuml, status: pending }
+  - { seq: 4, scope: user,    section: "§7.4", module: auth,    notation: UML, tool: plantuml, status: pending }
+
+# ===== NHÓM B — sequence (6): PlantUML =====
+sequence:
+  - { seq: 1, scope: auth-login,        section: "§3.1", module: auth,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 2, scope: checkout,          section: "§3.2", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }
+  - { seq: 3, scope: ai-chatbot-rag,    section: "§3.3", module: ai,      notation: UML, tool: plantuml, status: pending }
+  - { seq: 4, scope: upload,            section: "§3.4", module: upload,   notation: UML, tool: plantuml, status: pending }
+  - { seq: 5, scope: admin-product,     section: "§3.5", module: admin,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 6, scope: token-refresh,     section: "§3.6", module: auth,     notation: UML, tool: plantuml, status: pending }
+
+# ===== NHÓM B — ERD (1 mục §4, tách 5 sub-image theo 5 nhóm) : DBML -> dbdiagram.io =====
+erd:
+  - { seq: 1, scope: users,           section: "§4.1", module: _schema, notation: ERD, tool: dbml, status: pending }
+  - { seq: 2, scope: product,         section: "§4.2", module: _schema, notation: ERD, tool: dbml, status: pending }
+  - { seq: 3, scope: order-payment,   section: "§4.3", module: _schema, notation: ERD, tool: dbml, status: pending }
+  - { seq: 4, scope: content-support, section: "§4.4", module: _schema, notation: ERD, tool: dbml, status: pending }
+  - { seq: 5, scope: ai-log,          section: "§4.5", module: _schema, notation: ERD, tool: dbml, status: pending }
+
+# ===== NHÓM B — deployment (1) : PlantUML =====
+deployment:
+  - { seq: 1, scope: system, section: "§5", module: _arch, notation: UML, tool: plantuml, status: pending }
+
+# ===== NHÓM B — pipeline (2) : Mermaid (giữ) =====
+pipeline:
+  - { seq: 1, scope: rag-input,     section: "§6a", module: ai, notation: flowchart, tool: mermaid, status: pending }
+  - { seq: 2, scope: rag-retrieval, section: "§6b", module: ai, notation: flowchart, tool: mermaid, status: pending }
+
+# ===== NHÓM C — artifact khác (KHÔNG nằm trong 42; tool §0) =====
+misc:
+  - { scope: testing-pyramid, tool: drawio, status: pending }
+  - { scope: nfr-table,       tool: latex,  status: pending }
+  - { scope: functional-req,  tool: latex,  status: pending }

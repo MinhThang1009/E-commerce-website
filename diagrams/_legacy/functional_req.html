@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff;
+         font-family: "Segoe UI", Arial, "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { display: inline-block; width: 1560px; padding: 34px; background: #ffffff; }
+  h2 { margin: 0 0 20px; font-size: 26px; color: #0f172a; font-weight: 800;
+       letter-spacing: -0.3px; display: flex; align-items: center; gap: 12px; }
+  h2::before { content: ""; width: 6px; height: 31px; border-radius: 4px; background: #1565c0; }
+
+  .cols { display: flex; gap: 20px; align-items: stretch; }
+  .card { flex: 1; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb;
+          box-shadow: 0 2px 10px rgba(15,23,42,0.08); display: flex; flex-direction: column; }
+  .card.focus { border: 2px solid #0d47a1; box-shadow: 0 4px 16px rgba(13,71,161,0.18); }
+
+  .colhead { background: #1565c0; color: #fff; padding: 15px 20px; display: flex; align-items: center; gap: 11px; }
+  .colhead.focus { background: #0d47a1; }
+  .colhead .ti { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+  .colhead .sub { font-size: 13px; opacity: 0.85; font-weight: 500; margin-top: 2px; }
+  .htext { display: flex; flex-direction: column; }
+  .badge { margin-left: auto; background: #f59e0b; color: #fff; font-size: 12px; font-weight: 800;
+           padding: 5px 11px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+
+  ul.fn { list-style: none; margin: 0; padding: 14px 18px; flex: 1; }
+  ul.fn li { position: relative; padding: 9px 0 9px 30px; font-size: 16px; line-height: 1.45;
+             color: #1e293b; border-bottom: 1px solid #f1f5f9; }
+  ul.fn li:last-child { border-bottom: none; }
+  ul.fn li::before { content: "✓"; position: absolute; left: 0; top: 9px; width: 20px; height: 20px;
+        border-radius: 6px; background: #e3f2fd; color: #1565c0; font-weight: 800; font-size: 12px;
+        display: flex; align-items: center; justify-content: center; }
+  .card.focus ul.fn li::before { content: "★"; background: #fff4e5; color: #b76e00; }
+  b.k { color: #0d47a1; font-weight: 700; }
+  .note { margin-top: 14px; font-size: 13px; color: #64748b; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <h2>Yêu cầu chức năng</h2>
+
+  <div class="cols">
+    <!-- Cột 1 -->
+    <div class="card">
+      <div class="colhead">
+        <div class="htext">
+          <span class="ti">👥 Người dùng cuối</span>
+          <span class="sub">Khách vãng lai + Khách hàng</span>
+        </div>
+      </div>
+      <ul class="fn">
+        <li>Duyệt danh mục + <b class="k">lọc đa chiều</b> (giá, hãng, cấu hình)</li>
+        <li>Tìm kiếm sản phẩm theo từ khóa</li>
+        <li>Xem chi tiết sản phẩm kèm biến thể</li>
+        <li>Thêm &amp; quản lý giỏ hàng</li>
+        <li>Đăng ký / đăng nhập (xác thực <b class="k">email OTP</b>)</li>
+        <li>Đặt hàng &amp; chọn địa chỉ giao</li>
+        <li>Thanh toán <b class="k">MoMo / VNPay</b></li>
+        <li>Theo dõi trạng thái đơn hàng</li>
+        <li>Viết đánh giá &amp; xếp hạng sản phẩm</li>
+        <li>Tương tác chatbot AI tư vấn</li>
+      </ul>
+    </div>
+
+    <!-- Cột 2 — trọng tâm -->
+    <div class="card focus">
+      <div class="colhead focus">
+        <div class="htext">
+          <span class="ti">🤖 Chatbot AI</span>
+          <span class="sub">Pipeline RAG tư vấn sản phẩm</span>
+        </div>
+        <span class="badge">Trọng tâm</span>
+      </div>
+      <ul class="fn">
+        <li>Tiếp nhận câu hỏi ngôn ngữ tự nhiên (<b class="k">Việt + Anh</b>)</li>
+        <li>Hiểu ý định kể cả <b class="k">viết tắt / sai chính tả</b></li>
+        <li>Truy xuất sản phẩm liên quan từ <b class="k">vector store</b></li>
+        <li>Sinh phản hồi tiếng Việt <b class="k">tự nhiên</b> + danh sách gợi ý</li>
+        <li>Duy trì <b class="k">ngữ cảnh hội thoại</b> trong phiên</li>
+        <li>Thêm sản phẩm vào giỏ trực tiếp qua chat</li>
+        <li>Từ chối câu hỏi off-topic một cách lịch sự</li>
+      </ul>
+    </div>
+
+    <!-- Cột 3 -->
+    <div class="card">
+      <div class="colhead">
+        <div class="htext">
+          <span class="ti">🛠️ Quản trị viên</span>
+          <span class="sub">Bảng điều khiển quản trị</span>
+        </div>
+      </div>
+      <ul class="fn">
+        <li>Quản lý sản phẩm + biến thể (thêm / sửa / <b class="k">xóa mềm</b>)</li>
+        <li>Quản lý tồn kho (ngăn <b class="k">race condition</b>)</li>
+        <li>Xử lý đơn hàng + cập nhật trạng thái</li>
+        <li>Quản lý tài khoản người dùng</li>
+        <li>Xem thống kê doanh thu</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">Nguồn: c3_chapter.tex §3.1 — Phân tích yêu cầu / Yêu cầu chức năng (3 nhóm theo tác nhân).</div>
+</div>
+</body>
+</html>

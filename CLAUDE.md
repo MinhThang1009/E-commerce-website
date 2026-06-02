@@ -260,6 +260,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 - **Search history basePath:** `/api/search-histories`.
 - **Role ENUM:** `users.role` = `('customer','staff','admin')` — `'manager'` đã xóa (migration `2026052204`), `'staff'` thêm sau (migration `2026060201`). Không hardcode `'manager'`.
 - **RBAC 4-actor** (guest/customer/staff/admin): back-office (`adminAuthenticate`) cho admin+staff vào panel; **staff** = CRUD nghiệp vụ (products/orders-status/inventory-restock/discount/reviews/catalog-write/payment-refund/attribute); **admin** = xem-only back-office + độc quyền users + `analytics/user-growth`. Guard per-route: `requireRole`/`requireSuperAdmin` (BE) + `AdminRoute allowedRoles` + `useAuth().isStaff()` ẩn nút write (FE). Chi tiết: [`backend/src/middlewares/CLAUDE.md §4`](backend/src/middlewares/CLAUDE.md).
+- **Vẽ/cập nhật sơ đồ từ code:** dùng plugin **`verify-then-draw`** (skill tự kích hoạt khi "vẽ sơ đồ", hoặc `/verify-then-draw:draw <module>`) — quy trình 3 tầng gate (code đúng nghiệp vụ → sơ đồ khớp code → ký pháp+đẹp), KHÔNG tin code mù rồi vẽ. Project instance ở [`verify-workflow/`](verify-workflow/) (`PROJECT.yaml` + `invariants.ecommerce.md` GATE-A + `diagram-manifest.yaml` + scripts `wf:gate`/`wf:routes`). Sơ đồ output ở [`diagrams/`](diagrams/) (nested theo loại). Chi tiết: [`verify-workflow/FRAMEWORK.md`](verify-workflow/FRAMEWORK.md).
 
 ---
 

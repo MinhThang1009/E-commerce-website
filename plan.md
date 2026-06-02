@@ -50,12 +50,12 @@
 5. **Audit + validation** (đã chạy, kết quả ở task output): 15 bug CONFIRMED (đã fix 9 logic), 15 false-positive, 6 by-design.
 6. **Docs**: Hình 3.1 usecase render lại (PlantUML, bỏ "banner"); chatbot survey chuyển C1→C2 (rename label c1→c2); xác minh **25 model** (text đúng; `system_architecture.png` ghi "26 bảng" SAI — **phát hiện, png CHƯA sửa, việc sửa ở §D**); 62 migration đúng.
 
-## 2. CÒN DANG DỞ (Pha 0 — ưu tiên cao)
-- [ ] **`cd backend && npm run db:migrate`** chạy migration staff (cần MySQL). Verify enum: `SHOW COLUMNS FROM users LIKE 'role'`.
-- [ ] **Seed tài khoản staff demo**: thêm vào `backend/scripts/rebuild-db.js` (hoặc seeder) 1 user `role:'staff'`, isEmailVerified:true (vd staff@techstore.test / pass). Tìm chỗ tạo user admin hiện có để thêm cạnh.
-- [ ] **Cập nhật test API/integration/E2E cho staff** (cần MySQL — CHURN LỚN NHẤT): các test gọi endpoint bán hàng đang dùng **admin token** → giờ 403. Sửa: tạo + dùng **staff token** cho endpoint sales (products/orders/inventory/discounts/reviews/attribute/catalog-write/payment-refund); giữ admin token cho users + analytics/user-growth. Kiểm bằng `npm run test:api`, `test:integration`, `test:e2e`. **DONE = baseline pass-count xanh: API 700, integration 184, e2e 100 (CLAUDE.md §8).**
-- [ ] **UI role** (FE): (a) dropdown gán role ở `UsersPage`/`UserDetailPage` thêm option **'staff'** (hiện type có nhưng select chưa list); (b) "admin xem-only" — ẩn/disable nút Sửa/Tạo/Xóa ở trang sản phẩm/đơn/khuyến mãi khi `role==='admin'` (BE đã chặn 403 nhưng UI chưa ẩn). Dùng `useAuth().user.role`.
-- [ ] Thêm test FE+BE cho role staff (admin-auth allow staff, requireRole, AdminRoute allowedRoles).
+## 2. ✅ PHA 0 DONE (verified 2026-06-02 — toàn bộ đã làm ở session trước, phiên này chạy lại xác nhận)
+- [x] **Migration staff enum**: `users.role = enum('customer','staff','admin')` trên **CẢ** `techstore` + `techstore_test` (verified `SHOW COLUMNS`). ⚠️ KHÔNG dùng `db:migrate` (SequelizeMeta rỗng) — enum đã có sẵn trong snapshot `data/migration.sql` + live DB.
+- [x] **Seed tài khoản staff demo**: seeder `backend/scripts/seeders/2026010104-seed-staff.js` (`staff@techstore.vn` / `Staff@123`, bcrypt 10, isEmailVerified+isActive=1, INSERT IGNORE idempotent), wired qua `.sequelizerc` seeders-path → `db:seed:all`. Cả 2 DB đã có 1 user role=staff.
+- [x] **Test API/integration/E2E staff token**: sales endpoints (catalog/inventory/discount/attribute/orders-status/catalog-write) dùng `role:'staff'`; users+analytics giữ admin. **Verified xanh: API 39/700, integration 37/199, e2e 5/100** (con số "integration 184" cũ là STALE — thực tế 199, khớp CLAUDE.md §8).
+- [x] **UI role (FE)**: dropdown `SelectItem value="staff"` ở `UsersPage` (L270/L622); "admin xem-only" qua `useAuth().isStaff()` + `ViewOnlyBanner` ở 6 trang CRUD (Products/Orders/Inventory/Discount/Categories/Brands); sidebar `AdminLayout` lọc theo `item.roles`; `AdminRoute allowedRoles`. (typecheck PASS)
+- [x] **Test FE+BE role staff**: BE `src/middlewares/admin-auth.test.js` (adminAuthenticate: customer→403/admin→pass/staff→pass; requireSuperAdmin: staff→403; requireRole(staff): staff→pass/admin→403; requireRole(admin,staff)); FE `src/__tests__/admin-role.test.tsx`. **BE unit 158/3767, FE 22/766 PASS.**
 
 ## 3. CÒN LẠI (Pha tiếp)
 ### A. Mục tiêu 100% coverage unit (user yêu cầu — ĐÁNH ĐỔI)
@@ -81,6 +81,19 @@
 - [ ] Sửa `docs/figures/c3/system_architecture.png`: "26 bảng" → **25** (đúng 25 model); thay bằng `deployment-01-system` + `component-*` chuẩn từ §D.1 (4 actor, đủ module chính/phụ).
 - [ ] Hình cho C2 (`figures/c2/RAG.png` đang bỏ không + sơ đồ RAG/tech-stack). `[H]`→`[htbp]` toàn bộ (C3 ~11, C4 ~18 hình + 4 bảng); chuẩn hóa kích thước; gom 17 screenshot C4 hợp lý.
 - [ ] **Phụ lục**: tạo `docs/chapters/appendix.tex`, chuyển **các code listing (≥5 block `lstlisting` trong C4 — xác nhận số khi làm)** sang, wire `\input{chapters/appendix}` **TRƯỚC `\input{chapters/conclusion}`** trong `docs/thesis.tex`.
+
+### D.0 — WORKFLOW verify-then-draw (đã xây — DÙNG để vẽ các sơ đồ dưới)
+
+Quy trình vẽ sơ đồ 3 tầng (code đúng nghiệp vụ → sơ đồ khớp code → ký pháp+readability), đóng gói 2 nơi:
+- **Plugin** `verify-then-draw@minhthang-plugins` (dotclaude marketplace, cài scope user): skill auto-trigger "vẽ sơ đồ" / `/verify-then-draw:draw <module>`; agent `diagram-verifier` (T1 audit cross-module) + `test-strengthener` (T0 mutation loop). Chi tiết xem `plugins/verify-then-draw/`.
+- **Project instance** `verify-workflow/`: `FRAMEWORK.md` (khung) + `PROJECT.yaml` + `invariants.ecommerce.md` (GATE-A) + `diagram-manifest.yaml` (42 sơ đồ + status). Scripts enforce: `npm run wf:gate` (lint-config + invariants + ledger-staleness), `wf:routes` (denominator 167), `wf:mutation-survivors`.
+- **Trạng thái:** strict 9.0/portable 8.5 — **AT PRACTICAL CEILING (5 vòng audit). ĐỪNG audit/tối ưu workflow lại** (diminishing). Mutation discount-code = 100% (mẫu mutation-driven loop).
+
+**Việc workflow CẦN HUMAN (chưa làm):**
+- [ ] **GATE-D**: ký 3 sơ đồ order đã vẽ + verify (`diagrams/state/state-01-order`, `diagrams/usecase/usecase-12-orders-customer`, `usecase-14-orders-admin`) → bump `diagram-manifest.yaml` status `drawn`→`signed`.
+- [ ] **GATE-A**: duyệt `verify-workflow/invariants.ecommerce.md` (20 invariant `[ ]`) trước khi audit tầng-0 module mới.
+- [ ] **BƯỚC 0 (§D.1) ĐÃ XONG**: `diagrams/` đã nested + `_legacy/`; mẫu `usecase-01` chuẩn. usecase-01 = signed.
+- Known-issue (không block): full critical mutation ~2-4h chỉ verify scope nhỏ (test-strength backlog); `jest.stryker.config.js` sync tay với `jest.config.js`.
 
 ### D.1 — KẾ HOẠCH VẼ LẠI SƠ ĐỒ (chi tiết — thay cho ước lượng "~15" ở D)
 
@@ -263,8 +276,11 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | F4 | 🟡 | `previousStatus` dead var + không validate transition | service `updateOrderStatus` previousStatus (~L581) | ✅ dead-var fix qua F2; validate transition = intentional (staff tự do back-office) |
 | F5 | 🟡 | `confirmReceived` message nhắc "đã giao hàng" (sai, code từ chối delivered) | service `confirmReceived` (~L650) | ✅ FIXED (bỏ "đã giao hàng" khỏi message) |
 | F6 | 🟢 | `order.created` event không subscriber | service `createOrder` event (~L359) | ℹ️ không bug |
+| F7 | 🟠 | `repayOrder` cho repay đơn `cancelled` (đã hoàn kho) → reactivate KHÔNG trừ kho lại = leak tồn kho (ngược F1). Nhánh phi chuẩn + dormant (FE không nối nút repay) | service `_canRepay` (~L24) + `repayOrder` (~L628) | ✅ FIXED 2026-06-03 (Option 2 — phát hiện khi audit T0 lúc vẽ sơ đồ) |
 
-**✅ ORDER GATE DONE (tầng 0):** F1–F5 fixed. Verify: **3750** unit tests (= 3745 baseline + 5 mới: F2 +2 restore, F3 +2 shippingCost, +1 repo `findOrderByPkWithItemsAndUser` lock-option) + coverage 99.7% + lint sạch; **8 integration tests CỦA ORDER** (4 cũ + 4 mới `orders-edge-cases.integration.test.js` gọi service THẬT + MySQL thật, assert stock outcome — bắt được bug mà unit mock bỏ lọt; tổng integration toàn dự án = 184). → đủ điều kiện vẽ state-order/use-case order.
+**🔧 F7 FIX (2026-06-03) — repay đúng nghiệp vụ + wire UI:** `_canRepay` = `status==='pending' && paymentStatus!=='paid' && paymentMethod!=='cod'` (bỏ nhánh `cancelled` → `cancelled` thành **terminal**, hết leak; loại COD). `repayOrder` chỉ reset `paymentStatus` (failed→pending), **KHÔNG đổi `order.status`** → repay không phải transition. FE: un-dead `handleRepayOrder` + thêm nút "Thanh toán lại" ở `OrdersPage` (lấp UX gap đơn online pending chưa trả). Verify: BE unit (rewrite 3: cancelled/COD→422, pending+momo→ok) **3805 + coverage pass**; integration gate `repay cancelled → throw` (fail nếu revert) trong `orders-edge-cases`; FE +3 test (`cart-orders-pages`); typecheck+lint BE/FE sạch. Doc: `orders/CLAUDE.md §3.5/§3.10` (BE) + FE CLAUDE.md + `DIAGRAMS.md §7.1`. Sơ đồ `state-01-order` re-render (cancelled terminal, bỏ repay arrow).
+
+**✅ ORDER GATE DONE (tầng 0):** F1–F5 fixed (+ F7 fixed 2026-06-03). Verify: **3750** unit tests (= 3745 baseline + 5 mới: F2 +2 restore, F3 +2 shippingCost, +1 repo `findOrderByPkWithItemsAndUser` lock-option) + coverage 99.7% + lint sạch; **8 integration tests CỦA ORDER** (4 cũ + 4 mới `orders-edge-cases.integration.test.js` gọi service THẬT + MySQL thật, assert stock outcome — bắt được bug mà unit mock bỏ lọt; tổng integration toàn dự án = 184). → đủ điều kiện vẽ state-order/use-case order.
 
 **Test-quality TODO (task refactor RIÊNG — làm SAU khi xong gate logic các module, đừng xen giữa):**
 - **Nguyên tắc gộp test:** 1 file / 1 đối tượng test. **GỘP** khi cùng loại + cùng đối tượng + chia theo coverage-gap (`-2/-3/-4` = số thứ tự vô nghĩa). **GIỮ TÁCH** theo *layer* (service/controller/repo — khác đối tượng) + theo *loại* (unit/integration/api — khác config/env). File >~800 dòng → tách theo *sub-feature có TÊN NGHĨA* (`.concurrency.test.js`), KHÔNG phải số.

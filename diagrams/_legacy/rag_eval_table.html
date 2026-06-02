@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff;
+         font-family: "Segoe UI", Arial, "Helvetica Neue", sans-serif;
+         -webkit-font-smoothing: antialiased; }
+  .wrap { display: inline-block; padding: 36px; background: #ffffff; max-width: 1180px; }
+
+  h2 { margin: 0 0 22px; font-size: 25px; color: #0f172a; font-weight: 800;
+       letter-spacing: -0.3px; display: flex; align-items: center; gap: 12px; }
+  h2::before { content: ""; width: 6px; height: 30px; border-radius: 4px; background: #1565c0; }
+
+  .card { border-radius: 16px; overflow: hidden;
+          box-shadow: 0 2px 10px rgba(15,23,42,0.08); border: 1px solid #e5e7eb; }
+  table { border-collapse: separate; border-spacing: 0; font-size: 17px; color: #1e293b; width: 100%; }
+  thead th { background: #1565c0; color: #fff; font-size: 14px; font-weight: 700; text-align: left;
+             text-transform: uppercase; letter-spacing: 0.6px; padding: 15px 20px; }
+  thead th.c { text-align: center; }
+  tbody td { padding: 16px 20px; border-bottom: 1px solid #eef0f6; vertical-align: top; line-height: 1.5; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: #f8fafc; }
+
+  .group { font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 11px; color: #0f172a; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+  .q { font-style: italic; color: #334155; }
+  td.c { text-align: center; vertical-align: middle; }
+  .badge { display: inline-block; padding: 5px 16px; border-radius: 999px; font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .good { background: #e7f6ec; color: #1b8a3f; }
+  .ok   { background: #fff4e5; color: #b76e00; }
+  .tag { font-family: "Cascadia Code", Consolas, monospace; font-size: 14px;
+         background: #eaf2fb; padding: 2px 7px; border-radius: 5px; color: #0d47a1; }
+  .src { color: #94a3b8; font-size: 14px; font-weight: 600; }
+  .note { margin-top: 14px; font-size: 14px; color: #64748b; line-height: 1.6; max-width: 1080px; }
+  .note b { color: #334155; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <h2>Bảng 4.4 — Kết quả đánh giá chatbot RAG theo nhóm kịch bản</h2>
+  <div class="card"><table>
+    <thead>
+      <tr><th>Nhóm</th><th>Ví dụ kịch bản</th><th class="c">Kết quả</th><th>Ghi chú</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="group"><span class="dot" style="background:#0d47a1"></span>Tìm kiếm ngữ nghĩa</span></td>
+        <td><span class="q">"sinh viên cần laptop nhẹ, pin lâu, dưới 20 triệu"</span></td>
+        <td class="c"><span class="badge good">Tốt</span></td>
+        <td>Hybrid search (semantic cosine + keyword) xử lý tốt query mô tả đa tiêu chí</td>
+      </tr>
+      <tr>
+        <td><span class="group"><span class="dot" style="background:#1565c0"></span>Tên model cụ thể</span></td>
+        <td><span class="q">"iPhone 17 giá bao nhiêu?"</span></td>
+        <td class="c"><span class="badge good">Tốt</span></td>
+        <td>Hybrid search + trích số model (version extraction) bắt chính xác tên/đời máy</td>
+      </tr>
+      <tr>
+        <td><span class="group"><span class="dot" style="background:#1976d2"></span>Viết tắt / sai chính tả</span></td>
+        <td><span class="q">"ip17pm giá bao nhiêu" · "iphone 17 gia bao nhieu"</span></td>
+        <td class="c"><span class="badge good">Tốt</span></td>
+        <td><span class="tag">expandAbbreviations</span> chuẩn hóa (ip→iPhone, pm→Pro Max, không dấu→có dấu)</td>
+      </tr>
+      <tr>
+        <td><span class="group"><span class="dot" style="background:#1e88e5"></span>Câu hỏi so sánh</span></td>
+        <td><span class="q">"so sánh iPhone 17 Pro và Samsung Galaxy S25 Ultra"</span></td>
+        <td class="c"><span class="badge ok">Khá</span></td>
+        <td>LLM cần đủ context cả 2 sản phẩm để so sánh; khi LLM DOWN chỉ liệt kê</td>
+      </tr>
+      <tr>
+        <td><span class="group"><span class="dot" style="background:#42a5f5"></span>Ngoài phạm vi</span></td>
+        <td><span class="q">"thời tiết hôm nay thế nào" · "bóng đá Samsung S25"</span></td>
+        <td class="c"><span class="badge good">Tốt</span></td>
+        <td>Off-topic gate (<span class="tag">intent == off_topic</span>) từ chối nhanh, không gọi retrieval/LLM</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <b>Thang đánh giá:</b> Tốt = PASS ở cả LLM UP và LLM DOWN · Khá = chỉ đạt đầy đủ khi LLM UP (fallback keyword bị giới hạn).
+    <b>Nguồn:</b> RAG_CHATBOT_PIPELINE.md §4 (53 edge cases) và PIPELINE_TRACE_EXAMPLES.md (22 path trace).
+  </div>
+</div>
+</body>
+</html>

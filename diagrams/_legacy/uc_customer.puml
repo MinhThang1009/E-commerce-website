@@ -1,0 +1,43 @@
+@startuml uc_customer
+left to right direction
+skinparam backgroundColor #ffffff
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 16
+skinparam ArrowColor #0D47A1
+skinparam ActorBackgroundColor #1565C0
+skinparam ActorBorderColor #0D47A1
+skinparam ActorFontColor #0D47A1
+skinparam ActorFontStyle bold
+skinparam rectangle {
+  BorderColor #1976D2
+  BackgroundColor #F8FAFC
+  FontColor #0F172A
+  FontStyle bold
+}
+skinparam usecase {
+  BackgroundColor #E1F0FB
+  BorderColor #1976D2
+  FontColor #0F172A
+}
+
+actor "Khách hàng\n(Customer)" as Customer
+actor "Khách vãng lai\n(Guest)" as Guest
+Customer --|> Guest
+
+rectangle "TechStore — Chức năng Khách hàng (kế thừa Guest)" {
+  usecase "Đặt hàng & thanh toán\n(COD / VNPay / MoMo)" as UC_order
+  usecase "Áp mã giảm giá" as UC_discount
+  usecase "Theo dõi / Hủy đơn hàng" as UC_track
+  usecase "Viết đánh giá sản phẩm" as UC_review
+  usecase "Quản lý danh sách yêu thích" as UC_wishlist
+  usecase "Quản lý hồ sơ & địa chỉ" as UC_profile
+}
+
+Customer --> UC_order
+Customer --> UC_track
+Customer --> UC_review
+Customer --> UC_wishlist
+Customer --> UC_profile
+UC_discount .> UC_order : <<extend>>
+@enduml

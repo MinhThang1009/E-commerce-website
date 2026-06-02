@@ -1,0 +1,44 @@
+@startuml usecase-12-orders-customer
+' Use case — Đơn hàng phía khách (Guest + Customer)
+' Verify vs backend/src/modules/orders/routes.js (guard: /track public, còn lại authenticate)
+' Mã giảm giá (UC_discount) là <<extend>> của Tạo đơn — discountCode optional trong createOrder.
+' Quyết định A (GATE-D 2026-06-03): GET /orders/number/:number (getOrderByNumber) GỘP vào
+'   "Xem chi tiết đơn hàng" — cùng UC xem đơn, chỉ khác key tra cứu (id vs number); không tách UC riêng.
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách vãng lai\n(Guest)" as guest
+actor "Khách hàng\n(Customer)" as customer
+
+rectangle "Quản lý đơn hàng — TechStore" {
+  usecase "Tạo đơn hàng" as UC_create
+  usecase "Áp mã giảm giá" as UC_discount
+  usecase "Xem lịch sử đơn hàng" as UC_list
+  usecase "Xem chi tiết đơn hàng" as UC_detail
+  usecase "Ước tính phí vận chuyển" as UC_ship
+  usecase "Hủy đơn hàng" as UC_cancel
+  usecase "Thanh toán lại đơn" as UC_repay
+  usecase "Xác nhận đã nhận hàng" as UC_receive
+  usecase "Tra cứu đơn hàng công khai\n(số đơn + email)" as UC_track
+
+  UC_discount .> UC_create : <<extend>>
+}
+
+customer -- UC_create
+customer -- UC_list
+customer -- UC_detail
+customer -- UC_ship
+customer -- UC_cancel
+customer -- UC_repay
+customer -- UC_receive
+customer -- UC_track
+
+guest -- UC_track
+@enduml

@@ -1,0 +1,39 @@
+graph LR
+    subgraph Frontend
+        FE["React 19 + TypeScript\nVite 8 | Port 5175\n13 features | 6 Zustand stores\nTanStack Query v5"]
+    end
+
+    subgraph Backend["Backend — Modular Monolith"]
+        BE["Node.js 20 + Express 4\nPort 8888 | 17 Modules\n12 Full DI + 5 Singleton\nController > Service > Repository"]
+        SHARED["UnitOfWork | AppError (5 classes)\nEventBus (pub/sub)\nCron: daily 2AM + weekly Sun 3AM"]
+    end
+
+    subgraph AI["AI Module"]
+        RAG["RAG 7-Step Pipeline\n43 nodes | 53 edge cases\nHybrid Search"]
+        EMB["Embedding Chain\nJina v3 > multilingual-e5-large-instruct\n> multilingual-e5-large"]
+    end
+
+    subgraph Data["Data Layer"]
+        DB["MySQL 8\n25+ tables\nSequelize 6"]
+        VEC["vector-db.json\n1024-dim"]
+    end
+
+    subgraph External
+        EXT["Nodemailer | MoMo | VNPay\nLLM Provider (OpenAI-compatible)\nOpenRouter (translation only)"]
+    end
+
+    FE -->|REST API| BE
+    BE -->|Sequelize| DB
+    RAG -->|search| VEC
+    EMB --> VEC
+    RAG -->|LLM| EXT
+    BE --> EXT
+
+    style FE fill:#66BB6A,color:#fff
+    style BE fill:#FFB300,color:#fff
+    style SHARED fill:#AB47BC,color:#fff
+    style RAG fill:#EF5350,color:#fff
+    style EMB fill:#E57373,color:#fff
+    style DB fill:#5C6BC0,color:#fff
+    style VEC fill:#7986CB,color:#fff
+    style EXT fill:#EF9A9A

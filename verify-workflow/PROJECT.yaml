@@ -1,0 +1,130 @@
+# PROJECT.yaml — tham số cụ thể cho TechStore (Node/Express/Sequelize/MySQL).
+# FRAMEWORK.md đọc file này; đổi project → thay file này, GIỮ FRAMEWORK.md.
+# Mọi giá trị dưới đã VERIFY trên repo (package.json / stryker.conf.json / scripts/) 2026-06-02.
+
+stack:
+  language: javascript
+  runtime: node20
+  framework: express4
+  orm: sequelize6
+  db: mysql8
+  arch: modular-monolith   # vertical slice: routes -> controller -> service -> repository
+
+# --- P3: vị trí logic theo tầng (completeness duyệt theo glob, KHÔNG hardcode tên file) ---
+layer_globs:
+  entrypoint:     "backend/src/app.js"
+  route_layer:    "backend/src/modules/*/routes.js"
+  business_layer: "backend/src/modules/*/services/*.js"
+  data_layer:     "backend/src/modules/*/repositories/sequelize-*.js"
+  model_layer:    "backend/src/models/*.js"
+
+# --- P2: cú pháp ghi-state (GỢI Ý; fallback bắt buộc = đọc-trọn-file business-layer) ---
+mutation_signature_set:
+  - ".update("
+  - ".save("
+  - "bulkUpdate"
+  - ".increment("
+  - ".decrement("
+  - ".set("
+  - " = "          # gán trực tiếp (vd order.status = ...)
+fallback_rule: "Nghi pattern thiếu -> ĐỌC TRỌN file business-layer + column-centric grep (grep tên-cột rồi đọc từng hit). Bằng chứng: '.status =' MISS 'order.update({status})' @ admin-order-service.js:269."
+
+# --- Denominator tools (đã verify tồn tại; assert OUTCOME là invariant khung) ---
+denominator_tools:
+  mutation_cmd:         "cd backend && npm run test:mutation"            # stryker ^9.6.1 (report-only, break=null)
+  mutation_critical_cmd: "cd backend && npm run test:mutation:critical" # stryker.critical.conf.json break=70 → FAIL gate
+  deadcode_cmd:         "cd backend && npm run check:unused"             # knip ^6.15.0
+  route_enumerator_cmd: "npm run wf:routes"                             # verify-workflow/route-enumerator.mjs — IN TỔNG (denominator THẬT)
+  dead_route_cmd:       "cd backend && npm run check:routes"            # check-unused-routes.mjs — dead-route DETECTOR (KHÔNG phải denominator; exit 0)
+  schema_drift_cmd:     "cd backend && node scripts/audit-schema-drift.js"
+  db_verify_cmd:        "cd backend && npm run db:verify"               # scripts/db-verify.js
+  ledger_gate_cmd:      "npm run wf:gate"                               # lint-config + invariants-approved + ledger (enforce)
+
+# --- P9: test suite ---
+test_cmd:
+  unit:        "cd backend && npm run test:fast"
+  unit_cov:    "cd backend && npm run test"
+  integration: "cd backend && npm run test:integration"   # MySQL thật
+  api:         "cd backend && npm run test:api"
+  e2e:         "cd backend && npm run test:e2e"
+  invariant_runner: "fast-check"   # property-based JS (^4.8.0 — ĐÃ cài)
+  property_glob: "**/*.property.test.js"   # proof-of-wiring: discount-code-service.property.test.js
+  fe_test:     "cd frontend && npm test"
+  fe_typecheck:"cd frontend && npm run typecheck"
+
+# --- COV-7: ngưỡng (đã verify) ---
+coverage_thresholds:
+  unit_local:  { statements: 99.7, branches: 99.7, functions: 99.4, lines: 99.7 }
+  unit_ci:     { statements: 97, lines: 97, branches: 85, functions: 95 }
+  mutation_high: 80
+  mutation_low:  60
+  mutation_break_global: null   # stryker.conf.json: report-only toàn bộ (full mutation quá chậm để gate) — chủ đích
+  mutation_break_critical: 70   # ✅ stryker.critical.conf.json: break=70 scope orders/payment/cart/inventory/discount → FAIL gate (wire stop-condition #3)
+  route_diagram_coverage_min: 100   # use-case/sequence phải phủ 100% route (denominator = wf:routes, KHÔNG phải check:routes)
+  enum_state_coverage_min: 100      # state-diagram phải có node cho mọi enum value
+
+# --- P4: lens finder ---
+applicable_lenses:
+  universal: [correctness, security, error-handling, boundary-validation]
+  domain:    [race-transaction, state-machine-completeness, money-integrity, idempotency]
+  # static-site/CLI: bỏ race-transaction + state-machine-completeness
+
+# --- enum_source: trích tập trạng thái hợp lệ (KHÔNG hardcode) ---
+enum_source:
+  primary:   "backend/data/migration.sql"          # snapshot schema
+  live:      "INFORMATION_SCHEMA (qua audit-schema-drift.js)"
+  note: "Derive node-set state-diagram từ đây. VD users.role=('customer','staff','admin') — 'manager' đã drop; KHÔNG hardcode."
+
+# --- route_enumerator: denominator cho use-case/sequence ---
+route_enumerator:
+  glob: "backend/src/modules/*/routes.js + backend/src/modules/admin/routes.js"
+  cross_module_note: "admin module mount endpoint của order (admin/routes.js:344-356) — completeness PHẢI cross-module. Bằng chứng: usecase-14 từng sót."
+
+# --- P5/O8: tài nguyên critical + oracle nghiệp vụ ---
+critical_resources: [stock, payment_status, order_status, "discount.usedCount", order_total]
+invariants_file: "verify-workflow/invariants.ecommerce.md"   # GATE-A: HUMAN viết/duyệt
+
+# --- P1: module + cross-module deps (auto-scan + human đánh dấu logic_heavy) ---
+modules: [admin, ai, attribute, auth, cart, catalog, content, discount-code, image, inventory, orders, payment, reviews, search-history, upload, users, wishlist]
+logic_heavy: [orders, payment, ai, inventory, discount-code, auth, cart]   # cần GATE-A/B/C/D
+cross_module_deps:
+  orders: [cart, users, payment, inventory, discount-code]
+  cart: [catalog]
+  catalog: [attribute, inventory, image]
+  admin: [orders, users, catalog, reviews, content, discount-code, inventory]
+  ai: [catalog, attribute]
+  payment: [orders]
+  inventory: [orders]
+
+# --- Toolchain render (đọc từ ENV, KHÔNG hardcode trong commit) ---
+toolchain:
+  PLANTUML_JAR: "${PLANTUML_JAR}"        # vd C:/Users/Admin/plantuml/plantuml.jar (ngoài repo)
+  GRAPHVIZ_DOT: "${GRAPHVIZ_DOT}"        # vd C:/Program Files/Graphviz/bin/dot.exe
+  diagram_tool:
+    usecase: plantuml
+    sequence: plantuml
+    state: plantuml
+    component: plantuml
+    deployment: plantuml
+    erd: dbml          # db2dbml -> dbdiagram.io
+    pipeline: mermaid  # npx mmdc
+    misc: drawio
+    table: latex       # booktabs + tabularx
+  render_cmd:
+    plantuml: 'java -jar "$PLANTUML_JAR" -charset UTF-8 -tpng <file.puml>'
+    mermaid:  'npx -y @mermaid-js/mermaid-cli mmdc -i <file.mmd> -o <file.png>'
+    dbml:     'npx -y @dbml/cli db2dbml mysql "<conn-MASK-trong-log>" -o <file.dbml>'
+  startuml_rule: "@startuml <tên-file-không-đuôi> để PNG ra đúng tên"
+
+# --- P10: vision context ---
+vision_context:
+  notation: UML
+  language: vi
+  print_mode: bw     # KLTN in đen trắng -> không để thông tin chỉ phân biệt bằng màu
+  page: A4
+  vision_checklist: "memory/feedback_diagram_vision_checklist.md (9 điểm)"
+
+# --- P11: manifest sơ đồ ---
+diagram_manifest: "verify-workflow/diagram-manifest.yaml"
+naming_template: "{type}-{seq:02d}-{scope}.{ext}"
+output_root: "diagrams/"

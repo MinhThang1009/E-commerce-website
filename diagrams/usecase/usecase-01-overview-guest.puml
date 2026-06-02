@@ -1,0 +1,35 @@
+@startuml usecase-01-overview-guest
+' Sơ đồ use case — Khách vãng lai (Guest) — chuẩn ký pháp UML
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách vãng lai\n(Guest)" as guest
+
+rectangle "Hệ thống TechStore" {
+  usecase "Xem danh sách sản phẩm" as UC1
+  usecase "Tìm kiếm và lọc sản phẩm" as UC2
+  usecase "Xem chi tiết sản phẩm" as UC3
+  usecase "Thêm vào giỏ hàng (guest)" as UC4
+  usecase "Chat với AI Chatbot" as UC5
+  usecase "Gửi phản hồi / liên hệ" as UC6
+  usecase "Đăng ký tài khoản" as UC7
+  usecase "Đăng nhập / Google OAuth" as UC8
+  usecase "Xem mã giảm giá public" as UC9
+}
+
+guest -- UC1
+guest -- UC2
+guest -- UC3
+guest -- UC4
+guest -- UC5
+guest -- UC6
+guest -- UC7
+guest -- UC8
+guest -- UC9
+@enduml

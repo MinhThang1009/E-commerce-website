@@ -1,0 +1,43 @@
+@startuml usecase-14-orders-admin
+' Use case — Đơn hàng phía back-office (Staff + Admin)
+' Ground-truth (verify cross-module orders + admin):
+'   orders/routes.js:137 GET  /api/orders/admin/all      authorize('admin','staff')  — xem
+'   orders/routes.js:138 PATCH/api/orders/admin/:id/status authorize('staff')         — staff cập nhật
+'   admin/routes.js:345  GET  /api/admin/orders          backoffice (admin+staff)     — xem (list thứ 2, có filter)
+'   admin/routes.js:351  PUT  /api/admin/orders/:id/status staffOnly                  — staff cập nhật (+paymentStatus/note)
+'   admin/routes.js:356  PUT  /api/admin/orders/:id/cancel staffOnly                  — staff hủy + restore stock (chặn delivered/cancelled)
+left to right direction
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Nhân viên bán hàng\n(Staff)" as staff
+actor "Quản trị viên\n(Admin)" as admin
+
+rectangle "Quản lý đơn hàng — Back-office" {
+  usecase "Xem tất cả đơn hàng" as UC_all
+  usecase "Lọc đơn theo trạng thái" as UC_filter
+  usecase "Cập nhật trạng thái đơn hàng" as UC_status
+  usecase "Hủy đơn hàng" as UC_cancel
+
+  UC_filter ..> UC_all : <<extend>>
+}
+
+staff -- UC_all
+staff -- UC_status
+staff -- UC_cancel
+admin -- UC_all
+
+note bottom of UC_cancel
+  Chỉ Staff thao tác (cập nhật trạng thái, hủy đơn);
+  hủy đơn hoàn kho + chặn đơn đã giao/đã hủy.
+  Admin chỉ XEM (xem-only) — không nối thao tác.
+  (Cập nhật trạng thái + xem có ở cả module orders và admin;
+   bản admin còn sửa được paymentStatus/note.)
+end note
+@enduml

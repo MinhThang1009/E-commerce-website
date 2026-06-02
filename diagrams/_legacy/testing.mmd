@@ -1,0 +1,21 @@
+graph BT
+    FETEST["FE Component Tests\n21 suites | 758 tests | Jest + RTL | ~12s\nGlobal 79%+ | auth pages 100%"]
+    UNIT["Unit Tests\n158 suites | 3,745 tests | ~20s\nThreshold: 99.7% stmt, 99.7% branch\nActual: 100% lines, 99.81% branches"]
+    INT["Integration Tests\n36 suites | 184 tests | MySQL real | ~55s"]
+    API["API HTTP Tests\n39 suites | 700 tests | Supertest | ~230s"]
+    E2E["E2E Tests\n5 suites | 100 tests | Full user flows | ~25s"]
+    TOTAL(["Total: 259 suites | 5,487 tests"])
+    CI["CI/CD: GitHub Actions\nPre-commit: arch audit + lint-staged"]
+
+    CI ~~~ UNIT
+    UNIT --> INT
+    FETEST --> INT
+    INT --> API --> E2E --> TOTAL
+
+    style FETEST fill:#42A5F5,color:#fff
+    style UNIT fill:#5C6BC0,color:#fff
+    style INT fill:#EF5350,color:#fff
+    style API fill:#FFA726,color:#fff
+    style E2E fill:#66BB6A,color:#fff
+    style TOTAL fill:#C62828,color:#fff
+    style CI fill:#37474F,color:#fff

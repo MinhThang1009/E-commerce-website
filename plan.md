@@ -240,8 +240,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 11 | `wishlist` | use case §2.8 | ✅ DONE tầng 0 (WL-1 i18n fixed) — sơ đồ chưa vẽ |
 | 12 | `upload` | magic bytes; sequence §3.4 | ✅ DONE tầng 0 (U1 fixed) — sơ đồ chưa vẽ |
 | 13 | `attribute` | nhóm thuộc tính; use case §2.8b | ✅ DONE tầng 0 (logic đúng; AT-doc fixed; AT-1 i18n→backlog §D.3) — sơ đồ chưa vẽ |
-| 14 | `content` | feedback only; use case §2.9 | ⏳ |
-| 15 | `search-history` | use case §2.7 | ⏳ |
+| 14 | `content` | feedback only; use case §2.9 | ✅ DONE tầng 0 (sạch, không bug) — sơ đồ chưa vẽ |
+| 15 | `search-history` | use case §2.7 | ✅ DONE tầng 0 (logic đúng; SH-1 i18n→§D.3) — sơ đồ chưa vẽ |
 | 16 | `image` | proxy/CDN bypass | ⏳ |
 | 17 | `admin` | dashboard/CRUD/analytics (phụ thuộc nhiều module); use case §2.10, component §8c | ⏳ (cuối) |
 
@@ -397,6 +397,25 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | AT-2 | 🟢 | CRUD routes KHÔNG `validateRequest` → input không validate + `model.update(req.body)` mass-assign | routes.js | ℹ️ NOTED: staff trusted + Sequelize chỉ ghi model fields → low (robustness gap giống K2, không fix); ghi gotcha CLAUDE.md §6 |
 
 **✅ ATTRIBUTE GATE tầng 0 DONE:** logic đúng (CRUD + soft-delete + name-gen delegate qua setter tránh circular). KHÔNG đổi code → không cần verify test (test attribute dày: 4 unit + 2 integration + 3 API). Fix 2 doc stale (AT-doc guard staff, AT-doc2 validator phantom). AT-1 i18n → §D.3 backlog. AT-2 mass-assign low-risk note. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.8b).
+
+**Module `content`** — audit 2026-06-02 (đọc service+controller+routes; feedback-only, ~50 dòng):
+| ID | Sev | Vấn đề | Status |
+|---|---|---|---|
+| CT-logic | — | `sendFeedback` validate required → throw key `content.requiredFieldsMissing`; createFeedback status=pending; email notify fire-and-forget catch+log (không fail request) | ✅ OK đúng |
+| CT-i18n | — | Service throw KEY (`content.requiredFieldsMissing`); controller success = `t('content.feedbackReceived', req.locale)` — **dùng i18n key chuẩn cả 2 lớp** (KHÔNG dính AT-1 sweep) | ✅ OK — module i18n sạch |
+| CT-valid | — | Route `validateRequest(feedbackSchema, 422)` (Zod strip + 422); public endpoint (no auth, đúng — form liên hệ) | ✅ OK |
+
+**✅ CONTENT GATE tầng 0 DONE:** module sạch nhất — logic đúng, i18n dùng key chuẩn (service + controller), validate qua Zod 422, email fail-silent documented. KHÔNG đổi code → không verify test mới. Doc CLAUDE.md khớp. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.9).
+
+**Module `search-history`** — audit 2026-06-02 (đọc service+repo+routes; singleton, ~34 dòng service):
+| ID | Sev | Vấn đề | Status |
+|---|---|---|---|
+| SH-logic | — | dedup 1h (`findDuplicate` keyword+userId/sessionId+since), saveSearch optional-auth (guest sessionId), getHistory order DESC | ✅ OK đúng |
+| SH-IDOR | — | `deleteOne` qua `findOneByUserAndId({id,userId})` = `findOne({where:{id,userId}})`; findByUser/destroyByUser scope userId | ✅ OK — không IDOR |
+| SH-1 | 🟡 | `deleteOne` throw `'Không tìm thấy lịch sử tìm kiếm'` hardcode VN (1 chỗ) | → **§D.3 backlog** (defer) |
+| SH-2 | 🟢 | `getHistory` limit không max cap (parseInt) | ℹ️ low — authenticated user xem history của chính mình, không phải DoS; note CLAUDE.md đã có |
+
+**✅ SEARCH-HISTORY GATE tầng 0 DONE:** logic đúng (dedup + ownership enforced + guest sessionId flow), KHÔNG đổi code (SH-1 i18n → sweep §D.3). Doc CLAUDE.md khớp. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.7).
 
 ### D.3 — I18N HARDCODE SWEEP (task refactor RIÊNG — defer, user chốt 2026-06-02)
 **Phát hiện khi gate `attribute`:** class bug i18n diện rộng — `throw new AppError('<chuỗi tiếng Việt>')` thay vì i18n key + controller `res.json({message:'<VN>'})` hardcode. error-handler `translateMessage = t(msg) || msg` → chuỗi VN không match key → **fallback giữ nguyên → user `?lang=en` thấy lỗi/thông báo tiếng Việt**. Các gate logic tầng 0 trước CHỈ soi logic, KHÔNG soi i18n → bug còn ở cả module đã DONE.

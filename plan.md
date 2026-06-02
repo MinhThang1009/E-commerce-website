@@ -232,8 +232,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ✅ DONE tầng 0 (A6 fixed) — sơ đồ chưa vẽ |
 | 4 | `cart` | merge guest, variant pricing; use case §2.3a | ✅ DONE tầng 0 (C1 fixed) — sơ đồ chưa vẽ |
 | 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ✅ DONE tầng 0 (không bug code) — sơ đồ chưa vẽ |
-| 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ⏳ NEXT |
-| 7 | `discount-code` | validate/apply, usedCount timing | ⏳ |
+| 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ✅ DONE tầng 0 (INV-1 đã fix; INV-2 defer) — sơ đồ chưa vẽ |
+| 7 | `discount-code` | validate/apply, usedCount timing (+ P3 over-redemption) | ⏳ NEXT |
 | 8 | `reviews` | hasUserPurchased; use case §2.5 | ⏳ |
 | 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ |
 | 10 | `users` | profile/address; use case §2.1b | ⏳ |
@@ -320,7 +320,16 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 
 **✅ CATALOG GATE tầng 0 DONE:** KHÔNG có bug code tầng-0 (read-heavy, logic đúng, writes guarded staff + tx + slated §3.C removal). Chỉ sửa doc K3. Không đổi code → không cần verify test (catalog test dày sẵn, không regression).
 
-**⚠️ DOC STALE BATCH (Pha 0 — route-table guards):** per-module CLAUDE.md route tables của `orders`/`inventory`/`reviews`/`attribute`/`discount-code` có thể vẫn ghi `authorize('admin')` cho write đã đổi sang `staff`. Sửa cùng lúc khi gate từng module (hoặc 1 batch doc pass).
+**⚠️ DOC STALE BATCH (Pha 0 — route-table guards):** per-module CLAUDE.md route tables của `orders`/`reviews`/`attribute`/`discount-code` có thể vẫn ghi `authorize('admin')` cho write đã đổi sang `staff`. (catalog ✅, inventory ✅ đã sửa.) Sửa cùng lúc khi gate từng module.
+
+**Module `inventory`** — audit 2026-06-02 (đọc service+repo+routes):
+| ID | Sev | Vấn đề | Status |
+|---|---|---|---|
+| INV-1 | — | `sumVariantStockByProductId` forward opts (SUM trong tx) | ✅ ĐÃ FIX code (phiên 9-bug); doc §6 gotcha stale → đã sửa |
+| INV-2 | 🟡 | `restockProduct` load+modify+save stock KHÔNG `SELECT FOR UPDATE` → 2 restock đồng thời lost-update | ⚠️ NOTED defer: admin/staff thủ công hiếm đồng thời + self-correcting; fix đúng = lock variant trong tx (giống orders decrement). Ghi gotcha inventory/CLAUDE.md §6 |
+| INV-3 | 🟡 doc | route table + prose ghi `authorize('admin')`; thực tế restock=staff, logs=admin+staff | ✅ FIXED doc |
+
+**✅ INVENTORY GATE tầng 0 DONE:** không đổi code (INV-1 đã fix sẵn + verify repo forward opts; INV-2 defer low-risk). Chỉ sửa doc (gotcha INV-1 + route table INV-3). Stock decrement vẫn đúng pattern (orders SELECT FOR UPDATE); restore khi cancel đã fix F1/F2.
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

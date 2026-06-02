@@ -135,12 +135,12 @@ Lỗi khi ghi log → `logger.warn` và tiếp tục (không fail silently với
 
 Base path: `/api/inventory`
 
-Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admin'))` — không có endpoint public.
+`router.use(authenticate)` cho toàn router; phân quyền theo từng route (Pha 0 — tồn kho là nghiệp vụ bán hàng): nhập kho → `staff`, xem nhật ký → `admin` + `staff` (giám sát). Không có endpoint public.
 
 | Method | Path                           | Auth                              | Mô tả                                                                  |
 | ------ | ------------------------------ | --------------------------------- | ---------------------------------------------------------------------- |
-| POST   | `/products/:productId/restock` | authenticate + authorize('admin') | Nhập kho cho product hoặc variant cụ thể                               |
-| GET    | `/logs`                        | authenticate + authorize('admin') | Danh sách inventory logs (filter: productId, changeType; max 100/page) |
+| POST   | `/products/:productId/restock` | authenticate + authorize('staff') | Nhập kho cho product hoặc variant cụ thể (staff)                       |
+| GET    | `/logs`                        | authenticate + authorize('admin','staff') | Danh sách inventory logs (admin xem-only + staff; max 100/page) |
 
 > Cũng có `POST /api/admin/products/:productId/restock` trong `admin/routes.js`. Đây là implementation RIÊNG BIỆT trong `admin-product-service.js` (hàm `restockProduct`) — **KHÔNG** gọi `inventoryService.restockProduct`. Logic tương tự (validate qty, find product/variant, sum variant stock, tạo `InventoryLog`) nhưng code khác và không đi qua DI (admin là singleton, `require('@models')` trực tiếp). Sửa logic ở một bên không tự động áp dụng cho bên kia.
 
@@ -178,7 +178,8 @@ Tất cả routes apply `router.use(authenticate)` + `router.use(authorize('admi
 - **`subscribeEvents()` gọi sau tất cả modules init**: Nếu inventory module throw trong constructor → event subscription không xảy ra → `order.cancelled` sẽ không có inventory log. Kiểm tra logs khi deploy.
 - **Restock variant cộng tổng vào Product**: `sumVariantStockByProductId` tính tổng ALL variants, không phải chỉ variant vừa restock. Nếu muốn product.stockQuantity phản ánh đúng → phải restock qua service, không update variant trực tiếp.
 - **`saveStockable()` trong repository vs direct save**: Một số paths khác update `ProductVariant` trực tiếp (orders, admin) không qua inventory service → `Product.stockQuantity` có thể lệch. Sync chỉ đảm bảo khi đi qua `restockProduct`.
-- **`sumVariantStockByProductId` chạy NGOÀI transaction**: `inventory-service.js` truyền `opts` (chứa `transaction`) vào `this.repo.sumVariantStockByProductId(productId, opts)`, nhưng signature repository chỉ là `sumVariantStockByProductId(productId)` — `opts` bị bỏ qua silently. Hệ quả: query `SUM(stockQuantity)` chạy ngoài transaction đang mở, tiềm ẩn race condition (đọc tổng stock không nhất quán nếu có restock/giảm stock variant đồng thời). Nếu cần đọc trong transaction → phải sửa repository nhận và forward `opts`.
+- **`sumVariantStockByProductId` forward `opts` (ĐÃ FIX)**: repository signature là `sumVariantStockByProductId(productId, options = {})` và spread `...options` vào query → SUM chạy TRONG transaction restock, đọc tổng tồn nhất quán. (Trước đây opts bị bỏ qua → đã sửa ở phiên fix 9 bug.)
+- **⚠️ Restock chưa lock variant (INV-2, known limitation):** `restockProduct` load product/variant NGOÀI transaction + KHÔNG `SELECT FOR UPDATE` → 2 restock đồng thời cùng variant có thể lost-update (cả hai đọc previous=N, +qty, ghi N+qty → mất 1 lần). Rủi ro thấp (admin/staff thao tác thủ công, hiếm đồng thời) + self-correcting. Fix đúng: load + lock variant TRONG tx (`SELECT FOR UPDATE`) rồi mới read-modify-write — giống pattern decrement ở `orders`.
 - **InventoryLog `changeType: 'cancellation'` có amount dương**: `changeAmount = item.quantity` là dương (số lượng trả về kho) — convention ghi số lượng, không phải delta âm.
 
 ---

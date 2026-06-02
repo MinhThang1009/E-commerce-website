@@ -79,7 +79,9 @@
     "alreadyExists": "Sản phẩm đã có trong danh sách yêu thích",
     "added": "Đã thêm sản phẩm vào danh sách yêu thích",
     "removed": "Đã xóa sản phẩm khỏi danh sách yêu thích",
-    "clearedAll": "Đã xóa tất cả sản phẩm trong danh sách yêu thích"
+    "clearedAll": "Đã xóa tất cả sản phẩm trong danh sách yêu thích",
+    "productNotFound": "Sản phẩm không tồn tại",
+    "notInWishlist": "Sản phẩm không có trong danh sách yêu thích"
   },
   "catalog": {
     "categoryNotFound": "Không tìm thấy danh mục",

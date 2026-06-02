@@ -78,7 +78,9 @@
     "alreadyExists": "Product is already in your wishlist",
     "added": "Product added to wishlist",
     "removed": "Product removed from wishlist",
-    "clearedAll": "All products removed from wishlist"
+    "clearedAll": "All products removed from wishlist",
+    "productNotFound": "Product not found",
+    "notInWishlist": "Product is not in your wishlist"
   },
   "catalog": {
     "categoryNotFound": "Category not found",

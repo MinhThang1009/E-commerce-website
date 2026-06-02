@@ -54,7 +54,7 @@ class WishlistService {
   async addToWishlist({ userId, productId }) {
     const product = await this.wishlistRepository.findProductById(productId);
     if (!product) {
-      throw new AppError('Sản phẩm không tồn tại', 404);
+      throw new AppError('wishlist.productNotFound', 404);
     }
 
     const existing = await this.wishlistRepository.findItem(userId, productId);
@@ -69,7 +69,7 @@ class WishlistService {
   async removeFromWishlist({ userId, productId }) {
     const item = await this.wishlistRepository.findItem(userId, productId);
     if (!item) {
-      throw new AppError('Sản phẩm không có trong danh sách yêu thích', 404);
+      throw new AppError('wishlist.notInWishlist', 404);
     }
 
     await this.wishlistRepository.deleteItem(item);

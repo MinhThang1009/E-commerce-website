@@ -178,6 +178,7 @@ describe('WishlistService', () => {
 
       await expect(service.addToWishlist({ userId: 1, productId: 99 })).rejects.toMatchObject({
         statusCode: 404,
+        message: 'wishlist.productNotFound',
       });
     });
 
@@ -211,6 +212,7 @@ describe('WishlistService', () => {
 
       await expect(service.removeFromWishlist({ userId: 1, productId: 99 })).rejects.toMatchObject({
         statusCode: 404,
+        message: 'wishlist.notInWishlist',
       });
     });
 

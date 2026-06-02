@@ -390,6 +390,23 @@ describe('AuthService', () => {
       expect(existingUser.isEmailVerified).toBe(true);
       expect(authRepository.saveUser).toHaveBeenCalledWith(existingUser);
     });
+
+    test('email_verified=false → 401, KHÔNG tạo/link account (chống chiếm tài khoản)', async () => {
+      googleVerifier.verifyIdToken.mockResolvedValue({
+        sub: 'g-evil',
+        email: 'victim@x.y',
+        email_verified: false,
+        given_name: 'E',
+        family_name: 'V',
+      });
+
+      await expect(service.googleLogin({ token: 'idtok' })).rejects.toMatchObject({
+        statusCode: 401,
+      });
+      expect(authRepository.findByGoogleIdOrEmail).not.toHaveBeenCalled();
+      expect(authRepository.createUser).not.toHaveBeenCalled();
+      expect(authRepository.saveUser).not.toHaveBeenCalled();
+    });
   });
 
   describe('getCurrentUser', () => {

@@ -96,6 +96,13 @@ class AuthService {
       throw new AppError('auth.googleAuthFailed', 401);
     }
 
+    // Chỉ chấp nhận khi Google đã xác minh email — chống chiếm tài khoản: KHÔNG auto-create
+    // hoặc link Google vào tài khoản email/password sẵn có nếu email chưa được Google xác minh.
+    // Google bình thường luôn trả email_verified=true; chỉ chặn khi báo tường minh false.
+    if (payload.email_verified === false) {
+      throw new AppError('auth.googleAuthFailed', 401);
+    }
+
     const {
       sub: googleId,
       email,

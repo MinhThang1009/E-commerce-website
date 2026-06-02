@@ -153,6 +153,8 @@ Base path: `/api/auth`
 - **Không có token blacklisting**: Stateless JWT. Nếu cần revoke token trước TTL (e.g., account ban), phải implement Redis blacklist riêng — hiện chưa có.
 - **`/reset-password` không có rate limit**: Endpoint validate hex token trước khi reset — brute force bị chặn bởi token TTL 15 phút và token bị clear sau dùng.
 - **Google OAuth fallback**: `verifyIdToken()` thất bại → thử `verifyAccessToken()`. Nếu cả hai fail → `AppError 401`. Không lưu kết quả verify.
+- **Google `email_verified` bắt buộc:** `googleLogin` từ chối (`AppError 401`) khi payload Google báo `email_verified === false` — chống chiếm tài khoản (auto-create hoặc link Google vào tài khoản email/password sẵn có với email chưa xác minh). Google bình thường luôn trả `true`; chỉ chặn khi tường minh `false` (giữ tương thích payload thiếu field).
+- **Known limitations (low):** reset token + OTP lưu **plaintext** trong DB (mitigate: entropy cao/6-số + TTL 15p/10p + clear sau dùng). `register` lộ email-đã-tồn-tại (enumeration — đánh đổi UX, khác `forgot`/`resend` dùng generic). Refresh token **không revoke** server-side (stateless — token cũ valid đến hết TTL).
 - **OTP timing-safe compare**: Dùng `crypto.timingSafeEqual` để tránh timing attack. OTP được pad thành 6 chữ số trước khi compare.
 - **`bcrypt` cost trong test**: Cost factor hardcoded 12 trong User model — không có env override. Test dùng mock hoặc real bcrypt (chậm hơn).
 

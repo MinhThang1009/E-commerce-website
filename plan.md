@@ -229,8 +229,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 |---|---|---|---|
 | 1 | `order` | FSM §7.1, checkout §3.2, use case §2.4 — logic đậm nhất | ✅ DONE (F1–F5) |
 | 2 | `payment` | IPN, paymentStatus sync, discount usedCount; state §7.2, use case §2.4b | ✅ DONE tầng 0 (P1 fixed; P2/P3 noted) — sơ đồ chưa vẽ |
-| 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ⏳ NEXT |
-| 4 | `cart` | merge guest, variant pricing; use case §2.3a | ⏳ |
+| 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ✅ DONE tầng 0 (A6 fixed) — sơ đồ chưa vẽ |
+| 4 | `cart` | merge guest, variant pricing; use case §2.3a | ⏳ NEXT |
 | 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ⏳ |
 | 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ⏳ |
 | 7 | `discount-code` | validate/apply, usedCount timing | ⏳ |
@@ -290,6 +290,17 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | P6 | 🟠 | `payment.integration.test.js` tautological (thao tác Model trực tiếp, không gọi service) — đúng lớp F1/F2 | `__integration__/payment.integration.test.js` | ✅ Bổ sung `payment-edge-cases.integration.test.js` gọi service THẬT (10 test, assert outcome). File cũ dọn ở test-quality phase |
 
 **✅ PAYMENT GATE tầng 0 DONE:** P1 fixed; verify unit **3761** (payment-service 100% cov) + lint sạch + **integration 37/198** (4 cũ payment + 10 mới gọi service thật, assert paid/idempotency/amount-mismatch/discount/refund). Docs payment/CLAUDE.md + root §8 + TESTING_STRATEGY cập nhật. → đủ điều kiện vẽ sơ đồ payment (state-02, sequence, use case §2.4b). **Sơ đồ tầng 1/2 CHƯA vẽ** (thuộc pha §D drawing).
+
+**Module `auth`** — audit 2026-06-02 (đọc service+repo+module+routes; baseline unit 158):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| A1 | — | Reset password token có check expiry không? | repo `findByResetToken` (~L46) | ✅ OK — repo filter `resetPasswordExpires > now`, không bug |
+| A6 | 🟡 | `googleLogin` KHÔNG check `email_verified` trước auto-create/link theo email → chiếm tài khoản (link Google vào account password với email Google chưa verify) | service `googleLogin` (~L95) | ✅ FIXED (reject 401 khi `email_verified === false`; guard giữ tương thích payload thiếu field; +1 unit, auth-service 100% cov) |
+| A3 | 🟢 | `register` lộ email-đã-tồn-tại (enumeration) — khác forgot/resend dùng generic | service `register` (~L28) | ℹ️ đánh đổi UX — note CLAUDE.md |
+| A8 | 🟢 | Refresh token không revoke server-side (stateless) | service `refreshToken` | ℹ️ documented tradeoff |
+| A9 | 🟢 | Reset token + OTP lưu plaintext trong DB | service/model | ℹ️ low (entropy + TTL + clear sau dùng) — note |
+
+**✅ AUTH GATE tầng 0 DONE:** A6 fixed; verify unit **3762** (auth-service 100% cov) + lint sạch + **auth integration 14 + API 53 PASS** (login/register/otp/refresh/reset qua full stack — không regression). A3/A8/A9 ghi nhận known limitation ở auth/CLAUDE.md §6. Code còn lại đúng (idempotency OTP timing-safe, reset token expiry, JWT HS256-pinned). **Sơ đồ tầng 1/2 CHƯA vẽ.**
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

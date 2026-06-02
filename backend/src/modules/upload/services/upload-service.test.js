@@ -65,6 +65,23 @@ describe('UploadService', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: 'upload.noFile' });
     });
 
+    test('uploadType lạ → xóa file + 400 (không lệch thư mục)', async () => {
+      const file = {
+        path: '/tmp/x.jpg',
+        filename: 'x.jpg',
+        originalname: 'a.jpg',
+        size: 100,
+      };
+
+      await expect(
+        service.processSingleUpload({ file, uploadType: 'hacker-type' }),
+      ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidType' });
+
+      expect(uploadRepository.deleteFile).toHaveBeenCalledWith('/tmp/x.jpg');
+      // Không đọc magic bytes vì đã reject ở bước type
+      expect(uploadRepository.readFileHeader).not.toHaveBeenCalled();
+    });
+
     test('magic bytes invalid → xóa file + 400', async () => {
       uploadRepository.readFileHeader.mockResolvedValue(Buffer.alloc(12)); // not valid image
       const file = {
@@ -106,6 +123,20 @@ describe('UploadService', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: 'upload.noFile' });
     });
 
+    test('uploadType lạ → xóa hết + 400', async () => {
+      const files = [
+        { path: '/tmp/a.jpg', filename: 'a.jpg', originalname: 'a.jpg', size: 1 },
+        { path: '/tmp/b.jpg', filename: 'b.jpg', originalname: 'b.jpg', size: 1 },
+      ];
+
+      await expect(
+        service.processMultipleUpload({ files, uploadType: 'hacker-type' }),
+      ).rejects.toMatchObject({ statusCode: 400, message: 'upload.invalidType' });
+
+      expect(uploadRepository.deleteFile).toHaveBeenCalledTimes(2);
+      expect(uploadRepository.readFileHeader).not.toHaveBeenCalled();
+    });
+
     test('mix valid + invalid → xóa invalid, trả valid', async () => {
       const jpegBuf = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(9)]);
       uploadRepository.readFileHeader
@@ -141,8 +172,8 @@ describe('UploadService', () => {
     });
   });
 
-  describe('deleteFile (admin)', () => {
-    test('không phải admin → 403', async () => {
+  describe('deleteFile (admin/staff)', () => {
+    test('customer → 403', async () => {
       await expect(
         service.deleteFile({ user: { role: 'customer' }, type: 'products', filenameRaw: 'a.jpg' }),
       ).rejects.toMatchObject({ statusCode: 403 });
@@ -177,7 +208,7 @@ describe('UploadService', () => {
       ).rejects.toMatchObject({ statusCode: 404 });
     });
 
-    test('hợp lệ → xóa file + return message', async () => {
+    test('admin hợp lệ → xóa file + return message', async () => {
       uploadRepository.fileExists.mockResolvedValue(true);
       const result = await service.deleteFile({
         user: { role: 'admin' },
@@ -186,6 +217,17 @@ describe('UploadService', () => {
       });
       expect(result.message).toBe('upload.deleteSuccess');
       expect(uploadRepository.deleteFile).toHaveBeenCalled();
+    });
+
+    test('staff hợp lệ → xóa file + return message (RBAC back-office)', async () => {
+      uploadRepository.fileExists.mockResolvedValue(true);
+      const result = await service.deleteFile({
+        user: { role: 'staff' },
+        type: 'products',
+        filenameRaw: 'a.jpg',
+      });
+      expect(result.message).toBe('upload.deleteSuccess');
+      expect(uploadRepository.deleteFile).toHaveBeenCalledWith(expect.stringContaining('a.jpg'));
     });
   });
 

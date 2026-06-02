@@ -19,6 +19,10 @@ const MAGIC_BYTES = {
   webp: Buffer.from([0x52, 0x49, 0x46, 0x46]), // RIFF — cần kiểm 'WEBP' ở offset 8
 };
 
+// Xóa file thuộc back-office (CRUD sản phẩm) → staff lẫn admin được phép, khớp RBAC
+// 4-actor (staff = thao tác nghiệp vụ). Khớp BACKOFFICE_ROLES ở admin-auth.js.
+const DELETE_ALLOWED_ROLES = ['admin', 'staff'];
+
 class UploadService {
   constructor({ uploadRepository, uploadDirs, eventBus, logger }) {
     this.uploadRepository = uploadRepository;
@@ -52,6 +56,13 @@ class UploadService {
       throw new AppError('upload.noFile', 400);
     }
 
+    // Reject uploadType lạ: multer fallback lưu file vào products/ nhưng buildFileUrl
+    // dùng uploadType raw → URL lệch thư mục (ảnh 404). Reject sớm cho khớp deleteFile.
+    if (!this.uploadDirs[uploadType]) {
+      await this.uploadRepository.deleteFile(file.path).catch(() => {});
+      throw new AppError('upload.invalidType', 400);
+    }
+
     const isValidMagic = await this.validateMagicBytes(file.path);
     if (!isValidMagic) {
       // Xóa file giả mạo ngay lập tức (best-effort, không chặn response)
@@ -72,6 +83,12 @@ class UploadService {
   async processMultipleUpload({ files, uploadType }) {
     if (!files || files.length === 0) {
       throw new AppError('upload.noFile', 400);
+    }
+
+    // Reject uploadType lạ (xem processSingleUpload) — xóa toàn bộ file đã lưu trước khi 400.
+    if (!this.uploadDirs[uploadType]) {
+      await Promise.allSettled(files.map((f) => this.uploadRepository.deleteFile(f.path)));
+      throw new AppError('upload.invalidType', 400);
     }
 
     const validFiles = [];
@@ -101,9 +118,9 @@ class UploadService {
     }));
   }
 
-  // Xóa file đã upload — admin only, validate path traversal.
+  // Xóa file đã upload — admin/staff (back-office), validate path traversal.
   async deleteFile({ user, type, filenameRaw }) {
-    if (!user || user.role !== 'admin') {
+    if (!user || !DELETE_ALLOWED_ROLES.includes(user.role)) {
       throw new AppError('upload.accessDenied', 403);
     }
 

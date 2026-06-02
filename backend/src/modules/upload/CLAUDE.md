@@ -85,9 +85,10 @@ processSingleUpload({ file, uploadType });
 ```
 
 1. Validate `file` tồn tại
-2. `validateMagicBytes(file.path)` — đọc 12 bytes header
-3. Nếu invalid → `deleteFile(file.path)` (best-effort), throw 400
-4. Trả `{ filename, originalName, url: /uploads/{type}/{filename}, size, type }`
+2. Validate `uploadType` ∈ `uploadDirs` keys → nếu type lạ: xóa file (best-effort) + throw 400 `upload.invalidType`
+3. `validateMagicBytes(file.path)` — đọc 12 bytes header
+4. Nếu invalid → `deleteFile(file.path)` (best-effort), throw 400
+5. Trả `{ filename, originalName, url: /uploads/{type}/{filename}, size, type }`
 
 ## 3.2 processMultipleUpload
 
@@ -95,19 +96,20 @@ processSingleUpload({ file, uploadType });
 processMultipleUpload({ files, uploadType });
 ```
 
-1. Validate từng file bằng magic bytes
-2. Phân loại `validFiles` và `invalidPaths`
-3. Xóa `invalidPaths` song song (Promise.allSettled — best-effort)
-4. Nếu 0 file valid → throw 400
-5. Trả mảng `[{ filename, originalName, url, size }]`
+1. Validate `uploadType` ∈ `uploadDirs` keys → nếu type lạ: xóa hết file đã lưu + throw 400 `upload.invalidType`
+2. Validate từng file bằng magic bytes
+3. Phân loại `validFiles` và `invalidPaths`
+4. Xóa `invalidPaths` song song (Promise.allSettled — best-effort)
+5. Nếu 0 file valid → throw 400
+6. Trả mảng `[{ filename, originalName, url, size }]`
 
-## 3.3 deleteFile (admin only)
+## 3.3 deleteFile (admin/staff)
 
 ```js
 deleteFile({ user, type, filenameRaw });
 ```
 
-1. `!user || user.role !== 'admin'` → throw 403
+1. `!user || user.role ∉ ['admin','staff']` → throw 403 (back-office, khớp RBAC 4-actor)
 2. `uploadDirs[type]` không tồn tại → throw 400
 3. `path.basename(filenameRaw)` ≠ `filenameRaw` (có directory components) → throw 400
 4. Path traversal guard: `filePath.startsWith(uploadDir + sep)` (hoặc `=== uploadDir`) → throw 403
@@ -143,7 +145,7 @@ Base path: `/api/uploads`. Tất cả require `authenticate`.
 | ------ | ------------------ | ------------ | ----------------------------------------------------- |
 | POST   | `/:type/single`    | authenticate | Upload 1 file (multer `single('file')`)               |
 | POST   | `/:type/multiple`  | authenticate | Upload nhiều file (multer `array('files', maxCount)`) |
-| DELETE | `/:type/:filename` | authenticate | Xóa file (service check `user.role === 'admin'`)      |
+| DELETE | `/:type/:filename` | authenticate | Xóa file (service check `user.role ∈ admin/staff`)    |
 
 **`:type` hợp lệ:** `reviews`, `products`, `users`, `categories`, `brands`, `avatars`, `temp`
 
@@ -177,10 +179,11 @@ Module không nhận Sequelize models — chỉ dùng `fs.promises`, `multer`, `
 
 - **Magic bytes validation xảy ra SAU khi multer lưu file:** File giả mạo được lưu lên disk trước, sau đó bị xóa ngay. Đây là behavior đúng (multer không có API đọc bytes trước khi lưu).
 - **MIME type của multer là lớp bảo vệ đầu tiên, không đủ:** Attacker có thể gửi `Content-Type: image/jpeg` cho file thực ra là exe. Magic bytes check là lớp bảo vệ thực sự.
-- **`DELETE /:type/:filename` là admin-only tại service layer:** Route không dùng `authorize('admin')` middleware — kiểm tra được thực hiện trong `uploadService.deleteFile()`. Không thêm middleware authorize — sẽ duplicate check.
+- **`DELETE /:type/:filename` là admin/staff tại service layer (U3):** Route không dùng `authorize` middleware — kiểm tra `DELETE_ALLOWED_ROLES=['admin','staff']` thực hiện trong `uploadService.deleteFile()`. Khớp RBAC 4-actor (staff = CRUD nghiệp vụ products). Không thêm middleware authorize — sẽ duplicate check. FE hiện KHÔNG gọi endpoint này (sửa product chỉ update field `images`, file orphan để cron 2AM dọn).
 - **Temp files cleanup:** `uploads/temp/` bị cleanup daily 2AM bởi `src/jobs/cleanup.js`. Không xóa temp files thủ công.
 - **`module.js` expose internals:** `_uploadDirs`, `_uploadEngine`, `validateMagicBytes`, `deleteFile` được export cho legacy compat và tests.
 - **Path traversal guard:** `path.basename()` + startsWith check. Quan trọng — không bỏ khi refactor.
+- **`uploadType` được validate ở service (U1 fix):** `processSingleUpload`/`processMultipleUpload` reject 400 nếu `uploadType` không nằm trong `uploadDirs` keys. Trước đây type lạ rơi vào multer fallback (`uploadDirs[type] || products`) → file lưu `products/` nhưng URL build theo type raw → ảnh 404. Giờ symmetric với `deleteFile`. **Valid types** = `reviews, products, users, categories, brands, avatars, temp` (số nhiều — swagger enum cũ ghi sai `avatar/product` số ít, đã sửa). FE phải dùng đúng dạng số nhiều (`/api/uploads/avatars/single`, không phải `/avatar/`).
 
 ---
 

@@ -144,6 +144,8 @@ Inject từ `app.js`:
 - **`DELETE /` xóa toàn bộ, không có confirmation:** FE phải confirm dialog trước khi gọi.
 - **`getWishlist` tính stock từ variants:** `stockQuantity = sum(variant.stockQuantity)`. Nếu product không có variants → dùng `defaultVariant.stockQuantity`.
 - **Route order quan trọng:** `GET /check/:productId` đứng trước `DELETE /:productId` để Express không nhầm `check` là productId. Đây đã được xử lý đúng trong `routes.js`.
+- **Error messages dùng i18n key (WL-1):** Mọi `throw new AppError(...)` truyền **key** (`wishlist.productNotFound`, `wishlist.notInWishlist`), KHÔNG hardcode chuỗi tiếng Việt — error-handler `t(msg) || msg` chỉ translate khi `msg` là key (raw VN sẽ lọt nguyên si sang user tiếng Anh).
+- **Unique constraint chống race add:** Index `uq_wishlists_user_product` (model) đảm bảo không có 2 record (userId, productId) trùng — `addToWishlist` race-condition (check-then-create) → create thứ 2 ném `SequelizeUniqueConstraintError` → 409, không tạo duplicate.
 
 ---
 

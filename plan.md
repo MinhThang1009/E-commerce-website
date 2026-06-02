@@ -236,9 +236,9 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 7 | `discount-code` | validate/apply, usedCount timing (+ P3 over-redemption) | ✅ DONE tầng 0 (logic đúng; P3 = accepted risk) — sơ đồ chưa vẽ |
 | 8 | `reviews` | hasUserPurchased; use case §2.5 | ✅ DONE tầng 0 (logic đúng) — sơ đồ chưa vẽ |
 | 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ PARTIAL — ai-policy verified; full RAG (chatbot-service 1004 dòng + 53 edge case) cần session chuyên sâu |
-| 10 | `users` | profile/address; use case §2.1b | ⏳ |
-| 11 | `wishlist` | use case §2.8 | ⏳ |
-| 12 | `upload` | magic bytes; sequence §3.4 | ⏳ |
+| 10 | `users` | profile/address; use case §2.1b | ✅ DONE tầng 0 (không bug code) — sơ đồ chưa vẽ |
+| 11 | `wishlist` | use case §2.8 | ✅ DONE tầng 0 (WL-1 i18n fixed) — sơ đồ chưa vẽ |
+| 12 | `upload` | magic bytes; sequence §3.4 | ✅ DONE tầng 0 (U1 fixed) — sơ đồ chưa vẽ |
 | 13 | `attribute` | nhóm thuộc tính; use case §2.8b | ⏳ |
 | 14 | `content` | feedback only; use case §2.9 | ⏳ |
 | 15 | `search-history` | use case §2.7 | ⏳ |
@@ -357,6 +357,35 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | **`chatbot-service.js` (1004 dòng): RAG retrieval/generation, ngưỡng 0.45/0.05/0.15, fallback keyword, session LRU 500/TTL30/10-turn, LLM rotation+timeout budget, _enrichQueryFromHistory, injection early-return** | ⏳ **CHƯA audit đầy đủ** — cần đối chiếu `RAG_CHATBOT_PIPELINE.md` (7 bước + 53 edge case) + `PIPELINE_TRACE_EXAMPLES.md` (22 path/43 node) ở **session chuyên sâu** (centerpiece KLTN, không audit vội ở context sâu) |
 
 **⏳ AI GATE PARTIAL:** policy + orchestration verified đúng. Full RAG pipeline (chatbot-service) defer — đây là phần quan trọng + phức tạp nhất, cần fresh context để check đủ 53 edge case, tránh lọt bug đúng kiểu F1/F2.
+
+**Module `upload`** — audit 2026-06-02 (đọc service+module+routes+FE ImageUpload; stateless fs, không DB; baseline unit 71 file/3764 toàn dự án):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| U1 | 🟡 | `processSingleUpload`/`processMultipleUpload` KHÔNG validate `uploadType` → type lạ rơi vào multer fallback (`uploadDirs[type] \|\| products`, module.js:52) lưu file vào `products/` nhưng `buildFileUrl` build URL theo type raw → ảnh 404. Lệch defense với `deleteFile` (đã check type) | service `processSingleUpload`/`processMultipleUpload` (~L57/L85) | ✅ FIXED (reject 400 `upload.invalidType` + xóa file đã lưu; +2 unit assert OUTCOME: throw 400 + deleteFile gọi + KHÔNG đọc magic. Swagger enum routes.js sửa `avatar/product` số ít → `reviews/products/users/categories/brands/avatars/temp` số nhiều) |
+| U2 | — | Magic bytes (JPEG/PNG/WebP signatures), path traversal `deleteFile` (`path.basename`+`startsWith` guard), admin-only delete | service | ✅ OK — signatures đúng, anti-traversal chắc, guard đúng vị trí (U1 trước magic check) |
+| U3 | 🟢 | `deleteFile` = `user.role !== 'admin'` → **chỉ admin**, staff không xóa được file (RBAC mới staff=CRUD products) | service `deleteFile` (~L119) | ✅ FIXED (user chốt mở cho staff: `DELETE_ALLOWED_ROLES=['admin','staff']`; +1 unit staff xóa OK, customer giữ 403; doc §3.3/§4.1/gotcha cập nhật). FE chưa gọi endpoint này nhưng RBAC nay nhất quán |
+
+**✅ UPLOAD GATE tầng 0 DONE:** U1 + U3 fixed; verify unit **3767** (158 suites, +3 OUTCOME test upload: 2 invalidType + 1 staff delete) + lint sạch (eslint EXIT=0). Module stateless fs (không DB) → unit mock OUTCOME đủ verify guard thuần (khác F1/F2 order cần MySQL tx). FE `ImageUpload` type union số nhiều khớp `uploadDirs` keys → U1 không phá upload thật. Docs upload/CLAUDE.md cập nhật (§3.1/§3.2 validate type + gotcha U1 + valid types; §3.3/§4.1/gotcha U3 deleteFile admin/staff). U3 user chốt mở cho staff. **Sơ đồ tầng 1/2 CHƯA vẽ** (sequence §3.4 upload). **CHƯA commit.**
+
+**Module `users`** — audit 2026-06-02 (đọc service+repo+controller+validator+routes+middleware validate-request; baseline unit 80 file/5 suites):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| US-IDOR | — | Ownership address: `findAddressByIdAndUserId(id, userId)` = `findOne({where:{id,userId}})` → update/delete/setDefault đều filter cả id+userId | repo `findAddressByIdAndUserId` (~L40) | ✅ OK — KHÔNG IDOR (test cover `address không thuộc user → 404`) |
+| US-MASS | — | `updateAddress` `Object.assign(address, addressData)` mass-assignment? | service `updateAddress` (~L90) | ✅ OK — `validateRequest` replace `req.body=result.data` (Zod strip unknown); `addressSchema` không có `userId`/`id` → an toàn |
+| US-1 | 🟢 | addAddress/updateAddress/deleteAddress/setDefaultAddress: `clearDefaultAddresses` + create/save KHÔNG transaction → race 2 request đồng thời có thể 2-default (hoặc 0) | service (~L64-127) | ℹ️ NOTED defer low-risk: per-user action hiếm đồng thời + self-correcting (setDefault sau clear hết); chỉ UX flag, không mất tiền/data (giống INV-2/P2/DC-1) |
+| US-2 | 🟢 | `updateProfile` avatar `avatar \|\| user.avatar` truthy → không xóa avatar được (set '' bị bỏ), khác `phone` cho phép '' | service `updateProfile` (~L32) | ℹ️ minor — intentional (FE không có nút xóa avatar); không fix |
+| US-3 | 🟢 | `changePassword` không revoke session/refresh sau đổi pass | service `changePassword` | ℹ️ = A8 auth tradeoff (JWT stateless, documented) |
+
+**✅ USERS GATE tầng 0 DONE:** logic đúng (ownership/IDOR enforced cả id+userId, mass-assignment chặn qua Zod strip, password hash qua Sequelize hook, deleteAddress auto-promote default đúng), KHÔNG đổi code → không cần verify test mới (users test dày: 80 unit + integration + 2 API, cover ownership 404). Doc users/CLAUDE.md khớp code (route table không guard admin/staff vì self-service customer; gotchas GET/me-absent + avatar flow số nhiều `avatars` khớp upload U1). US-1 defer low-risk. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.1b).
+
+**Module `wishlist`** — audit 2026-06-02 (đọc service+repo+routes+model+error-handler; baseline unit 60 file/4 suites):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| WL-1 | 🟡 | 2 chỗ `throw new AppError('Sản phẩm không tồn tại'/'...không có trong danh sách yêu thích', 404)` HARDCODE tiếng Việt (các message khác dùng key `wishlist.*`). error-handler `translateMessage = t(msg) \|\| msg` → raw VN không match key → fallback giữ nguyên → **user tiếng Anh thấy lỗi tiếng Việt** | service `addToWishlist` (~L57), `removeFromWishlist` (~L72) | ✅ FIXED (→ key `wishlist.productNotFound`/`wishlist.notInWishlist`; thêm 2 key vào vi+en.json; nâng 2 unit test thêm assert `message` để bắt regression; i18n parity 2986/2986) |
+| WL-IDOR | — | Ownership: `findItem(userId, productId)` = `findOne({where:{userId,productId}})` → remove/check filter cả userId; clearByUserId/findByUserIdWithProducts scope userId | repo `findItem` (~L47) | ✅ OK — không IDOR |
+| WL-2 | 🟢 | `addToWishlist` check `findItem` rồi `createItem` (read-then-write) → race 2 add đồng thời cùng product | service `addToWishlist` (~L60) | ℹ️ OK — unique constraint `uq_wishlists_user_product` (model `indexes`) bảo vệ → create thứ 2 = SequelizeUniqueConstraintError → 409, KHÔNG duplicate data |
+
+**✅ WISHLIST GATE tầng 0 DONE:** WL-1 fixed (i18n); verify unit **3767** (158 suites, +0 test mới — nâng 2 assertion sẵn có) + lint sạch + i18n parity OK + grep xác nhận không nơi nào (api/integration/module) assert chuỗi VN cũ → an toàn MySQL test. Ownership enforced, race chặn bởi DB unique constraint, getWishlist transform read-only đúng. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.8).
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

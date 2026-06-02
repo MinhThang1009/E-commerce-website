@@ -183,6 +183,11 @@ jobs:
         working-directory: backend
         run: npm run check:routes
 
+      - name: Doc-freshness — CLAUDE.md stale (informational)
+        env:
+          CHECK_BASE: origin/${{ github.event.pull_request.base.ref }}
+        run: node scripts/check-doc-freshness.mjs
+
       - name: Patch-coverage gate BE (code mới phải có test phủ)
         working-directory: backend
         env:

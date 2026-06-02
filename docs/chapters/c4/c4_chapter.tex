@@ -383,7 +383,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng theo mô hình Test
     \hline
     \textbf{Tầng} & \textbf{Framework} & \textbf{Số suites} & \textbf{Số test} & \textbf{Thời gian} & \textbf{Database} \\
     \hline
-    BE Unit & Jest 29 & 158 & 3.738 & $\sim$20s & Mock (jest.fn) \\
+    BE Unit & Jest 29 & 158 & 3.745 & $\sim$20s & Mock (jest.fn) \\
     \hline
     BE Integration & Jest 29 & 36 & 184 & $\sim$50s & MySQL thật \\
     \hline
@@ -393,13 +393,13 @@ TechStore áp dụng chiến lược kiểm thử đa tầng theo mô hình Test
     \hline
     FE Component & Jest + Testing Library & 21 & 758 & $\sim$12s & jsdom \\
     \hline
-    \textbf{Tổng cộng} & & \textbf{259} & \textbf{5.480} & & \\
+    \textbf{Tổng cộng} & & \textbf{259} & \textbf{5.487} & & \\
     \hline
   \end{tabular}
   \normalsize
 \end{table}
 
-\textbf{Tầng Unit Test (3.738 test cases, 158 suites):} Kiểm tra logic nghiệp vụ của từng hàm trong hoàn toàn isolation. Mọi external dependency (Sequelize models, email service, AI API) đều được mock bằng \texttt{jest.fn()}. Tầng này đạt coverage trên 99\% cho statements, functions và lines. Các trường hợp kiểm thử bao gồm happy path (đầu vào hợp lệ), error path (ngoại lệ có kiểm soát), và edge cases (giá trị biên, null, undefined).
+\textbf{Tầng Unit Test (3.745 test cases, 158 suites):} Kiểm tra logic nghiệp vụ của từng hàm trong hoàn toàn isolation. Mọi external dependency (Sequelize models, email service, AI API) đều được mock bằng \texttt{jest.fn()}. Tầng này đạt coverage trên 99\% cho statements, functions và lines. Các trường hợp kiểm thử bao gồm happy path (đầu vào hợp lệ), error path (ngoại lệ có kiểm soát), và edge cases (giá trị biên, null, undefined).
 
 \textbf{Tầng Integration Test (184 test cases, 36 suites):} Kiểm tra Service và Repository layer với MySQL thật (\texttt{techstore\_test}). Đặc biệt, tầng này có test cho race condition trong trừ tồn kho: hai request đồng thời mua cùng một sản phẩm, chỉ một request thành công, request còn lại nhận lỗi hết hàng. Test data được tạo với prefix \texttt{\_\_INT\_TEST\_} và tự dọn dẹp trong \texttt{afterAll}.
 
@@ -538,7 +538,7 @@ Sinh viên nghiên cứu và tự triển khai các thành phần sau đây, chi
 
 \textbf{Tích hợp cổng thanh toán:} Tự nghiên cứu tài liệu API của VNPay và MoMo, cài đặt chữ ký HMAC-SHA512/SHA256, xử lý IPN callback với idempotency, và thiết kế FSM cho trạng thái payment.
 
-\textbf{Bộ kiểm thử 5 tầng:} Thiết kế chiến lược kiểm thử đa tầng, viết 5.480 test cases trong đó có các integration tests cho race condition và E2E flows, cấu hình CI/CD pipeline với GitHub Actions.
+\textbf{Bộ kiểm thử 5 tầng:} Thiết kế chiến lược kiểm thử đa tầng, viết 5.487 test cases trong đó có các integration tests cho race condition và E2E flows, cấu hình CI/CD pipeline với GitHub Actions.
 
 \textbf{Kiến trúc Feature-Based frontend:} Thiết kế cấu trúc 13 feature với quy tắc no-cross-imports, kết hợp TanStack Query (server state) và Zustand (client state).
 
@@ -574,4 +574,4 @@ Trên phía frontend, hai điểm thiết kế được trình bày là hệ th�
 
 Phần kết quả demo giao diện trình bày 17 màn hình thực tế của hệ thống qua bốn nhóm: giao diện người dùng cuối (trang chủ, cửa hàng, chi tiết sản phẩm), luồng giao dịch (giỏ hàng, thanh toán, đơn hàng), chatbot AI (tư vấn sản phẩm, xử lý viết tắt, từ chối off-topic), và giao diện quản trị (dashboard, sản phẩm, danh mục, thương hiệu, đơn hàng, người dùng, mã giảm giá, kho hàng).
 
-Phần kiểm thử trình bày chiến lược 5 tầng với tổng cộng 5.480 test cases trong 259 suites, đạt coverage 100\% lines và trên 99\% cho statements, functions ở tầng unit test. CI/CD pipeline với GitHub Actions tự động hóa quy trình từ lint đến coverage enforcement trên mọi pull request. Phần đánh giá chatbot RAG qua 20 kịch bản thuộc 5 nhóm xác nhận hệ thống xử lý tốt tìm kiếm ngữ nghĩa, tên model cụ thể, viết tắt và từ chối câu hỏi ngoài phạm vi trong dưới 10ms. Phần mô tả đóng góp phân tách rõ ràng các thành phần tự nghiên cứu triển khai và các thư viện tái sử dụng. Hướng dẫn triển khai cung cấp quy trình từng bước cho cả backend và frontend.
+Phần kiểm thử trình bày chiến lược 5 tầng với tổng cộng 5.487 test cases trong 259 suites, đạt coverage 100\% lines và trên 99\% cho statements, functions ở tầng unit test. CI/CD pipeline với GitHub Actions tự động hóa quy trình từ lint đến coverage enforcement trên mọi pull request. Phần đánh giá chatbot RAG qua 20 kịch bản thuộc 5 nhóm xác nhận hệ thống xử lý tốt tìm kiếm ngữ nghĩa, tên model cụ thể, viết tắt và từ chối câu hỏi ngoài phạm vi trong dưới 10ms. Phần mô tả đóng góp phân tách rõ ràng các thành phần tự nghiên cứu triển khai và các thư viện tái sử dụng. Hướng dẫn triển khai cung cấp quy trình từng bước cho cả backend và frontend.

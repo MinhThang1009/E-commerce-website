@@ -77,3 +77,6 @@ if [ -n "$FE_FILES" ]; then
     exit 1
   fi
 fi
+
+# 6. Nhắc stale docs (warn-only): module/feature đổi code mà CLAUDE.md không cập nhật.
+node "$ROOT/scripts/check-doc-freshness.mjs" || true

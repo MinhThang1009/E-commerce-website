@@ -105,3 +105,13 @@ docs/.ruff_cache/
 # Thesis images — nặng (~13MB), để untracked (commit source text only)
 docs/figures/
 docs/admin-redesign/
+
+# Junk/temp/binaries — KHÔNG commit (session tooling, slides, backups)
+.tools/
+mermaid-cli-*/
+unpacked/
+*.tmp
+*.pptx
+*.zip
+*.bak
+.~lock*

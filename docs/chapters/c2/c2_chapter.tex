@@ -16,6 +16,61 @@ Kiến trúc của các hệ thống thương mại điện tử đã trải qua
 
 \textbf{Modular Monolith} là kiến trúc cân bằng giữa hai hướng trên: hệ thống vẫn được triển khai như một ứng dụng đơn nhất nhưng được tổ chức nội bộ thành các module với ranh giới rõ ràng, mỗi module tự đóng gói HTTP layer, business logic, database queries và event handlers riêng~\cite{richter2020modular}. Các module giao tiếp thông qua ba cơ chế: EventBus (pub/sub bất đồng bộ cho side effects), shared models (inject qua DI khi cần query dữ liệu module khác), và shared services (email, vector store, được truyền tường minh qua constructor). Kiến trúc này phù hợp với giai đoạn phát triển ban đầu và có thể chuyển sang microservices trong tương lai khi cần thiết.
 
+\section{Các phương pháp chatbot hỗ trợ mua sắm và hạn chế}
+\label{sec:c2_chatbot_survey}
+
+Phần này phân tích các thế hệ chatbot đã và đang được ứng dụng trong thương mại điện tử, từ đó xác định khoảng trống kỹ thuật mà hệ thống TechStore hướng đến giải quyết.
+
+\subsection{Chatbot theo kịch bản (rule-based chatbot)}
+\label{subsec:c2_rulebased}
+
+Thế hệ chatbot đầu tiên và phổ biến nhất trong thương mại điện tử là \textbf{chatbot theo kịch bản} (rule-based chatbot): hệ thống phản hồi dựa trên tập luật cố định, cây quyết định hoặc khớp từ khóa định sẵn~\cite{adamopoulou2020chatbots}. Người dùng được dẫn dắt qua các lựa chọn có sẵn thay vì nhập câu hỏi tự do.
+
+\textbf{Ưu điểm} của mô hình này bao gồm: phản hồi hoàn toàn có thể dự đoán và kiểm soát, không phát sinh thông tin ngoài kịch bản lập trình, chi phí triển khai thấp, và độ trễ phản hồi nhỏ. Với các tác vụ có cấu trúc cố định như tra cứu trạng thái đơn hàng, kiểm tra chính sách đổi trả hay điều hướng đến danh mục sản phẩm, chatbot rule-based hoạt động ổn định và đáng tin cậy. Đây là lý do hầu hết các sàn thương mại điện tử lớn hiện nay đều triển khai loại chatbot này ở tầng chăm sóc khách hàng cơ bản.
+
+Tuy nhiên, mô hình rule-based bộc lộ những hạn chế nghiêm trọng khi yêu cầu tư vấn sản phẩm thực sự. Trước hết, hệ thống không có khả năng hiểu ngôn ngữ tự nhiên ngoài kịch bản: câu hỏi như \textit{``tôi cần laptop chạy được Premiere dưới 20 triệu, pin dùng cả ngày''} không khớp bất kỳ luật định sẵn nào, dẫn đến phản hồi mặc định vô nghĩa hoặc chuyển tiếp sang nhân viên hỗ trợ~\cite{folstad2017chatbots}. Tiếp theo, mọi thông tin về thông số kỹ thuật, tồn kho hay giá đều phải được nhúng cứng vào kịch bản vì chatbot không có cơ chế truy vấn cơ sở dữ liệu để trả lời chính xác tại thời điểm hỏi. Ngoài ra, mỗi khi danh mục thay đổi, toàn bộ kịch bản phải cập nhật thủ công; với hàng nghìn SKU biến động liên tục, đây là gánh nặng vận hành không thể mở rộng. Cuối cùng, bài toán tư vấn công nghệ đòi hỏi kết hợp đồng thời nhiều tiêu chí như ngân sách, nhu cầu sử dụng, thương hiệu và hiệu năng, điều mà cây quyết định tuyến tính không thể xử lý được.
+
+\subsection{Chatbot dựa trên học máy truyền thống}
+\label{subsec:c2_ml_chatbot}
+
+Để khắc phục hạn chế của rule-based, thế hệ tiếp theo ứng dụng học máy, đặc biệt là các mô hình phân loại ý định (intent classification) và nhận dạng thực thể (NER), để chatbot có thể nhận diện mục đích câu hỏi và trích xuất thông tin từ câu hỏi do người dùng nhập tự do~\cite{chen2021conversational}.
+
+\textbf{Ưu điểm} so với rule-based: chatbot có thể xử lý nhiều cách diễn đạt khác nhau cho cùng một ý định, không cần người dùng biết cú pháp cụ thể, và dễ mở rộng sang ngôn ngữ mới qua dữ liệu huấn luyện. Các nền tảng như Dialogflow (Google), Rasa hay Amazon Lex đã phổ biến hóa cách tiếp cận này.
+
+Tuy nhiên, với bài toán tư vấn sản phẩm công nghệ, mô hình ML truyền thống vẫn còn những hạn chế căn bản. Hệ thống chỉ nhận diện được các ý định đã được gán nhãn trong tập huấn luyện; câu hỏi kỹ thuật mới hoặc kết hợp nhiều intent cùng lúc thường bị phân loại sai hoặc rơi vào nhãn ``fallback''. Sau khi phân loại intent, chatbot vẫn phải tra cứu câu trả lời từ kho mẫu phản hồi cố định, không thể tổng hợp thông tin từ nhiều nguồn để tạo câu trả lời mạch lạc và đầy đủ ngữ cảnh. Bên cạnh đó, các cuộc tư vấn nhiều lượt đòi hỏi theo dõi chủ đề liên tục qua nhiều lượt hội thoại, điều mà mô hình intent đơn giản không đảm bảo được. Ngoài ra, để đạt độ chính xác chấp nhận được, cần có hàng nghìn câu hỏi đã gán nhãn cho từng lĩnh vực sản phẩm, đây là nguồn lực không phải doanh nghiệp nào cũng có sẵn.
+
+\subsection{Khoảng trống và hướng tiếp cận của TechStore}
+\label{subsec:c2_gap}
+
+Bảng~\ref{tab:chatbot_comparison} tổng hợp so sánh ba phương pháp theo các tiêu chí liên quan trực tiếp đến bài toán tư vấn sản phẩm công nghệ.
+
+\begin{table}[H]
+  \centering
+  \caption{So sánh các phương pháp chatbot theo tiêu chí tư vấn sản phẩm}
+  \label{tab:chatbot_comparison}
+  \begin{tabular}{|p{4cm}|p{2.5cm}|p{2.5cm}|p{3.5cm}|}
+    \hline
+    \textbf{Tiêu chí} & \textbf{Rule-based} & \textbf{ML truyền thống} & \textbf{RAG + LLM (TechStore)} \\
+    \hline
+    Hiểu câu hỏi tự nhiên & Không & Hạn chế & Có \\
+    \hline
+    Truy xuất dữ liệu catalog thực tế & Không & Không & Có \\
+    \hline
+    Sinh câu trả lời linh hoạt & Không & Không & Có \\
+    \hline
+    Duy trì ngữ cảnh đa lượt & Không & Hạn chế & Có \\
+    \hline
+    Tư vấn đa ràng buộc đồng thời & Không & Hạn chế & Có \\
+    \hline
+    Bảo trì khi catalog thay đổi & Thủ công & Thủ công & Tự động (đồng bộ lại) \\
+    \hline
+    Kiểm soát nguồn thông tin & Cao & Trung bình & Cao (có truy xuất nguồn) \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Như Bảng~\ref{tab:chatbot_comparison} cho thấy, cả hai thế hệ chatbot truyền thống đều không đáp ứng được yêu cầu cốt lõi của tư vấn sản phẩm công nghệ: trả lời câu hỏi kỹ thuật tự do dựa trên dữ liệu catalog thực tế của hệ thống. Kỹ thuật RAG kết hợp với LLM lấp đầy khoảng trống này bằng cách truy xuất trực tiếp thông tin sản phẩm liên quan từ vector store rồi đưa vào ngữ cảnh để mô hình sinh câu trả lời chính xác, mạch lạc và có căn cứ từ dữ liệu thực. Đây là hướng tiếp cận cốt lõi của TechStore.
+
 \section{Kỹ thuật RAG (Retrieval-Augmented Generation)}
 \label{sec:c2_rag}
 

@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing cho FILE CRITICAL (tiền/kho/trạng-thái) với break=70 — survivor vượt ngưỡng FAIL pipeline (wire stop-condition #3 của verify-workflow, khác stryker.conf.json để break=null chỉ báo cáo). Chạy ĐỊNH KỲ: npm run test:mutation:critical. KHÔNG pre-commit (chậm).",
+  "testRunner": "jest",
+  "jest": {
+    "configFile": "jest.stryker.config.js",
+    "enableFindRelatedTests": true
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/modules/orders/services/**/*.js",
+    "src/modules/payment/services/**/*.js",
+    "src/modules/cart/services/**/*.js",
+    "src/modules/inventory/services/**/*.js",
+    "src/modules/discount-code/**/*.js",
+    "!src/**/*.test.js",
+    "!src/**/*.spec.js"
+  ],
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": { "fileName": "reports/mutation-critical/index.html" },
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "thresholds": { "high": 90, "low": 75, "break": 70 }
+}

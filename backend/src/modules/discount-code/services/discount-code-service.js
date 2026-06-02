@@ -260,6 +260,7 @@ const applyDiscountCode = async (code, orderAmount) => {
     // Giới hạn số tiền giảm tối đa nếu có cấu hình
     if (
       discountCode.maxDiscountAmount &&
+      // Stryker disable next-line EqualityOperator: equivalent mutant — khi discountAmount === maxDiscountAmount, cả `>` lẫn `>=` đều dẫn tới discountAmount = maxDiscountAmount (cùng kết quả), không thể phân biệt bằng outcome.
       discountAmount > parseFloat(discountCode.maxDiscountAmount)
     ) {
       discountAmount = parseFloat(discountCode.maxDiscountAmount);
@@ -269,6 +270,7 @@ const applyDiscountCode = async (code, orderAmount) => {
   }
 
   // Không giảm quá tổng giá trị đơn hàng
+  // Stryker disable next-line EqualityOperator: equivalent mutant — khi discountAmount === orderAmount, cả `>` lẫn `>=` đều dẫn tới discountAmount = orderAmount (cùng kết quả), không thể phân biệt bằng outcome.
   if (discountAmount > orderAmount) {
     discountAmount = orderAmount;
   }

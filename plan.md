@@ -234,8 +234,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ✅ DONE tầng 0 (không bug code) — sơ đồ chưa vẽ |
 | 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ✅ DONE tầng 0 (INV-1 đã fix; INV-2 defer) — sơ đồ chưa vẽ |
 | 7 | `discount-code` | validate/apply, usedCount timing (+ P3 over-redemption) | ✅ DONE tầng 0 (logic đúng; P3 = accepted risk) — sơ đồ chưa vẽ |
-| 8 | `reviews` | hasUserPurchased; use case §2.5 | ⏳ NEXT |
-| 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ |
+| 8 | `reviews` | hasUserPurchased; use case §2.5 | ✅ DONE tầng 0 (logic đúng) — sơ đồ chưa vẽ |
+| 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ NEXT |
 | 10 | `users` | profile/address; use case §2.1b | ⏳ |
 | 11 | `wishlist` | use case §2.8 | ⏳ |
 | 12 | `upload` | magic bytes; sequence §3.4 | ⏳ |
@@ -320,7 +320,7 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 
 **✅ CATALOG GATE tầng 0 DONE:** KHÔNG có bug code tầng-0 (read-heavy, logic đúng, writes guarded staff + tx + slated §3.C removal). Chỉ sửa doc K3. Không đổi code → không cần verify test (catalog test dày sẵn, không regression).
 
-**⚠️ DOC STALE BATCH (Pha 0 — route-table guards):** per-module CLAUDE.md route tables của `orders`/`reviews`/`attribute`/`discount-code` có thể vẫn ghi `authorize('admin')` cho write đã đổi sang `staff`. (catalog ✅, inventory ✅ đã sửa.) Sửa cùng lúc khi gate từng module.
+**⚠️ DOC STALE BATCH (Pha 0 — route-table guards):** per-module CLAUDE.md route tables còn lại cần kiểm: `orders`, `attribute`. (catalog ✅, inventory ✅, reviews ✅ đã sửa; discount-code admin CRUD ghi `adminAuthenticate` chung — không sai.) Sửa khi gate từng module.
 
 **Module `inventory`** — audit 2026-06-02 (đọc service+repo+routes):
 | ID | Sev | Vấn đề | Status |
@@ -339,6 +339,15 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | DC-2 | 🟢 | `getAllDiscountCodes` sort `[[sortBy,order]]` | ℹ️ Sequelize-protected (giống catalog K2), không injection |
 
 **✅ DISCOUNT-CODE GATE tầng 0 DONE:** logic đúng, KHÔNG đổi code. P3 (đã flag từ payment gate) → resolved là accepted business risk + ghi recipe siết. Admin CRUD guard = staffOnly (admin/routes.js, Pha 0 — đã đúng). Chỉ bổ sung doc §3.3.
+
+**Module `reviews`** — audit 2026-06-02 (đọc service+repo+routes):
+| ID | Sev | Vấn đề | Status |
+|---|---|---|---|
+| REV-logic | — | createReview (verified-purchase delivered + upsert 1/user/product), update/delete owner-only, sort **allowlisted** (sortMapping, không injection), _refreshProductRating | ✅ OK đúng |
+| REV-2 | 🟢 | `verifyReview` reject (isVerified=false) KHÔNG loại review khỏi rating; `getProductRatingsAggregate` đếm TẤT CẢ review | ℹ️ design: reject = tắt badge, không ẩn review (nhất quán: review đã verified-purchase, list mặc định hiện tất cả + rating khớp). Không bug |
+| REV-4 | 🟡 doc | §4 route table ghi `authorize('admin')`; thực tế /admin/all=admin+staff, verify=staff | ✅ FIXED doc |
+
+**✅ REVIEWS GATE tầng 0 DONE:** logic đúng (verified-purchase enforce, owner-only, sort allowlisted = mẫu AN TOÀN injection nên áp dụng), KHÔNG đổi code. Chỉ sửa doc REV-4. Admin delete review qua admin module (staffOnly), reviews module delete = owner-only — by design.
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

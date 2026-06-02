@@ -139,8 +139,8 @@ Base path: `/api/reviews`
 | POST   | `/`                   | authenticate                      | Tạo review (upsert nếu đã có review cho sản phẩm đó) |
 | PUT    | `/:id`                | authenticate                      | Cập nhật review (chỉ owner)                          |
 | DELETE | `/:id`                | authenticate                      | Xóa review (chỉ owner)                               |
-| GET    | `/admin/all`          | authenticate + authorize('admin') | Tất cả reviews (có filter `?verified=true/false`)    |
-| PATCH  | `/admin/:id/verify`   | authenticate + authorize('admin') | Toggle `isVerified`                                  |
+| GET    | `/admin/all`          | authenticate + authorize('admin','staff') | Tất cả reviews (admin xem-only + staff; filter `?verified=true/false`) |
+| PATCH  | `/admin/:id/verify`   | authenticate + authorize('staff') | Toggle `isVerified` (staff — nghiệp vụ duyệt review)  |
 
 **Query params `GET /product/:productId`:** `page`, `limit`, `sort` (newest/oldest/highest_rating/lowest_rating), `rating` (1-5), `verified` (true/false)
 

@@ -244,6 +244,12 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 16 | `image` | proxy/CDN bypass | ⏳ |
 | 17 | `admin` | dashboard/CRUD/analytics (phụ thuộc nhiều module); use case §2.10, component §8c | ⏳ (cuối) |
 
+**⚠️ GATE FE (bổ sung — roadmap trên là BACKEND).** Sơ đồ KLTN chủ yếu BE-centric, nhưng vài loại phụ thuộc FE → audit FE feature liên quan TRƯỚC khi vẽ:
+- **Use case role-based** (§1.2 customer, §1.3 admin, §2.10 admin) → FE RBAC (`AdminRoute`/sidebar/redirect/dropdown role) phải khớp **bảng RBAC §0** + BE guard. ⚠️ **FE role UI (§2 Pha 0) PHẢI DONE TRƯỚC** (dropdown thêm 'staff' + ẩn nút "admin xem-only") — kẻo vẽ use case 4-actor sai.
+- **Sequence FE→BE** (§3.1 login, §3.2 checkout, §3.5 admin product) → đọc FE feature (`features/<name>/api/` + hooks + Zustand store) để vẽ đúng nhánh client; audit nếu FE logic sai.
+- **Verify FE:** `cd frontend && npm run typecheck && npm test` — assert OUTCOME (render/state/redirect), KHÔNG tautological (758 component test hiện cùng rủi ro mock-heavy như BE).
+- FE feature (13): `admin/ai/auth/cart/catalog/checkout/content/orders/payment/reviews/upload/users/wishlist` — audit feature tương ứng module BE khi vẽ sơ đồ liên quan.
+
 **Module `order`** — audit 2026-06-02 (đọc trực tiếp service+repo+validator+routes+jobs; baseline 246 tests):
 | ID | Sev | Vấn đề | Vị trí | Status |
 |---|---|---|---|---|

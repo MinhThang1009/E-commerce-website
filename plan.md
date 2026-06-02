@@ -233,8 +233,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 4 | `cart` | merge guest, variant pricing; use case §2.3a | ✅ DONE tầng 0 (C1 fixed) — sơ đồ chưa vẽ |
 | 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ✅ DONE tầng 0 (không bug code) — sơ đồ chưa vẽ |
 | 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ✅ DONE tầng 0 (INV-1 đã fix; INV-2 defer) — sơ đồ chưa vẽ |
-| 7 | `discount-code` | validate/apply, usedCount timing (+ P3 over-redemption) | ⏳ NEXT |
-| 8 | `reviews` | hasUserPurchased; use case §2.5 | ⏳ |
+| 7 | `discount-code` | validate/apply, usedCount timing (+ P3 over-redemption) | ✅ DONE tầng 0 (logic đúng; P3 = accepted risk) — sơ đồ chưa vẽ |
+| 8 | `reviews` | hasUserPurchased; use case §2.5 | ⏳ NEXT |
 | 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ |
 | 10 | `users` | profile/address; use case §2.1b | ⏳ |
 | 11 | `wishlist` | use case §2.8 | ⏳ |
@@ -330,6 +330,15 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | INV-3 | 🟡 doc | route table + prose ghi `authorize('admin')`; thực tế restock=staff, logs=admin+staff | ✅ FIXED doc |
 
 **✅ INVENTORY GATE tầng 0 DONE:** không đổi code (INV-1 đã fix sẵn + verify repo forward opts; INV-2 defer low-risk). Chỉ sửa doc (gotcha INV-1 + route table INV-3). Stock decrement vẫn đúng pattern (orders SELECT FOR UPDATE); restore khi cancel đã fix F1/F2.
+
+**Module `discount-code`** — audit 2026-06-02 (đọc service+repo+routes; singleton function-exports):
+| ID | Sev | Vấn đề | Status |
+|---|---|---|---|
+| DC-logic | — | applyDiscountCode validate (active/start/end/usageLimit/minOrder) + tính discount (percent cap maxDiscount, fixed) + cap orderAmount; `incrementUsedCount` = `.increment()` atomic | ✅ OK đúng |
+| P3 (DC-1) | 🟡 | Over-redemption: usageLimit kiểm lúc apply, usedCount tăng lúc pay không re-check → cửa sổ race vượt limit | ✅ RESOLVED = **accepted risk có chủ đích** (CLAUDE.md §3.3: discount ≠ critical inventory). Đã ghi công thức fix-nếu-cần (conditional atomic UPDATE + affectedRows). KHÔNG fix (tôn trọng quyết định nghiệp vụ + scope freeze P6) |
+| DC-2 | 🟢 | `getAllDiscountCodes` sort `[[sortBy,order]]` | ℹ️ Sequelize-protected (giống catalog K2), không injection |
+
+**✅ DISCOUNT-CODE GATE tầng 0 DONE:** logic đúng, KHÔNG đổi code. P3 (đã flag từ payment gate) → resolved là accepted business risk + ghi recipe siết. Admin CRUD guard = staffOnly (admin/routes.js, Pha 0 — đã đúng). Chỉ bổ sung doc §3.3.
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

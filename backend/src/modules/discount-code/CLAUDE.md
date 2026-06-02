@@ -103,7 +103,7 @@ Tất cả write operations được ghi nhận qua service. `updateDiscountCode
 
 - **`usedCount` tăng khi nào**: `POST /apply` chỉ validate, KHÔNG increment. `incrementUsedCount(id)` được gọi bởi `orders` module — manual payments (cod/bank_transfer/installment) tăng ngay trong `createOrder`; online payments (momo/vnpay) tăng sau IPN/return success trong `payment-service`.
 - **Discount types**: `percent` (% của orderAmount, có thể cap bởi `maxDiscountAmount`) hoặc `fixed` (số tiền cố định).
-- **No race condition protection**: Nếu 2 users apply code cuối cùng đồng thời → có thể overclaim nhẹ. Accepted risk — discount code không phải critical inventory.
+- **No race condition protection (P3 — accepted risk có chủ đích)**: `usageLimit` được kiểm ở bước **apply/validate**, nhưng `usedCount` chỉ tăng lúc **thanh toán thành công** (orders manual / payment online). Cửa sổ giữa apply và increment → nhiều đơn đồng thời cùng mã có thể vượt `usageLimit` nhẹ. **Accepted** — discount code không phải critical inventory như stock. Nếu sau cần SIẾT chặt: đổi `incrementUsedCount` thành conditional atomic `UPDATE discount_codes SET used_count = used_count + 1 WHERE id = ? AND (usage_limit IS NULL OR used_count < usage_limit)` rồi check `affectedRows === 1` (0 → đã hết lượt, xử lý từ chối/hoàn). KHÔNG cần thiết cho scope hiện tại.
 - **Code unique**: Khi tạo/update kiểm tra `findOne({ code })` trước — nếu trùng → 400.
 
 ---

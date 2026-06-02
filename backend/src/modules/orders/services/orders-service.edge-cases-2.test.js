@@ -222,8 +222,62 @@ describe('OrdersService › updateOrderStatus', () => {
     const result = await service.updateOrderStatus({ id: 1, status: 'processing' });
 
     expect(order.status).toBe('processing');
-    expect(repo.saveOrder).toHaveBeenCalledWith(order);
+    expect(repo.saveOrder).toHaveBeenCalledWith(
+      order,
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
     expect(result).toMatchObject({ id: 1, number: 'ORD-UPD', status: 'processing' });
+  });
+
+  it('hủy đơn CHƯA giao (processing) → hoàn kho variant + product', async () => {
+    const variant = { id: 5 };
+    const product = { id: 9 };
+    const order = {
+      id: 1,
+      number: 'ORD-CXL',
+      status: 'processing',
+      paymentMethod: 'cod',
+      createdAt: new Date(),
+      user: null,
+      items: [
+        { variantId: 5, quantity: 2, ProductVariant: variant, Product: {} },
+        { variantId: null, quantity: 3, Product: product, ProductVariant: null },
+      ],
+    };
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await service.updateOrderStatus({ id: 1, status: 'cancelled' });
+
+    expect(repo.restoreVariantStock).toHaveBeenCalledWith(
+      variant,
+      2,
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
+    expect(repo.restoreProductStock).toHaveBeenCalledWith(
+      product,
+      3,
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
+    expect(order.status).toBe('cancelled');
+  });
+
+  it('hủy đơn ĐÃ giao (shipped) → KHÔNG hoàn kho (hàng đã đi)', async () => {
+    const order = {
+      id: 2,
+      number: 'ORD-SHP',
+      status: 'shipped',
+      paymentMethod: 'cod',
+      createdAt: new Date(),
+      user: null,
+      items: [{ variantId: 5, quantity: 2, ProductVariant: { id: 5 }, Product: {} }],
+    };
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await service.updateOrderStatus({ id: 2, status: 'cancelled' });
+
+    expect(repo.restoreVariantStock).not.toHaveBeenCalled();
+    expect(repo.restoreProductStock).not.toHaveBeenCalled();
+    expect(order.status).toBe('cancelled');
   });
 
   it('COD + status=delivered → paymentStatus = paid', async () => {

@@ -305,6 +305,82 @@ describe('createOrder — online payment → không clear cart ngay (line 317-32
   });
 });
 
+// ─── F3: server enforce shippingCost (ngưỡng free + clamp âm) ─────────────────
+
+describe('createOrder — shippingCost enforce (F3)', () => {
+  it('subtotal >= ngưỡng free → shippingCost = 0 dù FE gửi phí > 0', async () => {
+    const { service, repo } = buildService();
+    const product = mkProduct({ basePrice: 600000 }); // subtotal 600000 >= 500000
+    repo.findProductWithDefaultVariant.mockResolvedValue(product);
+    repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
+    repo.createOrder.mockResolvedValue({
+      id: 1,
+      number: 'ORD-FREE',
+      status: 'pending',
+      total: 600000,
+      userId: 1,
+      createdAt: new Date(),
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 1,
+      productId: 1,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 600000,
+      subtotal: 600000,
+    });
+
+    const user = { id: 1, email: 'u@t.com' };
+    const body = mkOrderBody({
+      items: [{ productId: 1, quantity: 1 }],
+      paymentMethod: 'cod',
+      shippingCost: 50000,
+    });
+    await service.createOrder({ user, body, sessionIdCookie: null });
+
+    expect(repo.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ shippingCost: 0, subtotal: 600000 }),
+      expect.anything(),
+    );
+  });
+
+  it('shippingCost FE âm → clamp về 0 (khi chưa đủ ngưỡng free)', async () => {
+    const { service, repo } = buildService();
+    const product = mkProduct({ basePrice: 100000 }); // subtotal 100000 < 500000
+    repo.findProductWithDefaultVariant.mockResolvedValue(product);
+    repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
+    repo.createOrder.mockResolvedValue({
+      id: 2,
+      number: 'ORD-NEG',
+      status: 'pending',
+      total: 100000,
+      userId: 1,
+      createdAt: new Date(),
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 2,
+      productId: 1,
+      name: 'Sản phẩm A',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    });
+
+    const user = { id: 1, email: 'u@t.com' };
+    const body = mkOrderBody({
+      items: [{ productId: 1, quantity: 1 }],
+      paymentMethod: 'cod',
+      shippingCost: -100,
+    });
+    await service.createOrder({ user, body, sessionIdCookie: null });
+
+    expect(repo.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ shippingCost: 0 }),
+      expect.anything(),
+    );
+  });
+});
+
 // ─── Lines 302-309: no inventory logs khi không có items (edge case) ──────────
 
 describe('createOrder — không tạo inventory logs khi items = 0 (line 309 false branch)', () => {

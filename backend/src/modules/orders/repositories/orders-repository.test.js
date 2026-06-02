@@ -101,6 +101,19 @@ describe('SequelizeOrdersRepository — Order', () => {
     );
   });
 
+  test('findOrderByPkWithItemsAndUser — truyền transaction + lock → findByPk kèm transaction và lock {level, of}', async () => {
+    const { repo, deps } = makeRepo();
+    await repo.findOrderByPkWithItemsAndUser(10, { transaction: 'tx', lock: 'FOR UPDATE' });
+
+    expect(deps.Order.findByPk).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({
+        transaction: 'tx',
+        lock: { level: 'FOR UPDATE', of: deps.Order },
+      }),
+    );
+  });
+
   test('findOrderByNumberAndUserId — gọi findOne với where {number, userId}', async () => {
     const { repo, deps } = makeRepo();
     await repo.findOrderByNumberAndUserId('ORD-001', 2);
@@ -163,14 +176,31 @@ describe('SequelizeOrdersRepository — Order', () => {
     expect(order.save).toHaveBeenCalledTimes(1);
   });
 
-  test('cancelPendingOrdersByUser — gọi Order.update với status=cancelled cho pending orders', async () => {
+  test('cancelPendingOrdersByUser — restore tồn kho + set cancelled cho từng pending order', async () => {
     const { repo, deps } = makeRepo();
-    await repo.cancelPendingOrdersByUser(3);
+    const variant = makeInstance();
+    const product = makeInstance();
+    const pendingOrder = {
+      status: 'pending',
+      items: [
+        { variantId: 10, quantity: 2, ProductVariant: variant, Product: {} },
+        { variantId: null, quantity: 3, Product: product, ProductVariant: null },
+      ],
+      save: jest.fn().mockResolvedValue(true),
+    };
+    deps.Order.findAll.mockResolvedValue([pendingOrder]);
 
-    expect(deps.Order.update).toHaveBeenCalledWith(
-      { status: 'cancelled' },
-      expect.objectContaining({ where: { userId: 3, status: 'pending' } }),
+    const result = await repo.cancelPendingOrdersByUser(3, { transaction: 'tx' });
+
+    expect(deps.Order.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 3, status: 'pending' }, transaction: 'tx' }),
     );
+    // Hoàn kho: variant +2, product +3
+    expect(variant.increment).toHaveBeenCalledWith('stockQuantity', { by: 2, transaction: 'tx' });
+    expect(product.increment).toHaveBeenCalledWith('stockQuantity', { by: 3, transaction: 'tx' });
+    expect(pendingOrder.status).toBe('cancelled');
+    expect(pendingOrder.save).toHaveBeenCalledWith({ transaction: 'tx' });
+    expect(result).toBe(1);
   });
 });
 

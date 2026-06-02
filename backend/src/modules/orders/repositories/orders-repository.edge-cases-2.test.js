@@ -166,17 +166,19 @@ describe('findOrderByIdAndUserId', () => {
 // ─── cancelPendingOrdersByUser — branch: không truyền options ─────────────────
 
 describe('cancelPendingOrdersByUser', () => {
-  it('gọi Order.update với default options {} khi không truyền options', async () => {
+  it('không truyền options → findAll + cancel với transaction undefined; items rỗng không restore', async () => {
     const { repo, deps } = makeRepo();
-    deps.Order.update.mockResolvedValue([2]);
+    const order = { status: 'pending', items: [], save: jest.fn().mockResolvedValue() };
+    deps.Order.findAll.mockResolvedValue([order]);
 
     const result = await repo.cancelPendingOrdersByUser(5);
 
-    expect(deps.Order.update).toHaveBeenCalledWith(
-      { status: 'cancelled' },
-      expect.objectContaining({ where: { userId: 5, status: 'pending' } }),
+    expect(deps.Order.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 5, status: 'pending' }, transaction: undefined }),
     );
-    expect(result).toEqual([2]);
+    expect(order.status).toBe('cancelled');
+    expect(order.save).toHaveBeenCalledWith({ transaction: undefined });
+    expect(result).toBe(1);
   });
 });
 

@@ -311,3 +311,90 @@ describe('Orders edge cases — validation trạng thái', () => {
     ).rejects.toThrow();
   });
 });
+
+// Verify logic THẬT qua service (không tautological) — bắt các bug F1/F2/F3 mà unit mock bỏ lọt.
+describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
+  let userC;
+
+  beforeAll(async () => {
+    userC = await User.create({
+      firstName: '__INT_OrdEdge_C',
+      lastName: 'User',
+      email: `__int_ord_edge_c_${TS}@test.com`,
+      password: 'Edge789!',
+      role: 'customer',
+    });
+  });
+
+  afterAll(async () => {
+    await OrderItem.destroy({ where: {}, force: true });
+    if (userC) await Order.destroy({ where: { userId: userC.id }, force: true });
+    if (userC) await userC.destroy({ force: true });
+  });
+
+  beforeEach(async () => {
+    await OrderItem.destroy({ where: {}, force: true });
+    await Order.destroy({ where: { userId: userC.id }, force: true });
+    await variant.update({ stockQuantity: 50 });
+    await variant.reload();
+  });
+
+  const buyNowBody = (qty, extra = {}) => ({
+    ...shippingBase,
+    items: [{ productId: product.id, variantId: variant.id, quantity: qty }],
+    ...extra,
+  });
+
+  test('F1: tạo đơn mới hủy pending cũ → HOÀN kho đơn cũ (không leak)', async () => {
+    const service = makeService();
+    const user = { id: userC.id, email: userC.email };
+
+    await service.createOrder({ user, body: buyNowBody(3), sessionIdCookie: null });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(47); // 50 - 3
+
+    // Đơn mới: cancelPendingOrdersByUser hủy đơn cũ + HOÀN 3 → 50, rồi trừ 2 → 48
+    await service.createOrder({ user, body: buyNowBody(2), sessionIdCookie: null });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(48); // KHÔNG phải 45 (bug cũ leak)
+  });
+
+  test('F2: staff cancel đơn CHƯA giao (processing) → HOÀN kho', async () => {
+    const service = makeService();
+    const user = { id: userC.id, email: userC.email };
+
+    const created = await service.createOrder({ user, body: buyNowBody(4), sessionIdCookie: null });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(46); // 50 - 4
+
+    await service.updateOrderStatus({ id: created.id, status: 'processing' });
+    await service.updateOrderStatus({ id: created.id, status: 'cancelled' });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(50); // hoàn đủ
+  });
+
+  test('F2: cancel đơn ĐÃ giao (shipped) → KHÔNG hoàn kho (hàng đã đi)', async () => {
+    const service = makeService();
+    const user = { id: userC.id, email: userC.email };
+
+    const created = await service.createOrder({ user, body: buyNowBody(4), sessionIdCookie: null });
+    await service.updateOrderStatus({ id: created.id, status: 'shipped' });
+    await service.updateOrderStatus({ id: created.id, status: 'cancelled' });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(46); // 50 - 4, KHÔNG hoàn
+  });
+
+  test('F3: subtotal >= ngưỡng free → shippingCost = 0 dù FE gửi phí', async () => {
+    const service = makeService();
+    const user = { id: userC.id, email: userC.email };
+
+    // price 5.000.000 * 1 = 5tr >= SHIPPING_FREE_THRESHOLD test (500k) → free
+    const created = await service.createOrder({
+      user,
+      body: buyNowBody(1, { shippingCost: 99_000 }),
+      sessionIdCookie: null,
+    });
+    const ord = await Order.findByPk(created.id);
+    expect(Number(ord.shippingCost)).toBe(0);
+  });
+});

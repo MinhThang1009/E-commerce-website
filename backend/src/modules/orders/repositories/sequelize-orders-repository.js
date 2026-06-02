@@ -49,8 +49,9 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     return this.Order.findOne({ where: { id, userId }, ...options });
   }
 
-  async findOrderByPkWithItemsAndUser(id) {
-    return this.Order.findByPk(id, {
+  async findOrderByPkWithItemsAndUser(id, options = {}) {
+    const { transaction, lock } = options;
+    const query = {
       include: [
         { model: this.User, attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
         {
@@ -73,7 +74,12 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           ],
         },
       ],
-    });
+    };
+    // Khóa hàng Order (of: Order) khi cần update trạng thái có hoàn kho — tránh
+    // double-restore race với cancelOrder của user chạy đồng thời.
+    if (transaction) query.transaction = transaction;
+    if (lock) query.lock = { level: lock, of: this.Order };
+    return this.Order.findByPk(id, query);
   }
 
   async findOrderByNumberAndUserId(number, userId) {
@@ -181,10 +187,32 @@ class SequelizeOrdersRepository extends IOrdersRepository {
   }
 
   async cancelPendingOrdersByUser(userId, options = {}) {
-    return this.Order.update(
-      { status: 'cancelled' },
-      { where: { userId, status: 'pending' }, ...options },
-    );
+    // Hủy pending orders cũ + HOÀN LẠI tồn kho đã trừ (nếu chỉ set 'cancelled' mà không
+    // restore → kho thiếu ảo vĩnh viễn khi user checkout lại). Phải chạy trong transaction
+    // của createOrder để atomic.
+    const { transaction } = options;
+    const pendingOrders = await this.Order.findAll({
+      where: { userId, status: 'pending' },
+      include: [
+        {
+          association: 'items',
+          include: [{ model: this.Product }, { model: this.ProductVariant }],
+        },
+      ],
+      transaction,
+    });
+    for (const order of pendingOrders) {
+      for (const item of order.items) {
+        if (item.variantId) {
+          await this.restoreVariantStock(item.ProductVariant, item.quantity, { transaction });
+        } else {
+          await this.restoreProductStock(item.Product, item.quantity, { transaction });
+        }
+      }
+      order.status = 'cancelled';
+      await order.save({ transaction });
+    }
+    return pendingOrders.length;
   }
 
   // -------- Cart --------

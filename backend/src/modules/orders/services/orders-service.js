@@ -264,8 +264,12 @@ class OrdersService {
         }
       }
 
-      // Dùng shippingCost do FE tính (theo khoảng cách km từ kho hàng)
-      const shippingCost = typeof shippingCostFromFE === 'number' ? shippingCostFromFE : 0;
+      // shippingCost: FE tính theo km. Server ENFORCE phần biết được: đủ ngưỡng miễn phí → 0,
+      // và clamp >= 0 (không cho phí âm). Lưu ý: phí theo km khi CHƯA đủ ngưỡng vẫn tin FE
+      // (server không tính khoảng cách) — giới hạn đã biết, chấp nhận.
+      let shippingCost = typeof shippingCostFromFE === 'number' ? shippingCostFromFE : 0;
+      if (subtotal >= this.constants.SHIPPING_FREE_THRESHOLD) shippingCost = 0;
+      if (shippingCost < 0) shippingCost = 0;
       const tax = 0;
       const total = subtotal + tax + shippingCost - discount;
       const orderNumber = this._generateOrderNumber();
@@ -564,34 +568,60 @@ class OrdersService {
   }
 
   async updateOrderStatus({ id, status }) {
-    const order = await this.repo.findOrderByPkWithItemsAndUser(id);
-    if (!order) throw new AppError('orders.notFound', 404);
+    let updatedOrder;
 
-    const previousStatus = order.status;
-    order.status = status;
+    await this.repo.runInTransaction(async (transaction) => {
+      // Khóa hàng Order để hoàn kho an toàn (tránh double-restore race với cancelOrder của user)
+      const order = await this.repo.findOrderByPkWithItemsAndUser(id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!order) throw new AppError('orders.notFound', 404);
 
-    // COD delivered → tự động paid
-    if (status === STATUS.DELIVERED && order.paymentMethod === 'cod') {
-      order.paymentStatus = 'paid';
-    }
+      const previousStatus = order.status;
+      order.status = status;
 
-    await this.repo.saveOrder(order);
+      // COD delivered → tự động paid
+      if (status === STATUS.DELIVERED && order.paymentMethod === 'cod') {
+        order.paymentStatus = 'paid';
+      }
 
-    // Email status update
-    if (order.user?.email) {
+      // Hủy đơn CHƯA giao (pending/processing) → hoàn kho. shipped/delivered: hàng đã đi,
+      // KHÔNG hoàn. Bỏ qua nếu trạng thái cũ đã cancelled (tránh hoàn kho 2 lần).
+      if (
+        status === STATUS.CANCELLED &&
+        (previousStatus === STATUS.PENDING || previousStatus === STATUS.PROCESSING)
+      ) {
+        for (const item of order.items) {
+          if (item.variantId) {
+            await this.repo.restoreVariantStock(item.ProductVariant, item.quantity, {
+              transaction,
+            });
+          } else {
+            await this.repo.restoreProductStock(item.Product, item.quantity, { transaction });
+          }
+        }
+      }
+
+      await this.repo.saveOrder(order, { transaction });
+      updatedOrder = order;
+    });
+
+    // Email status update (ngoài transaction, fire-and-forget)
+    if (updatedOrder.user?.email) {
       this.emailGateway
-        .sendOrderStatusUpdateEmail(order.user.email, {
-          orderNumber: order.number,
-          orderDate: order.createdAt,
-          status,
+        .sendOrderStatusUpdateEmail(updatedOrder.user.email, {
+          orderNumber: updatedOrder.number,
+          orderDate: updatedOrder.createdAt,
+          status: updatedOrder.status,
         })
         .catch((err) => this.logger.error('Lỗi gửi email cập nhật trạng thái:', err));
     }
 
     return {
-      id: order.id,
-      number: order.number,
-      status: order.status,
+      id: updatedOrder.id,
+      number: updatedOrder.number,
+      status: updatedOrder.status,
     };
   }
 
@@ -622,10 +652,7 @@ class OrdersService {
     if (!order) throw new AppError('orders.notFound', 404);
 
     if (!_canConfirmReceived(order.status)) {
-      throw new AppError(
-        'Chỉ có thể xác nhận đơn hàng khi đang giao, đang xử lý hoặc đã giao hàng',
-        422,
-      );
+      throw new AppError('Chỉ có thể xác nhận đơn hàng khi đang giao hoặc đang xử lý', 422);
     }
     order.status = STATUS.DELIVERED;
     if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';

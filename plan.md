@@ -235,7 +235,7 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ✅ DONE tầng 0 (INV-1 đã fix; INV-2 defer) — sơ đồ chưa vẽ |
 | 7 | `discount-code` | validate/apply, usedCount timing (+ P3 over-redemption) | ✅ DONE tầng 0 (logic đúng; P3 = accepted risk) — sơ đồ chưa vẽ |
 | 8 | `reviews` | hasUserPurchased; use case §2.5 | ✅ DONE tầng 0 (logic đúng) — sơ đồ chưa vẽ |
-| 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ NEXT |
+| 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ PARTIAL — ai-policy verified; full RAG (chatbot-service 1004 dòng + 53 edge case) cần session chuyên sâu |
 | 10 | `users` | profile/address; use case §2.1b | ⏳ |
 | 11 | `wishlist` | use case §2.8 | ⏳ |
 | 12 | `upload` | magic bytes; sequence §3.4 | ⏳ |
@@ -348,6 +348,15 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | REV-4 | 🟡 doc | §4 route table ghi `authorize('admin')`; thực tế /admin/all=admin+staff, verify=staff | ✅ FIXED doc |
 
 **✅ REVIEWS GATE tầng 0 DONE:** logic đúng (verified-purchase enforce, owner-only, sort allowlisted = mẫu AN TOÀN injection nên áp dụng), KHÔNG đổi code. Chỉ sửa doc REV-4. Admin delete review qua admin module (staffOnly), reviews module delete = owner-only — by design.
+
+**Module `ai`** — audit 2026-06-02 (PARTIAL):
+| Phần | Status |
+|---|---|
+| `ai-policy.js` (pure rules: validate, expandAbbreviations, classifyIntent priority, isPromptInjection 15 loại OWASP LLM01 EN+VI, MAX_MESSAGE_LENGTH=500) | ✅ verified — chất lượng cao, đúng, không bug |
+| `ai-service.js` orchestration (4 core + 5 session delegators) | ✅ đọc, đúng (delegate + addToCart stock guard) |
+| **`chatbot-service.js` (1004 dòng): RAG retrieval/generation, ngưỡng 0.45/0.05/0.15, fallback keyword, session LRU 500/TTL30/10-turn, LLM rotation+timeout budget, _enrichQueryFromHistory, injection early-return** | ⏳ **CHƯA audit đầy đủ** — cần đối chiếu `RAG_CHATBOT_PIPELINE.md` (7 bước + 53 edge case) + `PIPELINE_TRACE_EXAMPLES.md` (22 path/43 node) ở **session chuyên sâu** (centerpiece KLTN, không audit vội ở context sâu) |
+
+**⏳ AI GATE PARTIAL:** policy + orchestration verified đúng. Full RAG pipeline (chatbot-service) defer — đây là phần quan trọng + phức tạp nhất, cần fresh context để check đủ 53 edge case, tránh lọt bug đúng kiểu F1/F2.
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

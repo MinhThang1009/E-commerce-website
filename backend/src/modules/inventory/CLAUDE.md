@@ -137,9 +137,9 @@ Base path: `/api/inventory`
 
 `router.use(authenticate)` cho toàn router; phân quyền theo từng route (Pha 0 — tồn kho là nghiệp vụ bán hàng): nhập kho → `staff`, xem nhật ký → `admin` + `staff` (giám sát). Không có endpoint public.
 
-| Method | Path                           | Auth                              | Mô tả                                                                  |
-| ------ | ------------------------------ | --------------------------------- | ---------------------------------------------------------------------- |
-| POST   | `/products/:productId/restock` | authenticate + authorize('staff') | Nhập kho cho product hoặc variant cụ thể (staff)                       |
+| Method | Path                           | Auth                                      | Mô tả                                                           |
+| ------ | ------------------------------ | ----------------------------------------- | --------------------------------------------------------------- |
+| POST   | `/products/:productId/restock` | authenticate + authorize('staff')         | Nhập kho cho product hoặc variant cụ thể (staff)                |
 | GET    | `/logs`                        | authenticate + authorize('admin','staff') | Danh sách inventory logs (admin xem-only + staff; max 100/page) |
 
 > Cũng có `POST /api/admin/products/:productId/restock` trong `admin/routes.js`. Đây là implementation RIÊNG BIỆT trong `admin-product-service.js` (hàm `restockProduct`) — **KHÔNG** gọi `inventoryService.restockProduct`. Logic tương tự (validate qty, find product/variant, sum variant stock, tạo `InventoryLog`) nhưng code khác và không đi qua DI (admin là singleton, `require('@models')` trực tiếp). Sửa logic ở một bên không tự động áp dụng cho bên kia.

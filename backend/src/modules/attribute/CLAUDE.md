@@ -125,7 +125,7 @@ Public endpoints (không cần auth):
 | POST   | `/attributes/generate-name-realtime`     | Sinh tên real-time + suggestions từ recent variants |
 | GET    | `/attributes/name-affecting`             | List attributes có flag `affectsName=true`          |
 
-Admin endpoints (require `authenticate` + `authorize('admin')` — apply qua `router.use()`):
+Staff endpoints (require `authenticate` + `authorize('staff')` — apply qua `router.use()`; RBAC: cấu hình sản phẩm = nghiệp vụ bán hàng → staff, admin xem-only nên KHÔNG vào được CRUD này):
 
 | Method | Path                                                       | Mô tả                             |
 | ------ | ---------------------------------------------------------- | --------------------------------- |
@@ -159,7 +159,8 @@ Admin endpoints (require `authenticate` + `authorize('admin')` — apply qua `ro
 
 # 6. Gotchas & Edge Cases
 
-- **`authorize('admin')` dùng string đơn**: `authorize('admin')`, không phải `authorize(['admin'])`. Admin routes apply qua `router.use(authenticate); router.use(authorize('admin'))` — toàn bộ routes sau đó đều protected.
+- **`authorize('staff')` dùng string đơn**: `authorize('staff')`, không phải `authorize(['staff'])`. CRUD routes apply qua `router.use(authenticate); router.use(authorize('staff'))` (routes.js:138-139) — toàn bộ routes sau đó đều protected. Pha RBAC 4-actor đổi từ `'admin'` → `'staff'` (cấu hình sản phẩm = nghiệp vụ bán hàng).
+- **CRUD routes KHÔNG có `validateRequest` (AT-2):** `createGroup`/`updateGroup`/`addValue`/`updateValue` nhận `req.body` raw → `model.update(data)` mass-assign. Low-risk vì staff = trusted back-office actor + Sequelize chỉ ghi field có trong model. Nếu cần siết: thêm Zod schema + `validateRequest` (chưa làm — robustness, không phải vuln).
 - **Setter injection bắt buộc trước request**: `nameGenerator` phải được set trong `module.js` khi app khởi động. Nếu `setNameGenerator()` chưa chạy → các method name generation throw `AppError('Name generator chưa được khởi tạo', 500)`.
 - **Pre-commit hook block cross-module import**: Không được `require('@modules/ai/...')` trực tiếp trong `attribute-service.js`. Chỉ inject qua setter từ `module.js`.
 - **Circular dependency risk**: `ai` dùng `catalog` (product data), `attribute` dùng `ai` (name gen). Setter pattern tránh circular import tại load time — không phá vỡ pattern này.
@@ -175,7 +176,6 @@ Admin endpoints (require `authenticate` + `authorize('admin')` — apply qua `ro
 | --------------------------------------------------------------- | ----------- | ------------------------------- |
 | `services/attribute-service.test.js`                            | Unit        | Service logic (CRUD + name gen) |
 | `controllers/attribute-controller.test.js`                      | Unit        | HTTP layer                      |
-| `validators/attribute-validator.test.js`                        | Unit        | Zod schema validation           |
 | `repositories/attribute-repository.test.js`                     | Unit        | Repository queries              |
 | `src/__integration__/attribute.integration.test.js`             | Integration | DB integration (MySQL thật)     |
 | `src/__integration__/attribute-extra.integration.test.js`       | Integration | Integration edge cases          |

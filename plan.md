@@ -239,7 +239,7 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 10 | `users` | profile/address; use case §2.1b | ✅ DONE tầng 0 (không bug code) — sơ đồ chưa vẽ |
 | 11 | `wishlist` | use case §2.8 | ✅ DONE tầng 0 (WL-1 i18n fixed) — sơ đồ chưa vẽ |
 | 12 | `upload` | magic bytes; sequence §3.4 | ✅ DONE tầng 0 (U1 fixed) — sơ đồ chưa vẽ |
-| 13 | `attribute` | nhóm thuộc tính; use case §2.8b | ⏳ |
+| 13 | `attribute` | nhóm thuộc tính; use case §2.8b | ✅ DONE tầng 0 (logic đúng; AT-doc fixed; AT-1 i18n→backlog §D.3) — sơ đồ chưa vẽ |
 | 14 | `content` | feedback only; use case §2.9 | ⏳ |
 | 15 | `search-history` | use case §2.7 | ⏳ |
 | 16 | `image` | proxy/CDN bypass | ⏳ |
@@ -386,6 +386,43 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | WL-2 | 🟢 | `addToWishlist` check `findItem` rồi `createItem` (read-then-write) → race 2 add đồng thời cùng product | service `addToWishlist` (~L60) | ℹ️ OK — unique constraint `uq_wishlists_user_product` (model `indexes`) bảo vệ → create thứ 2 = SequelizeUniqueConstraintError → 409, KHÔNG duplicate data |
 
 **✅ WISHLIST GATE tầng 0 DONE:** WL-1 fixed (i18n); verify unit **3767** (158 suites, +0 test mới — nâng 2 assertion sẵn có) + lint sạch + i18n parity OK + grep xác nhận không nơi nào (api/integration/module) assert chuỗi VN cũ → an toàn MySQL test. Ownership enforced, race chặn bởi DB unique constraint, getWishlist transform read-only đúng. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.8).
+
+**Module `attribute`** — audit 2026-06-02 (đọc service+controller+routes+repo; singleton + setter-inject nameGenerator; baseline test dày 9 file):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| AT-logic | — | CRUD groups/values + soft-delete (`isActive=false`) + name-gen delegate (`_nameGenerator` inject) + `getPopularAttributeCombinations` catch→[] | service | ✅ OK đúng |
+| AT-doc | 🟡 doc | CLAUDE.md §4 route table header + §6 gotcha ghi `authorize('admin')`; routes.js:139 = `authorize('staff')` (Pha 0) | CLAUDE.md §4/§6 | ✅ FIXED doc (admin→staff, +giải thích RBAC) |
+| AT-doc2 | 🟢 doc | CLAUDE.md §7 liệt kê `validators/attribute-validator.test.js` nhưng dir `validators/` KHÔNG tồn tại | CLAUDE.md §7 | ✅ FIXED doc (xóa dòng) |
+| AT-1 | 🟡 | i18n hardcode VN: service 8 `throw AppError('<VN>')` + controller ~16 success/error message VN → user EN thấy VN (namespace `attribute.*` locale ĐÃ có key `cannot*` nhưng KHÔNG dùng) | service+controller | → **backlog §D.3** (user chốt defer, sweep toàn backend 1 lượt) |
+| AT-2 | 🟢 | CRUD routes KHÔNG `validateRequest` → input không validate + `model.update(req.body)` mass-assign | routes.js | ℹ️ NOTED: staff trusted + Sequelize chỉ ghi model fields → low (robustness gap giống K2, không fix); ghi gotcha CLAUDE.md §6 |
+
+**✅ ATTRIBUTE GATE tầng 0 DONE:** logic đúng (CRUD + soft-delete + name-gen delegate qua setter tránh circular). KHÔNG đổi code → không cần verify test (test attribute dày: 4 unit + 2 integration + 3 API). Fix 2 doc stale (AT-doc guard staff, AT-doc2 validator phantom). AT-1 i18n → §D.3 backlog. AT-2 mass-assign low-risk note. **Sơ đồ tầng 1/2 CHƯA vẽ** (use case §2.8b).
+
+### D.3 — I18N HARDCODE SWEEP (task refactor RIÊNG — defer, user chốt 2026-06-02)
+**Phát hiện khi gate `attribute`:** class bug i18n diện rộng — `throw new AppError('<chuỗi tiếng Việt>')` thay vì i18n key + controller `res.json({message:'<VN>'})` hardcode. error-handler `translateMessage = t(msg) || msg` → chuỗi VN không match key → **fallback giữ nguyên → user `?lang=en` thấy lỗi/thông báo tiếng Việt**. Các gate logic tầng 0 trước CHỈ soi logic, KHÔNG soi i18n → bug còn ở cả module đã DONE.
+
+**Định lượng `new AppError('<VN có dấu cách>')` (grep, chưa kể controller success messages):**
+| Module | # | Gate |
+|---|---|---|
+| admin | 34 | chưa (#17) |
+| image | 14 | chưa (#16) |
+| cart | 13 | ✅ DONE (logic) |
+| discount-code | 9 | ✅ DONE (logic) |
+| attribute | 9 | ✅ DONE (logic) |
+| orders | 3 | ✅ DONE (logic) |
+| upload | 2 | ✅ DONE (logic) |
+| ai | 2 | partial |
+| search-history | 1 | chưa (#15) |
+| **Tổng** | **~87** | + controller messages (riêng attribute ~16) |
+
+**Quy trình sweep (làm SAU gate logic, đừng xen):**
+1. Mỗi chuỗi VN → key namespace `<module>.<camelCaseKey>`; tái dùng key đã có (vd `attribute.cannot*`, `attribute.baseNameRequired` đã tồn tại nhưng controller chưa dùng).
+2. Thêm cặp key vào **cả** vi.json + en.json; chạy `node scripts/check-i18n.js` (parity).
+3. Đổi service + controller dùng key; **nâng test assert `message: '<key>'`** (bắt regression — như WL-1 đã làm).
+4. ⚠️ Grep test api/integration assert chuỗi VN cũ TRƯỚC khi đổi (kẻo vỡ MySQL test) — `grep -rn '<chuỗi VN>' src/__api__ src/__integration__`.
+5. Verify: `npm run test` (unit) + lint + `check-i18n` mỗi module sweep xong.
+- **Đã fix mẫu trong gate:** `wishlist` (WL-1, 2 chỗ) + `upload` (đã dùng key sẵn). Dùng làm mẫu cho sweep.
+- ⚠️ **KHÔNG ép sai chuẩn:** một số AppError 500 internal (vd `attribute` "Name generator chưa khởi tạo") gần như không reach user runtime — vẫn i18n hóa cho nhất quán nhưng ưu tiên thấp.
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

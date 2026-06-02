@@ -4,13 +4,13 @@ const { User, Category, Brand } = require('@models');
 const { Op } = require('sequelize');
 
 const TS = Date.now();
-let admin, adminToken;
+let admin, staffToken;
 let prod, variant, cat, brand;
 
 beforeAll(async () => {
-  ({ user: admin, token: adminToken } = await createTestUser({
+  ({ user: admin, token: staffToken } = await createTestUser({
     email: `__http_catalog_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ product: prod, variant, cat, brand } = await createTestProduct());
 });
@@ -79,7 +79,7 @@ describe('POST /api/categories (admin)', () => {
   test('admin → 201', async () => {
     const res = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_Cat2_${TS}`, isActive: true });
     expect([200, 201]).toContain(res.status);
     if (res.body.data?.id) await Category.destroy({ where: { id: res.body.data.id } });
@@ -117,7 +117,7 @@ describe('POST /api/brands (admin)', () => {
   test('admin → 201', async () => {
     const res = await request(app)
       .post('/api/brands')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_Brand2_${TS}` });
     expect([200, 201]).toContain(res.status);
     if (res.body.data?.id) await Brand.destroy({ where: { id: res.body.data.id } });

@@ -33,7 +33,7 @@ const { Op } = require('sequelize');
 const TS = Date.now();
 
 // Actors dùng chung
-let adminUser, adminToken;
+let adminUser, staffToken;
 let userA, tokenA;
 let userB, tokenB;
 
@@ -43,9 +43,9 @@ let orderOfA; // order pending thuộc userA — dùng cho payment tests
 let reviewByA; // review thuộc userA — dùng cho ownership tests
 
 beforeAll(async () => {
-  ({ user: adminUser, token: adminToken } = await createTestUser({
+  ({ user: adminUser, token: staffToken } = await createTestUser({
     email: `__http_payrv_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ user: userA, token: tokenA } = await createTestUser({
     email: `__http_payrv_a_${TS}@t.com`,
@@ -237,7 +237,7 @@ describe('POST /api/payments/refund (admin) — amount âm → 400', () => {
   test('amount âm → 400 validation error', async () => {
     const res = await request(app)
       .post('/api/payments/refund')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ orderId: orderOfA.id, amount: -100 });
     expect([400, 422]).toContain(res.status);
     expect(res.body.status).not.toBe('success');
@@ -248,7 +248,7 @@ describe('POST /api/payments/refund (admin) — orderId không tồn tại → 4
   test('orderId 999999999 → 404 hoặc 400', async () => {
     const res = await request(app)
       .post('/api/payments/refund')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ orderId: 999999999, amount: 50000 });
     expect([400, 404]).toContain(res.status);
   });
@@ -539,7 +539,7 @@ describe('GET /api/reviews/admin/all (admin) → 200', () => {
   test('admin xem tất cả review → 200', async () => {
     const res = await request(app)
       .get('/api/reviews/admin/all')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
     expect(res.body.data).toBeDefined();
@@ -550,7 +550,7 @@ describe('PATCH /api/reviews/admin/:id/verify — admin verify → 200 hoặc 40
   test('admin verify review hợp lệ → 200 hoặc 404', async () => {
     const res = await request(app)
       .patch(`/api/reviews/admin/${reviewByA.id}/verify`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 201, 404]).toContain(res.status);
     expect(res.status).not.toBe(500);
   });

@@ -42,7 +42,7 @@ jest.mock('@utils/logger', () => ({
 }));
 
 const { User } = require('@models');
-const { adminAuthenticate, requireSuperAdmin } = require('./admin-auth');
+const { adminAuthenticate, requireRole, requireSuperAdmin } = require('./admin-auth');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -158,6 +158,21 @@ describe('adminAuthenticate', () => {
     });
   });
 
+  describe('khi user có role staff', () => {
+    it('cho staff vào back-office: gán req.user và gọi next() không có lỗi', async () => {
+      const user = makeUser({ role: 'staff', email: 'staff@test.com' });
+      User.findByPk.mockResolvedValue(user);
+      const token = makeToken({ role: 'staff' });
+      const req = makeReq(token);
+      const next = jest.fn();
+
+      await adminAuthenticate(req, makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith();
+      expect(req.user).toBe(user);
+    });
+  });
+
   describe('khi email admin chưa xác thực', () => {
     it('gọi next với AppError 401', async () => {
       User.findByPk.mockResolvedValue(makeUser({ role: 'admin', isEmailVerified: false }));
@@ -216,6 +231,60 @@ describe('requireSuperAdmin', () => {
       const next = jest.fn();
       requireSuperAdmin({ user: { role: 'admin' } }, makeRes(), next);
       expect(next).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('khi user có role staff', () => {
+    it('gọi next với AppError 403 — staff không có quyền quản trị hệ thống', () => {
+      const next = jest.fn();
+      requireSuperAdmin({ user: { role: 'staff' } }, makeRes(), next);
+      expect(next.mock.calls[0][0].statusCode).toBe(403);
+    });
+  });
+});
+
+// ─── requireRole ────────────────────────────────────────────────────────────────
+
+describe('requireRole', () => {
+  describe('khi req.user không được gán', () => {
+    it('gọi next với AppError 401', () => {
+      const next = jest.fn();
+      requireRole('staff')({}, makeRes(), next);
+      expect(next.mock.calls[0][0].statusCode).toBe(401);
+    });
+  });
+
+  describe('requireRole(staff)', () => {
+    it('cho staff qua: gọi next() không có lỗi', () => {
+      const next = jest.fn();
+      requireRole('staff')({ user: { role: 'staff' } }, makeRes(), next);
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it('chặn admin: gọi next với AppError 403 — endpoint nghiệp vụ chỉ staff', () => {
+      const next = jest.fn();
+      requireRole('staff')({ user: { role: 'admin' } }, makeRes(), next);
+      expect(next.mock.calls[0][0].statusCode).toBe(403);
+    });
+  });
+
+  describe('requireRole(admin, staff) — back-office xem chung', () => {
+    it('cho admin qua', () => {
+      const next = jest.fn();
+      requireRole('admin', 'staff')({ user: { role: 'admin' } }, makeRes(), next);
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it('cho staff qua', () => {
+      const next = jest.fn();
+      requireRole('admin', 'staff')({ user: { role: 'staff' } }, makeRes(), next);
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it('chặn customer: gọi next với AppError 403', () => {
+      const next = jest.fn();
+      requireRole('admin', 'staff')({ user: { role: 'customer' } }, makeRes(), next);
+      expect(next.mock.calls[0][0].statusCode).toBe(403);
     });
   });
 });

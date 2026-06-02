@@ -20,13 +20,13 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 const { User, Category, Brand } = require('@models');
 
 const TS = Date.now();
-let adminUser, adminToken, regularUser, regularToken;
+let adminUser, staffToken, regularUser, regularToken;
 let prod, variant, cat, brand;
 
 beforeAll(async () => {
-  ({ user: adminUser, token: adminToken } = await createTestUser({
+  ({ user: adminUser, token: staffToken } = await createTestUser({
     email: `__http_catex_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ user: regularUser, token: regularToken } = await createTestUser({
     email: `__http_catex_user_${TS}@t.com`,
@@ -176,7 +176,7 @@ describe('PUT /api/categories/:id (admin)', () => {
   test('admin cập nhật danh mục → 200', async () => {
     const res = await request(app)
       .put(`/api/categories/${cat.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_CatEx_Updated_${TS}`, isActive: true });
     expect([200, 400]).toContain(res.status);
   });
@@ -211,7 +211,7 @@ describe('POST /api/categories trùng slug', () => {
     // Dùng slug của cat đã được tạo trong beforeAll
     const res = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: cat.nameVi, slug: cat.slug, isActive: true });
     // Server phải từ chối vì slug trùng
     expect([400, 409, 422]).toContain(res.status);
@@ -244,7 +244,7 @@ describe('POST /api/brands trùng slug', () => {
     // Dùng slug của brand đã được tạo trong beforeAll
     const res = await request(app)
       .post('/api/brands')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: brand.nameVi, slug: brand.slug });
     // Server phải từ chối vì slug trùng
     expect([400, 409, 422]).toContain(res.status);

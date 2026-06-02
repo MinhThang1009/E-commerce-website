@@ -3,7 +3,7 @@ const { app, request, createTestUser } = require('./http-setup');
 const { User, DiscountCode } = require('@models');
 
 const TS = Date.now();
-let admin, adminToken;
+let admin, staffToken;
 let customer, customerToken;
 let createdCodeId;
 
@@ -21,9 +21,9 @@ const validDiscountCode = {
 };
 
 beforeAll(async () => {
-  ({ user: admin, token: adminToken } = await createTestUser({
+  ({ user: admin, token: staffToken } = await createTestUser({
     email: `__http_dc_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ user: customer, token: customerToken } = await createTestUser({
     email: `__http_dc_cust_${TS}@t.com`,
@@ -63,7 +63,7 @@ describe('GET /api/admin/discount-codes', () => {
   test('admin → 200 + danh sách mã giảm giá', async () => {
     const res = await request(app)
       .get('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
@@ -79,7 +79,7 @@ describe('POST /api/admin/discount-codes', () => {
   test('admin + body hợp lệ → 201', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send(validDiscountCode);
     expect([200, 201]).toContain(res.status);
     expect(res.body.status).toBe('success');
@@ -88,14 +88,14 @@ describe('POST /api/admin/discount-codes', () => {
   test('admin + thiếu code → 400 hoặc 422', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ type: 'percent', value: 10 });
     expect([400, 422]).toContain(res.status);
   });
   test('admin + type không hợp lệ → 400 hoặc 422', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ code: `__HTTP_DC_BAD_${TS}`, type: 'invalid', value: 10 });
     expect([400, 422]).toContain(res.status);
   });
@@ -103,7 +103,7 @@ describe('POST /api/admin/discount-codes', () => {
     if (!createdCodeId) return;
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send(validDiscountCode);
     expect([400, 409, 422]).toContain(res.status);
   });
@@ -120,14 +120,14 @@ describe('GET /api/admin/discount-codes/:id', () => {
     if (!createdCodeId) return;
     const res = await request(app)
       .get(`/api/admin/discount-codes/${createdCodeId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
   test('admin + id không tồn tại → 404', async () => {
     const res = await request(app)
       .get('/api/admin/discount-codes/999999999')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 404]).toContain(res.status);
   });
 });
@@ -143,7 +143,7 @@ describe('PUT /api/admin/discount-codes/:id', () => {
     if (!createdCodeId) return;
     const res = await request(app)
       .put(`/api/admin/discount-codes/${createdCodeId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ value: 15, description: 'Cập nhật test' });
     expect([200, 201]).toContain(res.status);
     expect(res.body.status).toBe('success');
@@ -151,7 +151,7 @@ describe('PUT /api/admin/discount-codes/:id', () => {
   test('admin + id không tồn tại → 404', async () => {
     const res = await request(app)
       .put('/api/admin/discount-codes/999999999')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ value: 20 });
     expect([400, 404]).toContain(res.status);
   });
@@ -168,14 +168,14 @@ describe('DELETE /api/admin/discount-codes/:id', () => {
     if (!createdCodeId) return;
     const res = await request(app)
       .delete(`/api/admin/discount-codes/${createdCodeId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204]).toContain(res.status);
     createdCodeId = null;
   });
   test('admin xóa code không tồn tại → 404', async () => {
     const res = await request(app)
       .delete('/api/admin/discount-codes/999999999')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 404]).toContain(res.status);
   });
 });

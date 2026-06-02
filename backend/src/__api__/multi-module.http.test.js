@@ -17,14 +17,14 @@ const {
 const { Op } = require('sequelize');
 
 const TS = Date.now();
-let admin, adminToken, user, userToken;
+let admin, staffToken, user, userToken;
 let prod, variant, cat, brand;
 let attrGroupId, attrValueId;
 
 beforeAll(async () => {
-  ({ user: admin, token: adminToken } = await createTestUser({
+  ({ user: admin, token: staffToken } = await createTestUser({
     email: `__http_misc_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ user, token: userToken } = await createTestUser({
     email: `__http_misc_user_${TS}@t.com`,
@@ -63,7 +63,7 @@ describe('POST /api/attributes/groups', () => {
   test('admin → 201', async () => {
     const res = await request(app)
       .post('/api/attributes/groups')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_AttrG_${TS}`, type: 'config' });
     expect([200, 201]).toContain(res.status);
     attrGroupId = res.body.data?.id || res.body.data?.group?.id;
@@ -82,7 +82,7 @@ describe('POST /api/attributes/groups/:groupId/values', () => {
     if (!attrGroupId) return;
     const res = await request(app)
       .post(`/api/attributes/groups/${attrGroupId}/values`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_Val_${TS}`, value: `val_${TS}` });
     expect([200, 201]).toContain(res.status);
     attrValueId = res.body.data?.id || res.body.data?.value?.id;
@@ -94,7 +94,7 @@ describe('PUT /api/attributes/values/:id', () => {
     if (!attrValueId) return;
     const res = await request(app)
       .put(`/api/attributes/values/${attrValueId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_Val_Updated_${TS}` });
     expect([200, 201]).toContain(res.status);
   });
@@ -181,7 +181,7 @@ describe('GET /api/inventory/logs', () => {
   test('admin → 200', async () => {
     const res = await request(app)
       .get('/api/inventory/logs')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
@@ -205,7 +205,7 @@ describe('PUT /api/attributes/groups/:id', () => {
     if (!attrGroupId) return;
     const res = await request(app)
       .put(`/api/attributes/groups/${attrGroupId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_AttrG_Updated_${Date.now()}` });
     expect([200, 400, 404]).toContain(res.status);
   });
@@ -231,7 +231,7 @@ describe('DELETE /api/attributes/values/:id', () => {
     if (!attrValueId) return;
     const res = await request(app)
       .delete(`/api/attributes/values/${attrValueId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 400, 404]).toContain(res.status);
     attrValueId = null;
   });

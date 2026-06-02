@@ -14,6 +14,7 @@ import {
   Mail,
   Phone,
   Crown,
+  Briefcase,
   Users,
   Eye,
 } from 'lucide-react';
@@ -169,6 +170,29 @@ const UsersPage: React.FC = () => {
   const totalPages = pagination ? Math.ceil(pagination.totalItems / pagination.itemsPerPage) : 1;
   const isEmpty = !isLoading && users.length === 0;
 
+  // Badge role 3 trạng thái (admin/staff/customer) — dùng chung cho bảng desktop + card mobile
+  const renderRolePill = (role: string) => {
+    const meta =
+      role === 'admin'
+        ? { variant: 'error' as const, Icon: Crown, label: t('admin.users.roles.admin') }
+        : role === 'staff'
+          ? { variant: 'warning' as const, Icon: Briefcase, label: t('admin.users.roles.staff') }
+          : { variant: 'info' as const, Icon: User, label: t('admin.users.roles.customer') };
+    const { Icon } = meta;
+    return (
+      <StatusPill
+        variant={meta.variant}
+        showDot={false}
+        label={
+          <span className="inline-flex items-center gap-1">
+            <Icon className="w-3 h-3" />
+            {meta.label}
+          </span>
+        }
+      />
+    );
+  };
+
   return (
     <div>
       {/* Page header */}
@@ -243,6 +267,7 @@ const UsersPage: React.FC = () => {
             <SelectContent>
               <SelectItem value="all">{t('common.all')}</SelectItem>
               <SelectItem value="admin">{t('admin.users.roles.admin')}</SelectItem>
+              <SelectItem value="staff">{t('admin.users.roles.staff')}</SelectItem>
               <SelectItem value="customer">{t('admin.users.roles.customer')}</SelectItem>
             </SelectContent>
           </Select>
@@ -349,24 +374,7 @@ const UsersPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <StatusPill
-                          variant={record.role === 'admin' ? 'error' : 'info'}
-                          label={
-                            <span className="inline-flex items-center gap-1">
-                              {record.role === 'admin' ? (
-                                <Crown className="w-3 h-3" />
-                              ) : (
-                                <User className="w-3 h-3" />
-                              )}
-                              {record.role === 'admin'
-                                ? t('admin.users.roles.admin')
-                                : t('admin.users.roles.customer')}
-                            </span>
-                          }
-                          showDot={false}
-                        />
-                      </td>
+                      <td className="px-4 py-3">{renderRolePill(record.role)}</td>
                       <td className="px-4 py-3">
                         <div className="space-y-1">
                           <StatusPill
@@ -452,24 +460,7 @@ const UsersPage: React.FC = () => {
                       {record.email}
                     </span>
                   }
-                  status={
-                    <StatusPill
-                      variant={record.role === 'admin' ? 'error' : 'info'}
-                      label={
-                        <span className="inline-flex items-center gap-1">
-                          {record.role === 'admin' ? (
-                            <Crown className="h-3 w-3" />
-                          ) : (
-                            <User className="h-3 w-3" />
-                          )}
-                          {record.role === 'admin'
-                            ? t('admin.users.roles.admin')
-                            : t('admin.users.roles.customer')}
-                        </span>
-                      }
-                      showDot={false}
-                    />
-                  }
+                  status={renderRolePill(record.role)}
                   fields={[
                     {
                       label: t('common.status'),
@@ -617,7 +608,10 @@ const UsersPage: React.FC = () => {
               <Select
                 value={formData.role}
                 onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, role: value as 'customer' | 'admin' }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    role: value as 'customer' | 'staff' | 'admin',
+                  }))
                 }
               >
                 <SelectTrigger className="mt-1">
@@ -625,6 +619,7 @@ const UsersPage: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="customer">{t('admin.users.roles.customer')}</SelectItem>
+                  <SelectItem value="staff">{t('admin.users.roles.staff')}</SelectItem>
                   <SelectItem value="admin">{t('admin.users.roles.admin')}</SelectItem>
                 </SelectContent>
               </Select>

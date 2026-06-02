@@ -47,6 +47,8 @@ import {
 import StatusPill from '../../components/StatusPill';
 import AdminPageHeader from '../../components/AdminPageHeader';
 import AdminMobileCard from '../../components/AdminMobileCard';
+import ViewOnlyBanner from '../../components/ViewOnlyBanner';
+import { useAuth } from '@/features/auth';
 
 interface CategoryFormData {
   name: string;
@@ -124,6 +126,9 @@ function flattenVisibleRows(
 const CategoriesPage: React.FC = () => {
   const { t } = useTranslation();
   const addNotification = useUiStore((s) => s.addNotification);
+  // Chỉ staff được thao tác; admin xem-only
+  const { isStaff } = useAuth();
+  const canWrite = isStaff();
   const [formData, setFormData] = useState<CategoryFormData>(initialFormData);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -249,13 +254,17 @@ const CategoriesPage: React.FC = () => {
               />
               {t('common.refresh')}
             </Button>
-            <Button className="admin-btn-primary" onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
-              {t('admin.categories.addCategory')}
-            </Button>
+            {canWrite && (
+              <Button className="admin-btn-primary" onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+                {t('admin.categories.addCategory')}
+              </Button>
+            )}
           </>
         }
       />
+
+      {!canWrite && <ViewOnlyBanner />}
 
       {/* Table */}
       <div className="rounded-2xl bg-[var(--bg-base)] dark:bg-white/[0.03] border border-[var(--border-default)] overflow-hidden shadow-sm">
@@ -281,10 +290,12 @@ const CategoriesPage: React.FC = () => {
                 defaultValue: 'Tạo danh mục đầu tiên để phân loại sản phẩm dễ dàng hơn.',
               })}
             </p>
-            <Button className="admin-btn-primary" onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
-              {t('admin.categories.addCategory')}
-            </Button>
+            {canWrite && (
+              <Button className="admin-btn-primary" onClick={handleCreate}>
+                <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+                {t('admin.categories.addCategory')}
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -434,22 +445,26 @@ const CategoriesPage: React.FC = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-0.5">
-                            <button
-                              type="button"
-                              onClick={() => handleEdit(record)}
-                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                              title={t('admin.common.actions')}
-                            >
-                              <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteConfirmId(record.id)}
-                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                              title={t('common.delete')}
-                            >
-                              <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                            </button>
+                            {canWrite && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEdit(record)}
+                                  className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                                  title={t('admin.common.actions')}
+                                >
+                                  <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirmId(record.id)}
+                                  className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                                  title={t('common.delete')}
+                                >
+                                  <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </motion.tr>
@@ -546,26 +561,28 @@ const CategoriesPage: React.FC = () => {
                       { label: t('admin.categories.table.order'), value: record.sortOrder || 0 },
                     ]}
                     actions={
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(record)}
-                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                          title={t('common.edit')}
-                          aria-label={t('common.edit')}
-                        >
-                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteConfirmId(record.id)}
-                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
-                          title={t('common.delete')}
-                          aria-label={t('common.delete')}
-                        >
-                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
-                        </button>
-                      </>
+                      canWrite ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(record)}
+                            className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                            title={t('common.edit')}
+                            aria-label={t('common.edit')}
+                          >
+                            <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmId(record.id)}
+                            className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                            title={t('common.delete')}
+                            aria-label={t('common.delete')}
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                          </button>
+                        </>
+                      ) : null
                     }
                   />
                 );

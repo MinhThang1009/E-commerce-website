@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   ArrowLeft,
   Crown,
+  Briefcase,
   Eye,
   ExternalLink,
 } from 'lucide-react';
@@ -116,17 +117,23 @@ const UserDetailPage: React.FC = () => {
               </h4>
               <div className="mb-4">
                 <StatusPill
-                  variant={user.role === 'admin' ? 'error' : 'info'}
+                  variant={
+                    user.role === 'admin' ? 'error' : user.role === 'staff' ? 'warning' : 'info'
+                  }
                   label={
                     <span className="inline-flex items-center gap-1">
                       {user.role === 'admin' ? (
                         <Crown className="w-3 h-3" />
+                      ) : user.role === 'staff' ? (
+                        <Briefcase className="w-3 h-3" />
                       ) : (
                         <User className="w-3 h-3" />
                       )}
                       {user.role === 'admin'
                         ? t('admin.users.roles.admin')
-                        : t('admin.users.roles.customer')}
+                        : user.role === 'staff'
+                          ? t('admin.users.roles.staff')
+                          : t('admin.users.roles.customer')}
                     </span>
                   }
                   showDot={false}

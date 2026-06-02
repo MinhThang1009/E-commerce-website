@@ -28,13 +28,13 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 const { User, Category, Brand, Product, ProductVariant } = require('@models');
 
 const TS = Date.now();
-let adminUser, adminToken, customerUser, customerToken;
+let adminUser, staffToken, customerUser, customerToken;
 let prod, variant, cat, brand;
 
 beforeAll(async () => {
-  ({ user: adminUser, token: adminToken } = await createTestUser({
+  ({ user: adminUser, token: staffToken } = await createTestUser({
     email: `__http_catdeep_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ user: customerUser, token: customerToken } = await createTestUser({
     email: `__http_catdeep_cust_${TS}@t.com`,
@@ -130,7 +130,7 @@ describe('POST /api/categories — tên trùng với danh mục cùng slug → 4
   test('nameVi trùng với danh mục đã có → 400 hoặc 409', async () => {
     const res = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: cat.nameVi, slug: cat.slug, isActive: true });
     expect([400, 409, 422]).toContain(res.status);
   });
@@ -140,7 +140,7 @@ describe('PUT /api/categories/:id — partial update chỉ nameEn', () => {
   test('cập nhật chỉ field name → 200 hoặc 400', async () => {
     const res = await request(app)
       .put(`/api/categories/${cat.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_CatDeep_Updated_${TS}`, isActive: true });
     // Validator yêu cầu name, nên body này hợp lệ
     expect([200, 400]).toContain(res.status);
@@ -166,7 +166,7 @@ describe('DELETE /api/categories/:id — danh mục không có sản phẩm → 
   test('admin xóa danh mục rỗng → 200 hoặc 204', async () => {
     const res = await request(app)
       .delete(`/api/categories/${deletableCat.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204]).toContain(res.status);
     deletableCat = null; // đã xóa, không cần afterAll dọn
   });
@@ -235,7 +235,7 @@ describe('POST /api/brands — admin hợp lệ → 201 có id', () => {
   test('admin tạo thương hiệu mới → 201 và response có id', async () => {
     const res = await request(app)
       .post('/api/brands')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_BrandDeep_New_${TS}` });
     expect([200, 201]).toContain(res.status);
     expect(res.body.status).toBe('success');
@@ -249,7 +249,7 @@ describe('PUT /api/brands/:id — admin cập nhật name → 200', () => {
   test('admin cập nhật tên thương hiệu → 200', async () => {
     const res = await request(app)
       .put(`/api/brands/${brand.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_BrandDeep_Updated_${TS}` });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -274,7 +274,7 @@ describe('DELETE /api/brands/:id — admin xóa brand rỗng → 200', () => {
   test('admin xóa brand không có sản phẩm → 200 hoặc 204', async () => {
     const res = await request(app)
       .delete(`/api/brands/${deletableBrand.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204, 400]).toContain(res.status);
     deletableBrand = null;
   });
@@ -457,7 +457,7 @@ describe('POST /api/products (admin) — thiếu nameVi (name) → 400', () => {
   test('body không có name → 400 validation error', async () => {
     const res = await request(app)
       .post('/api/products')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         description: 'Mô tả test',
         shortDescription: 'Ngắn',
@@ -471,7 +471,7 @@ describe('POST /api/products (admin) — thiếu price (basePrice) → 400', () 
   test('body có name nhưng không có price → 400 validation error', async () => {
     const res = await request(app)
       .post('/api/products')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         name: `__HTTP_ProdDeep_NoPrice_${TS}`,
         description: 'Mô tả test',
@@ -485,7 +485,7 @@ describe('PUT /api/products/:id — cập nhật status → 200', () => {
   test('admin cập nhật payload hợp lệ → 200', async () => {
     const res = await request(app)
       .put(`/api/products/${prod.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         name: `__HTTP_ProdDeep_Status_${TS}`,
         description: 'Mô tả đủ dài',
@@ -503,7 +503,7 @@ describe('DELETE /api/products/:id không tồn tại → 404', () => {
   test('id 999999999 → 404', async () => {
     const res = await request(app)
       .delete('/api/products/999999999')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([404, 400]).toContain(res.status);
     expect(res.status).not.toBe(500);
   });

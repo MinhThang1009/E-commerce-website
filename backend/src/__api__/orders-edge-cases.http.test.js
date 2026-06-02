@@ -9,7 +9,7 @@ const { User, Category, Brand, Order, OrderItem, Cart, CartItem } = require('@mo
 const { Op } = require('sequelize');
 
 const TS = Date.now();
-let userA, tokenA, userB, tokenB, admin, adminToken;
+let userA, tokenA, userB, tokenB, admin, staffToken;
 let product, variant, cat, brand;
 let deliveredOrder;
 
@@ -20,9 +20,9 @@ beforeAll(async () => {
   ({ user: userB, token: tokenB } = await createTestUser({
     email: `__http_ord_edge_b_${TS}@t.com`,
   }));
-  ({ user: admin, token: adminToken } = await createTestUser({
+  ({ user: admin, token: staffToken } = await createTestUser({
     email: `__http_ord_edge_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ product, variant, cat, brand } = await createTestProduct());
 
@@ -173,7 +173,7 @@ describe('PATCH /api/orders/admin/:id/status → 200 với valid status transiti
   test('admin cập nhật status pending → processing → 200', async () => {
     const res = await request(app)
       .patch(`/api/orders/admin/${pendingOrder.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'processing' });
 
     expect(res.status).toBe(200);
@@ -192,7 +192,7 @@ describe('PATCH /api/orders/admin/:id/status → 200 với valid status transiti
   test('status không hợp lệ → 400', async () => {
     const res = await request(app)
       .patch(`/api/orders/admin/${pendingOrder.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'unknown_status' });
 
     expect(res.status).toBe(400);

@@ -6,13 +6,13 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 const { User, InventoryLog, Category, Brand, Product, ProductVariant } = require('@models');
 
 const TS = Date.now();
-let admin, adminToken, customer, customerToken;
+let admin, staffToken, customer, customerToken;
 let prod, variant, cat, brand;
 
 beforeAll(async () => {
-  ({ user: admin, token: adminToken } = await createTestUser({
+  ({ user: admin, token: staffToken } = await createTestUser({
     email: `__http_inv_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ user: customer, token: customerToken } = await createTestUser({
     email: `__http_inv_cust_${TS}@t.com`,
@@ -68,7 +68,7 @@ describe('GET /api/inventory/logs', () => {
   test('admin → 200 + trả về dữ liệu hợp lệ', async () => {
     const res = await request(app)
       .get('/api/inventory/logs')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
   });
@@ -76,7 +76,7 @@ describe('GET /api/inventory/logs', () => {
   test('admin + query page/limit → 200', async () => {
     const res = await request(app)
       .get('/api/inventory/logs?page=1&limit=5')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect(res.status).toBe(200);
   });
 });
@@ -86,7 +86,7 @@ describe('POST /api/inventory/products/:productId/restock', () => {
   test('productId không tồn tại → 404', async () => {
     const res = await request(app)
       .post('/api/inventory/products/999999999/restock')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ quantity: 10, note: 'nhập kho test' });
     expect(res.status).toBe(404);
   });
@@ -98,7 +98,7 @@ describe('POST /api/inventory/products/:productId/restock', () => {
   test('productId hợp lệ + quantity hợp lệ → 200', async () => {
     const res = await request(app)
       .post(`/api/inventory/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ quantity: 20, note: '__HTTP_INV_RESTOCK_TEST' });
     expect(res.status).toBe(200);
     expect(res.body.data).toBeDefined();
@@ -107,7 +107,7 @@ describe('POST /api/inventory/products/:productId/restock', () => {
   test('restock tạo inventory log trong DB', async () => {
     await request(app)
       .post(`/api/inventory/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ quantity: 5, note: `__HTTP_INV_LOG_CHECK_${TS}` });
 
     const log = await InventoryLog.findOne({

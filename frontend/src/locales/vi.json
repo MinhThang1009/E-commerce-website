@@ -1818,6 +1818,7 @@
       "deleteConfirm": "Bạn có chắc chắn muốn xóa người dùng này?",
       "roles": {
         "admin": "Quản trị viên",
+        "staff": "Nhân viên bán hàng",
         "customer": "Khách hàng"
       },
       "status": {
@@ -1905,6 +1906,10 @@
       }
     },
     "verifyingAccess": "Đang xác thực quyền truy cập...",
+    "viewOnly": {
+      "title": "Chế độ xem",
+      "description": "Bạn đang đăng nhập với quyền quản trị viên (xem-only). Các thao tác nghiệp vụ (tạo/sửa/xóa) dành cho nhân viên bán hàng."
+    },
     "charts": {
       "title": "Biểu đồ thống kê",
       "last7Days": "7 ngày qua",

@@ -22,7 +22,7 @@ const { User, Category, Brand, DiscountCode, Order, OrderItem } = require('@mode
 const { Op } = require('sequelize');
 
 const TS = Date.now();
-let admin, adminToken;
+let admin, adminToken, staff, staffToken;
 let prod, variant, cat, brand;
 let createdDcId;
 
@@ -30,6 +30,10 @@ beforeAll(async () => {
   ({ user: admin, token: adminToken } = await createTestUser({
     email: `__http_adminex_${TS}@t.com`,
     role: 'admin',
+  }));
+  ({ user: staff, token: staffToken } = await createTestUser({
+    email: `__http_staffex_${TS}@t.com`,
+    role: 'staff',
   }));
   ({ product: prod, variant, cat, brand } = await createTestProduct());
 });
@@ -42,6 +46,7 @@ afterAll(async () => {
   if (cat) await Category.destroy({ where: { id: cat.id } }).catch(() => {});
   if (brand) await Brand.destroy({ where: { id: brand.id } }).catch(() => {});
   if (admin) await admin.destroy({ force: true }).catch(() => {});
+  if (staff) await staff.destroy({ force: true }).catch(() => {});
 });
 
 // ── Products — filter theo query params ──────────────────────────────────────
@@ -137,7 +142,7 @@ describe('PUT /api/admin/orders/:id/status với id không tồn tại', () => {
   test('cập nhật trạng thái đơn không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .put('/api/admin/orders/999999999/status')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'processing' });
     expect([400, 404]).toContain(res.status);
   });
@@ -171,7 +176,7 @@ describe('POST /api/admin/discount-codes → 201 với payload đầy đủ', ()
   test('tạo mã giảm giá hợp lệ dạng fixed_amount → 201', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         code: `HTTP-ADMINEX-DC-${TS}`,
         type: 'fixed',
@@ -193,7 +198,7 @@ describe('PUT /api/admin/discount-codes/:id', () => {
     if (!createdDcId) return;
     const res = await request(app)
       .put(`/api/admin/discount-codes/${createdDcId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ value: 60000, isActive: false });
     expect([200, 400]).toContain(res.status);
   });
@@ -201,7 +206,7 @@ describe('PUT /api/admin/discount-codes/:id', () => {
   test('cập nhật discount code không tồn tại → 404', async () => {
     const res = await request(app)
       .put('/api/admin/discount-codes/999999999')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ value: 10 });
     expect([400, 404]).toContain(res.status);
   });
@@ -212,7 +217,7 @@ describe('DELETE /api/admin/discount-codes/:id', () => {
     if (!createdDcId) return;
     const res = await request(app)
       .delete(`/api/admin/discount-codes/${createdDcId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204]).toContain(res.status);
     if ([200, 204].includes(res.status)) createdDcId = null;
   });

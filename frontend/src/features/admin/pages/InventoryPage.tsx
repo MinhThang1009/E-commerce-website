@@ -23,6 +23,8 @@ import StatusPill from '../components/StatusPill';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminStatCard from '../components/AdminStatCard';
 import AdminMobileCard from '../components/AdminMobileCard';
+import ViewOnlyBanner from '../components/ViewOnlyBanner';
+import { useAuth } from '@/features/auth';
 import { useGetAdminProductsQuery } from '../api/admin-product-api';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -66,6 +68,9 @@ function stockColor(s: number): string {
 const InventoryPage: React.FC = () => {
   const { t } = useTranslation();
   const { addNotification } = useUiStore();
+  // Chỉ staff được chỉnh tồn kho; admin xem-only
+  const { isStaff } = useAuth();
+  const canWrite = isStaff();
   const [searchText, setSearchText] = useState('');
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<EditingState | null>(null);
@@ -217,6 +222,8 @@ const InventoryPage: React.FC = () => {
   };
 
   const renderActionButtons = (isEditing: boolean, onEdit: () => void) => {
+    // Admin xem-only: ẩn nút chỉnh tồn kho
+    if (!canWrite) return null;
     if (isEditing) {
       return (
         <div className="flex items-center gap-2">
@@ -280,6 +287,8 @@ const InventoryPage: React.FC = () => {
           </Button>
         }
       />
+
+      {!canWrite && <ViewOnlyBanner />}
 
       {/* StatStrip — tổng tồn / sắp hết / hết hàng */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">

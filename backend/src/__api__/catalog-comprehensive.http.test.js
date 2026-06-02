@@ -3,13 +3,13 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 const { User, Category, Brand } = require('@models');
 
 const TS = Date.now();
-let user, token, adminUser, adminToken, product, variant, cat, brand;
+let user, token, adminUser, staffToken, product, variant, cat, brand;
 
 beforeAll(async () => {
   ({ user, token } = await createTestUser({ email: `__http_catcomp_${TS}@t.com` }));
-  ({ user: adminUser, token: adminToken } = await createTestUser({
+  ({ user: adminUser, token: staffToken } = await createTestUser({
     email: `__http_catcomp_admin_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ product, variant, cat, brand } = await createTestProduct());
 });
@@ -89,7 +89,7 @@ describe('POST /api/categories (admin)', () => {
     const newCatName = `__HTTP_CatComp_${TS}`;
     const res = await request(app)
       .post('/api/categories')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: newCatName, isActive: true });
     expect([200, 201]).toContain(res.status);
     // Dọn danh mục vừa tạo
@@ -118,7 +118,7 @@ describe('DELETE /api/categories/:id (admin, có sản phẩm)', () => {
     // cat đang được dùng bởi product tạo trong beforeAll
     const res = await request(app)
       .delete(`/api/categories/${cat.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     // Server phải từ chối vì vẫn còn sản phẩm thuộc danh mục
     expect([400, 409]).toContain(res.status);
   });
@@ -161,7 +161,7 @@ describe('POST /api/brands (admin)', () => {
     const newBrandName = `__HTTP_BrandComp_${TS}`;
     const res = await request(app)
       .post('/api/brands')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: newBrandName });
     expect([200, 201]).toContain(res.status);
     const createdId = res.body?.data?.id || res.body?.data?.brand?.id;
@@ -180,7 +180,7 @@ describe('PUT /api/brands/:id (admin)', () => {
   test('admin cập nhật thương hiệu → 200', async () => {
     const res = await request(app)
       .put(`/api/brands/${brand.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_BrandComp_Updated_${TS}` });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
@@ -202,7 +202,7 @@ describe('DELETE /api/brands/:id (admin)', () => {
     });
     const res = await request(app)
       .delete(`/api/brands/${tempBrand.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204]).toContain(res.status);
     await Brand.destroy({ where: { id: tempBrand.id } }).catch(() => {});
   });
@@ -211,7 +211,7 @@ describe('DELETE /api/brands/:id (admin)', () => {
     // brand được tạo trong beforeAll đang được product dùng
     const res = await request(app)
       .delete(`/api/brands/${brand.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 409]).toContain(res.status);
   });
 });
@@ -354,7 +354,7 @@ describe('POST /api/products (admin)', () => {
   test('admin tạo sản phẩm với payload đầy đủ → 201', async () => {
     const res = await request(app)
       .post('/api/products')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         name: `__HTTP_ProdComp_${TS}`,
         description: 'Mô tả test sản phẩm',
@@ -395,7 +395,7 @@ describe('PUT /api/products/:id (admin)', () => {
   test('admin cập nhật sản phẩm → 200', async () => {
     const res = await request(app)
       .put(`/api/products/${product.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         name: `__HTTP_ProdComp_Updated_${TS}`,
         description: 'Mô tả đã cập nhật',
@@ -431,7 +431,7 @@ describe('DELETE /api/products/:id (admin)', () => {
     });
     const res = await request(app)
       .delete(`/api/products/${tempProduct.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204, 400]).toContain(res.status);
     await ProductVariant.destroy({ where: { productId: tempProduct.id }, force: true }).catch(
       () => {},

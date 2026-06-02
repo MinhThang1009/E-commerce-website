@@ -25,6 +25,8 @@ const { User, Product, Category, Brand, DiscountCode, Review } = require('@model
 
 const TS = Date.now();
 let admin, adminToken;
+// staff: nhân viên bán hàng — dùng cho các endpoint nghiệp vụ (CRUD products/orders/reviews/discount)
+let staff, staffToken;
 // customer: dùng cho test update thông tin — có thể bị thay đổi role trong test
 let customer, customerToken;
 // forbiddenUser: chỉ dùng để kiểm tra 403 — KHÔNG được thay đổi role
@@ -36,6 +38,10 @@ beforeAll(async () => {
   ({ user: admin, token: adminToken } = await createTestUser({
     email: `__http_admincomp_${TS}@t.com`,
     role: 'admin',
+  }));
+  ({ user: staff, token: staffToken } = await createTestUser({
+    email: `__http_admincomp_staff_${TS}@t.com`,
+    role: 'staff',
   }));
   ({ user: customer, token: customerToken } = await createTestUser({
     email: `__http_admincomp_cust_${TS}@t.com`,
@@ -60,6 +66,7 @@ afterAll(async () => {
   if (customer) await customer.destroy({ force: true }).catch(() => {});
   if (forbiddenUser) await forbiddenUser.destroy({ force: true }).catch(() => {});
   if (admin) await admin.destroy({ force: true }).catch(() => {});
+  if (staff) await staff.destroy({ force: true }).catch(() => {});
 });
 
 // ── Dashboard — response shape ────────────────────────────────────────────────
@@ -410,7 +417,7 @@ describe('PATCH /api/admin/products/:id/status — các trạng thái', () => {
   test('chuyển sang inactive → 200 hoặc 400', async () => {
     const res = await request(app)
       .patch(`/api/admin/products/${prod.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'inactive' });
     expect([200, 400]).toContain(res.status);
     await prod.update({ status: 'active' }).catch(() => {});
@@ -419,7 +426,7 @@ describe('PATCH /api/admin/products/:id/status — các trạng thái', () => {
   test('chuyển sang active → 200 hoặc 400', async () => {
     const res = await request(app)
       .patch(`/api/admin/products/${prod.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'active' });
     expect([200, 400]).toContain(res.status);
   });
@@ -427,7 +434,7 @@ describe('PATCH /api/admin/products/:id/status — các trạng thái', () => {
   test('status không hợp lệ → 400', async () => {
     const res = await request(app)
       .patch(`/api/admin/products/${prod.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'unknown_status' });
     expect([400, 422]).toContain(res.status);
   });
@@ -435,7 +442,7 @@ describe('PATCH /api/admin/products/:id/status — các trạng thái', () => {
   test('id sản phẩm không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .patch('/api/admin/products/999999999/status')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'active' });
     expect([400, 404]).toContain(res.status);
   });
@@ -460,7 +467,7 @@ describe('POST /api/admin/products/:id/restock — validation', () => {
   test('restock với quantity âm → 400', async () => {
     const res = await request(app)
       .post(`/api/admin/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ variantId: variant.id, quantity: -5 });
     expect([400, 422]).toContain(res.status);
   });
@@ -468,7 +475,7 @@ describe('POST /api/admin/products/:id/restock — validation', () => {
   test('restock hợp lệ không có note → 200 hoặc 400', async () => {
     const res = await request(app)
       .post(`/api/admin/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ variantId: variant.id, quantity: 5 });
     expect([200, 400]).toContain(res.status);
   });
@@ -476,7 +483,7 @@ describe('POST /api/admin/products/:id/restock — validation', () => {
   test('sản phẩm không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .post('/api/admin/products/999999999/restock')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ variantId: variant.id, quantity: 10 });
     expect([400, 404]).toContain(res.status);
   });
@@ -501,7 +508,7 @@ describe('PATCH /api/admin/products/:id/stock — validation', () => {
   test('quantity bằng 0 → 200 hoặc 400', async () => {
     const res = await request(app)
       .patch(`/api/admin/products/${prod.id}/stock`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ variantId: variant.id, quantity: 0 });
     expect([200, 400]).toContain(res.status);
   });
@@ -509,7 +516,7 @@ describe('PATCH /api/admin/products/:id/stock — validation', () => {
   test('sản phẩm không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .patch('/api/admin/products/999999999/stock')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ variantId: variant.id, quantity: 50 });
     expect([400, 404]).toContain(res.status);
   });
@@ -534,7 +541,7 @@ describe('POST /api/admin/products/:id/clone — edge cases', () => {
   test('clone sản phẩm không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .post('/api/admin/products/999999999/clone')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 404]).toContain(res.status);
   });
 
@@ -555,7 +562,7 @@ describe('PUT /api/admin/products/:id — validation', () => {
   test('cập nhật product không tồn tại → 400, 404 hoặc 500', async () => {
     const res = await request(app)
       .put('/api/admin/products/999999999')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: 'NonExistent' });
     expect([400, 404, 500]).toContain(res.status);
   });
@@ -589,7 +596,7 @@ describe('DELETE /api/admin/products/:id — với sản phẩm thực', () => {
     });
     const res = await request(app)
       .delete(`/api/admin/products/${tmpProd.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204, 400]).toContain(res.status);
     await Product.destroy({ where: { id: tmpProd.id }, force: true }).catch(() => {});
   });
@@ -685,7 +692,7 @@ describe('PUT /api/admin/orders/:id/status — tất cả trạng thái hợp l�
   test('status=shipped với id không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .put('/api/admin/orders/999999999/status')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'shipped' });
     expect([200, 400, 404]).toContain(res.status);
   });
@@ -693,7 +700,7 @@ describe('PUT /api/admin/orders/:id/status — tất cả trạng thái hợp l�
   test('status=delivered với id không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .put('/api/admin/orders/999999999/status')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'delivered' });
     expect([200, 400, 404]).toContain(res.status);
   });
@@ -701,7 +708,7 @@ describe('PUT /api/admin/orders/:id/status — tất cả trạng thái hợp l�
   test('status không hợp lệ → 400', async () => {
     const res = await request(app)
       .put('/api/admin/orders/999999999/status')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'invalid_status_xyz' });
     expect([400, 422]).toContain(res.status);
   });
@@ -724,7 +731,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
   test('hủy đơn không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .put('/api/admin/orders/999999999/cancel')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 404]).toContain(res.status);
   });
 
@@ -804,7 +811,7 @@ describe('DELETE /api/admin/reviews/:id — với review thực', () => {
     if (!tmpReview) return;
     const res = await request(app)
       .delete(`/api/admin/reviews/${tmpReview.id}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204, 400]).toContain(res.status);
     await Review.destroy({ where: { id: tmpReview.id }, force: true }).catch(() => {});
   });
@@ -823,7 +830,7 @@ describe('POST /api/admin/discount-codes — validation', () => {
   test('code quá ngắn (1 ký tự) → 400', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ code: 'X', type: 'percent', value: 10 });
     expect(res.status).toBe(400);
   });
@@ -831,7 +838,7 @@ describe('POST /api/admin/discount-codes — validation', () => {
   test('type không hợp lệ → 400', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ code: `COMP-INVTYPE-${TS}`, type: 'bogus_type', value: 10 });
     expect(res.status).toBe(400);
   });
@@ -839,7 +846,7 @@ describe('POST /api/admin/discount-codes — validation', () => {
   test('value âm → 400', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ code: `COMP-NEG-${TS}`, type: 'percent', value: -5 });
     expect(res.status).toBe(400);
   });
@@ -847,7 +854,7 @@ describe('POST /api/admin/discount-codes — validation', () => {
   test('thiếu field code → 400', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ type: 'percent', value: 10 });
     expect(res.status).toBe(400);
   });
@@ -855,7 +862,7 @@ describe('POST /api/admin/discount-codes — validation', () => {
   test('thiếu field type → 400', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ code: `COMP-NOTYPE-${TS}`, value: 10 });
     expect(res.status).toBe(400);
   });
@@ -863,7 +870,7 @@ describe('POST /api/admin/discount-codes — validation', () => {
   test('tạo mã giảm giá percent hợp lệ → 200 hoặc 201', async () => {
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         code: `COMP-PCT-${TS}`,
         type: 'percent',
@@ -899,7 +906,7 @@ describe('GET /api/admin/discount-codes/:id — với id thực', () => {
   test('lấy discount code vừa tạo → 200', async () => {
     const createRes = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         code: `COMP-GET-${TS}`,
         type: 'fixed',
@@ -936,7 +943,7 @@ describe('PUT /api/admin/discount-codes/:id — validation chi tiết', () => {
   test('cập nhật isActive=true cho code tồn tại → 200 hoặc 400', async () => {
     const createRes = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         code: `COMP-UPD-${TS}`,
         type: 'percent',
@@ -951,7 +958,7 @@ describe('PUT /api/admin/discount-codes/:id — validation chi tiết', () => {
 
     const res = await request(app)
       .put(`/api/admin/discount-codes/${id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ isActive: true });
     expect([200, 400]).toContain(res.status);
   });
@@ -959,7 +966,7 @@ describe('PUT /api/admin/discount-codes/:id — validation chi tiết', () => {
   test('cập nhật discount code không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .put('/api/admin/discount-codes/999999999')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ value: 10 });
     expect([400, 404]).toContain(res.status);
   });
@@ -1236,7 +1243,7 @@ describe('POST /api/admin/products/import — auth', () => {
   test('admin không gửi file → 400 hoặc 422', async () => {
     const res = await request(app)
       .post('/api/admin/products/import')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 422]).toContain(res.status);
   });
 });
@@ -1247,7 +1254,7 @@ describe('POST /api/admin/products — validation schema', () => {
   test('payload rỗng → 400', async () => {
     const res = await request(app)
       .post('/api/admin/products')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({});
     expect(res.status).toBe(400);
   });
@@ -1255,7 +1262,7 @@ describe('POST /api/admin/products — validation schema', () => {
   test('thiếu field name → 400', async () => {
     const res = await request(app)
       .post('/api/admin/products')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ description: 'Test desc', shortDescription: 'Short', price: 100000 });
     expect(res.status).toBe(400);
   });
@@ -1263,7 +1270,7 @@ describe('POST /api/admin/products — validation schema', () => {
   test('price âm → 400', async () => {
     const res = await request(app)
       .post('/api/admin/products')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         name: 'Test Product',
         description: 'Test description',

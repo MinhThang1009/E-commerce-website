@@ -1691,6 +1691,7 @@
       "deleteConfirm": "Are you sure you want to delete this user?",
       "roles": {
         "admin": "Administrator",
+        "staff": "Sales staff",
         "customer": "Customer"
       },
       "status": {
@@ -1778,6 +1779,10 @@
       }
     },
     "verifyingAccess": "Verifying access permissions...",
+    "viewOnly": {
+      "title": "View-only mode",
+      "description": "You are signed in as an administrator (view-only). Business operations (create/edit/delete) are reserved for sales staff."
+    },
     "charts": {
       "title": "Statistics charts",
       "last7Days": "Last 7 days",

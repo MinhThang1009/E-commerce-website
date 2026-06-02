@@ -47,6 +47,12 @@ export const useAuth = () => {
     return result;
   };
 
+  // Nhân viên bán hàng — role được phép thao tác nghiệp vụ (CRUD sản phẩm/đơn/kho/khuyến mãi).
+  // Admin là xem-only ở back-office nên KHÔNG tính là staff.
+  const isStaff = (): boolean => {
+    return hasRole('staff');
+  };
+
   const getUserFullName = (): string => {
     if (authState.user?.firstName && authState.user?.lastName) {
       return `${authState.user.firstName} ${authState.user.lastName}`;
@@ -60,6 +66,7 @@ export const useAuth = () => {
     logout,
     hasRole,
     isAdmin,
+    isStaff,
     getUserFullName,
 
     isLoggedIn: authState.isAuthenticated && !!authState.user,

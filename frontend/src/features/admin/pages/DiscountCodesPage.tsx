@@ -48,6 +48,8 @@ import StatusPill from '../components/StatusPill';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminStatCard from '../components/AdminStatCard';
 import AdminMobileCard from '../components/AdminMobileCard';
+import ViewOnlyBanner from '../components/ViewOnlyBanner';
+import { useAuth } from '@/features/auth';
 
 interface DiscountFormData {
   code: string;
@@ -78,6 +80,9 @@ const INITIAL_FORM: DiscountFormData = {
 const DiscountCodesPage: React.FC = () => {
   const { t } = useTranslation();
   const { addNotification } = useUiStore();
+  // Chỉ staff được thao tác; admin xem-only
+  const { isStaff } = useAuth();
+  const canWrite = isStaff();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
   const [formData, setFormData] = useState<DiscountFormData>(INITIAL_FORM);
@@ -240,12 +245,16 @@ const DiscountCodesPage: React.FC = () => {
         sparkle
         subtitle={t('admin.discountCodes.subtitle')}
         actions={
-          <Button className="admin-btn-primary" onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
-            {t('admin.discountCodes.createCode')}
-          </Button>
+          canWrite ? (
+            <Button className="admin-btn-primary" onClick={handleCreate}>
+              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+              {t('admin.discountCodes.createCode')}
+            </Button>
+          ) : undefined
         }
       />
+
+      {!canWrite && <ViewOnlyBanner />}
 
       {/* StatStrip — đang chạy / hết hạn / tổng lượt dùng */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
@@ -412,24 +421,28 @@ const DiscountCodesPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => handleEdit(record)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                            title={t('common.edit')}
-                            aria-label={t('common.edit')}
-                          >
-                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(record.id)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                            title={t('common.delete')}
-                            aria-label={t('common.delete')}
-                          >
-                            <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
+                          {canWrite && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(record)}
+                                className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                                title={t('common.edit')}
+                                aria-label={t('common.edit')}
+                              >
+                                <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(record.id)}
+                                className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                                title={t('common.delete')}
+                                aria-label={t('common.delete')}
+                              >
+                                <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
@@ -501,26 +514,28 @@ const DiscountCodesPage: React.FC = () => {
                     },
                   ]}
                   actions={
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleEdit(record)}
-                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                        title={t('common.edit')}
-                        aria-label={t('common.edit')}
-                      >
-                        <Pencil className="h-4 w-4" strokeWidth={2.25} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(record.id)}
-                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
-                        title={t('common.delete')}
-                        aria-label={t('common.delete')}
-                      >
-                        <Trash2 className="h-4 w-4" strokeWidth={2.25} />
-                      </button>
-                    </>
+                    canWrite ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleEdit(record)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                          title={t('common.edit')}
+                          aria-label={t('common.edit')}
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(record.id)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                          title={t('common.delete')}
+                          aria-label={t('common.delete')}
+                        >
+                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                      </>
+                    ) : null
                   }
                 />
               ))}

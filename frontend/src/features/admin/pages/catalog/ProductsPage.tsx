@@ -59,6 +59,8 @@ import StatusPill, { type StatusVariant } from '../../components/StatusPill';
 import AdminPageHeader from '../../components/AdminPageHeader';
 import AdminStatCard from '../../components/AdminStatCard';
 import AdminMobileCard from '../../components/AdminMobileCard';
+import ViewOnlyBanner from '../../components/ViewOnlyBanner';
+import { useAuth } from '@/features/auth';
 
 interface AdminProductRow {
   id: string;
@@ -119,6 +121,9 @@ const ProductsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const addNotification = useUiStore((s) => s.addNotification);
+  // Chỉ staff được thao tác nghiệp vụ; admin xem-only ở back-office
+  const { isStaff } = useAuth();
+  const canWrite = isStaff();
 
   const statusOptions = [
     { value: 'all', label: t('admin.products.filters.allStatus') },
@@ -367,16 +372,20 @@ const ProductsPage: React.FC = () => {
               <Download className="w-4 h-4 mr-2" strokeWidth={2.25} />
               {t('admin.products.actions.export')}
             </Button>
-            <Button
-              className="admin-btn-primary"
-              onClick={() => navigate('/admin/products/create')}
-            >
-              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
-              {t('admin.products.actions.add')}
-            </Button>
+            {canWrite && (
+              <Button
+                className="admin-btn-primary"
+                onClick={() => navigate('/admin/products/create')}
+              >
+                <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+                {t('admin.products.actions.add')}
+              </Button>
+            )}
           </>
         }
       />
+
+      {!canWrite && <ViewOnlyBanner />}
 
       {/* StatStrip — tổng / đang bán / sắp hết / hết hàng (data thật) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -514,13 +523,15 @@ const ProductsPage: React.FC = () => {
                 defaultValue: 'Tạo sản phẩm đầu tiên để bắt đầu bán hàng trên TechStore.',
               })}
             </p>
-            <Button
-              className="admin-btn-primary"
-              onClick={() => navigate('/admin/products/create')}
-            >
-              <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
-              {t('admin.products.actions.add')}
-            </Button>
+            {canWrite && (
+              <Button
+                className="admin-btn-primary"
+                onClick={() => navigate('/admin/products/create')}
+              >
+                <Plus className="w-4 h-4 mr-2" strokeWidth={2.25} />
+                {t('admin.products.actions.add')}
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -708,31 +719,35 @@ const ProductsPage: React.FC = () => {
                             >
                               <Eye className="w-4 h-4" strokeWidth={2.25} />
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
-                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                              title={t('admin.products.actions.edit')}
-                            >
-                              <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleCloneProduct(product.id)}
-                              disabled={isCloning}
-                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] transition disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={t('admin.products.actions.clone')}
-                            >
-                              <Copy className="w-4 h-4" strokeWidth={2.25} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeleteConfirmId(product.id)}
-                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
-                              title={t('admin.products.actions.delete')}
-                            >
-                              <Trash2 className="w-4 h-4" strokeWidth={2.25} />
-                            </button>
+                            {canWrite && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
+                                  className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                                  title={t('admin.products.actions.edit')}
+                                >
+                                  <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCloneProduct(product.id)}
+                                  disabled={isCloning}
+                                  className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title={t('admin.products.actions.clone')}
+                                >
+                                  <Copy className="w-4 h-4" strokeWidth={2.25} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setDeleteConfirmId(product.id)}
+                                  className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)] transition"
+                                  title={t('admin.products.actions.delete')}
+                                >
+                                  <Trash2 className="w-4 h-4" strokeWidth={2.25} />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </td>
                       </motion.tr>
@@ -871,31 +886,35 @@ const ProductsPage: React.FC = () => {
                         >
                           <Eye className="h-4 w-4" strokeWidth={2.25} />
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
-                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                          title={t('admin.products.actions.edit')}
-                        >
-                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleCloneProduct(product.id)}
-                          disabled={isCloning}
-                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] disabled:cursor-not-allowed disabled:opacity-40"
-                          title={t('admin.products.actions.clone')}
-                        >
-                          <Copy className="h-4 w-4" strokeWidth={2.25} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteConfirmId(product.id)}
-                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
-                          title={t('admin.products.actions.delete')}
-                        >
-                          <Trash2 className="h-4 w-4" strokeWidth={2.25} />
-                        </button>
+                        {canWrite && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => navigate(buildRoute.adminProductEdit(product.id))}
+                              className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                              title={t('admin.products.actions.edit')}
+                            >
+                              <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCloneProduct(product.id)}
+                              disabled={isCloning}
+                              className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-violet)]/10 hover:text-[var(--color-violet)] disabled:cursor-not-allowed disabled:opacity-40"
+                              title={t('admin.products.actions.clone')}
+                            >
+                              <Copy className="h-4 w-4" strokeWidth={2.25} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteConfirmId(product.id)}
+                              className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--color-danger)]/10 hover:text-[var(--color-danger)]"
+                              title={t('admin.products.actions.delete')}
+                            >
+                              <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+                            </button>
+                          </>
+                        )}
                       </>
                     }
                   />
@@ -1109,16 +1128,18 @@ const ProductsPage: React.FC = () => {
             <Button variant="outline" onClick={() => setIsQuickViewOpen(false)}>
               {t('admin.products.modal.close')}
             </Button>
-            <Button
-              className="admin-btn-primary"
-              onClick={() => {
-                setIsQuickViewOpen(false);
-                navigate(buildRoute.adminProductEdit(selectedProduct?.id ?? ''));
-              }}
-            >
-              <Pencil className="w-4 h-4 mr-2" strokeWidth={2.25} />
-              {t('admin.products.modal.edit')}
-            </Button>
+            {canWrite && (
+              <Button
+                className="admin-btn-primary"
+                onClick={() => {
+                  setIsQuickViewOpen(false);
+                  navigate(buildRoute.adminProductEdit(selectedProduct?.id ?? ''));
+                }}
+              >
+                <Pencil className="w-4 h-4 mr-2" strokeWidth={2.25} />
+                {t('admin.products.modal.edit')}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

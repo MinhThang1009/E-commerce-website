@@ -10,14 +10,14 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 const { User, AttributeGroup, AttributeValue, Category, Brand } = require('@models');
 
 const TS = Date.now();
-let admin, adminToken;
+let admin, staffToken;
 let product, variant, cat, brand;
 let createdGroupId, createdValueId;
 
 beforeAll(async () => {
-  ({ user: admin, token: adminToken } = await createTestUser({
+  ({ user: admin, token: staffToken } = await createTestUser({
     email: `__http_attr_extra_${TS}@t.com`,
-    role: 'admin',
+    role: 'staff',
   }));
   ({ product, variant, cat, brand } = await createTestProduct());
 });
@@ -51,7 +51,7 @@ describe('POST /api/attributes/groups (admin)', () => {
   test('admin + body hợp lệ → 201 hoặc 200', async () => {
     const res = await request(app)
       .post('/api/attributes/groups')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_AttrExtra_Group_${TS}`, type: 'custom' });
     expect([200, 201]).toContain(res.status);
     expect(res.body.status).toBe('success');
@@ -72,7 +72,7 @@ describe('PUT /api/attributes/groups/:id (admin)', () => {
     if (!createdGroupId) return;
     const res = await request(app)
       .put(`/api/attributes/groups/${createdGroupId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: `__HTTP_AttrExtra_Group_Updated_${TS}` });
     expect([200, 201]).toContain(res.status);
   });
@@ -80,7 +80,7 @@ describe('PUT /api/attributes/groups/:id (admin)', () => {
   test('admin + id không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .put('/api/attributes/groups/999999999')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ name: '__HTTP_NoExist' });
     expect([400, 404]).toContain(res.status);
   });
@@ -92,7 +92,7 @@ describe('DELETE /api/attributes/groups/:id (admin)', () => {
   test('admin + id không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
       .delete('/api/attributes/groups/999999999')
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 404]).toContain(res.status);
   });
 });
@@ -103,7 +103,7 @@ describe('POST /api/attributes/groups/:groupId/values (admin)', () => {
     if (!createdGroupId) return;
     const res = await request(app)
       .post(`/api/attributes/groups/${createdGroupId}/values`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         name: `__HTTP_AttrExtra_Value_${TS}`,
         value: `__HTTP_AttrExtra_Value_${TS}`,
@@ -120,7 +120,7 @@ describe('PUT /api/attributes/values/:id (admin)', () => {
     if (!createdValueId) return;
     const res = await request(app)
       .put(`/api/attributes/values/${createdValueId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ value: `__HTTP_AttrExtra_Value_Updated_${TS}` });
     expect([200, 201]).toContain(res.status);
   });
@@ -132,7 +132,7 @@ describe('DELETE /api/attributes/values/:id (admin)', () => {
     if (!createdValueId) return;
     const res = await request(app)
       .delete(`/api/attributes/values/${createdValueId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 204]).toContain(res.status);
     createdValueId = null;
   });
@@ -159,7 +159,7 @@ describe('POST /api/attributes/products/:productId/groups/:attributeGroupId (adm
     if (!createdGroupId) return;
     const res = await request(app)
       .post(`/api/attributes/products/${product.id}/groups/${createdGroupId}`)
-      .set('Authorization', `Bearer ${adminToken}`);
+      .set('Authorization', `Bearer ${staffToken}`);
     expect([200, 201]).toContain(res.status);
   });
 
@@ -195,7 +195,7 @@ describe('POST /api/attributes/batch-generate-names (admin)', () => {
   test('admin + productIds rỗng → 200 hoặc 400', async () => {
     const res = await request(app)
       .post('/api/attributes/batch-generate-names')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ productIds: [] });
     expect([200, 400]).toContain(res.status);
   });

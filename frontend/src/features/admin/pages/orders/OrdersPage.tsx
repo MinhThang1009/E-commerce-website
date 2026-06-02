@@ -42,6 +42,8 @@ import { Label } from '@/components/ui/label';
 import AdminPageHeader from '../../components/AdminPageHeader';
 import AdminStatCard from '../../components/AdminStatCard';
 import AdminMobileCard from '../../components/AdminMobileCard';
+import ViewOnlyBanner from '../../components/ViewOnlyBanner';
+import { useAuth } from '@/features/auth';
 import {
   Select,
   SelectTrigger,
@@ -123,6 +125,9 @@ interface UpdateFormData {
 const OrdersPage: React.FC = () => {
   const { t } = useTranslation();
   const { addNotification } = useUiStore();
+  // Chỉ staff được cập nhật trạng thái đơn; admin xem-only
+  const { isStaff } = useAuth();
+  const canWrite = isStaff();
 
   // Quản lý state — khởi tạo statusFilter từ query param (?status=pending từ Dashboard)
   const [searchParams] = useSearchParams();
@@ -365,6 +370,8 @@ const OrdersPage: React.FC = () => {
         }
       />
 
+      {!canWrite && <ViewOnlyBanner />}
+
       {/* StatStrip — aggregate trạng thái + doanh thu (data thật từ dashboard) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
         <AdminStatCard
@@ -604,14 +611,16 @@ const OrdersPage: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" strokeWidth={2.25} />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateStatus(record)}
-                            className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
-                            title={t('admin.orders.actions.update')}
-                          >
-                            <Pencil className="w-4 h-4" strokeWidth={2.25} />
-                          </button>
+                          {canWrite && (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(record)}
+                              className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--accent)]/10 hover:text-[var(--accent)] transition"
+                              title={t('admin.orders.actions.update')}
+                            >
+                              <Pencil className="w-4 h-4" strokeWidth={2.25} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
@@ -726,14 +735,16 @@ const OrdersPage: React.FC = () => {
                       >
                         <Eye className="h-4 w-4" strokeWidth={2.25} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(record)}
-                        className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
-                        title={t('admin.orders.actions.update')}
-                      >
-                        <Pencil className="h-4 w-4" strokeWidth={2.25} />
-                      </button>
+                      {canWrite && (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateStatus(record)}
+                          className="rounded-lg p-1.5 text-[var(--text-secondary)] transition hover:bg-[var(--accent)]/10 hover:text-[var(--accent)]"
+                          title={t('admin.orders.actions.update')}
+                        >
+                          <Pencil className="h-4 w-4" strokeWidth={2.25} />
+                        </button>
+                      )}
                     </>
                   }
                 />

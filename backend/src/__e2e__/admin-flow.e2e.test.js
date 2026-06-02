@@ -10,6 +10,7 @@ const { Op } = require('sequelize');
 
 const TS = Date.now();
 let adminUser, adminToken;
+let staffUser, staffToken;
 let customerUser, customerToken;
 let testProduct, testVariant;
 let createdDcCode;
@@ -18,6 +19,10 @@ beforeAll(async () => {
   const adminResult = await createE2EAdmin({ email: `__e2e_admin_${TS}@t.com` });
   adminUser = adminResult.user;
   adminToken = adminResult.token;
+
+  const staffResult = await createE2EUser({ email: `__e2e_staff_${TS}@t.com`, role: 'staff' });
+  staffUser = staffResult.user;
+  staffToken = staffResult.token;
 
   const customerResult = await createE2EUser({ email: `__e2e_admin_cust_${TS}@t.com` });
   customerUser = customerResult.user;
@@ -39,6 +44,7 @@ afterAll(async () => {
     await testProduct.destroy({ force: true }).catch(() => {});
   }
   if (customerUser) await customerUser.destroy({ force: true }).catch(() => {});
+  if (staffUser) await staffUser.destroy({ force: true }).catch(() => {});
   if (adminUser) await adminUser.destroy({ force: true }).catch(() => {});
 });
 
@@ -103,7 +109,7 @@ describe('Admin — Quản lý sản phẩm', () => {
   test('PATCH /api/admin/products/:id/status — cập nhật sang inactive → 200', async () => {
     const res = await request(app)
       .patch(`/api/admin/products/${testProduct.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'inactive' });
 
     expect([200, 204]).toContain(res.status);
@@ -112,7 +118,7 @@ describe('Admin — Quản lý sản phẩm', () => {
   test('PATCH /api/admin/products/:id/status — restore về active', async () => {
     const res = await request(app)
       .patch(`/api/admin/products/${testProduct.id}/status`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'active' });
 
     expect([200, 204]).toContain(res.status);
@@ -121,7 +127,7 @@ describe('Admin — Quản lý sản phẩm', () => {
   test('PUT /api/admin/products/:id — cập nhật thông tin → 200', async () => {
     const res = await request(app)
       .put(`/api/admin/products/${testProduct.id}`)
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ nameVi: `__E2E_Updated_${TS}`, nameEn: `__E2E_Updated_${TS}` });
 
     expect([200, 204]).toContain(res.status);
@@ -152,7 +158,7 @@ describe('Admin — Quản lý đơn hàng', () => {
   test('PUT /api/admin/orders/999999999/status — order không tồn tại → 404', async () => {
     const res = await request(app)
       .put('/api/admin/orders/999999999/status')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({ status: 'processing' });
 
     expect([404, 400]).toContain(res.status);
@@ -249,7 +255,7 @@ describe('Admin — Discount codes', () => {
     createdDcCode = `E2E_DISC_${TS}`;
     const res = await request(app)
       .post('/api/admin/discount-codes')
-      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Authorization', `Bearer ${staffToken}`)
       .send({
         code: createdDcCode,
         type: 'percent',

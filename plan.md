@@ -231,8 +231,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 2 | `payment` | IPN, paymentStatus sync, discount usedCount; state §7.2, use case §2.4b | ✅ DONE tầng 0 (P1 fixed; P2/P3 noted) — sơ đồ chưa vẽ |
 | 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ✅ DONE tầng 0 (A6 fixed) — sơ đồ chưa vẽ |
 | 4 | `cart` | merge guest, variant pricing; use case §2.3a | ✅ DONE tầng 0 (C1 fixed) — sơ đồ chưa vẽ |
-| 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ⏳ NEXT |
-| 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ⏳ |
+| 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ✅ DONE tầng 0 (không bug code) — sơ đồ chưa vẽ |
+| 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ⏳ NEXT |
 | 7 | `discount-code` | validate/apply, usedCount timing | ⏳ |
 | 8 | `reviews` | hasUserPurchased; use case §2.5 | ⏳ |
 | 9 | `ai` | RAG tuân quy chuẩn `RAG_CHATBOT_PIPELINE.md`; pipeline §6, sequence §3.3 | ⏳ |
@@ -310,6 +310,17 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | C3 | — | Ownership/stock/variant-pricing | service | ✅ OK (đúng: _assertOwnership 403, _assertStock variant-first, validateCart phát hiện priceChanged/outOfStock/quantityExceedsStock) |
 
 **✅ CART GATE tầng 0 DONE:** C1 fixed; verify unit **3764** (cart-service 100% cov) + lint sạch + **integration 12** (thêm 1 test merge gọi service THẬT assert unitPrice=giá hiện tại persist DB — FAIL nếu revert; test merge cũ tautological đánh dấu dọn ở test-quality phase). Docs cart/CLAUDE.md + counts cập nhật. **Sơ đồ tầng 1/2 CHƯA vẽ.**
+
+**Module `catalog`** — audit 2026-06-02 (đọc product-methods + repo + routes; module lớn nhất, read-heavy, test rất dày 5 API + 2 integration):
+| ID | Sev | Vấn đề | Status |
+|---|---|---|---|
+| K1 | — | Read logic (price/ratings/variant-resolution/filter/COALESCE-sort) | ✅ OK — _pickDisplayPrice/_calcRatings/getAllProducts đúng; COALESCE sort là rule cứng (giữ) |
+| K2 | 🟢 | `sort`/`order` truyền vào `[[sort,order]]` (fallback) — sort lạ → "Unknown column" 500 | ℹ️ KHÔNG injection (Sequelize quote identifier + validate direction); robustness LOW — không fix để khỏi phá sort theo column hợp lệ FE đang dùng |
+| K3 | 🟡 doc | catalog/CLAUDE.md §4 route tables ghi `authorize('admin')` cho product/category/brand write — thực tế routes.js đã `authorize('staff')` (Pha 0) | ✅ FIXED (9 chỗ → staff) |
+
+**✅ CATALOG GATE tầng 0 DONE:** KHÔNG có bug code tầng-0 (read-heavy, logic đúng, writes guarded staff + tx + slated §3.C removal). Chỉ sửa doc K3. Không đổi code → không cần verify test (catalog test dày sẵn, không regression).
+
+**⚠️ DOC STALE BATCH (Pha 0 — route-table guards):** per-module CLAUDE.md route tables của `orders`/`inventory`/`reviews`/`attribute`/`discount-code` có thể vẫn ghi `authorize('admin')` cho write đã đổi sang `staff`. Sửa cùng lúc khi gate từng module (hoặc 1 batch doc pass).
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

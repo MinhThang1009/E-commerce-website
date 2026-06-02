@@ -161,9 +161,9 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 | GET    | `/:id/variants`        | —                                 | —            | Danh sách biến thể                                                               |
 | GET    | `/:id/reviews-summary` | —                                 | —            | Tổng hợp rating (average, count, distribution)                                   |
 | GET    | `/:id`                 | optionalAuthenticate              | 300s         | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                                         |
-| POST   | `/`                    | authenticate + authorize('admin') | —            | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs) |
-| PUT    | `/:id`                 | authenticate + authorize('admin') | —            | Cập nhật sản phẩm (transaction)                                                  |
-| DELETE | `/:id`                 | authenticate + authorize('admin') | —            | Xóa sản phẩm                                                                     |
+| POST   | `/`                    | authenticate + authorize('staff') | —            | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs) |
+| PUT    | `/:id`                 | authenticate + authorize('staff') | —            | Cập nhật sản phẩm (transaction)                                                  |
+| DELETE | `/:id`                 | authenticate + authorize('staff') | —            | Xóa sản phẩm                                                                     |
 
 ## 4.2 Categories (`/api/categories`)
 
@@ -175,9 +175,9 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 | GET    | `/slug/:slug`   | —                                 | —            | Danh mục theo slug (cũng chấp nhận numeric id)  |
 | GET    | `/:id/products` | —                                 | —            | Sản phẩm trong danh mục                         |
 | GET    | `/:id`          | —                                 | —            | Chi tiết danh mục                               |
-| POST   | `/`             | authenticate + authorize('admin') | —            | Tạo danh mục                                    |
-| PUT    | `/:id`          | authenticate + authorize('admin') | —            | Cập nhật danh mục                               |
-| DELETE | `/:id`          | authenticate + authorize('admin') | —            | Xóa danh mục (fail nếu còn sản phẩm)            |
+| POST   | `/`             | authenticate + authorize('staff') | —            | Tạo danh mục                                    |
+| PUT    | `/:id`          | authenticate + authorize('staff') | —            | Cập nhật danh mục                               |
+| DELETE | `/:id`          | authenticate + authorize('staff') | —            | Xóa danh mục (fail nếu còn sản phẩm)            |
 
 ## 4.3 Brands (`/api/brands`)
 
@@ -186,9 +186,9 @@ Route order quan trọng — named paths phải đứng trước `/:id` để tr
 | GET    | `/`                    | —                                 | Danh sách thương hiệu (tham số: categoryId, hasProducts) |
 | GET    | `/slug/:slug`          | —                                 | Thương hiệu theo slug                                    |
 | GET    | `/slug/:slug/products` | —                                 | Sản phẩm của thương hiệu                                 |
-| POST   | `/`                    | authenticate + authorize('admin') | Tạo thương hiệu                                          |
-| PUT    | `/:id`                 | authenticate + authorize('admin') | Cập nhật thương hiệu                                     |
-| DELETE | `/:id`                 | authenticate + authorize('admin') | Xóa thương hiệu (fail nếu còn sản phẩm)                  |
+| POST   | `/`                    | authenticate + authorize('staff') | Tạo thương hiệu                                          |
+| PUT    | `/:id`                 | authenticate + authorize('staff') | Cập nhật thương hiệu                                     |
+| DELETE | `/:id`                 | authenticate + authorize('staff') | Xóa thương hiệu (fail nếu còn sản phẩm)                  |
 
 ---
 

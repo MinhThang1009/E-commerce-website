@@ -228,8 +228,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | # | Module | Sơ đồ liên quan / lý do | Status |
 |---|---|---|---|
 | 1 | `order` | FSM §7.1, checkout §3.2, use case §2.4 — logic đậm nhất | ✅ DONE (F1–F5) |
-| 2 | `payment` | IPN, paymentStatus sync, discount usedCount; state §7.2, use case §2.4b | ⏳ NEXT |
-| 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ⏳ |
+| 2 | `payment` | IPN, paymentStatus sync, discount usedCount; state §7.2, use case §2.4b | ✅ DONE tầng 0 (P1 fixed; P2/P3 noted) — sơ đồ chưa vẽ |
+| 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ⏳ NEXT |
 | 4 | `cart` | merge guest, variant pricing; use case §2.3a | ⏳ |
 | 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ⏳ |
 | 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ⏳ |
@@ -278,6 +278,18 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - **⚠️ Do F1–F5 (pre-commit hook đã flag tại `d5946f5a`) — CẦN cập nhật:** `orders/CLAUDE.md` (cancelPendingOrdersByUser giờ HOÀN kho; updateOrderStatus hoàn kho khi cancel pending/processing; shippingCost server enforce ngưỡng free), `DIAGRAMS.md` (§7.1 state-order, §5.2), `TESTING_STRATEGY.md` (BE unit 3745→3750). Cập nhật khi vẽ sơ đồ order.
 
 **Use case order (4 actor khi vẽ):** customer (tạo/hủy/repay/nhận/xem), **staff** (xem all + cập nhật trạng thái), **admin** (xem all — only), guest (track public).
+
+**Module `payment`** — audit 2026-06-02 (đọc service+repo+routes+validator; baseline unit 125, integration cũ tautological):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| P1 | 🟡 | `handleVnPayReturn` mark paid KHÔNG verify số tiền (IPN có check RspCode 04) — lệch defense | service `handleVnPayReturn` (~L213) | ✅ FIXED (thêm amount check + redirect failed&code=04, guard `Number.isFinite` giữ tương thích; +3 unit, +integration test FAIL nếu revert) |
+| P2 | 🟡 | `createRefund` không lock/transaction → 2 refund đồng thời có thể double-call gateway | service `createRefund` (~L294) | ⚠️ NOTED (defer): fix đúng phải giữ lock qua HTTP gateway (anti-pattern) hoặc claim-compensation; rủi ro thấp (admin/staff hiếm + VNPay idempotent transRef). Ghi gotcha CLAUDE.md |
+| P3 | 🟡 | Discount over-redemption: online payment kiểm usageLimit lúc apply, tăng usedCount lúc pay không re-check → race vượt limit | cross-module (orders apply / payment increment) | ⚠️ DEFER → gate `discount-code` (#7) |
+| P4 | 🟢 | Side-effect post-payment (increment/clearCart/email) fire-and-forget ngoài tx | service (~L171) | ℹ️ intentional (documented) |
+| P5 | 🟢 | Refund set `paymentStatus=refunded` nhưng không đổi `order.status`/restore stock | service `createRefund` (~L316) | ℹ️ business decision — chưa đổi |
+| P6 | 🟠 | `payment.integration.test.js` tautological (thao tác Model trực tiếp, không gọi service) — đúng lớp F1/F2 | `__integration__/payment.integration.test.js` | ✅ Bổ sung `payment-edge-cases.integration.test.js` gọi service THẬT (10 test, assert outcome). File cũ dọn ở test-quality phase |
+
+**✅ PAYMENT GATE tầng 0 DONE:** P1 fixed; verify unit **3761** (payment-service 100% cov) + lint sạch + **integration 37/198** (4 cũ payment + 10 mới gọi service thật, assert paid/idempotency/amount-mismatch/discount/refund). Docs payment/CLAUDE.md + root §8 + TESTING_STRATEGY cập nhật. → đủ điều kiện vẽ sơ đồ payment (state-02, sequence, use case §2.4b). **Sơ đồ tầng 1/2 CHƯA vẽ** (thuộc pha §D drawing).
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

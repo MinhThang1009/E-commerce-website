@@ -419,6 +419,7 @@ describe('PaymentService.handleVnPayReturn', () => {
         vnp_TxnRef: 'ORD-2511-00042',
         vnp_ResponseCode: '00',
         vnp_TransactionNo: 'VNP-TX-001',
+        vnp_Amount: '50000000', // 500.000đ — khớp order.total (nhánh amount match)
       },
     });
 
@@ -490,6 +491,67 @@ describe('PaymentService.handleVnPayReturn', () => {
     });
 
     // order đã paid → canProcessPayment = false → không save lại
+    expect(repo.saveOrder).not.toHaveBeenCalled();
+  });
+
+  it('lệch số tiền (vnp_Amount) → redirect failed, KHÔNG mark paid (P-1)', async () => {
+    const order = buildOrder({ paymentStatus: 'pending', paymentTransactionId: null }); // total=500000
+    const repo = buildMockRepo({
+      findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(order),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    const { redirectUrl } = await svc.handleVnPayReturn({
+      vnp_Params: {
+        vnp_TxnRef: 'ORD-2511-00042',
+        vnp_ResponseCode: '00',
+        vnp_TransactionNo: 'VNP-TX-AMT',
+        vnp_Amount: '99999900', // 999.999đ ≠ 500.000đ
+      },
+    });
+
+    expect(redirectUrl).toContain('payment=failed');
+    expect(redirectUrl).toContain('code=04');
+    expect(order.paymentStatus).not.toBe('paid');
+    expect(repo.saveOrder).not.toHaveBeenCalled();
+  });
+
+  it('order không tồn tại (findOrderByNumber null) → success redirect, không save', async () => {
+    const repo = buildMockRepo({ findOrderByNumber: jest.fn().mockResolvedValue(null) });
+    const svc = buildService({ paymentRepository: repo });
+
+    const { redirectUrl } = await svc.handleVnPayReturn({
+      vnp_Params: {
+        vnp_TxnRef: 'ORD-NONE',
+        vnp_ResponseCode: '00',
+        vnp_TransactionNo: 'VNP-NONE',
+        vnp_Amount: '50000000',
+      },
+    });
+
+    expect(redirectUrl).toContain('payment=success');
+    expect(repo.saveOrder).not.toHaveBeenCalled();
+  });
+
+  it('lockOrder trả null (race) → success redirect, không save', async () => {
+    const order = buildOrder();
+    const repo = buildMockRepo({
+      findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(null),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    const { redirectUrl } = await svc.handleVnPayReturn({
+      vnp_Params: {
+        vnp_TxnRef: 'ORD-2511-00042',
+        vnp_ResponseCode: '00',
+        vnp_TransactionNo: 'VNP-RACE',
+        vnp_Amount: '50000000',
+      },
+    });
+
+    expect(redirectUrl).toContain('payment=success');
     expect(repo.saveOrder).not.toHaveBeenCalled();
   });
 });

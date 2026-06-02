@@ -212,13 +212,26 @@ class PaymentService {
 
     if (responseCode === '00') {
       const transNo = vnp_Params['vnp_TransactionNo'];
+      // VNPay gửi vnp_Amount ×100 (đơn vị xu) → chia 100 để so với order.total
+      const amount = parseInt(vnp_Params['vnp_Amount'], 10) / 100;
       const processed = await this.repo.runInTransaction(async (tx) => {
         const found = await this.repo.findOrderByNumber(orderNumber);
         if (!found) return null;
         // Khóa hàng đơn (SELECT FOR UPDATE) TRƯỚC khi kiểm tra idempotency — đồng nhất với
         // handleVnPayIPN, tránh TOCTOU khi return URL và IPN tới đồng thời (double-process)
         const order = await this.repo.lockOrder(found.id, tx);
-        if (!order || !_canProcessPayment(order, transNo)) return null;
+        if (!order) return null;
+        // Xác minh số tiền khớp đơn (đồng nhất handleVnPayIPN) — KHÔNG mark paid nếu lệch tiền.
+        // Bỏ qua khi gateway không gửi vnp_Amount (NaN) để giữ tương thích luồng cũ.
+        if (Number.isFinite(amount) && Math.abs(order.total - amount) > 0.01) {
+          this.logger.warn('VNPay return amount mismatch', {
+            expected: order.total,
+            received: amount,
+            orderNumber,
+          });
+          return 'amount-mismatch';
+        }
+        if (!_canProcessPayment(order, transNo)) return null;
 
         order.status = 'processing';
         order.paymentStatus = 'paid';
@@ -229,6 +242,10 @@ class PaymentService {
         return order;
       });
 
+      // Lệch tiền (dù chữ ký hợp lệ) → coi như thất bại, không báo success cho user
+      if (processed === 'amount-mismatch') {
+        return { redirectUrl: `${this.frontendUrl}/orders?payment=failed&code=04` };
+      }
       if (processed) {
         await this._incrementDiscountCodeUsage(processed.id);
         await this._clearUserCart(processed.userId);

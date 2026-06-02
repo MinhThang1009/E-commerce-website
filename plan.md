@@ -66,7 +66,7 @@
 
 ### B. Tự động hóa thêm (chống thủ công/stale — user yêu cầu)
 - **[XONG] doc-freshness** `scripts/check-doc-freshness.mjs` (pre-commit warn + CI `patch-quality`): phát hiện .md stale — module/feature CLAUDE.md **VÀ** root docs (DIAGRAMS/STRUCTURE/TESTING_STRATEGY/README/RAG_*/backend+frontend CLAUDE.md) khi code liên quan đổi mà doc không. KHÔNG auto-sync (an toàn). Xem QUALITY_CHECKS.md §6.
-- **[CÒN] Cập nhật các .md doc-freshness vừa flag** (do role changes): backend admin/auth/orders/payment + DIAGRAMS.md/STRUCTURE.md/TESTING_STRATEGY.md (số liệu role/4-actor) — xem lại nội dung cho khớp code mới.
+- **[CÒN] Cập nhật các .md doc-freshness vừa flag** (do role + order changes): backend `admin/auth/orders/payment` CLAUDE.md + **`CLAUDE.md` GỐC** (migration 61→62, role ENUM 3-actor `customer/staff/admin`, bỏ gotcha role `'manager'`) + **`STRUCTURE.md`** (cross-module deps, RBAC) + DIAGRAMS.md/TESTING_STRATEGY.md (số liệu role/4-actor, test count) — xem lại nội dung cho khớp code mới.
 - **[CÒN] Wire thêm**: `backend/scripts/check-docs.js` + `scripts/verify-doc-nodes.js`/`verify-doc-evidence.py` + `check-i18n.js` vào CI/pre-push; cân nhắc nightly `check:routes`+`check:unused`, auto-CHANGELOG.
 
 ### C. Dọn API thừa (đã có `npm run check:routes` liệt kê — review trước khi xóa)
@@ -184,6 +184,7 @@ Tầng 2: Sơ đồ đúng ký pháp + đẹp?
   1. Unit test phải assert **OUTCOME nghiệp vụ** (stock count, total tiền, status...), KHÔNG chỉ "method X được gọi" (= tautological, lọt bug).
   2. **BẮT BUỘC integration test gọi SERVICE THẬT + MySQL thật, assert outcome** cho mỗi logic vừa sửa. Unit mock một mình KHÔNG đủ coi là "verified" (F1/F2 chỉ bị `orders-edge-cases.integration.test.js` bắt). Test phải FAIL nếu revert fix.
   3. Chạy đủ: `npm run test` (unit, cov ≥99.7%) + `npm run test:integration -- --testPathPattern=<module>` + `npm run lint`.
+  4. **Cập nhật DOC khớp code vừa fix — tới khi pre-commit doc-freshness KHÔNG còn flag.** Hook `check-doc-freshness.mjs` check (verified): BE `modules/<X>/CLAUDE.md` (17) + FE `features/<X>/CLAUDE.md` (13) + root `CLAUDE.md`/`STRUCTURE.md`/`DIAGRAMS.md`/`TESTING_STRATEGY.md`/`RAG_CHATBOT_PIPELINE.md`/`README.md`. ⚠️ Hook KHÔNG check `PIPELINE_TRACE_EXAMPLES.md` + `QUALITY_CHECKS.md` → cập nhật **THỦ CÔNG** nếu liên quan (vd module `ai` đổi → cả 2 RAG doc + PIPELINE_TRACE). Tránh `.md` stale tích lũy qua **30 CLAUDE.md con + root .md**.
 - **Bắt đầu:** module `order` (✅ DONE) → theo thứ tự roadmap §D.2.
 
 #### NGUYÊN TẮC SỐ 1: VERIFY NỘI DUNG TRƯỚC, VẼ 1 LẦN
@@ -269,8 +270,9 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - ⚠️ **Gộp PHẢI kèm nâng chất lượng:** bỏ test tautological + bổ sung assert OUTCOME nghiệp vụ. Gộp suông = dời chỗ, KHÔNG sửa chất lượng (vấn đề cốt lõi user nêu).
 
 **Doc stale phát hiện (sửa khi đụng, không phải fix logic):**
-- CLAUDE.md gốc "Role ENUM chỉ customer/admin" → thực tế có **staff** (migration `2026060201-add-staff-role`).
+- CLAUDE.md gốc (L261 "Role ENUM chỉ customer/admin" + L301 "61 migrations") → thực tế có **staff** + **62 migration** (→ task cập nhật ở **§3.B**).
 - `orders/CLAUDE.md §5.2`: claim `users` module gọi `cancelPendingOrdersByUser` — SAI (chỉ `orders.createOrder` gọi).
+- **⚠️ Do F1–F5 (pre-commit hook đã flag tại `d5946f5a`) — CẦN cập nhật:** `orders/CLAUDE.md` (cancelPendingOrdersByUser giờ HOÀN kho; updateOrderStatus hoàn kho khi cancel pending/processing; shippingCost server enforce ngưỡng free), `DIAGRAMS.md` (§7.1 state-order, §5.2), `TESTING_STRATEGY.md` (BE unit 3745→3750). Cập nhật khi vẽ sơ đồ order.
 
 **Use case order (4 actor khi vẽ):** customer (tạo/hủy/repay/nhận/xem), **staff** (xem all + cập nhật trạng thái), **admin** (xem all — only), guest (track public).
 
@@ -283,6 +285,7 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - [ ] Nhất quán thuật ngữ: `Chatbot`/`chatbot`, `Hybrid Search`/`hybrid search` (viết hoa lẫn lộn).
 - [ ] Thêm mục **thiết kế role/RBAC 4 actor** (guest/customer/staff/admin) — phản ánh code mới.
 - [ ] Cập nhật mọi số liệu khớp code (25 model, 17 module, 13 feature, 62 migration, các ngưỡng RAG 0.45/0.05/0.15, MAX_SESSIONS=500/TTL30/MAX_HISTORY_TURNS=10, bcrypt 12...).
+- [ ] **Kiểm các `.tex` NGOÀI c1-c4** trong `docs/chapters/` (`abtract_en/vi`, `glossary`, `introduction`, `method`, `evaluation`, `conclusion`, `acknowledgement`, `assurance`) — cập nhật nếu đụng **số liệu** (abstract) / **thuật ngữ** (glossary) / RBAC. ⚠️ Xác nhận `docs/thesis.tex` `\input` để biết file nào ACTIVE trước (grep `\input` rỗng → kiểm cú pháp include thật).
 
 ## 4. TOOLCHAIN & LỆNH
 ```

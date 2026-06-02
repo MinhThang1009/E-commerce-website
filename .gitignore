@@ -101,7 +101,6 @@ docs/*.toc
 docs/*.lof
 docs/*.lot
 docs/*.log
-docs/.ruff_cache/
 # Thesis images — nặng (~13MB), để untracked (commit source text only)
 docs/figures/
 docs/admin-redesign/
@@ -110,6 +109,7 @@ docs/admin-redesign/
 .tools/
 mermaid-cli-*/
 unpacked/
+.ruff_cache/
 *.tmp
 *.pptx
 *.zip

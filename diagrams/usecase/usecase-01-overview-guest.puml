@@ -1,6 +1,7 @@
 @startuml usecase-01-overview-guest
 ' Sơ đồ use case — Khách vãng lai (Guest) — chuẩn ký pháp UML
 left to right direction
+skinparam dpi 300
 skinparam backgroundColor #FFFFFF
 skinparam packageStyle rectangle
 skinparam usecase {

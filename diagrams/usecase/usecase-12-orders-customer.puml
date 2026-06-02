@@ -5,6 +5,7 @@
 ' Quyết định A (GATE-D 2026-06-03): GET /orders/number/:number (getOrderByNumber) GỘP vào
 '   "Xem chi tiết đơn hàng" — cùng UC xem đơn, chỉ khác key tra cứu (id vs number); không tách UC riêng.
 left to right direction
+skinparam dpi 300
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam packageStyle rectangle
@@ -41,4 +42,10 @@ customer -- UC_receive
 customer -- UC_track
 
 guest -- UC_track
+
+note bottom of UC_track
+  Public — KHÔNG cần đăng nhập (nhập order# + email khớp chủ đơn).
+  "Guest" = phiên chưa đăng nhập; người tra thực chất là KH đã đặt đơn
+  (createOrder bắt buộc auth → guest không tự tạo đơn được).
+end note
 @enduml

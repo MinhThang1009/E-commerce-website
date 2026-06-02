@@ -7,6 +7,7 @@
 '   admin/routes.js:351  PUT  /api/admin/orders/:id/status staffOnly                  — staff cập nhật (+paymentStatus/note)
 '   admin/routes.js:356  PUT  /api/admin/orders/:id/cancel staffOnly                  — staff hủy + restore stock (chặn delivered/cancelled)
 left to right direction
+skinparam dpi 300
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam packageStyle rectangle

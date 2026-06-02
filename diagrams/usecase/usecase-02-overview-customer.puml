@@ -1,0 +1,62 @@
+@startuml usecase-02-overview-customer
+' Sơ đồ use case — Khách hàng (Customer) — tổng quát, chuẩn ký pháp UML
+' Ground-truth: route customer-facing (authenticate) xuyên module:
+'   catalog (duyệt/chi tiết), cart, orders+checkout+payment, reviews (hasUserPurchased),
+'   wishlist, users (profile/address), ai/chatbot, content (feedback), search-history.
+' Customer kế thừa năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập) + thao tác cần đăng nhập.
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách hàng\n(Customer)" as customer
+
+rectangle "Hệ thống TechStore" {
+  package "Mua sắm" {
+    usecase "Duyệt & tìm kiếm sản phẩm" as UC_browse
+    usecase "Xem chi tiết sản phẩm" as UC_detail
+    usecase "Quản lý giỏ hàng" as UC_cart
+    usecase "Quản lý yêu thích (wishlist)" as UC_wish
+  }
+  package "Đơn hàng" {
+    usecase "Đặt hàng (checkout)" as UC_order
+    usecase "Áp mã giảm giá" as UC_discount
+    usecase "Thanh toán\n(MoMo/VNPay/COD)" as UC_pay
+    usecase "Thanh toán lại đơn" as UC_repay
+    usecase "Theo dõi & quản lý đơn\n(hủy / nhận / tra cứu)" as UC_track
+  }
+  package "Tài khoản & Tương tác" {
+    usecase "Quản lý tài khoản & địa chỉ" as UC_profile
+    usecase "Đánh giá sản phẩm" as UC_review
+    usecase "Chat AI & tìm kiếm thông minh" as UC_ai
+    usecase "Gửi phản hồi / liên hệ" as UC_feedback
+  }
+
+  UC_discount .> UC_order : <<extend>>
+}
+
+customer -- UC_browse
+customer -- UC_detail
+customer -- UC_cart
+customer -- UC_wish
+customer -- UC_order
+customer -- UC_pay
+customer -- UC_repay
+customer -- UC_track
+customer -- UC_profile
+customer -- UC_review
+customer -- UC_ai
+customer -- UC_feedback
+
+note left of customer
+  • Customer kế thừa toàn bộ năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập).
+  • Thanh toán lại (repay): chỉ đơn pending online chưa trả, KHÔNG COD.
+  • Đánh giá sản phẩm: yêu cầu đã mua hàng (hasUserPurchased).
+end note
+@enduml

@@ -1,0 +1,75 @@
+@startuml usecase-03-overview-admin
+' Sơ đồ use case — Back-office (Staff + Admin) — tổng quát, chuẩn ký pháp UML
+' Ground-truth: RBAC §0 (CLAUDE.md) + admin/routes.js guard (adminOnly/staffOnly/backoffice) + cross-module staff writes.
+'   backoffice (admin+staff XEM): dashboard, analytics/*, reports/export, list (đơn/SP/kho/review/discount), chatbot/stats
+'   staffOnly (CRUD nghiệp vụ): products, orders status+cancel, inventory restock, discount, reviews verify/delete,
+'                               catalog write, payment refund, attribute
+'   adminOnly (độc quyền): users CRUD, analytics/user-growth
+' Mô hình hóa: Admin & Staff KẾ THỪA actor "Người dùng back-office" → cùng quyền XEM (giám sát);
+'   mỗi vai thêm quyền riêng (Admin = users; Staff = CRUD nghiệp vụ). Admin = XEM-ONLY back-office.
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Người dùng\nback-office" as bo <<abstract>>
+actor "Quản trị viên\n(Admin)" as admin
+actor "Nhân viên bán hàng\n(Staff)" as staff
+
+admin --|> bo
+staff --|> bo
+
+rectangle "Back-office TechStore" {
+  package "Giám sát (xem)" {
+    usecase "Xem dashboard & thống kê" as UC_dash
+    usecase "Xem analytics kinh doanh\n& báo cáo (export)" as UC_analytics
+    usecase "Xem danh sách nghiệp vụ\n(đơn/SP/kho/đánh giá/mã GG)" as UC_list
+    usecase "Xem thống kê chatbot" as UC_chatstat
+  }
+  package "Quản trị hệ thống (chỉ Admin)" {
+    usecase "Quản lý người dùng (CRUD)" as UC_user
+    usecase "Xem tăng trưởng người dùng" as UC_growth
+  }
+  package "Nghiệp vụ bán hàng (CRUD - chỉ Staff)" {
+    usecase "Quản lý sản phẩm (CRUD)" as UC_product
+    usecase "Cập nhật & hủy đơn hàng" as UC_order
+    usecase "Nhập kho (restock)" as UC_stock
+    usecase "Quản lý mã giảm giá" as UC_discount
+    usecase "Duyệt / xóa đánh giá" as UC_review
+    usecase "Quản lý thuộc tính SP" as UC_attr
+    usecase "Hoàn tiền đơn (refund)" as UC_refund
+  }
+}
+
+' Quyền XEM dùng chung → nối actor cha (Admin & Staff kế thừa)
+bo -- UC_dash
+bo -- UC_analytics
+bo -- UC_list
+bo -- UC_chatstat
+
+' Admin độc quyền
+admin -- UC_user
+admin -- UC_growth
+
+' Staff độc quyền (nghiệp vụ bán hàng)
+staff -- UC_product
+staff -- UC_order
+staff -- UC_stock
+staff -- UC_discount
+staff -- UC_review
+staff -- UC_attr
+staff -- UC_refund
+
+note as N1
+  • Admin & Staff đều kế thừa "Người dùng back-office" → cùng XEM (giám sát).
+  • Admin = XEM-ONLY back-office + ĐỘC QUYỀN quản lý users; Staff = nghiệp vụ bán hàng (CRUD).
+  • Guard: backoffice = requireRole('admin','staff'); staffOnly = requireRole('staff');
+    adminOnly = requireSuperAdmin (admin). FE: AdminRoute allowedRoles + isStaff() ẩn nút write.
+end note
+@enduml

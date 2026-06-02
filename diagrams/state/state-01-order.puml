@@ -2,6 +2,7 @@
 ' Sơ đồ trạng thái — Vòng đời đơn hàng (order.status)
 ' Verify vs backend/src/modules/orders/services/orders-service.js (STATUS, _canCancel, _canConfirmReceived, _canRepay)
 hide empty description
+skinparam dpi 300
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
 skinparam state {

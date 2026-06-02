@@ -222,7 +222,12 @@ class OrdersService {
       let discount = 0;
       let discountCodeId = null;
       if (discountCode) {
-        const codeData = await this.repo.findActiveDiscountCode(discountCode, { transaction });
+        // Khóa hàng mã giảm giá (SELECT FOR UPDATE) để check usedCount + increment nguyên tử,
+        // tránh vượt usageLimit khi nhiều đơn dùng cùng mã đồng thời
+        const codeData = await this.repo.findActiveDiscountCode(discountCode, {
+          transaction,
+          lock: transaction.LOCK.UPDATE,
+        });
         if (!codeData) throw new AppError('orders.couponInvalid', 400);
 
         const now = new Date();
@@ -483,7 +488,10 @@ class OrdersService {
     let cancelledOrder;
 
     await this.repo.runInTransaction(async (transaction) => {
-      const order = await this.repo.findOrderForCancel(id, userId);
+      const order = await this.repo.findOrderForCancel(id, userId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
       if (!order) throw new AppError('orders.notFound', 404);
 
       if (!_canCancel(order.status)) {

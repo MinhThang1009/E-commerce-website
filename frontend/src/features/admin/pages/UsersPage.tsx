@@ -54,7 +54,7 @@ interface UserFormData {
   firstName: string;
   lastName: string;
   phone?: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'staff' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
 }

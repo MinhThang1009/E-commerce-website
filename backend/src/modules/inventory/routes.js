@@ -13,7 +13,7 @@ const { authorize } = require('@middlewares/authorize');
 module.exports = ({ inventoryController }) => {
   const router = express.Router();
   router.use(authenticate);
-  router.use(authorize('admin'));
+  // Tồn kho là nghiệp vụ bán hàng: thao tác nhập kho → staff; xem nhật ký → admin (giám sát) + staff
 
   /**
    * @swagger
@@ -36,8 +36,12 @@ module.exports = ({ inventoryController }) => {
    *     security:
    *       - bearerAuth: []
    */
-  router.post('/products/:productId/restock', inventoryController.restockProduct);
-  router.get('/logs', inventoryController.getInventoryLogs);
+  router.post(
+    '/products/:productId/restock',
+    authorize('staff'),
+    inventoryController.restockProduct,
+  );
+  router.get('/logs', authorize('admin', 'staff'), inventoryController.getInventoryLogs);
 
   return router;
 };

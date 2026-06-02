@@ -100,18 +100,18 @@ module.exports = ({ catalogController }) => {
   categories.post(
     '/',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(categorySchema),
     catalogController.createCategory,
   );
   categories.put(
     '/:id',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(categorySchema),
     catalogController.updateCategory,
   );
-  categories.delete('/:id', authenticate, authorize('admin'), catalogController.deleteCategory);
+  categories.delete('/:id', authenticate, authorize('staff'), catalogController.deleteCategory);
 
   /**
    * @swagger
@@ -175,18 +175,18 @@ module.exports = ({ catalogController }) => {
   brands.post(
     '/',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(createBrandSchema),
     catalogController.createBrand,
   );
   brands.put(
     '/:id',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(updateBrandSchema),
     catalogController.updateBrand,
   );
-  brands.delete('/:id', authenticate, authorize('admin'), catalogController.deleteBrand);
+  brands.delete('/:id', authenticate, authorize('staff'), catalogController.deleteBrand);
 
   // Product router — order matters: GET / + named paths trước /:id để
   // /:id không catch /featured, /deals, etc.
@@ -326,18 +326,18 @@ module.exports = ({ catalogController }) => {
   products.post(
     '/',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(productSchema),
     catalogController.createProduct,
   );
   products.put(
     '/:id',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(productSchema),
     catalogController.updateProduct,
   );
-  products.delete('/:id', authenticate, authorize('admin'), catalogController.deleteProduct);
+  products.delete('/:id', authenticate, authorize('staff'), catalogController.deleteProduct);
 
   return { categories, brands, products };
 };

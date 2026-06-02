@@ -126,7 +126,7 @@ modules/ai/
 
 **Các concerns khác:**
 
-- **Provider rotation**: `LLM_API_KEY + LLM_BASE_URL + LLM_MODEL_1` (primary) + `LLM_MODEL_2` (fallback). Retry khi 429/402/500/503. Fallback `simpleKeywordMatch` khi hết providers HOẶC khi vượt **ngân sách tổng** `LLM_TOTAL_TIMEOUT_MS` (mặc định = `LLM_REQUEST_TIMEOUT_MS` = 30s; chống treo do rotation cộng dồn 2 provider × 30s). Mọi timeout env-configurable: `LLM_REQUEST_TIMEOUT_MS` / `LLM_REWRITE_TIMEOUT_MS` / `LLM_TOTAL_TIMEOUT_MS`.
+- **Provider rotation**: `LLM_API_KEY + LLM_BASE_URL + LLM_MODEL_1` (primary) + `LLM_MODEL_2` + `LLM_MODEL_3` (fallback). Mỗi provider có thể override key/url riêng qua `LLM_API_KEY_2/3` + `LLM_BASE_URL_2/3`. Retry khi 429/402/500/503. Fallback `simpleKeywordMatch` khi hết providers HOẶC khi vượt **ngân sách tổng** `LLM_TOTAL_TIMEOUT_MS` (mặc định = `LLM_REQUEST_TIMEOUT_MS` = 30s; chống treo do rotation cộng dồn các provider × 30s). Mọi timeout env-configurable: `LLM_REQUEST_TIMEOUT_MS` / `LLM_REWRITE_TIMEOUT_MS` / `LLM_TOTAL_TIMEOUT_MS`.
 - **rewriteQuery fallback**: khi LLM down, dùng `fuzzyExpandQuery` (prefix + edit-distance so với product catalog) thay vì trả null.
 - **Session memory**: `Map<sessionId, { messages, lastAccess }>`. Max 10 turns, 500 sessions, TTL 30 phút. LRU eviction. Reset khi restart.
 - **Catalog cache**: brands + categories, TTL 5 phút (`_catalogCacheExpiry`).

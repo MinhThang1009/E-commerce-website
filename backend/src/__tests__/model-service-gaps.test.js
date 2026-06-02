@@ -948,6 +948,7 @@ describe('catalogService.js — createProduct category not found (line 822)', ()
         findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
         // Only 1 category found, but 2 requested
         findCategoriesByIds: jest.fn().mockResolvedValue([{ id: 1, name: 'Electronics' }]),
+        findProductByName: jest.fn().mockResolvedValue(null),
         createProduct: jest.fn().mockResolvedValue({ id: 'new-p', setCategories: jest.fn() }),
         setProductCategories: jest.fn(),
         runInTransaction: jest.fn(async (work) => work({})),

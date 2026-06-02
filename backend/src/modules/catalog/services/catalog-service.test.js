@@ -72,6 +72,7 @@ describe('CatalogService', () => {
       findRecentlyViewedByUser: jest.fn(),
       upsertRecentlyViewed: jest.fn().mockResolvedValue(),
       pruneRecentlyViewed: jest.fn().mockResolvedValue(),
+      findProductByName: jest.fn().mockResolvedValue(null),
       createProduct: jest.fn(),
       saveProduct: jest.fn().mockResolvedValue(),
       deleteProduct: jest.fn().mockResolvedValue(),
@@ -2025,6 +2026,7 @@ describe('CatalogService.createProduct — variant price=0 branch (line 906)', (
     catalogRepository2 = {
       runInTransaction: jest.fn((fn) => fn({})),
       findCategoriesByIds: jest.fn().mockResolvedValue([]),
+      findProductByName: jest.fn().mockResolvedValue(null),
       createProduct: jest.fn().mockResolvedValue({ id: 999, slug: 'p999' }),
       findProductByIdWithFullDetails: jest.fn().mockResolvedValue(makeProductRow({ id: 999 })),
       createProductVariants: jest.fn().mockResolvedValue([]),

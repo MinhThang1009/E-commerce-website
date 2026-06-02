@@ -48,6 +48,8 @@ jest.mock('@middlewares/authorize', () => ({
 }));
 
 jest.mock('@middlewares/admin-auth', () => ({
+  requireSuperAdmin: (_req, _res, next) => next(),
+  requireRole: () => (_req, _res, next) => next(),
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 

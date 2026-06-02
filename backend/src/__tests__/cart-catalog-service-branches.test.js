@@ -266,6 +266,7 @@ function makeCatalogService(repoOverrides = {}) {
     findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
     upsertRecentlyViewed: jest.fn().mockResolvedValue(),
     pruneRecentlyViewed: jest.fn().mockResolvedValue(),
+    findProductByName: jest.fn().mockResolvedValue(null),
     createProduct: jest.fn().mockResolvedValue({ id: 1 }),
     saveProduct: jest.fn().mockResolvedValue(),
     deleteProduct: jest.fn().mockResolvedValue(),
@@ -864,6 +865,8 @@ jest.mock('@middlewares/authorize', () => ({
 }));
 
 jest.mock('@middlewares/admin-auth', () => ({
+  requireSuperAdmin: (_req, _res, next) => next(),
+  requireRole: () => (_req, _res, next) => next(),
   adminAuthenticate: (_req, _res, next) => next(),
 }));
 

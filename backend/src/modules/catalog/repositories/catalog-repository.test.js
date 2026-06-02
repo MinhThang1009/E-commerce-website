@@ -475,6 +475,17 @@ describe('Product fetching methods', () => {
     expect(result).toBe(product);
   });
 
+  test('TC-38b findProductByName — findOne với where nameVi', async () => {
+    const { repo, deps } = makeRepo();
+    const product = { id: 7, nameVi: 'iPhone 16' };
+    deps.Product.findOne.mockResolvedValue(product);
+
+    const result = await repo.findProductByName('iPhone 16');
+
+    expect(deps.Product.findOne).toHaveBeenCalledWith({ where: { nameVi: 'iPhone 16' } });
+    expect(result).toBe(product);
+  });
+
   test('TC-39 findFeaturedProducts — where isFeatured:true + limit', async () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([{ id: 1, isFeatured: true }]);

@@ -354,6 +354,12 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Product.findByPk(id);
   }
 
+  // Tìm sản phẩm theo tên tiếng Việt (canonical). Product là paranoid nên
+  // sản phẩm đã xóa mềm tự động bị loại — cho phép tạo lại tên đã xóa.
+  async findProductByName(name) {
+    return this.Product.findOne({ where: { nameVi: name } });
+  }
+
   async findFeaturedProducts(limit = 8) {
     return this.Product.findAll({
       where: { isFeatured: true, status: 'active' },

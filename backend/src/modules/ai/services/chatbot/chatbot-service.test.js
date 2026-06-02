@@ -3371,6 +3371,42 @@ describe('ChatbotService constructor — LLM_MODEL_2 (line 158)', () => {
     expect(svc.providers[1].model).toBe('model-2');
     process.env = saved;
   });
+
+  test('providers chứa model_3 khi LLM_MODEL_3 set (fallback thứ 2)', () => {
+    const saved = { ...process.env };
+    process.env.LLM_API_KEY = 'key1';
+    process.env.LLM_BASE_URL = 'http://llm';
+    process.env.LLM_MODEL_1 = 'model-1';
+    process.env.LLM_MODEL_2 = 'model-2';
+    process.env.LLM_MODEL_3 = 'model-3';
+    jest.resetModules();
+    jest.mock('@models', () => ({
+      Product: { findAll: jest.fn().mockResolvedValue([]) },
+      Category: { findAll: jest.fn().mockResolvedValue([]) },
+      Brand: { findAll: jest.fn().mockResolvedValue([]) },
+      ChatMessage: { bulkCreate: jest.fn() },
+      ProductImage: {},
+      ProductVariant: {},
+      sequelize: {},
+      Op: {},
+    }));
+    jest.mock('@services/vector-store/vector-store', () => ({
+      items: [],
+      loadPromise: Promise.resolve(),
+      hybridSearch: jest.fn().mockResolvedValue([]),
+    }));
+    jest.mock('axios');
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    }));
+    const svc = require('./chatbot-service');
+    expect(svc.providers.length).toBe(3);
+    expect(svc.providers[2].model).toBe('model-3');
+    process.env = saved;
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -3425,6 +3461,29 @@ describe('ChatbotService._enrichQueryFromHistory — extract product from respon
     const result = chatbotService._enrichQueryFromHistory('cái đó', history);
     // "not found" response → extractTopProductFromResponse returns null → no enrich
     expect(result).toBe('cái đó');
+  });
+
+  test('enrich query khi history dùng gạch đầu dòng "-" (format LLM thật)', () => {
+    // LLM thật (gpt) liệt kê bằng "-" chứ không phải "•" — phải nhận diện được
+    const history = [
+      {
+        role: 'assistant',
+        content: 'Dạ bên em có ạ 😊\n- Laptop MacBook Air 15 inch M4: từ 31.390.000đ',
+      },
+    ];
+    const result = chatbotService._enrichQueryFromHistory('cái đó pin bao lâu', history);
+    expect(result).toContain('Laptop MacBook Air 15 inch M4');
+    // KHÔNG được dính câu dẫn "Dạ bên em có ạ" vào query
+    expect(result).not.toContain('Dạ bên em');
+  });
+
+  test('KHÔNG enrich khi response là prose thuần không có dòng liệt kê', () => {
+    // Response không có "•" lẫn "- " → extract trả null → giữ nguyên query (không nhồi câu dẫn rác)
+    const history = [
+      { role: 'assistant', content: 'Dạ TechStore có nhiều mẫu lắm ạ. Bạn muốn xem dòng nào?' },
+    ];
+    const result = chatbotService._enrichQueryFromHistory('cái đó giá bao nhiêu', history);
+    expect(result).toBe('cái đó giá bao nhiêu');
   });
 });
 

@@ -28,6 +28,8 @@ jest.mock('@utils/logger', () => ({
 
 // adminAuthenticate: admin khi header x-test-admin là 'true', còn lại 401
 jest.mock('@middlewares/admin-auth', () => ({
+  requireSuperAdmin: (_req, _res, next) => next(),
+  requireRole: () => (_req, _res, next) => next(),
   adminAuthenticate: (req, _res, next) => {
     if (req.headers['x-test-admin'] === 'true') {
       req.user = { id: 1, role: 'admin' };

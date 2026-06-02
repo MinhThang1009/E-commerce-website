@@ -29,14 +29,9 @@ const ProductCategoryForm: React.FC<ProductCategoryFormProps> = ({
 
   const toggleCategory = (categoryId: string) => {
     const current = form.watch('categoryIds') || [];
-    if (current.includes(categoryId)) {
-      form.setValue(
-        'categoryIds',
-        current.filter((id: string) => id !== categoryId),
-      );
-    } else {
-      form.setValue('categoryIds', [...current, categoryId]);
-    }
+    // Single-select: mỗi sản phẩm chỉ thuộc 1 danh mục. Click cái đang chọn → bỏ;
+    // click cái khác → thay thế (giữ shape array để tương thích schema/submit).
+    form.setValue('categoryIds', current.includes(categoryId) ? [] : [categoryId]);
   };
 
   return (

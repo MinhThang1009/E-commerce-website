@@ -26,16 +26,18 @@ interface ProductBasicInfoFormProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<any>;
   fillExampleData: () => void;
+  /** Truyền vào khi đang ở edit mode — dùng để ẩn nút điền dữ liệu mẫu */
   productId?: string;
 }
 
 const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
   form,
   fillExampleData,
-  productId: _productId,
+  productId,
 }) => {
   const { t } = useTranslation();
   const description = form.watch('description') || '';
+  const displayStatus = (form.watch('status') as string) || '';
 
   const handleFillSampleData = async () => {
     if (!import.meta.env.DEV) return;
@@ -64,8 +66,8 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
       <div>
         <Label className="mb-1.5 block">{t('admin.products.form.status')}</Label>
         <Select
-          value={form.watch('status') || ''}
-          onValueChange={(v) => form.setValue('status', v)}
+          value={displayStatus}
+          onValueChange={(v) => form.setValue('status', v, { shouldDirty: true })}
         >
           <SelectTrigger>
             <SelectValue placeholder={t('admin.products.form.statusPlaceholder')} />
@@ -133,7 +135,7 @@ const ProductBasicInfoForm: React.FC<ProductBasicInfoFormProps> = ({
           <div>
             <p>• {t('admin.products.form.tipLine1')}</p>
             <p>• {t('admin.products.form.tipLine2')}</p>
-            {import.meta.env.DEV && (
+            {import.meta.env.DEV && !productId && (
               <p>
                 •{' '}
                 <Button variant="link" size="sm" onClick={handleFillSampleData}>

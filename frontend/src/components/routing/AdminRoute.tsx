@@ -14,9 +14,15 @@ import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AdminRouteProps {
   children: ReactNode;
+  /**
+   * Role được phép truy cập. Mặc định back-office (admin + staff).
+   * Trang quản trị hệ thống (vd quản lý người dùng) truyền ['admin'].
+   * Trang nghiệp vụ bán hàng có thể truyền ['staff'] hoặc để mặc định.
+   */
+  allowedRoles?: Array<'admin' | 'staff'>;
 }
 
-const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+const AdminRoute: React.FC<AdminRouteProps> = ({ children, allowedRoles = ['admin', 'staff'] }) => {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -64,8 +70,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  // Kiểm tra xem user có phải admin không
-  if (userToCheck?.role !== 'admin') {
+  // Kiểm tra role có thuộc nhóm được phép không (mặc định: admin + staff)
+  if (!userToCheck || !allowedRoles.includes(userToCheck.role as 'admin' | 'staff')) {
     return <Navigate to={ROUTES.UNAUTHORIZED} replace />;
   }
 

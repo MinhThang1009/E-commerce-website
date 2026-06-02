@@ -10,7 +10,7 @@ const adminController = require('@modules/admin/controllers/admin-controller');
 const adminImportController = require('@modules/admin/controllers/admin-import-controller');
 const discountCodeController = require('@modules/discount-code/controllers/discount-code-controller');
 
-const { adminAuthenticate } = require('@middlewares/admin-auth');
+const { adminAuthenticate, requireRole, requireSuperAdmin } = require('@middlewares/admin-auth');
 const { validateRequest } = require('@middlewares/validate-request');
 
 const {
@@ -28,6 +28,14 @@ const {
 
 router.use(adminAuthenticate);
 
+// Phân quyền back-office (đặt sau adminAuthenticate, trước từng route):
+//   adminOnly  — admin: quản trị hệ thống (người dùng, phân quyền, analytics người dùng, chatbot)
+//   staffOnly  — staff: nghiệp vụ bán hàng (CRUD sản phẩm/đơn/kho/khuyến mãi/đánh giá)
+//   backoffice — cả hai: xem/giám sát (dashboard, thống kê, danh sách, analytics kinh doanh)
+const adminOnly = requireSuperAdmin;
+const staffOnly = requireRole('staff');
+const backoffice = requireRole('admin', 'staff');
+
 // Dashboard & Stats
 /**
  * @swagger
@@ -38,7 +46,7 @@ router.use(adminAuthenticate);
  *     security:
  *       - bearerAuth: []
  */
-router.get('/dashboard', adminController.getDashboardStats);
+router.get('/dashboard', backoffice, adminController.getDashboardStats);
 /**
  * @swagger
  * /api/admin/stats:
@@ -48,7 +56,12 @@ router.get('/dashboard', adminController.getDashboardStats);
  *     security:
  *       - bearerAuth: []
  */
-router.get('/stats', validateRequest(statsSchema, 400, 'query'), adminController.getDetailedStats);
+router.get(
+  '/stats',
+  backoffice,
+  validateRequest(statsSchema, 400, 'query'),
+  adminController.getDetailedStats,
+);
 
 // Users
 /**
@@ -60,7 +73,12 @@ router.get('/stats', validateRequest(statsSchema, 400, 'query'), adminController
  *     security:
  *       - bearerAuth: []
  */
-router.get('/users', validateRequest(paginationSchema, 400, 'query'), adminController.getAllUsers);
+router.get(
+  '/users',
+  adminOnly,
+  validateRequest(paginationSchema, 400, 'query'),
+  adminController.getAllUsers,
+);
 /**
  * @swagger
  * /api/admin/users/{id}:
@@ -98,9 +116,9 @@ router.get('/users', validateRequest(paginationSchema, 400, 'query'), adminContr
  *         schema:
  *           type: integer
  */
-router.put('/users/:id', validateRequest(updateUserSchema), adminController.updateUser);
-router.get('/users/:id', adminController.getUserById);
-router.delete('/users/:id', adminController.deleteUser);
+router.put('/users/:id', adminOnly, validateRequest(updateUserSchema), adminController.updateUser);
+router.get('/users/:id', adminOnly, adminController.getUserById);
+router.delete('/users/:id', adminOnly, adminController.deleteUser);
 
 // Products
 /**
@@ -119,6 +137,7 @@ router.delete('/users/:id', adminController.deleteUser);
  */
 router.get(
   '/products',
+  backoffice,
   validateRequest(paginationSchema, 400, 'query'),
   adminController.getAllProducts,
 );
@@ -145,13 +164,14 @@ router.get(
  *     security:
  *       - bearerAuth: []
  */
-router.get('/products/import-template', adminImportController.getImportTemplate);
+router.get('/products/import-template', staffOnly, adminImportController.getImportTemplate);
 router.post(
   '/products/import',
+  staffOnly,
   adminImportController.uploadImportFile,
   adminImportController.importProducts,
 );
-router.get('/products/export', adminImportController.exportProducts);
+router.get('/products/export', backoffice, adminImportController.exportProducts);
 
 /**
  * @swagger
@@ -238,14 +258,24 @@ router.get('/products/export', adminImportController.exportProducts);
  *         schema:
  *           type: integer
  */
-router.get('/products/:id', adminController.getProductById);
-router.post('/products', validateRequest(createProductSchema), adminController.createProduct);
-router.put('/products/:id', validateRequest(updateProductSchema), adminController.updateProduct);
-router.delete('/products/:id', adminController.deleteProduct);
-router.post('/products/:id/clone', adminController.cloneProduct);
-router.patch('/products/:id/status', adminController.toggleProductStatus);
-router.post('/products/:productId/restock', adminController.restockProduct);
-router.patch('/products/:id/stock', adminController.updateProductStock);
+router.get('/products/:id', backoffice, adminController.getProductById);
+router.post(
+  '/products',
+  staffOnly,
+  validateRequest(createProductSchema),
+  adminController.createProduct,
+);
+router.put(
+  '/products/:id',
+  staffOnly,
+  validateRequest(updateProductSchema),
+  adminController.updateProduct,
+);
+router.delete('/products/:id', staffOnly, adminController.deleteProduct);
+router.post('/products/:id/clone', staffOnly, adminController.cloneProduct);
+router.patch('/products/:id/status', staffOnly, adminController.toggleProductStatus);
+router.post('/products/:productId/restock', staffOnly, adminController.restockProduct);
+router.patch('/products/:id/stock', staffOnly, adminController.updateProductStock);
 
 // Reviews
 /**
@@ -271,10 +301,11 @@ router.patch('/products/:id/stock', adminController.updateProductStock);
  */
 router.get(
   '/reviews',
+  backoffice,
   validateRequest(paginationSchema, 400, 'query'),
   adminController.getAllReviews,
 );
-router.delete('/reviews/:id', adminController.deleteReview);
+router.delete('/reviews/:id', staffOnly, adminController.deleteReview);
 
 // Orders
 /**
@@ -312,15 +343,17 @@ router.delete('/reviews/:id', adminController.deleteReview);
  */
 router.get(
   '/orders',
+  backoffice,
   validateRequest(paginationSchema, 400, 'query'),
   adminController.getAllOrders,
 );
 router.put(
   '/orders/:id/status',
+  staffOnly,
   validateRequest(updateOrderStatusSchema),
   adminController.updateOrderStatus,
 );
-router.put('/orders/:id/cancel', adminController.adminCancelOrder);
+router.put('/orders/:id/cancel', staffOnly, adminController.adminCancelOrder);
 
 // Discount Codes
 /**
@@ -373,21 +406,24 @@ router.put('/orders/:id/cancel', adminController.adminCancelOrder);
  */
 router.get(
   '/discount-codes',
+  backoffice,
   validateRequest(paginationSchema, 400, 'query'),
   discountCodeController.getAllDiscountCodes,
 );
-router.get('/discount-codes/:id', discountCodeController.getDiscountCodeById);
+router.get('/discount-codes/:id', backoffice, discountCodeController.getDiscountCodeById);
 router.post(
   '/discount-codes',
+  staffOnly,
   validateRequest(createDiscountCodeSchema),
   discountCodeController.createDiscountCode,
 );
 router.put(
   '/discount-codes/:id',
+  staffOnly,
   validateRequest(updateDiscountCodeSchema),
   discountCodeController.updateDiscountCode,
 );
-router.delete('/discount-codes/:id', discountCodeController.deleteDiscountCode);
+router.delete('/discount-codes/:id', staffOnly, discountCodeController.deleteDiscountCode);
 
 // Analytics
 /**
@@ -429,12 +465,16 @@ router.delete('/discount-codes/:id', discountCodeController.deleteDiscountCode);
  *     security:
  *       - bearerAuth: []
  */
-router.get('/analytics/order-status', adminController.getOrderStatusAnalytics);
-router.get('/analytics/top-products', adminController.getTopProductsAnalytics);
-router.get('/analytics/revenue-by-category', adminController.getRevenueByCategoryAnalytics);
-router.get('/analytics/user-growth', adminController.getUserGrowthAnalytics);
-router.get('/analytics/payment-methods', adminController.getPaymentMethodsAnalytics);
-router.get('/analytics/low-stock', adminController.getLowStockAnalytics);
+router.get('/analytics/order-status', backoffice, adminController.getOrderStatusAnalytics);
+router.get('/analytics/top-products', backoffice, adminController.getTopProductsAnalytics);
+router.get(
+  '/analytics/revenue-by-category',
+  backoffice,
+  adminController.getRevenueByCategoryAnalytics,
+);
+router.get('/analytics/user-growth', adminOnly, adminController.getUserGrowthAnalytics);
+router.get('/analytics/payment-methods', backoffice, adminController.getPaymentMethodsAnalytics);
+router.get('/analytics/low-stock', backoffice, adminController.getLowStockAnalytics);
 
 // Reports & Chatbot
 /**
@@ -452,7 +492,7 @@ router.get('/analytics/low-stock', adminController.getLowStockAnalytics);
  *     security:
  *       - bearerAuth: []
  */
-router.get('/reports/export', adminController.exportReport);
-router.get('/chatbot/stats', adminController.getChatbotStats);
+router.get('/reports/export', backoffice, adminController.exportReport);
+router.get('/chatbot/stats', backoffice, adminController.getChatbotStats);
 
 module.exports = router;

@@ -72,8 +72,8 @@ function mkUser(overrides = {}) {
 
 function buildService() {
   const repo = {
-    // transaction wrapper — chạy callback ngay với fake transaction object
-    runInTransaction: jest.fn(async (work) => work({})),
+    // transaction wrapper — chạy callback ngay với fake transaction object (kèm LOCK cho SELECT FOR UPDATE)
+    runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'FOR UPDATE' } })),
 
     // product / variant
     findProductWithDefaultVariant: jest.fn(),

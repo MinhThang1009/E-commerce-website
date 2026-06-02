@@ -47,7 +47,9 @@ const User = sequelize.define(
       allowNull: true,
     },
     role: {
-      type: DataTypes.ENUM('customer', 'admin'),
+      // customer: khách hàng | staff: nhân viên bán hàng (sản phẩm/đơn/kho/khuyến mãi)
+      // admin: quản trị hệ thống (người dùng, phân quyền) + xem-only dashboard/analytics
+      type: DataTypes.ENUM('customer', 'staff', 'admin'),
       defaultValue: 'customer',
     },
     isEmailVerified: {

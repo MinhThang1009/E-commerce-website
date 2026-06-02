@@ -11,7 +11,7 @@ try {
   vectorStoreService = null;
 }
 
-// Model sản phẩm - cấu trúc theo data_new.sql
+// Model sản phẩm - cấu trúc theo seed_data.sql
 const Product = sequelize.define(
   'Product',
   {

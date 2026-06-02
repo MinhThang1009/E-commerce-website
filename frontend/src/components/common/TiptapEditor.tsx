@@ -184,6 +184,10 @@ const TiptapEditor: React.FC<TiptapEditorProps> = ({
     () => [
       StarterKit.configure({
         heading: mode === 'full' ? { levels: [2, 3, 4] } : false,
+        // StarterKit v3 đã kèm sẵn link + underline → tắt để tránh trùng tên extension
+        // (giữ bản import riêng bên dưới vì đã cấu hình Link.openOnClick=false)
+        link: false,
+        underline: false,
       }),
       Underline,
       Placeholder.configure({ placeholder: placeholder || '' }),

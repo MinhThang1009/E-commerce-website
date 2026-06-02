@@ -51,6 +51,7 @@ function makeService(repoOverrides = {}) {
     findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
     findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
     findProductByPk: jest.fn().mockResolvedValue(null),
+    findProductByName: jest.fn().mockResolvedValue(null),
     findFeaturedProducts: jest.fn().mockResolvedValue([]),
     findRelatedProducts: jest.fn().mockResolvedValue([]),
     findRelatedProductsFallback: jest.fn().mockResolvedValue([]),

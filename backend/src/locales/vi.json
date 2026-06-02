@@ -90,7 +90,8 @@
     "cannotDeleteBrandWithProducts": "Không thể xóa thương hiệu đang có sản phẩm",
     "searchKeywordRequired": "Từ khóa tìm kiếm là bắt buộc",
     "invalidCategoryId": "categoryId không hợp lệ",
-    "categoriesNotExist": "Một hoặc nhiều danh mục không tồn tại"
+    "categoriesNotExist": "Một hoặc nhiều danh mục không tồn tại",
+    "productNameExists": "Đã tồn tại sản phẩm với tên này"
   },
   "payment": {
     "orderNotFound": "Không tìm thấy đơn hàng",

@@ -9,9 +9,13 @@ const jwt = require('jsonwebtoken');
 const { User } = require('@models');
 const { AppError } = require('@middlewares/error-handler');
 
+// Các role được phép truy cập trang quản trị (back-office)
+const BACKOFFICE_ROLES = ['admin', 'staff'];
+
 /**
- * Middleware xác thực dành riêng cho admin
- * Kiểm tra token, user tồn tại và có quyền admin
+ * Middleware xác thực cho trang quản trị (back-office)
+ * Kiểm tra token, user tồn tại và có role back-office (admin hoặc staff).
+ * Phân quyền chi tiết theo từng route dùng requireRole().
  */
 const adminAuthenticate = async (req, res, next) => {
   try {
@@ -33,9 +37,9 @@ const adminAuthenticate = async (req, res, next) => {
       return next(new AppError('Người dùng không tồn tại', 401));
     }
 
-    // Kiểm tra user có quyền admin không
-    if (user.role !== 'admin') {
-      return next(new AppError('Bạn không có quyền truy cập admin panel', 403));
+    // Cho phép back-office vào panel: admin (quản trị hệ thống) + staff (nhân viên bán hàng)
+    if (!BACKOFFICE_ROLES.includes(user.role)) {
+      return next(new AppError('Bạn không có quyền truy cập trang quản trị', 403));
     }
 
     // Kiểm tra email đã được xác thực chưa
@@ -55,22 +59,28 @@ const adminAuthenticate = async (req, res, next) => {
 };
 
 /**
- * Middleware phân quyền chi tiết cho admin
- * Chỉ admin mới có thể thực hiện một số hành động nhất định
+ * Factory tạo middleware giới hạn theo role cụ thể (dùng SAU adminAuthenticate).
+ * Ví dụ: requireRole('staff') — chỉ nhân viên bán hàng; requireRole('admin','staff') — cả hai.
+ * @param {...('admin'|'staff')} roles - các role được phép
  */
-const requireSuperAdmin = (req, res, next) => {
-  if (!req.user) {
-    return next(new AppError('Vui lòng đăng nhập để tiếp tục', 401));
-  }
-
-  if (req.user.role !== 'admin') {
-    return next(new AppError('Chỉ Super Admin mới có thể thực hiện hành động này', 403));
-  }
-
-  next();
+const requireRole = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new AppError('Vui lòng đăng nhập để tiếp tục', 401));
+    }
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError('Bạn không có quyền thực hiện hành động này', 403));
+    }
+    next();
+  };
 };
+
+// Chỉ admin (quản trị hệ thống) — dùng cho quản lý người dùng, phân quyền
+const requireSuperAdmin = requireRole('admin');
 
 module.exports = {
   adminAuthenticate,
+  requireRole,
   requireSuperAdmin,
+  BACKOFFICE_ROLES,
 };

@@ -1386,7 +1386,7 @@
         "keywordsLabel": "Search keywords",
         "keywordsPlaceholder": "Enter related keywords, separated by commas",
         "alertMessage": "Category note",
-        "alertDesc": "Choose the right categories so customers can easily find the product. Multiple categories can be selected."
+        "alertDesc": "Choose the right category so customers can easily find the product. Each product belongs to a single category."
       },
       "images": {
         "label": "Product images",

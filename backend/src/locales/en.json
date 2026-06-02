@@ -89,7 +89,8 @@
     "cannotDeleteBrandWithProducts": "Cannot delete brand that has products",
     "searchKeywordRequired": "Search keyword is required",
     "invalidCategoryId": "Invalid category ID",
-    "categoriesNotExist": "One or more categories do not exist"
+    "categoriesNotExist": "One or more categories do not exist",
+    "productNameExists": "A product with this name already exists"
   },
   "payment": {
     "orderNotFound": "Order not found",

@@ -157,7 +157,8 @@ class ChatbotService {
   constructor() {
     // ── Cấu hình providers từ environment variables ───────────────────────────
     // Provider 1: LLM_API_KEY + LLM_BASE_URL + LLM_MODEL_1
-    // Provider 2+: LLM_API_KEY_2 + LLM_BASE_URL_2 (fallback LLM_BASE_URL) + LLM_MODEL_2
+    // Provider 2: LLM_API_KEY_2 + LLM_BASE_URL_2 (fallback LLM_BASE_URL) + LLM_MODEL_2
+    // Provider 3: LLM_API_KEY_3 + LLM_BASE_URL_3 (fallback LLM_BASE_URL) + LLM_MODEL_3
     // Rotation: thử lần lượt, provider sau là fallback khi provider trước lỗi.
     this.providers = [];
     const baseUrl = process.env.LLM_BASE_URL;
@@ -173,6 +174,13 @@ class ChatbotService {
         key: process.env.LLM_API_KEY_2 || process.env.LLM_API_KEY,
         url: `${process.env.LLM_BASE_URL_2 || baseUrl}/chat/completions`,
         model: process.env.LLM_MODEL_2,
+      });
+    }
+    if (process.env.LLM_MODEL_3) {
+      this.providers.push({
+        key: process.env.LLM_API_KEY_3 || process.env.LLM_API_KEY,
+        url: `${process.env.LLM_BASE_URL_3 || baseUrl}/chat/completions`,
+        model: process.env.LLM_MODEL_3,
       });
     }
 
@@ -430,9 +438,14 @@ class ChatbotService {
     //     không lên top 3 khi user so sánh.
     //   - Chỉ lấy top 1 đảm bảo mỗi turn được đại diện BẰNG NHAU trong enriched query.
     //
-    // Hỗ trợ format:
-    //   1. Keyword fallback: "• Điện thoại iPhone 17 - 24.990.000 đ"  → extract "Điện thoại iPhone 17"
-    //   2. LLM response: lấy 60 ký tự đầu làm fallback (thường bắt đầu bằng tên sản phẩm)
+    // Hỗ trợ 2 format liệt kê sản phẩm:
+    //   1. Keyword fallback: "• Điện thoại iPhone 17 - 24.990.000 đ"
+    //   2. LLM thật (gpt): "- Điện thoại iPhone 17: giá từ 24.990.000đ..."
+    // LLM hầu như luôn dùng gạch đầu dòng "-" chứ không phải "•", nên PHẢI nhận diện cả hai.
+    //
+    // Khi KHÔNG tìm được dòng liệt kê SP → trả null (không enrich) thay vì lấy 60 ký tự đầu.
+    // Lý do: 60 ký tự đầu thường là câu dẫn ("Dạ TechStore có nhiều mẫu..."), nhồi vào query
+    // sẽ làm embedding lệch → retrieve sai. "Mất context" (LLM hỏi lại) an toàn hơn "sai context".
     const extractTopProductFromResponse = (text) => {
       // Skip "not found" response — không có SP để extract, tránh noise vào enriched query
       if (
@@ -440,14 +453,14 @@ class ChatbotService {
         /Cửa hàng hiện chưa có|không tìm thấy|ngoài phạm vi/i.test(text.substring(0, 80))
       )
         return null;
-      const firstBullet = text.split('\n').find((l) => l.includes('•'));
-      if (firstBullet) {
-        return firstBullet
-          .replace(/^.*?•\s*/, '')
-          .replace(/\s*-\s*[\d.,]+.*$/, '')
-          .trim();
-      }
-      return text.substring(0, 60);
+      // Tìm dòng đầu tiên bắt đầu bằng bullet "•" hoặc gạch đầu dòng "- "
+      const firstItem = text.split('\n').find((l) => /^\s*[•-]\s/.test(l));
+      if (!firstItem) return null;
+      return firstItem
+        .replace(/^\s*[•-]\s*/, '') // bỏ ký hiệu đầu dòng
+        .replace(/\s*[-:]\s*(?:giá|từ)?\s*[\d.,]+.*$/i, '') // bỏ phần giá phía sau (": 24.990.000đ" hoặc "- 24.990.000 đ")
+        .replace(/:\s.*$/, '') // bỏ phần mô tả sau dấu ":"
+        .trim();
     };
 
     const recentContext = history
@@ -483,20 +496,24 @@ class ChatbotService {
     if (!vectorStoreService) return { products: [], finalQuery: enrichedQuery };
 
     try {
-      // Strip mệnh đề phủ định trước khi gửi lên embedding model.
+      // Strip mệnh đề phủ định CHỈ cho embedding (hybridSearch), KHÔNG cho LLM.
       // "không cần iPhone, Samsung" → bias embedding về iPhone/Samsung dù là phủ định.
-      const queryForRetrieval =
-        enrichedQuery
+      // Ngược lại, rewriteQuery + finalQuery (gửi LLM generation) giữ NGUYÊN phủ định —
+      // LLM hiểu ý loại trừ ("không phải Dell") còn embedding thì không, nên phải tách 2 đường.
+      const stripNegation = (q) =>
+        q
           .replace(
-            /(?:không\s+(?:cần|muốn|thích|dùng)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/giu,
+            /(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/giu,
             ' ',
           )
-          .trim() || enrichedQuery;
+          .trim() || q;
 
-      // Chạy song song LLM rewrite + hybridSearch để giảm latency
+      // Chạy song song LLM rewrite + hybridSearch để giảm latency.
+      // rewriteQuery dùng query GỐC (giữ phủ định + sửa typo/viết tắt cùng lúc);
+      // hybridSearch dùng query đã strip (tránh embedding bias).
       const [llmRewrite, initialResults] = await Promise.all([
-        this.rewriteQuery(queryForRetrieval).catch(() => null),
-        vectorStoreService.hybridSearch(queryForRetrieval, 10),
+        this.rewriteQuery(enrichedQuery).catch(() => null),
+        vectorStoreService.hybridSearch(stripNegation(enrichedQuery), 10),
       ]);
 
       let finalQuery = enrichedQuery;
@@ -506,7 +523,10 @@ class ChatbotService {
         finalQuery = llmRewrite;
         logger.debug(`✨ [LLM Rewrite] "${normalizedQuery}" → "${llmRewrite}"`);
         try {
-          const refinedResults = await vectorStoreService.hybridSearch(llmRewrite, 10);
+          const refinedResults = await vectorStoreService.hybridSearch(
+            stripNegation(llmRewrite),
+            10,
+          );
           const results = refinedResults.length > 0 ? refinedResults : initialResults;
           products = results.map((r) => ({
             ...r.metadata,
@@ -514,7 +534,11 @@ class ChatbotService {
             ...(r.lowConfidence && { lowConfidence: true }),
           }));
         } catch {
-          products = initialResults.map((r) => ({ ...r.metadata, score: r.score }));
+          products = initialResults.map((r) => ({
+            ...r.metadata,
+            score: r.score,
+            ...(r.lowConfidence && { lowConfidence: true }),
+          }));
         }
       } else {
         products = initialResults.map((r) => ({
@@ -528,7 +552,7 @@ class ChatbotService {
       if (products.length === 0) {
         logger.warn('[Chatbot] Không có kết quả trên threshold — hạ minScore lấy top-3');
         try {
-          const lowResults = await vectorStoreService.hybridSearch(finalQuery, 3, 0);
+          const lowResults = await vectorStoreService.hybridSearch(stripNegation(finalQuery), 3, 0);
           products = lowResults.map((r) => ({
             ...r.metadata,
             score: r.score,

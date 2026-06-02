@@ -81,17 +81,9 @@ jest.mock('@middlewares/authenticate', () => ({
   },
 }));
 
-jest.mock('@middlewares/admin-auth', () => ({
-  adminAuthenticate: (req, _res, next) => {
-    req.user = { id: 1, role: 'admin', email: 'admin@test.com' };
-    next();
-  },
-  requireSuperAdmin: (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/admin-auth');
 
-jest.mock('@middlewares/authorize', () => ({
-  authorize: () => (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/authorize');
 
 jest.mock('@middlewares/validate-request', () => ({
   validateRequest: () => (_req, _res, next) => next(),
@@ -572,46 +564,38 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     );
   });
 
-  it('tạo category placeholder khi categoryId là số nguyên và không tồn tại', async () => {
-    const newProduct = makeCreatedProduct(21);
-    Product.create.mockResolvedValueOnce(newProduct);
-    Product.findByPk.mockResolvedValueOnce(newProduct);
-    ProductAttribute.findAll.mockResolvedValueOnce([]);
-    // Category không tồn tại → findByPk trả null → create placeholder
-    Category.findByPk.mockResolvedValueOnce(null);
-    Category.create.mockResolvedValueOnce({ id: 5, name: 'Category 5' });
-    sequelize.query.mockResolvedValue([[], {}]);
+  it('trả về 400 khi categoryId không tồn tại (KHÔNG auto-tạo category rác)', async () => {
+    // Category không tồn tại → findCategories trả [] → 400, không tạo product
+    Category.findAll.mockResolvedValueOnce([]);
 
     const res = await request.post('/api/admin/products').send({
-      name: 'Laptop With Category',
+      name: 'Laptop Category Không Tồn Tại',
       basePrice: 10000000,
-      categoryIds: ['5'],
+      categoryIds: ['999'],
     });
 
-    expect(res.status).toBe(201);
-    expect(Category.create).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Category 5', slug: 'category-5' }),
-    );
-    expect(newProduct.setCategories).toHaveBeenCalledWith([5]);
+    expect(res.status).toBe(400);
+    expect(Product.create).not.toHaveBeenCalled();
+    expect(Category.create).not.toHaveBeenCalled();
   });
 
-  it('tiếp tục khi categories throw error (error không propagate)', async () => {
+  it('set FK categoryId = danh mục đã chọn khi category hợp lệ', async () => {
     const newProduct = makeCreatedProduct(22);
     Product.create.mockResolvedValueOnce(newProduct);
     Product.findByPk.mockResolvedValueOnce(newProduct);
     ProductAttribute.findAll.mockResolvedValueOnce([]);
-    // Category.findByPk throw error → được catch bên trong
-    Category.findByPk.mockRejectedValueOnce(new Error('DB error'));
+    Category.findAll.mockResolvedValueOnce([{ id: 9, name: 'Laptop' }]);
     sequelize.query.mockResolvedValue([[], {}]);
 
     const res = await request.post('/api/admin/products').send({
-      name: 'Laptop Category Error',
+      name: 'Laptop Category Hợp Lệ',
       basePrice: 10000000,
       categoryIds: ['9'],
     });
 
-    // Phải thành công vì error được catch
     expect(res.status).toBe(201);
+    expect(newProduct.setCategories).toHaveBeenCalledWith([{ id: 9, name: 'Laptop' }]);
+    expect(newProduct.update).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 9 }));
   });
 
   it('tạo attribute với value là chuỗi có dấu phẩy → tách thành mảng', async () => {

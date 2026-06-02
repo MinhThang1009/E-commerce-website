@@ -47,17 +47,9 @@ jest.mock('@middlewares/authenticate', () => ({
   },
 }));
 
-jest.mock('@middlewares/admin-auth', () => ({
-  adminAuthenticate: (req, _res, next) => {
-    req.user = { id: 1, role: 'admin' };
-    next();
-  },
-  requireSuperAdmin: (_r, _s, n) => n(),
-}));
+jest.mock('@middlewares/admin-auth');
 
-jest.mock('@middlewares/authorize', () => ({
-  authorize: () => (_r, _s, n) => n(),
-}));
+jest.mock('@middlewares/authorize');
 
 jest.mock('@middlewares/validate-request', () => ({
   validateRequest: () => (_r, _s, n) => n(),

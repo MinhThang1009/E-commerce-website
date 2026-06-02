@@ -23,8 +23,9 @@ class SequelizeInventoryRepository extends IInventoryRepository {
     return this.ProductVariant.findOne({ where: { id: variantId, productId } });
   }
 
-  async sumVariantStockByProductId(productId) {
-    return this.ProductVariant.sum('stockQuantity', { where: { productId } });
+  async sumVariantStockByProductId(productId, options = {}) {
+    // Forward options (transaction) để SUM chạy trong transaction restock, đọc tổng tồn nhất quán
+    return this.ProductVariant.sum('stockQuantity', { where: { productId }, ...options });
   }
 
   async saveStockable(stockable) {

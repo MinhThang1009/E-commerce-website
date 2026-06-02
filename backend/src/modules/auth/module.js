@@ -65,7 +65,8 @@ module.exports = ({ User, logger, emailService }) => {
       return jwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });
     },
     verifyRefreshToken(token) {
-      return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      // Ràng buộc algorithm tường minh (giống verifyAccessToken) chống tấn công algorithm confusion
+      return jwt.verify(token, process.env.JWT_REFRESH_SECRET, { algorithms: ['HS256'] });
     },
   };
 

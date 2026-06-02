@@ -49,3 +49,31 @@ if [ $? -ne 0 ]; then
   echo "❌ Backend lint-staged failed. Fix trước khi commit."
   exit 1
 fi
+
+# 5. Chạy test LIÊN QUAN tới file staged (bắt regression sớm khi sửa/xóa/fix tính năng).
+#    Dùng jest --findRelatedTests: chỉ chạy test chạm tới file thay đổi (nhanh).
+#    Phát hiện "thêm code mới quên test" do patch-coverage (CI) đảm nhiệm, không phải bước này.
+ROOT="$(git rev-parse --show-toplevel)"
+STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
+
+BE_FILES=$(echo "$STAGED" | grep -E '^backend/src/.*\.js$' | sed 's|^backend/||' || true)
+if [ -n "$BE_FILES" ]; then
+  echo "🧪 Backend: chạy test liên quan file vừa đổi..."
+  cd "$ROOT/backend" && npx jest --bail --silent --passWithNoTests --findRelatedTests $BE_FILES
+  if [ $? -ne 0 ]; then
+    echo "❌ Backend: test liên quan THẤT BẠI. Fix code hoặc cập nhật test trước khi commit."
+    echo "   (Bỏ qua khi thật cần: git commit --no-verify)"
+    exit 1
+  fi
+fi
+
+FE_FILES=$(echo "$STAGED" | grep -E '^frontend/src/.*\.(ts|tsx)$' | sed 's|^frontend/||' || true)
+if [ -n "$FE_FILES" ]; then
+  echo "🧪 Frontend: chạy test liên quan file vừa đổi..."
+  cd "$ROOT/frontend" && npx jest --bail --silent --passWithNoTests --findRelatedTests $FE_FILES
+  if [ $? -ne 0 ]; then
+    echo "❌ Frontend: test liên quan THẤT BẠI. Fix code hoặc cập nhật test trước khi commit."
+    echo "   (Bỏ qua khi thật cần: git commit --no-verify)"
+    exit 1
+  fi
+fi

@@ -91,17 +91,17 @@ export const useProductForm = ({
         }
         case 'specifications': {
           const specsLen = ((values['specifications'] as unknown[]) || []).length;
-          isStepValid = specsLen > 0;
-          if (onStepFilled) onStepFilled('specifications', isStepValid);
+          if (onStepFilled) onStepFilled('specifications', specsLen > 0);
+          isStepValid = true; // optional — không chặn navigation
           break;
         }
         case 'attributes':
-          isStepValid = attributes.length > 0;
-          if (onStepFilled) onStepFilled('attributes', isStepValid);
+          if (onStepFilled) onStepFilled('attributes', attributes.length > 0);
+          isStepValid = true; // optional — không chặn navigation
           break;
         case 'variants': {
-          isStepValid = variants.length > 0;
-          if (onStepFilled) onStepFilled('variants', isStepValid);
+          if (onStepFilled) onStepFilled('variants', variants.length > 0);
+          isStepValid = true; // optional — không chặn navigation
           break;
         }
         case 'pricing': {
@@ -321,15 +321,7 @@ export const useProductForm = ({
     const cats = values['categoryIds'];
     if (!cats || !Array.isArray(cats) || cats.length === 0) missingFields.push('categoryIds');
 
-    // Specifications — bắt buộc
-    const specs = (values['specifications'] as unknown[]) || [];
-    if (specs.length === 0) missingFields.push('specifications');
-
-    // Attributes — bắt buộc
-    if (attributes.length === 0) missingFields.push('attributes');
-
-    // Variants — bắt buộc
-    if (variants.length === 0) missingFields.push('variants');
+    // specifications / attributes / variants là optional — không block submission
 
     return missingFields.map((f) => fieldLabels[f] ?? f);
   };

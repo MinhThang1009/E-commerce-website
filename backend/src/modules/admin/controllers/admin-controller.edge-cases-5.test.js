@@ -55,13 +55,7 @@ jest.mock('@middlewares/rate-limiter', () => ({
   otpLimiter: (_req, _res, next) => next(),
 }));
 
-jest.mock('@middlewares/admin-auth', () => ({
-  adminAuthenticate: (req, _res, next) => {
-    req.user = { id: 99, role: 'admin', email: 'admin@test.com' };
-    next();
-  },
-  requireSuperAdmin: (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/admin-auth');
 
 jest.mock('@middlewares/authenticate', () => ({
   authenticate: (req, _res, next) => {
@@ -75,9 +69,7 @@ jest.mock('@middlewares/authenticate', () => ({
   },
 }));
 
-jest.mock('@middlewares/authorize', () => ({
-  authorize: () => (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/authorize');
 
 jest.mock('@middlewares/validate-request', () => ({
   validateRequest: () => (_req, _res, next) => next(),

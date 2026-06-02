@@ -50,6 +50,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       findRecentlyViewedByUser: jest.fn(),
       upsertRecentlyViewed: jest.fn().mockResolvedValue(),
       pruneRecentlyViewed: jest.fn().mockResolvedValue(),
+      findProductByName: jest.fn().mockResolvedValue(null),
       createProduct: jest.fn(),
       saveProduct: jest.fn(async (p) => p),
       deleteProduct: jest.fn().mockResolvedValue(),
@@ -444,6 +445,14 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       await expect(
         service.createProduct({ payload: { name: 'P', price: 100, categoryIds: [1, 99] } }),
       ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
+    });
+
+    test('tên sản phẩm đã tồn tại → 409, không tạo', async () => {
+      catalogRepository.findProductByName.mockResolvedValue({ id: 99, nameVi: 'P' });
+      await expect(
+        service.createProduct({ payload: { name: 'P', price: 100 } }),
+      ).rejects.toMatchObject({ statusCode: 409, message: 'catalog.productNameExists' });
+      expect(catalogRepository.createProduct).not.toHaveBeenCalled();
     });
   });
 

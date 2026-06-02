@@ -7,6 +7,7 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('@models');
 const { AppError } = require('@middlewares/error-handler');
+const logger = require('@utils/logger');
 
 // Middleware xác thực người dùng
 const authenticate = async (req, res, next) => {
@@ -88,7 +89,10 @@ const optionalAuthenticate = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      // Token không hợp lệ hoặc đã hết hạn, tiếp tục với tư cách khách
+      // Token không hợp lệ/hết hạn → tiếp tục với tư cách khách, nhưng vẫn log để giám sát bảo mật
+      logger.warn(
+        `[Auth] Token không hợp lệ trong optionalAuthenticate: ${error.name} (ip=${req.ip})`,
+      );
       return next();
     }
     next(error);

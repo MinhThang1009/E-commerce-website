@@ -4,7 +4,7 @@
  * @feature catalog
  * @description Page component của feature catalog
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ROUTES } from '@/routes/paths';
@@ -156,6 +156,9 @@ const EditProductPage: React.FC = () => {
   const navigate = useNavigate();
   const addNotification = useUiStore((s) => s.addNotification);
   const form = useFormAdapter();
+  // Ref lưu product data qua các lần effect re-run — tránh mất data khi React Strict Mode
+  // remount component và TanStack Query tạm thời trả về undefined
+  const productDataRef = useRef<ReturnType<typeof Object.assign> | null>(null);
 
   // Các API hook
   const {
@@ -329,264 +332,285 @@ const EditProductPage: React.FC = () => {
 
   // Nạp dữ liệu sản phẩm vào form
   useEffect(() => {
+    // Cập nhật ref khi có data mới (ref tồn tại qua Strict Mode remount, khác React state)
     if (productResponse?.data) {
-      // Xử lý cả format { product } và raw product
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- API response shape phức tạp, cần dynamic access cho nhiều trường
       const rawData = productResponse.data as any;
-      const product = rawData.product || rawData;
+      productDataRef.current = rawData.product || rawData;
+    }
 
-      // Xử lý mô tả: xử lý ảnh base64
-      let processedDescription = product.description || '';
+    // Dùng ref để đảm bảo luôn có data ngay cả khi TanStack Query
+    // tạm thời trở về loading state trong Strict Mode double-invocation
+    const product = productDataRef.current;
+    if (!product) return;
 
-      // Nếu mô tả là chuỗi JSON, parse trước
-      if (typeof processedDescription === 'string' && processedDescription.startsWith('[')) {
-        try {
-          const parsedDescription = JSON.parse(processedDescription);
-          if (Array.isArray(parsedDescription)) {
-            processedDescription = parsedDescription.join('');
-          }
-        } catch (_e) {
-          // Nếu parse thất bại, giữ nguyên
+    // Xử lý mô tả: xử lý ảnh base64
+    let processedDescription = product.description || '';
+
+    // Nếu mô tả là chuỗi JSON, parse trước
+    if (typeof processedDescription === 'string' && processedDescription.startsWith('[')) {
+      try {
+        const parsedDescription = JSON.parse(processedDescription);
+        if (Array.isArray(parsedDescription)) {
+          processedDescription = parsedDescription.join('');
         }
+      } catch (_e) {
+        // Nếu parse thất bại, giữ nguyên
       }
+    }
 
-      // Trường hợp khác: mô tả rỗng nhưng có mảng images, thử tạo từ images
-      if (!processedDescription && product.images && Array.isArray(product.images)) {
-        const imageElements = (product.images as string[])
-          .filter((img: string) => img.includes('data:image'))
-          .map(
-            (img: string) =>
-              `<img src="${img}" alt="${t('product.imageAlt')}" style="max-width: 100%; height: auto;" />`,
-          )
-          .join('<br/>');
+    // Nếu description không có HTML tags (plain text từ backend) →
+    // convert sang HTML paragraphs để TipTap hiển thị đúng
+    if (processedDescription && !/<[a-z][\s\S]*>/i.test(processedDescription)) {
+      processedDescription = processedDescription
+        .split('\n')
+        .map((line: string) => line.trim())
+        .filter((line: string) => line.length > 0)
+        .map((line: string) => `<p>${line}</p>`)
+        .join('');
+    }
 
-        if (imageElements) {
-          processedDescription = imageElements;
+    // Trường hợp khác: mô tả rỗng nhưng có mảng images, thử tạo từ images
+    if (!processedDescription && product.images && Array.isArray(product.images)) {
+      const imageElements = (product.images as string[])
+        .filter((img: string) => img.includes('data:image'))
+        .map(
+          (img: string) =>
+            `<img src="${img}" alt="${t('product.imageAlt')}" style="max-width: 100%; height: auto;" />`,
+        )
+        .join('<br/>');
+
+      if (imageElements) {
+        processedDescription = imageElements;
+      }
+    }
+
+    // Gán giá trị cho form
+    // Dùng reset() làm nguồn gốc để tránh bị Strict Mode xóa; setFieldsValue để các
+    // child component nhận subscription update.
+    const baseValues = {
+      name: product.baseName || product.name,
+      description: processedDescription,
+      shortDescription: product.shortDescription,
+      price: parseFloat(product.price) || 0,
+      compareAtPrice: parseFloat(product.compareAtPrice) || 0,
+      stockQuantity: product.stockQuantity || 0,
+      sku: product.sku,
+      status: product.status || '',
+      // statusOverride được set riêng bên dưới (React state, bền hơn RHF với Strict Mode)
+      featured: product.isFeatured ?? product.featured ?? false,
+      categoryIds: product.categories?.map((cat: { id: string }) => cat.id) || [],
+      images: (() => {
+        // Thử product.images trước (catalog API — objects {url})
+        const imgs = product.images as Array<{ url?: string } | string> | undefined;
+        if (imgs?.length) {
+          const urls = imgs
+            .map((img) => (typeof img === 'string' ? img : img?.url))
+            .filter(Boolean);
+          if (urls.length) return urls.join('\n');
         }
-      }
+        // Fallback: product.productImages (admin API) — chỉ lấy ảnh chung (variantId = null)
+        const pImgs = product.productImages as
+          | Array<{ imageUrl?: string; url?: string; variantId?: string | null }>
+          | undefined;
+        if (pImgs?.length) {
+          return pImgs
+            .filter((img) => !img?.variantId)
+            .map((img) => img?.imageUrl || img?.url)
+            .filter(Boolean)
+            .join('\n');
+        }
+        return '';
+      })(),
+      thumbnail:
+        product.thumbnail ||
+        (product.productImages as Array<{ imageUrl?: string; isThumbnail?: boolean }>)?.find(
+          (img) => img.isThumbnail,
+        )?.imageUrl ||
+        '',
+      seoTitle: product.seoTitle || '',
+      seoDescription: product.seoDescription || '',
+      seoKeywords: product.seoKeywords || '',
+      faqs: product.faqs || [],
+      specifications: (() => {
+        // Ưu tiên bảng productSpecifications (normalized)
+        if (
+          product.productSpecifications &&
+          Array.isArray(product.productSpecifications) &&
+          product.productSpecifications.length > 0
+        ) {
+          return product.productSpecifications.map(
+            (
+              spec: { id?: string; name: string; value: string; category?: string },
+              index: number,
+            ) => ({
+              id: spec.id || `spec-${index}`,
+              name: spec.name,
+              value: spec.value,
+              category: spec.category || 'General',
+            }),
+          );
+        }
+        // Fallback: parse từ JSON column specifications
+        if (
+          product.specifications &&
+          typeof product.specifications === 'object' &&
+          !Array.isArray(product.specifications)
+        ) {
+          return Object.entries(product.specifications).map(([name, value], index) => ({
+            id: `spec-json-${index}`,
+            name: mapSpecName(name),
+            value: String(value ?? ''),
+            category: 'General',
+          }));
+        }
+        return [];
+      })(),
+    };
 
-      // Gán giá trị cho form
-      form.setFieldsValue({
-        name: product.baseName || product.name,
-        description: processedDescription,
-        shortDescription: product.shortDescription,
-        price: parseFloat(product.price) || 0,
-        compareAtPrice: parseFloat(product.compareAtPrice) || 0,
-        stockQuantity: product.stockQuantity || 0,
-        sku: product.sku,
-        status: product.status,
-        featured: product.featured,
-        categoryIds: product.categories?.map((cat: { id: string }) => cat.id) || [],
-        images: (() => {
-          // Thử product.images trước (catalog API — objects {url})
-          const imgs = product.images as Array<{ url?: string } | string> | undefined;
-          if (imgs?.length) {
-            const urls = imgs
-              .map((img) => (typeof img === 'string' ? img : img?.url))
-              .filter(Boolean);
-            if (urls.length) return urls.join('\n');
-          }
-          // Fallback: product.productImages (admin API) — chỉ lấy ảnh chung (variantId = null)
-          const pImgs = product.productImages as
-            | Array<{ imageUrl?: string; url?: string; variantId?: string | null }>
-            | undefined;
-          if (pImgs?.length) {
-            return pImgs
-              .filter((img) => !img?.variantId)
-              .map((img) => img?.imageUrl || img?.url)
-              .filter(Boolean)
-              .join('\n');
-          }
-          return '';
-        })(),
-        thumbnail:
-          product.thumbnail ||
-          (product.productImages as Array<{ imageUrl?: string; isThumbnail?: boolean }>)?.find(
-            (img) => img.isThumbnail,
-          )?.imageUrl ||
-          '',
-        seoTitle: product.seoTitle || '',
-        seoDescription: product.seoDescription || '',
-        seoKeywords: product.seoKeywords || '',
-        faqs: product.faqs || [],
-        specifications: (() => {
-          // Ưu tiên bảng productSpecifications (normalized)
-          if (
-            product.productSpecifications &&
-            Array.isArray(product.productSpecifications) &&
-            product.productSpecifications.length > 0
-          ) {
-            return product.productSpecifications.map(
-              (
-                spec: { id?: string; name: string; value: string; category?: string },
-                index: number,
-              ) => ({
-                id: spec.id || `spec-${index}`,
-                name: spec.name,
-                value: spec.value,
-                category: spec.category || 'General',
-              }),
-            );
-          }
-          // Fallback: parse từ JSON column specifications
-          if (
-            product.specifications &&
-            typeof product.specifications === 'object' &&
-            !Array.isArray(product.specifications)
-          ) {
-            return Object.entries(product.specifications).map(([name, value], index) => ({
-              id: `spec-json-${index}`,
-              name: mapSpecName(name),
-              value: String(value ?? ''),
-              category: 'General',
-            }));
-          }
-          return [];
-        })(),
+    form._rhf.reset(baseValues, { keepDirtyValues: false });
+
+    // Cập nhật state thông số kỹ thuật
+    const specsFromTable =
+      product.productSpecifications &&
+      Array.isArray(product.productSpecifications) &&
+      product.productSpecifications.length > 0
+        ? product.productSpecifications
+        : null;
+    const specsFromJson =
+      !specsFromTable &&
+      product.specifications &&
+      typeof product.specifications === 'object' &&
+      !Array.isArray(product.specifications)
+        ? Object.entries(product.specifications).map(([name, value], index) => ({
+            id: `spec-json-${index}`,
+            name: mapSpecName(name),
+            value: String(value ?? ''),
+            category: 'General',
+          }))
+        : null;
+    const resolvedSpecs = specsFromTable || specsFromJson;
+    if (resolvedSpecs && resolvedSpecs.length > 0) {
+      setSpecifications(resolvedSpecs);
+    }
+
+    // Gán thuộc tính và biến thể
+    // Ưu tiên productAttributes (association) nếu attributes JSON column không phải array
+    const rawAttrs = Array.isArray(product.attributes)
+      ? product.attributes
+      : Array.isArray(product.productAttributes)
+        ? product.productAttributes
+        : [];
+    if (rawAttrs.length > 0) {
+      const formattedAttributes: ProductAttribute[] = rawAttrs.map(
+        (
+          attr: { id?: string; name: string; values?: string[]; value?: string },
+          index: number,
+        ) => ({
+          id: attr.id || `attr-${index}`,
+          name: attr.name,
+          value: Array.isArray(attr.values) ? attr.values.join(', ') : attr.value || '',
+        }),
+      );
+      setAttributes(formattedAttributes);
+    }
+
+    if (product.variants) {
+      const allProductImages = product.productImages as
+        | Array<{ imageUrl?: string; variantId?: string | number | null; color?: string | null }>
+        | undefined;
+      const formattedVariants: ProductVariant[] = product.variants.map(
+        (
+          variant: {
+            id?: string;
+            name?: string;
+            variantName?: string;
+            displayName?: string;
+            price: number | string;
+            compareAtPrice?: number | string | null;
+            stockQuantity?: number;
+            stock?: number;
+            sku?: string;
+            attributes?: Record<string, string>;
+            images?: string[];
+          },
+          index: number,
+        ) => {
+          // Ưu tiên filter theo variantId, fallback theo color attribute
+          const byVariantId =
+            variant.id && allProductImages
+              ? allProductImages.filter(
+                  (img) => img.variantId && String(img.variantId) === String(variant.id),
+                )
+              : [];
+          const variantColor =
+            (variant.attributes as Record<string, string>)?.color ||
+            (variant.attributes as Record<string, string>)?.['Màu sắc'];
+          const byColor =
+            variantColor && allProductImages
+              ? allProductImages.filter(
+                  (img) =>
+                    !img.variantId &&
+                    img.color?.toLowerCase().trim() === variantColor.toLowerCase().trim(),
+                )
+              : [];
+          const variantImages = (byVariantId.length ? byVariantId : byColor)
+            .map((img) => img.imageUrl || '')
+            .filter(Boolean);
+          return {
+            id: variant.id || `var-${index}`,
+            // variantName = tên đầy đủ, displayName = tên ngắn (VD: "Trắng")
+            name: variant.variantName || variant.name || '',
+            displayName: variant.displayName || '',
+            price: parseFloat(String(variant.price)) || 0,
+            compareAtPrice: variant.compareAtPrice
+              ? parseFloat(String(variant.compareAtPrice))
+              : null,
+            stock: variant.stockQuantity || variant.stock || 0,
+            sku: variant.sku || '',
+            attributes: variant.attributes || {},
+            images: variantImages,
+          };
+        },
+      );
+      setVariants(formattedVariants);
+    }
+
+    // Validate form sau khi tải dữ liệu (không thêm validateForm vào dependencies)
+    setTimeout(() => {
+      // Validate thủ công, không dùng hàm validateForm
+      const values = form.getFieldsValue();
+      const errors = form.getFieldsError();
+
+      // Kiểm tra tất cả trường bắt buộc đã điền chưa
+      const requiredFields = [
+        'name',
+        'shortDescription',
+        'description',
+        'price',
+        'stockQuantity',
+        'categoryIds',
+      ];
+
+      const isFieldsFilled = requiredFields.every((field) => {
+        const value = values[field];
+        if (field === 'categoryIds') {
+          return value && Array.isArray(value) && value.length > 0;
+        }
+        if (field === 'price' || field === 'stockQuantity') {
+          return value !== undefined && value !== null && value !== '' && value >= 0;
+        }
+        return (
+          value !== undefined && value !== null && value !== '' && value.toString().trim() !== ''
+        );
       });
 
-      // Cập nhật state thông số kỹ thuật
-      const specsFromTable =
-        product.productSpecifications &&
-        Array.isArray(product.productSpecifications) &&
-        product.productSpecifications.length > 0
-          ? product.productSpecifications
-          : null;
-      const specsFromJson =
-        !specsFromTable &&
-        product.specifications &&
-        typeof product.specifications === 'object' &&
-        !Array.isArray(product.specifications)
-          ? Object.entries(product.specifications).map(([name, value], index) => ({
-              id: `spec-json-${index}`,
-              name: mapSpecName(name),
-              value: String(value ?? ''),
-              category: 'General',
-            }))
-          : null;
-      const resolvedSpecs = specsFromTable || specsFromJson;
-      if (resolvedSpecs && resolvedSpecs.length > 0) {
-        setSpecifications(resolvedSpecs);
-      }
+      // Kiểm tra có lỗi validation nào không
+      const hasErrors = errors.some((error) => error.errors && error.errors.length > 0);
 
-      // Gán thuộc tính và biến thể
-      // Ưu tiên productAttributes (association) nếu attributes JSON column không phải array
-      const rawAttrs = Array.isArray(product.attributes)
-        ? product.attributes
-        : Array.isArray(product.productAttributes)
-          ? product.productAttributes
-          : [];
-      if (rawAttrs.length > 0) {
-        const formattedAttributes: ProductAttribute[] = rawAttrs.map(
-          (
-            attr: { id?: string; name: string; values?: string[]; value?: string },
-            index: number,
-          ) => ({
-            id: attr.id || `attr-${index}`,
-            name: attr.name,
-            value: Array.isArray(attr.values) ? attr.values.join(', ') : attr.value || '',
-          }),
-        );
-        setAttributes(formattedAttributes);
-      }
-
-      if (product.variants) {
-        const allProductImages = product.productImages as
-          | Array<{ imageUrl?: string; variantId?: string | number | null; color?: string | null }>
-          | undefined;
-        const formattedVariants: ProductVariant[] = product.variants.map(
-          (
-            variant: {
-              id?: string;
-              name?: string;
-              variantName?: string;
-              displayName?: string;
-              price: number | string;
-              compareAtPrice?: number | string | null;
-              stockQuantity?: number;
-              stock?: number;
-              sku?: string;
-              attributes?: Record<string, string>;
-              images?: string[];
-            },
-            index: number,
-          ) => {
-            // Ưu tiên filter theo variantId, fallback theo color attribute
-            const byVariantId =
-              variant.id && allProductImages
-                ? allProductImages.filter(
-                    (img) => img.variantId && String(img.variantId) === String(variant.id),
-                  )
-                : [];
-            const variantColor =
-              (variant.attributes as Record<string, string>)?.color ||
-              (variant.attributes as Record<string, string>)?.['Màu sắc'];
-            const byColor =
-              variantColor && allProductImages
-                ? allProductImages.filter(
-                    (img) =>
-                      !img.variantId &&
-                      img.color?.toLowerCase().trim() === variantColor.toLowerCase().trim(),
-                  )
-                : [];
-            const variantImages = (byVariantId.length ? byVariantId : byColor)
-              .map((img) => img.imageUrl || '')
-              .filter(Boolean);
-            return {
-              id: variant.id || `var-${index}`,
-              // variantName = tên đầy đủ, displayName = tên ngắn (VD: "Trắng")
-              name: variant.variantName || variant.name || '',
-              displayName: variant.displayName || '',
-              price: parseFloat(String(variant.price)) || 0,
-              compareAtPrice: variant.compareAtPrice
-                ? parseFloat(String(variant.compareAtPrice))
-                : null,
-              stock: variant.stockQuantity || variant.stock || 0,
-              sku: variant.sku || '',
-              attributes: variant.attributes || {},
-              images: variantImages,
-            };
-          },
-        );
-        setVariants(formattedVariants);
-      }
-
-      // Validate form sau khi tải dữ liệu (không thêm validateForm vào dependencies)
-      setTimeout(() => {
-        // Validate thủ công, không dùng hàm validateForm
-        const values = form.getFieldsValue();
-        const errors = form.getFieldsError();
-
-        // Kiểm tra tất cả trường bắt buộc đã điền chưa
-        const requiredFields = [
-          'name',
-          'shortDescription',
-          'description',
-          'price',
-          'stockQuantity',
-          'categoryIds',
-        ];
-
-        const isFieldsFilled = requiredFields.every((field) => {
-          const value = values[field];
-          if (field === 'categoryIds') {
-            return value && Array.isArray(value) && value.length > 0;
-          }
-          if (field === 'price' || field === 'stockQuantity') {
-            return value !== undefined && value !== null && value !== '' && value >= 0;
-          }
-          return (
-            value !== undefined && value !== null && value !== '' && value.toString().trim() !== ''
-          );
-        });
-
-        // Kiểm tra có lỗi validation nào không
-        const hasErrors = errors.some((error) => error.errors && error.errors.length > 0);
-
-        const isValid = isFieldsFilled && !hasErrors;
-        setIsFormValid(isValid);
-      }, 100);
-    }
+      const isValid = isFieldsFilled && !hasErrors;
+      setIsFormValid(isValid);
+    }, 100);
   }, [productResponse, form, setAttributes, setVariants, setIsFormValid, t]);
 
   // Hàm hỗ trợ định dạng thông báo lỗi
@@ -645,14 +669,14 @@ const EditProductPage: React.FC = () => {
 
   const TAB_KEYS = [
     'basic',
+    'specifications',
     'attributes',
     'variants',
-    'specifications',
     'pricing',
     'category',
     'images',
-    'seo',
     'faqs',
+    'seo',
   ];
 
   const steps = TAB_KEYS.map((key) => ({ key, label: t(`admin.products.tabs.${key}`) }));
@@ -740,7 +764,11 @@ const EditProductPage: React.FC = () => {
               {/* Nội dung bước phải */}
               <div className="min-h-[420px]">
                 <TabsContent value="basic">
-                  <ProductBasicInfoForm form={form._rhf} fillExampleData={fillExampleData} />
+                  <ProductBasicInfoForm
+                    form={form._rhf}
+                    fillExampleData={fillExampleData}
+                    productId={id}
+                  />
                 </TabsContent>
 
                 <TabsContent value="attributes">

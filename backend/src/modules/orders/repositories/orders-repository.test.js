@@ -25,6 +25,7 @@ function makeInstance(extra = {}) {
     save: jest.fn().mockResolvedValue(true),
     destroy: jest.fn().mockResolvedValue(true),
     decrement: jest.fn().mockResolvedValue(true),
+    increment: jest.fn().mockResolvedValue(true),
     stockQuantity: 100,
     ...extra,
   };
@@ -233,24 +234,25 @@ describe('SequelizeOrdersRepository — Stock management', () => {
     expect(product.decrement).toHaveBeenCalledWith('stockQuantity', { by: 3 });
   });
 
-  test('restoreProductStock — cộng lại stockQuantity và gọi save()', async () => {
+  test('restoreProductStock — gọi increment atomic stockQuantity by', async () => {
     const { repo } = makeRepo();
     const product = makeInstance({ stockQuantity: 10 });
 
     await repo.restoreProductStock(product, 5);
 
-    expect(product.stockQuantity).toBe(15);
-    expect(product.save).toHaveBeenCalledTimes(1);
+    // Atomic increment (UPDATE ... stock = stock + by) thay vì read-modify-write
+    expect(product.increment).toHaveBeenCalledWith('stockQuantity', { by: 5 });
+    expect(product.save).not.toHaveBeenCalled();
   });
 
-  test('restoreVariantStock — cộng lại stockQuantity và gọi save()', async () => {
+  test('restoreVariantStock — gọi increment atomic stockQuantity by', async () => {
     const { repo } = makeRepo();
     const variant = makeInstance({ stockQuantity: 8 });
 
     await repo.restoreVariantStock(variant, 2);
 
-    expect(variant.stockQuantity).toBe(10);
-    expect(variant.save).toHaveBeenCalledTimes(1);
+    expect(variant.increment).toHaveBeenCalledWith('stockQuantity', { by: 2 });
+    expect(variant.save).not.toHaveBeenCalled();
   });
 });
 

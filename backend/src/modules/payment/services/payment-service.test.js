@@ -410,6 +410,7 @@ describe('PaymentService.handleVnPayReturn', () => {
     const order = buildOrder({ paymentStatus: 'pending', paymentTransactionId: null });
     const repo = buildMockRepo({
       findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(order),
     });
     const svc = buildService({ paymentRepository: repo });
 
@@ -476,6 +477,7 @@ describe('PaymentService.handleVnPayReturn', () => {
     const order = buildOrder({ paymentStatus: 'paid', paymentTransactionId: 'VNP-OLD' });
     const repo = buildMockRepo({
       findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(order),
     });
     const svc = buildService({ paymentRepository: repo });
 

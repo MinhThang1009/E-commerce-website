@@ -79,11 +79,11 @@ module.exports = ({ paymentController }) => {
     paymentController.createVNPayUrl,
   );
 
-  // Admin
+  // Hoàn tiền — nghiệp vụ bán hàng/đơn hàng → staff (nhân viên bán hàng)
   router.post(
     '/refund',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(refundSchema),
     paymentController.createRefund,
   );

@@ -101,7 +101,36 @@ describe('authenticate middleware', () => {
 
 ---
 
-# 6. Gotchas
+# 6. Mock middleware tập trung & phát hiện test thiếu
+
+**Manual mock (chống churn hàng loạt):** Middleware dùng chung được mock tập trung tại
+`src/middlewares/__mocks__/` — Jest TỰ dùng khi test gọi `jest.mock(...)` KHÔNG kèm factory:
+
+```js
+jest.mock('@middlewares/admin-auth'); // dùng __mocks__/admin-auth.js (đủ mọi export)
+jest.mock('@middlewares/authorize'); // pass-through mọi role
+```
+
+Khi middleware thật thêm export mới (vd `requireRole`) → chỉ cập nhật **1 file** `__mocks__`,
+không phải sửa từng test. Cần user khác mặc định → set `req.__mockUser` trong test
+(vd thêm middleware `app.use((req,_r,n)=>{ req.__mockUser={id,role:'staff'}; n(); })`).
+Test cần hành vi auth đặc thù (vd kiểm 401 theo header) thì vẫn dùng inline factory riêng.
+
+**Phát hiện test thiếu/yếu khi thêm tính năng / fix bug:**
+
+| Lệnh                                | Mục đích                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------- |
+| `npm run test:changed`              | Chạy nhanh test của file vừa đổi (uncommitted) — biết vỡ ngay               |
+| `npm run test:related -- <file...>` | Chạy test liên quan tới file cụ thể; file đổi không có test liên quan → gap |
+| `npm run test:coverage:changed`     | Coverage chỉ trên code đổi từ `main` → lộ **dòng mới chưa được test phủ**   |
+
+- **Patch coverage** (`test:coverage:changed`) là cách trực tiếp nhất phát hiện "thêm code mà quên test".
+- **Mutation testing** (Stryker, chạy định kỳ) phát hiện test _yếu_ (code được phủ nhưng assert hời hợt) — coverage % không thấy.
+- **Bug fix**: viết failing-test tái hiện bug TRƯỚC rồi mới fix (TDD).
+
+---
+
+# 7. Gotchas
 
 - **Không gọi DB thật** — folder này chỉ dùng mock. Test cần DB thật → `src/__integration__/`.
 - **`maxWorkers` không giới hạn** — unit tests chạy song song. Integration tests bắt buộc `maxWorkers=1`.

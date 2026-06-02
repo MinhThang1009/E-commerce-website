@@ -130,6 +130,22 @@ const createProduct = catchAsync(async (req, res) => {
     faqs = [],
   } = req.body;
 
+  // Chặn trùng tên: không cho tạo 2 sản phẩm cùng tên (Product paranoid → loại sản phẩm đã xóa mềm)
+  const duplicateProduct = await adminRepository.findProductOne({ nameVi: name });
+  if (duplicateProduct) {
+    throw new AppError('Đã tồn tại sản phẩm với tên này', 409);
+  }
+
+  // Validate danh mục TRƯỚC khi tạo product để tránh tạo product mồ côi nếu categoryId sai.
+  // Single-category: mỗi sản phẩm chỉ thuộc 1 danh mục (lấy phần tử đầu nếu FE gửi nhiều).
+  let selectedCategories = [];
+  if (categoryIds && categoryIds.length > 0) {
+    selectedCategories = await adminRepository.findCategories({ where: { id: categoryIds } });
+    if (selectedCategories.length === 0) {
+      throw new AppError('Danh mục không tồn tại', 400);
+    }
+  }
+
   const price = basePriceField !== undefined ? basePriceField : priceField;
 
   const uniqueSku = sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -165,31 +181,11 @@ const createProduct = catchAsync(async (req, res) => {
     product.compareAtPrice = comparePrice;
   }
 
-  if (categoryIds && categoryIds.length > 0) {
-    try {
-      const categoryPromises = categoryIds.map(async (catId) => {
-        let category = await adminRepository.findCategoryById(catId).catch(() => null);
-
-        if (!category && /^\d+$/.test(catId)) {
-          category = await adminRepository.createCategory({
-            name: `Category ${catId}`,
-            slug: `category-${catId}`,
-            description: `Category được tạo tự động từ ID ${catId}`,
-            isActive: true,
-          });
-        }
-
-        return category ? category.id : null;
-      });
-
-      const validCategoryIds = (await Promise.all(categoryPromises)).filter((id) => id !== null);
-
-      if (validCategoryIds.length > 0) {
-        await product.setCategories(validCategoryIds);
-      }
-    } catch (error) {
-      logger.error('Lỗi khi xử lý categories:', error);
-    }
+  if (selectedCategories.length > 0) {
+    // Junction (M-M) cho các query đếm theo product_categories
+    await product.setCategories(selectedCategories);
+    // FK trực tiếp = danh mục đã chọn → query lọc/hiển thị theo categoryId hoạt động đúng
+    await product.update({ categoryId: selectedCategories[0].id });
   }
 
   if (attributes && attributes.length > 0) {
@@ -482,6 +478,11 @@ const updateProduct = catchAsync(async (req, res) => {
         transaction,
       });
       await product.setCategories(categories, { transaction });
+      // Single-category: đồng bộ FK trực tiếp categoryId = danh mục đã chọn (null nếu bỏ chọn hết)
+      await product.update(
+        { categoryId: categories.length > 0 ? categories[0].id : null },
+        { transaction },
+      );
       changes.categories = categoryIds;
     }
 

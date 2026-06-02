@@ -33,7 +33,7 @@ const CONSTANTS = {
 
 function buildService() {
   const repo = {
-    runInTransaction: jest.fn(async (work) => work({})),
+    runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'FOR UPDATE' } })),
     findProductWithDefaultVariant: jest.fn(),
     findVariantBasic: jest.fn(),
     lockProduct: jest.fn(),

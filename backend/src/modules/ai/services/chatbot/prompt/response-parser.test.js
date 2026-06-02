@@ -109,6 +109,31 @@ describe('parseLLMOutput — number mismatch (line 62)', () => {
     expect(result.products).toHaveLength(1);
     expect(result.products[0].id).toBe(4);
   });
+
+  test('map được khi tên DB có dấu phẩy/ngoặc còn LLM viết gọn (word-overlap normalize)', () => {
+    // Tên laptop trong DB chứa specs + dấu câu; LLM viết lại gọn hơn.
+    // Trước fix: "1334u," ≠ "1334u" → overlap < 80% → map fail → mất card.
+    const prods = [
+      {
+        id: 7,
+        name: 'Laptop HP 15 fd0235TU - 9Q970PA (i5 1334U, 16GB, 512GB, Full HD, Win11)',
+        price: 13890000,
+        slug: 'laptop-hp-15-fd0235tu',
+        thumbnail: null,
+        inStock: true,
+      },
+    ];
+    const aiText = JSON.stringify({
+      response: 'Dạ có Laptop HP 15 fd0235TU i5 1334U (9Q970PA) ạ',
+      matchedProducts: ['Laptop HP 15 fd0235TU i5 1334U (9Q970PA)'],
+      suggestions: [],
+      intent: 'product_search',
+    });
+
+    const result = parseLLMOutput(aiText, prods, 'laptop hp');
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].id).toBe(7);
+  });
 });
 
 // ─── hasNegationContext — pos === Infinity khi không có keyword nào trong response (line 109) ─

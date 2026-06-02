@@ -59,6 +59,7 @@ jest.mock('@middlewares/admin-auth', () => ({
     next();
   },
   requireSuperAdmin: (_req, _res, next) => next(),
+  requireRole: () => (_req, _res, next) => next(),
 }));
 
 jest.mock('@middlewares/authenticate', () => ({
@@ -73,9 +74,7 @@ jest.mock('@middlewares/authenticate', () => ({
   },
 }));
 
-jest.mock('@middlewares/authorize', () => ({
-  authorize: () => (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/authorize');
 
 jest.mock('@middlewares/validate-request', () => ({
   validateRequest: () => (_req, _res, next) => next(),
@@ -432,23 +431,20 @@ describe('DELETE /api/admin/users/:id — line 491: tự xóa chính mình', () 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// createProduct — line 723: catch khi product.setCategories throw
+// createProduct — setCategories lỗi DB → propagate (không nuốt lỗi)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('POST /api/admin/products — line 723: categories catch khi setCategories throw', () => {
-  it('trả về 201 và gọi logger.error khi setCategories throw (error được bắt, không propagate)', async () => {
+describe('POST /api/admin/products — setCategories lỗi DB thì propagate', () => {
+  it('trả về 500 khi setCategories throw (không còn nuốt lỗi)', async () => {
     const newProduct = makeProduct({ id: 200 });
-    // setCategories throw để kích hoạt catch tại line 722-725
     newProduct.setCategories = jest.fn().mockRejectedValue(new Error('setCategories DB error'));
 
     Product.create.mockResolvedValueOnce(newProduct);
     Product.findByPk.mockResolvedValueOnce(newProduct);
     ProductAttribute.findAll.mockResolvedValueOnce([]);
-    // Category tồn tại → validCategoryIds.length > 0 → gọi setCategories
-    Category.findByPk.mockResolvedValueOnce({ id: 5, name: 'Laptop' });
+    // Category hợp lệ → tiến hành setCategories (rồi throw)
+    Category.findAll.mockResolvedValueOnce([{ id: 5, name: 'Laptop' }]);
     sequelize.query.mockResolvedValue([[], {}]);
-
-    const logger = require('@utils/logger');
 
     const res = await request.post('/api/admin/products').send({
       name: 'Laptop Categories Error',
@@ -456,9 +452,8 @@ describe('POST /api/admin/products — line 723: categories catch khi setCategor
       categoryIds: ['5'],
     });
 
-    // Error được catch ở line 722 → không propagate → response 201
-    expect(res.status).toBe(201);
-    expect(logger.error).toHaveBeenCalledWith('Lỗi khi xử lý categories:', expect.any(Error));
+    // Lỗi DB không bị nuốt → propagate thành 500 (trước đây bị catch trả 201 sai)
+    expect(res.status).toBe(500);
   });
 });
 

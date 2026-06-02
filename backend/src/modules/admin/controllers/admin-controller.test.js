@@ -90,17 +90,9 @@ jest.mock('@middlewares/authenticate', () => ({
   },
 }));
 
-jest.mock('@middlewares/admin-auth', () => ({
-  adminAuthenticate: (req, _res, next) => {
-    req.user = { id: 1, role: 'admin', email: 'admin@test.com' };
-    next();
-  },
-  requireSuperAdmin: (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/admin-auth');
 
-jest.mock('@middlewares/authorize', () => ({
-  authorize: () => (_req, _res, next) => next(),
-}));
+jest.mock('@middlewares/authorize');
 
 jest.mock('@middlewares/validate-request', () => ({
   validateRequest: () => (_req, _res, next) => next(),
@@ -776,6 +768,17 @@ describe('POST /api/admin/products', () => {
     expect(res.status).toBe(201);
     expect(res.body.status).toBe('success');
     expect(res.body.data).toHaveProperty('product');
+  });
+
+  it('trả về 409 khi tên sản phẩm đã tồn tại, không tạo', async () => {
+    Product.findOne.mockResolvedValueOnce(makeProduct({ id: 99 }));
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Laptop Trùng Tên',
+      basePrice: 15000000,
+    });
+    expect(res.status).toBe(409);
+    expect(Product.create).not.toHaveBeenCalled();
   });
 
   it('tạo product với images dạng mảng URL string', async () => {

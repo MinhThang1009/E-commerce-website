@@ -132,11 +132,12 @@ module.exports = ({ ordersController }) => {
   router.get('/', ordersController.getUserOrders);
   router.get('/number/:number', ordersController.getOrderByNumber);
 
-  // Admin — phải đứng trước /:id để tránh Express match "admin" như một id
-  router.get('/admin/all', authorize('admin'), ordersController.getAllOrders);
+  // Back-office — phải đứng trước /:id để tránh Express match "admin" như một id.
+  // Xem danh sách đơn → admin (giám sát) + staff; cập nhật trạng thái → staff (nghiệp vụ bán hàng)
+  router.get('/admin/all', authorize('admin', 'staff'), ordersController.getAllOrders);
   router.patch(
     '/admin/:id/status',
-    authorize('admin'),
+    authorize('staff'),
     validateRequest(updateOrderStatusSchema),
     ordersController.updateOrderStatus,
   );

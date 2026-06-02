@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing — phát hiện test YẾU (code được phủ nhưng assert hời hợt). Chạy ĐỊNH KỲ (chậm), không pre-commit. Scope vào services/shared (logic cốt lõi) để bounded. Chạy: npm run test:mutation [-- --mutate 'src/modules/orders/**/*.js']",
+  "testRunner": "jest",
+  "jest": {
+    "configFile": "jest.config.js",
+    "enableFindRelatedTests": true
+  },
+  "coverageAnalysis": "perTest",
+  "mutate": [
+    "src/modules/**/services/**/*.js",
+    "src/shared/**/*.js",
+    "!src/**/*.test.js",
+    "!src/**/*.spec.js"
+  ],
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "concurrency": 4,
+  "timeoutMS": 30000,
+  "thresholds": { "high": 80, "low": 60, "break": null }
+}

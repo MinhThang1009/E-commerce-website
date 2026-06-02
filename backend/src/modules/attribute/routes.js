@@ -134,9 +134,9 @@ router.post('/preview-name', attributeController.previewProductName);
 router.post('/generate-name-realtime', attributeController.generateNameRealTime);
 router.get('/name-affecting', attributeController.getNameAffectingAttributes);
 
-// Routes admin — yêu cầu xác thực và role admin
+// Routes quản lý thuộc tính — nghiệp vụ bán hàng (cấu hình sản phẩm) → staff
 router.use(authenticate);
-router.use(authorize('admin'));
+router.use(authorize('staff'));
 
 // Quản lý nhóm thuộc tính
 router.post('/groups', attributeController.createAttributeGroup);

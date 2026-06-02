@@ -157,6 +157,55 @@ jobs:
           path: frontend/dist/
           retention-days: 3
 
+# ─── PATCH QUALITY (chỉ PR) ──────────────────────────────────────────────────
+  patch-quality:
+    name: Patch coverage + API thừa (PR)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # cần lịch sử git để diff vs base ref
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: API thừa / orphan (informational)
+        working-directory: backend
+        run: npm run check:routes
+
+      - name: Patch-coverage gate BE (code mới phải có test phủ)
+        working-directory: backend
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-jwt-secret-at-least-32-characters-long-xx
+          JWT_REFRESH_SECRET: ci-refresh-secret-at-least-32-characters-long-xx
+          PATCH_BASE: origin/${{ github.event.pull_request.base.ref }}
+        run: npm run check:patch-coverage
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Dead-code FE (knip, informational)
+        working-directory: frontend
+        run: npm run check:unused
+
+      - name: Patch-coverage gate FE (code mới phải có test phủ)
+        working-directory: frontend
+        env:
+          PATCH_BASE: origin/${{ github.event.pull_request.base.ref }}
+        run: npm run check:patch-coverage
+
 # ─── SUMMARY ─────────────────────────────────────────────────────────────────
   summary:
     name: CI Summary

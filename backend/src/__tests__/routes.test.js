@@ -212,11 +212,12 @@ describe('inventory/routes.js — factory tạo Express router hợp lệ', () =
     expect(Array.isArray(router.stack)).toBe(true);
   });
 
-  it('router có ít nhất 4 layer đã đăng ký (authenticate + authorize + 2 routes)', () => {
+  it('router có ít nhất 3 layer đã đăng ký (authenticate + 2 routes có inline authorize)', () => {
     const router = buildRoutes({ inventoryController: makeInventoryController() });
-    // inventory/routes.js: use(authenticate), use(authorize('admin')),
-    // POST /products/:productId/restock, GET /logs
-    expect(router.stack.length).toBeGreaterThanOrEqual(4);
+    // inventory/routes.js: use(authenticate),
+    // POST /products/:productId/restock (authorize('staff')), GET /logs (authorize('admin','staff'))
+    // authorize nay inline trong route nen khong tao thanh stack layer rieng
+    expect(router.stack.length).toBeGreaterThanOrEqual(3);
   });
 
   it('router là một function (Express middleware)', () => {

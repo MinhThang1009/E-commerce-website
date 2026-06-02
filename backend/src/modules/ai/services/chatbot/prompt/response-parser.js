@@ -296,10 +296,18 @@ function parseLLMOutput(rawLLMOutput, products, userMessage) {
           }
 
           // Kiểm tra 4: Word overlap ≥ 80% (fuzzy match cho tên viết tắt/khác format nhỏ)
-          const pWords = new Set(pName.split(/\s+/));
-          const rWords = new Set(rName.split(/\s+/));
+          // Bỏ dấu câu khỏi từng token trước khi so — tên laptop trong DB chứa dấu phẩy/ngoặc
+          // ("- 9Q970PA (i5 1334U, 16GB, ...)") nên "1334u," ≠ "1334u" nếu không normalize,
+          // làm overlap rớt dưới 80% dù LLM viết đúng tên. Strip "(),.;:" để token khớp chuẩn.
+          const toTokens = (s) =>
+            s
+              .split(/\s+/)
+              .map((w) => w.replace(/[(),.;:]/g, ''))
+              .filter((w) => w.length > 1);
+          const pWords = new Set(toTokens(pName));
+          const rWords = new Set(toTokens(rName));
           if (rWords.size < 2) return false; // Tên quá ngắn → không đủ thông tin để so khớp
-          const intersection = [...pWords].filter((w) => rWords.has(w) && w.length > 1);
+          const intersection = [...pWords].filter((w) => rWords.has(w));
           const minSize = Math.min(pWords.size, rWords.size);
           return minSize > 0 && intersection.length >= minSize * 0.8;
         });

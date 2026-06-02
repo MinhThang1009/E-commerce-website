@@ -35,6 +35,8 @@ type NavItem = {
   path: string;
   labelKey: string;
   Icon: LucideIcon;
+  // Role được phép thấy mục này; bỏ trống = mọi back-office role (admin + staff)
+  roles?: Array<'admin' | 'staff'>;
 };
 
 type NavGroup = {
@@ -74,6 +76,7 @@ const NAV_GROUPS: NavGroup[] = [
         path: '/admin/users',
         labelKey: 'admin.nav.users',
         Icon: Users,
+        roles: ['admin'], // Quản lý người dùng: chỉ admin (quản trị hệ thống)
       },
     ],
   },
@@ -215,16 +218,24 @@ const AdminLayout: React.FC = () => {
         initial="initial"
         animate="animate"
       >
-        {NAV_GROUPS.map((group, idx) => (
-          <div key={group.labelKey} className={idx === 0 ? '' : 'mt-5'}>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2 px-3">
-              {t(group.labelKey)}
+        {NAV_GROUPS.map((group, idx) => {
+          // Lọc mục theo role hiện tại (vd staff không thấy "Quản lý người dùng")
+          const visibleItems = group.items.filter(
+            (item) =>
+              !item.roles || (user?.role && item.roles.includes(user.role as 'admin' | 'staff')),
+          );
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={group.labelKey} className={idx === 0 ? '' : 'mt-5'}>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-2 px-3">
+                {t(group.labelKey)}
+              </div>
+              <ul className="space-y-0.5">
+                {visibleItems.map((item) => renderNavItem(item, mobileOnClose))}
+              </ul>
             </div>
-            <ul className="space-y-0.5">
-              {group.items.map((item) => renderNavItem(item, mobileOnClose))}
-            </ul>
-          </div>
-        ))}
+          );
+        })}
       </motion.nav>
 
       {/* User card sticky bottom */}

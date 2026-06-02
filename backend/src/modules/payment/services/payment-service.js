@@ -213,7 +213,11 @@ class PaymentService {
     if (responseCode === '00') {
       const transNo = vnp_Params['vnp_TransactionNo'];
       const processed = await this.repo.runInTransaction(async (tx) => {
-        const order = await this.repo.findOrderByNumber(orderNumber);
+        const found = await this.repo.findOrderByNumber(orderNumber);
+        if (!found) return null;
+        // Khóa hàng đơn (SELECT FOR UPDATE) TRƯỚC khi kiểm tra idempotency — đồng nhất với
+        // handleVnPayIPN, tránh TOCTOU khi return URL và IPN tới đồng thời (double-process)
+        const order = await this.repo.lockOrder(found.id, tx);
         if (!order || !_canProcessPayment(order, transNo)) return null;
 
         order.status = 'processing';

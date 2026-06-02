@@ -92,12 +92,17 @@ module.exports = ({ reviewsController }) => {
   router.put('/:id', authenticate, validateRequest(reviewSchema), reviewsController.updateReview);
   router.delete('/:id', authenticate, reviewsController.deleteReview);
 
-  // Admin
-  router.get('/admin/all', authenticate, authorize('admin'), reviewsController.getAllReviews);
+  // Back-office: xem tất cả đánh giá → admin (giám sát) + staff; kiểm duyệt (verify) → staff
+  router.get(
+    '/admin/all',
+    authenticate,
+    authorize('admin', 'staff'),
+    reviewsController.getAllReviews,
+  );
   router.patch(
     '/admin/:id/verify',
     authenticate,
-    authorize('admin'),
+    authorize('staff'),
     reviewsController.verifyReview,
   );
 

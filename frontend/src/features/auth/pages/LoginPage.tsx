@@ -66,9 +66,9 @@ const LoginPage: React.FC = () => {
       // Cập nhật Zustand store
       useAuthStore.getState().loginSuccess(result);
 
-      // Chuyển hướng theo vai trò người dùng
+      // Chuyển hướng theo vai trò: admin (quản trị hệ thống) + staff (nhân viên bán hàng) → trang quản trị
       const userRole = result?.user?.role;
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'staff') {
         navigate('/admin', { replace: true });
       } else {
         navigate(from === '/admin' ? '/' : from, { replace: true });

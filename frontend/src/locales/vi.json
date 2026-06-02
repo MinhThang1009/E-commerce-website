@@ -1511,7 +1511,7 @@
         "keywordsLabel": "Từ khóa tìm kiếm",
         "keywordsPlaceholder": "Nhập các từ khóa liên quan, cách nhau bằng dấu phẩy",
         "alertMessage": "Lưu ý danh mục",
-        "alertDesc": "Chọn danh mục phù hợp để khách hàng dễ dàng tìm thấy sản phẩm. Có thể chọn nhiều danh mục."
+        "alertDesc": "Chọn danh mục phù hợp để khách hàng dễ dàng tìm thấy sản phẩm. Mỗi sản phẩm chỉ thuộc 1 danh mục."
       },
       "images": {
         "label": "Hình ảnh sản phẩm",

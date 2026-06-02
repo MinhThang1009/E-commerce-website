@@ -20,7 +20,9 @@
     "build:check": "vite build --mode production",
     "test": "jest --config jest.config.cjs",
     "test:ci": "jest --config jest.config.cjs --ci --coverage --forceExit",
-    "test:coverage": "jest --config jest.config.cjs --coverage"
+    "test:coverage": "jest --config jest.config.cjs --coverage",
+    "check:unused": "knip --no-exit-code",
+    "check:patch-coverage": "node scripts/check-patch-coverage.mjs"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.3",

@@ -150,8 +150,9 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     });
   }
 
-  async findOrderForCancel(id, userId) {
-    return this.Order.findOne({
+  async findOrderForCancel(id, userId, options = {}) {
+    const { lock, transaction } = options;
+    const query = {
       where: { id, userId },
       include: [
         {
@@ -159,7 +160,12 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           include: [{ model: this.Product }, { model: this.ProductVariant }],
         },
       ],
-    });
+    };
+    // Đọc trong transaction + khóa hàng đơn (chỉ OF order để tránh deadlock với createOrder
+    // vốn khóa product_variants) — chống double-cancel/double-restore tồn kho khi 2 request đồng thời
+    if (transaction) query.transaction = transaction;
+    if (lock) query.lock = { level: lock, of: this.Order };
+    return this.Order.findOne(query);
   }
 
   async createOrder(payload, options = {}) {
@@ -286,13 +292,13 @@ class SequelizeOrdersRepository extends IOrdersRepository {
   }
 
   async restoreProductStock(product, by, options = {}) {
-    product.stockQuantity = product.stockQuantity + by;
-    return product.save(options);
+    // Atomic increment (UPDATE ... SET stock = stock + by) thay vì read-modify-write,
+    // tránh mất cập nhật khi có thao tác tồn kho đồng thời
+    return product.increment('stockQuantity', { by, ...options });
   }
 
   async restoreVariantStock(variant, by, options = {}) {
-    variant.stockQuantity = variant.stockQuantity + by;
-    return variant.save(options);
+    return variant.increment('stockQuantity', { by, ...options });
   }
 
   // -------- DiscountCode --------

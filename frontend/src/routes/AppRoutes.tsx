@@ -198,8 +198,23 @@ const AppRoutes: React.FC = () => {
           {/* Các mục admin khác */}
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="orders" element={<AdminOrdersPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="users/:id" element={<AdminUserDetailPage />} />{' '}
+          {/* Quản lý người dùng — chỉ admin (quản trị hệ thống), staff không truy cập */}
+          <Route
+            path="users"
+            element={
+              <AdminRoute allowedRoles={['admin']}>
+                <AdminUsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="users/:id"
+            element={
+              <AdminRoute allowedRoles={['admin']}>
+                <AdminUserDetailPage />
+              </AdminRoute>
+            }
+          />{' '}
           <Route path="discount-codes" element={<AdminDiscountCodesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />

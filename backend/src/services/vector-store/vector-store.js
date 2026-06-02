@@ -44,10 +44,11 @@ const OVERLAP_BOOST = 0.05;
 
 /**
  * Hệ số tối đa cho điểm keyword-only khi inject vào kết quả hybrid.
- * Sản phẩm chỉ match keyword (không match semantic) → score tối đa = DEFAULT_MIN_SCORE + 0.15 = 0.60.
- * Giữ thấp (0.15) vì keyword-only không có xác nhận ngữ nghĩa → kém chắc chắn hơn.
+ * Sản phẩm chỉ match keyword (không match semantic) → score tối đa = DEFAULT_MIN_SCORE + 0.05 = 0.50.
+ * Giữ nhỏ (0.05) để keyword-only không vượt qua semantic results có cosine thực ~0.51+,
+ * tránh trường hợp Samsung/Xiaomi (chỉ match "điện"+"thoại") chen lên trên iPhone khi query "điện thoại apple".
  */
-const KEYWORD_INJECTION_MAX_BOOST = 0.15;
+const KEYWORD_INJECTION_MAX_BOOST = 0.05;
 
 /**
  * Trọng số khi từ khóa khớp trong TÊN sản phẩm.
@@ -520,8 +521,8 @@ class HybridVectorStore {
    *    + OVERLAP_BOOST (0.05) nếu cũng match keyword
    *
    * 2. Keyword-only results (không có trong vector results):
-   *    score = DEFAULT_MIN_SCORE + (keywordScore / maxKw) × KEYWORD_INJECTION_MAX_BOOST
-   *    = 0.45 + tỷ_lệ × 0.15  →  tối đa 0.60  →  luôn thấp hơn vector results tốt
+   *    score = DEFAULT_MIN_SCORE + (keywordScore / maxKwScore) × KEYWORD_INJECTION_MAX_BOOST
+   *    = 0.45 + tỷ_lệ × 0.05  →  tối đa 0.50  →  luôn thấp hơn vector results tốt
    *    Flag `lowConfidence: true` để ChatbotService biết xử lý cẩn thận hơn.
    *
    * @param {string} query - Query text đã normalize.
@@ -556,7 +557,7 @@ class HybridVectorStore {
 
       // Bước 4: Inject keyword-only results (vector missed)
       // Ví dụ: "iPhone 15" match exact trong tên sản phẩm nhưng embedding không nhận ra
-      // maxKw defaults to 1: prevent chia cho 0 khi mảng rỗng, đảm bảo tỷ lệ ≤ 1
+      // maxKeywordScore defaults to 1: prevent chia cho 0 khi mảng rỗng, đảm bảo tỷ lệ ≤ 1
       const maxKeywordScore = keywordResults.reduce((max, r) => Math.max(max, r.keywordScore), 1);
       const keywordOnlyResults = keywordResults
         .filter((r) => !vectorIds.has(r.metadata.id))

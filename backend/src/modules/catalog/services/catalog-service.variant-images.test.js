@@ -19,6 +19,7 @@ describe('CatalogService — variant images branch coverage', () => {
       findProductByIdWithFullDetails: jest.fn(),
       findProductBySlugWithFullDetails: jest.fn(),
       findProductByPk: jest.fn(),
+      findProductByName: jest.fn().mockResolvedValue(null),
       findFeaturedProducts: jest.fn(),
       findRelatedProducts: jest.fn(),
       findRelatedProductsFallback: jest.fn(),

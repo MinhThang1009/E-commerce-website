@@ -541,6 +541,10 @@ module.exports = {
   },
 
   async createProduct({ payload }) {
+    // Chặn trùng tên: không cho admin tạo 2 sản phẩm cùng tên (loại trừ sản phẩm đã xóa mềm)
+    const existing = await this.catalogRepository.findProductByName(payload.name);
+    if (existing) throw new AppError('catalog.productNameExists', 409);
+
     const isVariantProduct = Boolean(payload.variants && payload.variants.length > 0);
     let createdProduct;
 

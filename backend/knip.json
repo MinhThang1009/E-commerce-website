@@ -1,0 +1,32 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/server.js",
+    "src/**/*.test.js",
+    "scripts/**/*.{js,mjs}",
+    "jest.config.js",
+    "jest.integration.config.js",
+    "jest.api.config.js",
+    "jest.e2e.config.js"
+  ],
+  "project": ["src/**/*.js"],
+  "ignore": [
+    "src/migrations/**",
+    "src/models/image.js",
+    "src/**/i-*-repository.js",
+    "src/**/dtos/**"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": ["@stryker-mutator/jest-runner"],
+  "paths": {
+    "@modules/*": ["src/modules/*"],
+    "@shared/*": ["src/shared/*"],
+    "@utils/*": ["src/utils/*"],
+    "@middlewares/*": ["src/middlewares/*"],
+    "@models/*": ["src/models/*"],
+    "@models": ["src/models/index.js"],
+    "@config/*": ["src/config/*"],
+    "@services/*": ["src/services/*"],
+    "@jobs/*": ["src/jobs/*"]
+  }
+}

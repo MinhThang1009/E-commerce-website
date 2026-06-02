@@ -82,6 +82,9 @@ class ICatalogRepository {
   async findProductByPk(_id) {
     throw new Error('not implemented');
   }
+  async findProductByName(_name) {
+    throw new Error('not implemented');
+  }
   async findFeaturedProducts(_limit) {
     throw new Error('not implemented');
   }

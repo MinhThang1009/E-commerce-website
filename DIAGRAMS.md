@@ -1692,34 +1692,29 @@ stateDiagram-v2
     direction TB
     [*] --> pending : Tạo đơn, lock stock
 
-    pending --> processing : VNPay/MoMo IPN paid
+    pending --> processing : Thanh toán online thành công (IPN/return) hoặc staff xác nhận
 
-    pending --> cancelled : User cancel, hoàn stock
+    pending --> cancelled : Khách/Staff hủy, hoàn stock
 
-    processing --> shipped : Admin cập nhật trạng thái
+    processing --> shipped : Staff cập nhật trạng thái
 
-    processing --> cancelled : Admin: cancel order
+    processing --> cancelled : Khách/Staff hủy, hoàn stock
 
-    processing --> delivered : User xác nhận nhận
-
-    processing --> pending : repay (paymentStatus=failed)
-
-    shipped --> pending : repay (paymentStatus=failed)
+    processing --> delivered : Khách xác nhận nhận (confirmReceived)
 
     shipped --> delivered : Admin/user xác nhận
 
-    shipped --> cancelled : Admin: cancel order
+    shipped --> cancelled : Staff cancel (hàng đã đi → KHÔNG hoàn stock)
 
     delivered --> [*] : Hoàn tất
 
-    cancelled --> pending : POST /orders/:id/repay
-
-    pending --> pending : repay, tạo payment URL
+    cancelled --> [*] : Đã hủy (terminal — không kích hoạt lại)
 
     note right of pending
         paymentStatus=pending, stock locked
-        Manual: discount tăng trong tx
-        Online: discount chờ IPN paid
+        Manual: discount tăng trong tx; Online: discount chờ IPN paid
+        repayOrder (đơn online pending chưa trả): reset paymentStatus failed→pending,
+        tạo paymentUrl — KHÔNG đổi order.status (xem 7.2 Payment states)
     end note
 
     note right of processing

@@ -776,6 +776,88 @@ describe('OrdersPage: interaction', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════
+// OrdersPage — repay order action
+// ═══════════════════════════════════════════════════════════════
+describe('OrdersPage: repay order', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAuthState = {
+      isAuthenticated: true,
+      user: { id: '1', role: 'user' },
+      loginSuccess: jest.fn(),
+    };
+    mockClearCartMutation = { mutateAsync: jest.fn(), mutate: jest.fn(), isPending: false };
+  });
+
+  const makeOnlinePendingOrder = (id = 'ord-repay-1', overrides = {}) => ({
+    id,
+    number: `ORD-REPAY-${id}`,
+    status: 'pending',
+    paymentStatus: 'failed',
+    paymentMethod: 'momo',
+    total: 1_000_000,
+    createdAt: new Date().toISOString(),
+    items: [],
+    ...overrides,
+  });
+
+  it('đơn pending online chưa trả tiền → hiện nút "Thanh toán lại"; click → repayOrder gọi đúng id', async () => {
+    mockGetUserOrdersQuery = {
+      data: { data: [makeOnlinePendingOrder('ord-r1')], total: 1, limit: 10 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<OrdersPage />);
+
+    const repayBtn = screen.getByText('orders.repayOrder');
+    fireEvent.click(repayBtn);
+
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mockRepayOrderFn).toHaveBeenCalledWith('ord-r1');
+  });
+
+  it('đơn pending COD → KHÔNG hiện nút "Thanh toán lại" (COD trả khi nhận)', () => {
+    mockGetUserOrdersQuery = {
+      data: {
+        data: [makeOnlinePendingOrder('ord-r2', { paymentMethod: 'cod' })],
+        total: 1,
+        limit: 10,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+
+    render(<OrdersPage />);
+
+    expect(screen.queryByText('orders.repayOrder')).not.toBeInTheDocument();
+  });
+
+  it('đơn đã thanh toán (processing/paid) → KHÔNG hiện nút "Thanh toán lại"', () => {
+    mockGetUserOrdersQuery = {
+      data: {
+        data: [makeOnlinePendingOrder('ord-r3', { status: 'processing', paymentStatus: 'paid' })],
+        total: 1,
+        limit: 10,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+
+    render(<OrdersPage />);
+
+    expect(screen.queryByText('orders.repayOrder')).not.toBeInTheDocument();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
 // OrdersPage — cancel và confirm order actions
 // ═══════════════════════════════════════════════════════════════
 describe('OrdersPage: cancel và confirm order', () => {

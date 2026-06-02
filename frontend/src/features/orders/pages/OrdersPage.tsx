@@ -59,7 +59,7 @@ const OrdersPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [cancellingOrder, setCancellingOrder] = useState<string | null>(null);
-  const [_repayingOrder, setRepayingOrder] = useState<string | null>(null);
+  const [repayingOrder, setRepayingOrder] = useState<string | null>(null);
   const [confirmingOrder, setConfirmingOrder] = useState<string | null>(null);
 
   // Trạng thái modal đánh giá
@@ -147,9 +147,8 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  // Xử lý thanh toán lại đơn hàng (chưa kết nối vào UI — để dành cho feature sau)
-  /* istanbul ignore next */
-  const _handleRepayOrder = async (orderId: string) => {
+  // Xử lý thanh toán lại đơn hàng online đang chờ thanh toán (payment fail/bỏ dở)
+  const handleRepayOrder = async (orderId: string) => {
     if (!confirm(t('orders.repayConfirm'))) return;
 
     setRepayingOrder(orderId);
@@ -582,6 +581,22 @@ const OrdersPage: React.FC = () => {
                                 : t('orders.cancelOrder')}
                             </Button>
                           )}
+
+                          {order.status === 'pending' &&
+                            order.paymentStatus !== 'paid' &&
+                            order.paymentMethod !== 'cod' && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleRepayOrder(order.id)}
+                                disabled={repayingOrder === order.id}
+                                className="bg-amber-500 hover:bg-amber-600 text-white border-none shadow-md font-semibold px-4 py-2 transition-all hover:scale-[1.02]"
+                              >
+                                {repayingOrder === order.id
+                                  ? t('orders.repaying')
+                                  : t('orders.repayOrder')}
+                              </Button>
+                            )}
 
                           {(order.status === 'shipped' || order.status === 'processing') && (
                             <Button

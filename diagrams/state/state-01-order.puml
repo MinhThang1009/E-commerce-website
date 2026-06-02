@@ -1,0 +1,48 @@
+@startuml state-01-order
+' Sơ đồ trạng thái — Vòng đời đơn hàng (order.status)
+' Verify vs backend/src/modules/orders/services/orders-service.js (STATUS, _canCancel, _canConfirmReceived, _canRepay)
+hide empty description
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+  ArrowColor #4D4D4D
+}
+
+[*] --> pending : createOrder\n(khách đặt hàng)
+
+state "Chờ xử lý\n(pending)" as pending
+state "Đang xử lý\n(processing)" as processing
+state "Đang giao\n(shipped)" as shipped
+state "Đã giao\n(delivered)" as delivered
+state "Đã hủy\n(cancelled)" as cancelled
+
+pending    --> processing : thanh toán online thành công (IPN/return)\nhoặc staff xác nhận
+processing --> shipped    : staff cập nhật giao vận
+shipped    --> delivered  : staff cập nhật\nhoặc khách xác nhận nhận hàng
+processing --> delivered  : khách xác nhận nhận hàng\n(confirmReceived)
+
+pending    --> cancelled : hủy đơn\n(khách / staff / đặt đơn mới)
+processing --> cancelled : hủy đơn\n(khách / staff)
+
+delivered --> [*]
+cancelled --> [*]
+
+note bottom
+  • Staff (updateOrderStatus) là back-office, có thể điều chỉnh
+    trạng thái tự do; sơ đồ thể hiện luồng nghiệp vụ chuẩn.
+  • Hủy chỉ từ pending/processing (_canCancel).
+  • Xác nhận nhận hàng chỉ từ shipped/processing (_canConfirmReceived);
+    gọi lại khi đã delivered → lỗi 422.
+  • cancelled là TERMINAL: đơn đã hủy không kích hoạt lại
+    (muốn mua lại → đặt đơn mới).
+  • repayOrder (đơn online pending chưa trả tiền): chỉ retry thanh toán —
+    reset paymentStatus failed→pending, KHÔNG đổi order.status
+    (không phải chuyển trạng thái nên không có cạnh trên sơ đồ).
+  • Thanh toán online (MoMo/VNPay) thành công → payment-service
+    đặt status='processing' + paymentStatus='paid' (IPN/return).
+  • COD: khi delivered → paymentStatus tự động chuyển 'paid'.
+end note
+@enduml

@@ -21,8 +21,10 @@ const STATUS = {
 function _canCancel(status) {
   return status === STATUS.PENDING || status === STATUS.PROCESSING;
 }
-function _canRepay(status, paymentStatus) {
-  return status === STATUS.PENDING || status === STATUS.CANCELLED || paymentStatus === 'failed';
+function _canRepay(status, paymentStatus, paymentMethod) {
+  // Thanh toán lại CHỈ cho đơn đang chờ thanh toán (pending) chưa trả tiền, qua phương thức
+  // có bước thanh toán (không phải COD — trả khi nhận hàng). Đơn đã hủy = terminal, không repay.
+  return status === STATUS.PENDING && paymentStatus !== 'paid' && paymentMethod !== 'cod';
 }
 function _canConfirmReceived(status) {
   // delivered là trạng thái SAU KHI xác nhận — không cho confirm lại
@@ -629,10 +631,10 @@ class OrdersService {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
 
-    if (!_canRepay(order.status, order.paymentStatus)) {
+    if (!_canRepay(order.status, order.paymentStatus, order.paymentMethod)) {
       throw new AppError('Đơn hàng này không thể thanh toán lại', 422);
     }
-    order.status = STATUS.PENDING;
+    // Repay KHÔNG đổi order.status (đã pending) — chỉ reset paymentStatus (failed → pending) để retry.
     order.paymentStatus = 'pending';
     await this.repo.saveOrder(order);
 

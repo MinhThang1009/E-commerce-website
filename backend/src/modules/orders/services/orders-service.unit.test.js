@@ -142,36 +142,53 @@ describe('OrdersService', () => {
       ).rejects.toMatchObject({ statusCode: 422 });
     });
 
-    test('paymentStatus=failed (bất kể status) → cho phép repay', async () => {
-      // _canRepay: status !== pending/cancelled NHƯNG paymentStatus === 'failed' → vẫn cho repay
-      const order = {
-        id: 7,
-        number: 'ORD-F',
-        status: 'processing',
-        paymentStatus: 'failed',
-        total: 500000,
-      };
-      repo.findOrderByIdAndUserId.mockResolvedValue(order);
-      const result = await service.repayOrder({ id: 7, userId: 1, originUrl: 'http://shop' });
-      expect(order.status).toBe('pending');
-      expect(order.paymentStatus).toBe('pending');
-      expect(result.paymentUrl).toContain('repayOrder=7');
-    });
-
-    test('cancelled → reset pending + paymentUrl', async () => {
+    test('pending + online (momo) chưa trả tiền → cho phép repay, trả paymentUrl', async () => {
+      // Case repay hợp lệ: đơn online đang chờ thanh toán (payment fail/bỏ dở), kho vẫn đang giữ.
       const order = {
         id: 5,
-        number: 'ORD-X',
-        status: 'cancelled',
-        paymentStatus: 'pending',
+        number: 'ORD-PAY',
+        status: 'pending',
+        paymentStatus: 'failed',
+        paymentMethod: 'momo',
         total: 1000,
       };
       repo.findOrderByIdAndUserId.mockResolvedValue(order);
 
       const result = await service.repayOrder({ id: 5, userId: 1, originUrl: 'http://shop' });
 
-      expect(order.status).toBe('pending');
+      expect(order.status).toBe('pending'); // repay KHÔNG đổi status
+      expect(order.paymentStatus).toBe('pending'); // reset failed → pending để retry
       expect(result.paymentUrl).toBe('http://shop/checkout?repayOrder=5&amount=1000');
+    });
+
+    test('cancelled → 422 (đơn đã hủy là terminal, không repay)', async () => {
+      const order = {
+        id: 7,
+        number: 'ORD-X',
+        status: 'cancelled',
+        paymentStatus: 'pending',
+        paymentMethod: 'vnpay',
+        total: 500000,
+      };
+      repo.findOrderByIdAndUserId.mockResolvedValue(order);
+      await expect(
+        service.repayOrder({ id: 7, userId: 1, originUrl: 'http://shop' }),
+      ).rejects.toMatchObject({ statusCode: 422 });
+    });
+
+    test('COD pending → 422 (COD trả khi nhận, không có cổng thanh toán online)', async () => {
+      const order = {
+        id: 8,
+        number: 'ORD-COD',
+        status: 'pending',
+        paymentStatus: 'pending',
+        paymentMethod: 'cod',
+        total: 200000,
+      };
+      repo.findOrderByIdAndUserId.mockResolvedValue(order);
+      await expect(
+        service.repayOrder({ id: 8, userId: 1, originUrl: 'http://shop' }),
+      ).rejects.toMatchObject({ statusCode: 422 });
     });
   });
 

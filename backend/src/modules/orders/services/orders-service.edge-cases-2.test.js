@@ -335,6 +335,7 @@ describe('OrdersService › repayOrder', () => {
       number: 'ORD-PAY',
       status: 'pending',
       paymentStatus: 'pending',
+      paymentMethod: 'momo', // repay chỉ cho phương thức online, không COD
       total: 500000,
     });
     repo.findOrderByIdAndUserId.mockResolvedValue(order);

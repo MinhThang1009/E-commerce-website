@@ -251,7 +251,7 @@ describe('Orders edge cases — phân quyền', () => {
 });
 
 describe('Orders edge cases — validation trạng thái', () => {
-  let deliveredOrder, paidOrder;
+  let deliveredOrder, paidOrder, cancelledOrder;
 
   beforeAll(async () => {
     deliveredOrder = await Order.create({
@@ -293,6 +293,26 @@ describe('Orders edge cases — validation trạng thái', () => {
       shippingCost: 30_000,
       total: 5_030_000,
     });
+
+    cancelledOrder = await Order.create({
+      number: `INT-ORD-EDGE-CANCEL-${TS}`,
+      userId: userA.id,
+      status: 'cancelled',
+      paymentMethod: 'momo',
+      paymentStatus: 'pending',
+      shippingFirstName: '__INT',
+      shippingLastName: 'Cancel',
+      shippingAddress1: '1 St',
+      shippingCity: 'HCM',
+      billingFirstName: '__INT',
+      billingLastName: 'Cancel',
+      billingAddress1: '1 St',
+      billingCity: 'HCM',
+      subtotal: 5_000_000,
+      tax: 0,
+      shippingCost: 30_000,
+      total: 5_030_000,
+    });
   });
 
   test('Hủy order trạng thái delivered → throw lỗi', async () => {
@@ -304,10 +324,22 @@ describe('Orders edge cases — validation trạng thái', () => {
 
   test('Repay order đã paid → throw lỗi', async () => {
     const service = makeService();
-    // paidOrder: status=processing, paymentStatus=paid
-    // _canRepay → false vì không phải pending/cancelled và paymentStatus != failed
+    // paidOrder: status=processing, paymentStatus=paid → _canRepay false (không phải pending)
     await expect(
       service.repayOrder({ id: paidOrder.id, userId: userA.id, originUrl: 'http://localhost' }),
+    ).rejects.toThrow();
+  });
+
+  test('Repay order đã hủy (cancelled) → throw lỗi (cancelled là terminal)', async () => {
+    const service = makeService();
+    // cancelledOrder: status=cancelled → _canRepay false. Đơn đã hủy đã hoàn kho,
+    // cho repay sẽ leak tồn kho → guard chặn. Test FAIL nếu revert guard về cho phép cancelled.
+    await expect(
+      service.repayOrder({
+        id: cancelledOrder.id,
+        userId: userA.id,
+        originUrl: 'http://localhost',
+      }),
     ).rejects.toThrow();
   });
 });

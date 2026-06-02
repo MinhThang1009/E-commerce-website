@@ -11,7 +11,7 @@
   - [2.1 File listing](#21-file-listing)
 - [3. Business Logic Chính](#3-business-logic-chính)
   - [3.1 createOrder](#31-createorder)
-  - [3.2 updateOrderStatus (admin)](#32-updateorderstatus-admin)
+  - [3.2 updateOrderStatus (staff)](#32-updateorderstatus-staff)
   - [3.3 cancelOrder (user)](#33-cancelorder-user)
   - [3.4 confirmReceived (user)](#34-confirmreceived-user)
   - [3.5 repayOrder](#35-repayorder)
@@ -137,14 +137,17 @@ eventBus.publish({ type: 'order.created', payload })  ← outside transaction, o
 emailGateway.sendOrderConfirmationEmail()              ← fire-and-forget
 ```
 
-## 3.2 updateOrderStatus (admin)
+## 3.2 updateOrderStatus (staff)
+
+Endpoint `PATCH /admin/:id/status` guard `authorize('staff')` — **chỉ staff** cập nhật trạng thái (admin xem-only ở back-office).
 
 ```
 1. findOrderByPkWithItemsAndUser(id)
 2. order.status = newStatus
 3. Nếu delivered + COD → order.paymentStatus = 'paid' tự động
-4. saveOrder()
-5. emailGateway.sendOrderStatusUpdateEmail() — fire-and-forget
+4. Nếu cancelled (từ pending/processing) → restore stock trong transaction (F2)
+5. saveOrder()
+6. emailGateway.sendOrderStatusUpdateEmail() — fire-and-forget
 ```
 
 ## 3.3 cancelOrder (user)
@@ -174,7 +177,11 @@ Trả về { message: 'orders.deliveryConfirmed', data: { id, number, status } }
 
 ## 3.5 repayOrder
 
-Chỉ hoạt động khi `status === 'pending'` hoặc `status === 'cancelled'` hoặc `paymentStatus === 'failed'`. Reset `status = 'pending'` và `paymentStatus = 'pending'`. Trả về `paymentUrl` để FE redirect.
+Thanh toán lại đơn online đang chờ thanh toán (payment fail/bỏ dở). Guard `_canRepay` = `status === 'pending'` **&&** `paymentStatus !== 'paid'` **&&** `paymentMethod !== 'cod'`. **KHÔNG đổi `order.status`** (đã pending) — chỉ reset `paymentStatus = 'pending'` (failed → pending để retry). Trả về `paymentUrl` để FE redirect vào lại cổng thanh toán.
+
+- Đơn đã hủy (`cancelled`) **KHÔNG** repay được (terminal) — repay đơn cancelled đã hoàn kho sẽ leak tồn kho; muốn mua lại → đặt đơn mới.
+- COD không repay (trả khi nhận hàng, không có cổng online).
+- Repay **không phải** transition của `order.status` (chỉ retry payment trong trạng thái `pending`) → không xuất hiện trong sơ đồ trạng thái như 1 cạnh chuyển.
 
 ## 3.6 trackOrder (public)
 
@@ -197,14 +204,17 @@ Nếu `subtotal >= SHIPPING_FREE_THRESHOLD` → `shippingCost = 0`. Ngược l�
 ## 3.10 Order status transitions
 
 ```
-pending → processing → shipped → delivered
+pending → processing → shipped → delivered → [*]
   ↓           ↓
-cancelled   cancelled
+cancelled   cancelled → [*]
 ```
 
-- `cancelled`: từ `pending` hoặc `processing` (user hoặc admin)
-- `delivered`: từ `shipped` hoặc `processing` — qua `confirmReceived` (user) hoặc `updateOrderStatus` (admin). Gọi `confirmReceived` khi đã `delivered` → 422.
-- `returned`: không có trong service hiện tại (chỉ là status value trong DB)
+Sơ đồ trạng thái đầy đủ: `diagrams/state/state-01-order.png`.
+
+- `cancelled`: từ `pending` hoặc `processing` (khách `cancelOrder`, staff, hoặc hệ thống khi `cancelPendingOrdersByUser` lúc đặt đơn mới — guard `_canCancel`). **`cancelled` là terminal** — không có chuyển tiếp ra (đơn đã hủy không kích hoạt lại; muốn mua lại → đặt đơn mới). `repayOrder` chỉ retry thanh toán đơn `pending`, KHÔNG đổi `status` (xem §3.5).
+- `delivered`: từ `shipped` hoặc `processing` — qua `confirmReceived` (khách) hoặc `updateOrderStatus` (staff). Gọi `confirmReceived` khi đã `delivered` → 422.
+- **Staff `updateOrderStatus`** là back-office, không enforce transition (có thể đặt trạng thái tự do — chủ ý).
+- `returned`: **KHÔNG tồn tại** trong enum hiện tại (`order.status` chỉ có 5 giá trị: `pending`/`processing`/`shipped`/`delivered`/`cancelled`).
 
 ---
 
@@ -214,19 +224,19 @@ Base path: `/api/orders`
 
 **Lưu ý route order:** `/track`, `/shipping-estimate`, `/number/:number`, `/admin/all` phải đứng trước `/:id` để tránh conflict.
 
-| Method | Path                 | Auth               | Mô tả                                               |
-| ------ | -------------------- | ------------------ | --------------------------------------------------- |
-| GET    | `/track`             | — (public)         | Tracking đơn theo `?orderNumber=ORD-...&email=...`  |
-| POST   | `/`                  | authenticate       | Tạo đơn hàng mới                                    |
-| GET    | `/`                  | authenticate       | Lịch sử đơn hàng của user (paginated, max 100/page) |
-| GET    | `/shipping-estimate` | authenticate       | Ước tính phí vận chuyển                             |
-| GET    | `/number/:number`    | authenticate       | Tìm đơn theo order number                           |
-| GET    | `/:id`               | authenticate       | Chi tiết đơn hàng                                   |
-| POST   | `/:id/cancel`        | authenticate       | Hủy đơn (pending/processing only)                   |
-| POST   | `/:id/repay`         | authenticate       | Thanh toán lại đơn (pending/cancelled/failed)       |
-| POST   | `/:id/receive`       | authenticate       | Xác nhận đã nhận hàng                               |
-| GET    | `/admin/all`         | authorize('admin') | Tất cả đơn hàng (có filter `?status=...`)           |
-| PATCH  | `/admin/:id/status`  | authorize('admin') | Cập nhật trạng thái đơn                             |
+| Method | Path                 | Auth                       | Mô tả                                                         |
+| ------ | -------------------- | -------------------------- | ------------------------------------------------------------- |
+| GET    | `/track`             | — (public)                 | Tracking đơn theo `?orderNumber=ORD-...&email=...`            |
+| POST   | `/`                  | authenticate               | Tạo đơn hàng mới                                              |
+| GET    | `/`                  | authenticate               | Lịch sử đơn hàng của user (paginated, max 100/page)           |
+| GET    | `/shipping-estimate` | authenticate               | Ước tính phí vận chuyển                                       |
+| GET    | `/number/:number`    | authenticate               | Tìm đơn theo order number                                     |
+| GET    | `/:id`               | authenticate               | Chi tiết đơn hàng                                             |
+| POST   | `/:id/cancel`        | authenticate               | Hủy đơn (pending/processing only)                             |
+| POST   | `/:id/repay`         | authenticate               | Thanh toán lại đơn (chỉ `pending` online chưa trả, không COD) |
+| POST   | `/:id/receive`       | authenticate               | Xác nhận đã nhận hàng                                         |
+| GET    | `/admin/all`         | authorize('admin','staff') | Tất cả đơn hàng (có filter `?status=...`) — admin + staff xem |
+| PATCH  | `/admin/:id/status`  | authorize('staff')         | Cập nhật trạng thái đơn — chỉ staff (admin xem-only)          |
 
 **Body `POST /`:** `createOrderSchema` (Zod) — flat fields: shippingFirstName...shippingPhone, billingFirstName...billingPhone (KHÔNG phải nested object), paymentMethod, notes?, discountCode?, shippingCost?, status? (default `'pending'`), items? (buy-now)
 
@@ -249,8 +259,10 @@ Inject từ `app.js`:
 ## 5.2 Used by
 
 - `payment` — sau IPN success, update `order.paymentStatus` trực tiếp qua DB (không gọi orders service)
-- `admin` — xem và quản lý đơn hàng
-- `users` — `cancelPendingOrdersByUser()` khi user yêu cầu xóa tài khoản
+- `admin` — xem đơn hàng (admin + staff); cập nhật trạng thái (chỉ staff)
+- `inventory` — subscribe event `order.cancelled` (ghi InventoryLog)
+
+> `cancelPendingOrdersByUser()` **chỉ** được gọi nội bộ trong `orders-service.createOrder()` (xác minh grep) — KHÔNG có module `users` nào gọi.
 
 ## 5.3 Events published
 

@@ -98,10 +98,10 @@ export const discountAvailableKey = ['discount-codes', 'available'] as const;
 
 ## Pages
 
-| Page             | Route          | Mô tả                                                                                                                                                                                                                                                                     |
-| ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OrdersPage`     | `/orders`      | Danh sách đơn hàng có pagination. Actions: hủy (chỉ `pending`), repay, xác nhận nhận (`shipped` hoặc `processing` chưa xử lý). Sau xác nhận → trigger `ReviewModal` từ feature `reviews`. Xử lý redirect sau VNPay/MoMo payment qua URL param `?payment=success\|failed`. |
-| `TrackOrderPage` | `/track-order` | Form nhập mã đơn + email. Public — không cần login. Dùng `fetch()` trực tiếp (không qua `apiClient`). Stepper timeline hiển thị tiến độ đơn hàng.                                                                                                                         |
+| Page             | Route          | Mô tả                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `OrdersPage`     | `/orders`      | Danh sách đơn hàng có pagination. Actions: hủy (`pending`/`processing`), **repay** (chỉ đơn `pending` chưa trả tiền + online, không COD — guard khớp BE `_canRepay`), xác nhận nhận (`shipped` hoặc `processing` chưa xử lý). Sau xác nhận → trigger `ReviewModal` từ feature `reviews`. Xử lý redirect sau VNPay/MoMo payment qua URL param `?payment=success\|failed`. |
+| `TrackOrderPage` | `/track-order` | Form nhập mã đơn + email. Public — không cần login. Dùng `fetch()` trực tiếp (không qua `apiClient`). Stepper timeline hiển thị tiến độ đơn hàng.                                                                                                                                                                                                                        |
 
 ## Components
 

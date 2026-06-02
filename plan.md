@@ -230,8 +230,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | 1 | `order` | FSM §7.1, checkout §3.2, use case §2.4 — logic đậm nhất | ✅ DONE (F1–F5) |
 | 2 | `payment` | IPN, paymentStatus sync, discount usedCount; state §7.2, use case §2.4b | ✅ DONE tầng 0 (P1 fixed; P2/P3 noted) — sơ đồ chưa vẽ |
 | 3 | `auth` | JWT/OTP/OAuth; state user §7.4, sequence login §3.1, use case §2.1a | ✅ DONE tầng 0 (A6 fixed) — sơ đồ chưa vẽ |
-| 4 | `cart` | merge guest, variant pricing; use case §2.3a | ⏳ NEXT |
-| 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ⏳ |
+| 4 | `cart` | merge guest, variant pricing; use case §2.3a | ✅ DONE tầng 0 (C1 fixed) — sơ đồ chưa vẽ |
+| 5 | `catalog` | product/variant/category; state product §7.3, use case §2.2 | ⏳ NEXT |
 | 6 | `inventory` | stock log, subscribe `order.cancelled`; use case §2.6 | ⏳ |
 | 7 | `discount-code` | validate/apply, usedCount timing | ⏳ |
 | 8 | `reviews` | hasUserPurchased; use case §2.5 | ⏳ |
@@ -301,6 +301,15 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 | A9 | 🟢 | Reset token + OTP lưu plaintext trong DB | service/model | ℹ️ low (entropy + TTL + clear sau dùng) — note |
 
 **✅ AUTH GATE tầng 0 DONE:** A6 fixed; verify unit **3762** (auth-service 100% cov) + lint sạch + **auth integration 14 + API 53 PASS** (login/register/otp/refresh/reset qua full stack — không regression). A3/A8/A9 ghi nhận known limitation ở auth/CLAUDE.md §6. Code còn lại đúng (idempotency OTP timing-safe, reset token expiry, JWT HS256-pinned). **Sơ đồ tầng 1/2 CHƯA vẽ.**
+
+**Module `cart`** — audit 2026-06-02 (đọc service+repo+model; baseline unit 158):
+| ID | Sev | Vấn đề | Vị trí | Status |
+|---|---|---|---|---|
+| C1 | 🟡 | `mergeCart` ghi `existingUserItem.price`/`sessionItem.price` nhưng CartItem chỉ có cột `unitPrice` (không có `price`) → Sequelize bỏ qua → "refresh giá tránh stale" VÔ HIỆU | service `mergeCart` (~L426/L431) | ✅ FIXED (`.price`→`.unitPrice`; +2 unit + 1 integration gọi service THẬT assert unitPrice persist DB — phát hiện test merge integration CŨ tautological "Simulate merge logic") |
+| C2 | 🟢 | `getCart` inline-merge KHÔNG cap stock + không refresh giá (khác `mergeCart` explicit có cap) | service `getCart` (~L144) | ℹ️ caught downstream (order SELECT FOR UPDATE + validateCart) — inconsistency nhỏ, note |
+| C3 | — | Ownership/stock/variant-pricing | service | ✅ OK (đúng: _assertOwnership 403, _assertStock variant-first, validateCart phát hiện priceChanged/outOfStock/quantityExceedsStock) |
+
+**✅ CART GATE tầng 0 DONE:** C1 fixed; verify unit **3764** (cart-service 100% cov) + lint sạch + **integration 12** (thêm 1 test merge gọi service THẬT assert unitPrice=giá hiện tại persist DB — FAIL nếu revert; test merge cũ tautological đánh dấu dọn ở test-quality phase). Docs cart/CLAUDE.md + counts cập nhật. **Sơ đồ tầng 1/2 CHƯA vẽ.**
 
 ### E. Pha 2 — Minh chứng test + hiệu năng (nhúng VÀO báo cáo)
 - [ ] Chạy 5 tầng test (cần MySQL) → chụp output/coverage → nhúng **hình** vào C4 (không chỉ bảng số). Số đã verify: BE unit 158/3745, FE 21/758.

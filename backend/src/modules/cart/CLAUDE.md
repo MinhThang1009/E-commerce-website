@@ -95,7 +95,7 @@ modules/cart/
 
 - **Guest cart**: Dùng cookie name `sessionId` (UUID), cart status `active`. Không cần đăng nhập. Cookie được set bởi controller qua `setSessionCookie` callback khi guest thêm item đầu tiên.
 - **Merge logic trong `getCart`**: Khi user đăng nhập có cookie sessionId, `getCart` tự merge inline (không cần gọi `/merge` riêng). `/merge` endpoint là explicit call cho trường hợp post-login.
-- **Merge deduplication**: Items trùng `productId + variantId` → cộng dồn quantity. Items không trùng → append. Sau merge, guest cart status = `merged`.
+- **Merge deduplication**: Items trùng `productId + variantId` → cộng dồn quantity (cap theo stock). Items không trùng → append. Sau merge, guest cart status = `merged`. **`mergeCart` refresh `unitPrice` về giá hiện tại** (variant.price/basePrice) — tránh stale. (Trước đây ghi nhầm field `.price` không tồn tại → refresh vô hiệu; đã sửa thành `.unitPrice`.)
 - **Ownership check**: `_assertOwnership` verify CartItem thuộc về đúng user (userId match) hoặc đúng session (sessionId match). Throw 403 nếu không match.
 - **Stock check**: `_assertStock` helper dùng tại `addToCart` (2 lần: trước add và sau khi cộng dồn quantity). `updateCartItem` check stock inline (không qua `_assertStock`). Variant stock ưu tiên; nếu không có variant → dùng `product.defaultVariant.stockQuantity`. Không check tại `validateCart` time — chỉ cảnh báo.
 - **Warranty package**: Đã xóa — CartItem không còn `warrantyPackageIds` field. Orders service không tính warranty fee.

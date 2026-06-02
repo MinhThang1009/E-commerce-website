@@ -248,4 +248,48 @@ describe('Cart edge cases — guest cart merge', () => {
     await userCart.destroy({ force: true });
     await guestCart.destroy({ force: true });
   });
+
+  test('mergeCart (service THẬT): cộng quantity + refresh unitPrice persist DB (C-1)', async () => {
+    // Dọn cart active cũ của user để findOrCreate khớp đúng cart tạo dưới đây
+    await Cart.destroy({ where: { userId: user.id, status: 'active' }, force: true });
+    const guestSessionId = `edge-session-${TS}-mergesvc`;
+
+    const guestCart = await Cart.create({ sessionId: guestSessionId, status: 'active' });
+    await CartItem.create({
+      cartId: guestCart.id,
+      productId: productInStock.id,
+      variantId: variantInStock.id,
+      quantity: 2,
+      unitPrice: 500_000, // giá CŨ (stale) — phải bị refresh về giá hiện tại 1_000_000
+    });
+    const userCart = await Cart.create({ userId: user.id, status: 'active' });
+    await CartItem.create({
+      cartId: userCart.id,
+      productId: productInStock.id,
+      variantId: variantInStock.id,
+      quantity: 3,
+      unitPrice: 500_000, // stale
+    });
+
+    const service = makeService();
+    await service.mergeCart({
+      user: { id: user.id },
+      cookieSessionId: guestSessionId,
+      clearSessionCookie: jest.fn(),
+    });
+
+    const items = await CartItem.findAll({ where: { cartId: userCart.id } });
+    expect(items).toHaveLength(1);
+    expect(items[0].quantity).toBe(5); // 2 + 3 ≤ stock 10
+    // unitPrice refresh về variant.price hiện tại — FAIL nếu service ghi nhầm field .price
+    expect(Number(items[0].unitPrice)).toBe(1_000_000);
+
+    await guestCart.reload();
+    expect(guestCart.status).toBe('merged');
+
+    await CartItem.destroy({ where: { cartId: userCart.id }, force: true });
+    await CartItem.destroy({ where: { cartId: guestCart.id }, force: true });
+    await userCart.destroy({ force: true });
+    await guestCart.destroy({ force: true });
+  });
 });

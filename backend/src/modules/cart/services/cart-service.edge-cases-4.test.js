@@ -254,6 +254,63 @@ describe('CartService — branch coverage bổ sung', () => {
     });
   });
 
+  // ── C-1: mergeCart refresh unitPrice (KHÔNG ghi nhầm field .price) ──
+
+  describe('mergeCart — refresh unitPrice về giá hiện tại', () => {
+    test('item trùng: cộng dồn quantity (cap stock) + unitPrice = basePrice hiện tại', async () => {
+      const existing = { id: 5, quantity: 3, unitPrice: 999, save: jest.fn() };
+      cartRepository.findActiveCartBySessionId = jest.fn().mockResolvedValue({ id: 20 });
+      cartRepository.findOrCreateActiveCartByUserId = jest.fn().mockResolvedValue({ id: 10 });
+      cartRepository.findCartItemsForMerge = jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          cartId: 20,
+          productId: 1,
+          variantId: null,
+          quantity: 2,
+          Product: { id: 1, basePrice: 100, defaultVariant: { stockQuantity: 50 } },
+          ProductVariant: null,
+        },
+      ]);
+      cartRepository.findCartItemMatching = jest.fn().mockResolvedValue(existing);
+
+      await service.mergeCart({
+        user: { id: 1 },
+        cookieSessionId: 'sess',
+        clearSessionCookie: jest.fn(),
+      });
+
+      expect(existing.quantity).toBe(5); // 3 + 2 ≤ stock 50
+      expect(existing.unitPrice).toBe(100); // refresh — FAIL nếu ghi nhầm .price
+    });
+
+    test('item mới (move): set cartId + unitPrice = variant.price hiện tại', async () => {
+      const moved = {
+        id: 2,
+        cartId: 20,
+        productId: 9,
+        variantId: 7,
+        quantity: 1,
+        Product: { id: 9, basePrice: 0 },
+        ProductVariant: { price: 250, stockQuantity: 10 },
+        save: jest.fn(),
+      };
+      cartRepository.findActiveCartBySessionId = jest.fn().mockResolvedValue({ id: 20 });
+      cartRepository.findOrCreateActiveCartByUserId = jest.fn().mockResolvedValue({ id: 10 });
+      cartRepository.findCartItemsForMerge = jest.fn().mockResolvedValue([moved]);
+      cartRepository.findCartItemMatching = jest.fn().mockResolvedValue(null);
+
+      await service.mergeCart({
+        user: { id: 1 },
+        cookieSessionId: 'sess',
+        clearSessionCookie: jest.fn(),
+      });
+
+      expect(moved.cartId).toBe(10);
+      expect(moved.unitPrice).toBe(250); // refresh từ variant — FAIL nếu ghi nhầm .price
+    });
+  });
+
   // ── Lines 470-471: validateCart — Product.basePrice null → ?? 0 ──
 
   describe('validateCart — Product.basePrice null (fallback ?? 0)', () => {

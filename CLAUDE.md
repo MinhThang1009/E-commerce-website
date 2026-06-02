@@ -267,12 +267,12 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 158 | 3.762 | ~20s | `jest.config.js` |
-| BE Integration Tests | 37 | 198 | ~55s | `jest.integration.config.js` |
+| BE Unit Tests | 158 | 3.764 | ~20s | `jest.config.js` |
+| BE Integration Tests | 37 | 199 | ~55s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 700 | ~230s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~25s | `jest.e2e.config.js` |
 | FE Component Tests | 22 | 766 | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **261** | **~5.526** | | |
+| **Tổng** | **261** | **~5.529** | | |
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -290,7 +290,7 @@ STRUCTURE.md                                 ← Architecture, tech stack, data 
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
 RAG_CHATBOT_PIPELINE.md                      ← RAG pipeline 7 bước + 53 edge case (chatbot)
 PIPELINE_TRACE_EXAMPLES.md                   ← Trace 22 path + Node Reference 43 node (chatbot)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.526 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.529 tests
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace

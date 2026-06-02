@@ -423,12 +423,12 @@ class CartService {
           const finalQuantity = Math.min(newQuantity, maxStock);
 
           existingUserItem.quantity = finalQuantity;
-          existingUserItem.price = currentPrice;
+          existingUserItem.unitPrice = currentPrice;
           await this.cartRepository.saveCartItem(existingUserItem, { transaction });
           await this.cartRepository.deleteCartItem(sessionItem, { transaction });
         } else {
           sessionItem.cartId = userCart.id;
-          sessionItem.price = currentPrice;
+          sessionItem.unitPrice = currentPrice;
           await this.cartRepository.saveCartItem(sessionItem, { transaction });
         }
       }

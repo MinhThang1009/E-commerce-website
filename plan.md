@@ -249,7 +249,10 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - **Use case role-based** (§1.2 customer, §1.3 admin, §2.10 admin) → FE RBAC (`AdminRoute`/sidebar/redirect/dropdown role) phải khớp **bảng RBAC §0** + BE guard. ⚠️ **FE role UI (§2 Pha 0) PHẢI DONE TRƯỚC** (dropdown thêm 'staff' + ẩn nút "admin xem-only") — kẻo vẽ use case 4-actor sai.
 - **Sequence FE→BE** (§3.1 login, §3.2 checkout, §3.5 admin product) → đọc FE feature (`features/<name>/api/` + hooks + Zustand store) để vẽ đúng nhánh client; audit nếu FE logic sai.
 - **Verify FE:** `cd frontend && npm run typecheck && npm test` — assert OUTCOME (render/state/redirect), KHÔNG tautological (758 component test hiện cùng rủi ro mock-heavy như BE).
-- FE feature (13): `admin/ai/auth/cart/catalog/checkout/content/orders/payment/reviews/upload/users/wishlist` — audit feature tương ứng module BE khi vẽ sơ đồ liên quan.
+- **Mapping FE↔BE (để đi qua ĐỦ 13 FE feature, KHÔNG sót — mapping KHÔNG 1-1):**
+  - **12 FE trùng tên BE** (`admin/ai/auth/cart/catalog/content/orders/payment/reviews/upload/users/wishlist`) → audit cùng gate module BE đồng tên.
+  - **`checkout` (FE-only, KHÔNG có BE module)** → audit khi gate `orders` + `payment` + `cart` (checkout flow span 3 module BE).
+  - **5 BE-only** (`attribute/discount-code/image/inventory/search-history` — KHÔNG có FE feature riêng) → FE quản qua feature **`admin`** (CRUD dashboard) → audit phần admin liên quan khi gate 5 module này.
 
 **Module `order`** — audit 2026-06-02 (đọc trực tiếp service+repo+validator+routes+jobs; baseline 246 tests):
 | ID | Sev | Vấn đề | Vị trí | Status |
@@ -320,7 +323,7 @@ Nguồn sơ đồ:    DIAGRAMS.md (§1 usecase, §2 phân rã, §3 sequence x6, 
   - `4c9b8dae` chore(docs): bàn giao + doc-freshness check + cập nhật tài liệu
   - `7e0abb8b` chore(test): cập nhật checkout-payment-pages test (WIP)
 - Đã gitignore rác (.tools/, mermaid-cli-*, unpacked/, *.tmp/*.pptx/*.bak, .~lock*). Working tree sạch.
-- Untracked CHƯA commit: `diagrams/` (mermaid/ cũ đã đổi tên thành diagrams/ — chứa ~40 artifacts cũ + `usecase_guest.puml` mẫu), `PROMPT_PPTX.md`. Quyết định commit tùy session sau. (`diagrams_dot/` + `render_diagrams.sh` graphviz đã XÓA. ⚠️ Còn thay đổi CHƯA commit phiên này: order fix F1–F5 + tests + plan.md.)
+- Untracked CHƯA commit: `diagrams/` (mermaid/ cũ đã đổi tên thành diagrams/ — chứa ~40 artifacts cũ + `usecase_guest.puml` mẫu), `PROMPT_PPTX.md`. Quyết định commit tùy session sau. (`diagrams_dot/` + `render_diagrams.sh` graphviz đã XÓA. ⚠️ Còn thay đổi CHƯA commit phiên này: order fix F1–F5 + tests + PLAN.md.)
 
 ### 7b. GỘP VỀ 1 NHÁNH `main` (user yêu cầu — CHƯA làm, cần confirm vì xóa nhánh)
 - **Topology (đã verify)**: `origin/main` →(177 commit)→ `origin/main-latest` →(64 commit)→ `feature(HEAD)`. Feature là **hậu duệ tuyến tính**, chứa TẤT CẢ main-latest + main. → gộp **fast-forward sạch**, không mất gì, không conflict.

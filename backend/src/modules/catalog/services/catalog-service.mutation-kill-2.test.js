@@ -2555,3 +2555,433 @@ describe('getProductFilters — slug regex (L486 Regex)', () => {
     });
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Vòng 4 — Transaction-arg killers
+// Mục tiêu: kill mutant `{ transaction }` → `{}` trong createProduct/updateProduct
+// Kỹ thuật: capture transaction object từ runInTransaction mock và assert nó
+//           được truyền chính xác vào từng repo call bên trong transaction.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * makeServiceWithTxCapture — giống makeService nhưng runInTransaction capture
+ * transaction object thực sự và expose nó để test có thể assert.
+ */
+function makeServiceWithTxCapture(repoOverrides = {}) {
+  let _capturedTx = null;
+  const catalogRepository = {
+    findAllCategoriesSorted: jest.fn().mockResolvedValue([]),
+    getCategoryProductCounts: jest.fn().mockResolvedValue({}),
+    findCategoryById: jest.fn().mockResolvedValue(null),
+    findCategoryByIdOrSlug: jest.fn().mockResolvedValue(null),
+    findCategoryBySlug: jest.fn().mockResolvedValue(null),
+    createCategory: jest.fn().mockResolvedValue({ id: 1 }),
+    saveCategory: jest.fn().mockResolvedValue(),
+    deleteCategory: jest.fn().mockResolvedValue(),
+    countProductsByCategoryId: jest.fn().mockResolvedValue(0),
+    findProductsByCategoryId: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+    findAllBrands: jest.fn().mockResolvedValue([]),
+    findBrandIdsByCategoryId: jest.fn().mockResolvedValue([]),
+    findBrandById: jest.fn().mockResolvedValue(null),
+    findBrandBySlug: jest.fn().mockResolvedValue(null),
+    createBrand: jest.fn().mockResolvedValue({ id: 1 }),
+    saveBrand: jest.fn().mockResolvedValue(),
+    deleteBrand: jest.fn().mockResolvedValue(),
+    countProductsByBrandId: jest.fn().mockResolvedValue(0),
+    findProductsByBrandId: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+    findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+    findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
+    findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
+    findProductByPk: jest.fn().mockResolvedValue(null),
+    findProductByName: jest.fn().mockResolvedValue(null),
+    findProductBySlug: jest.fn().mockResolvedValue(null),
+    findFeaturedProducts: jest.fn().mockResolvedValue([]),
+    findRelatedProducts: jest.fn().mockResolvedValue([]),
+    findRelatedProductsFallback: jest.fn().mockResolvedValue([]),
+    searchProducts: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+    findProductSuggestions: jest.fn().mockResolvedValue([]),
+    findNewArrivals: jest.fn().mockResolvedValue([]),
+    findBestSellersRaw: jest.fn().mockResolvedValue([]),
+    findProductsByIdsOrdered: jest.fn().mockResolvedValue([]),
+    findDeals: jest.fn().mockResolvedValue([]),
+    findProductVariantsByProductId: jest.fn().mockResolvedValue([]),
+    findProductRatingsRows: jest.fn().mockResolvedValue([]),
+    getProductPriceRange: jest.fn().mockResolvedValue({ min: 0, max: 0 }),
+    findAttributeValuesByName: jest.fn().mockResolvedValue([]),
+    findOtherAttributes: jest.fn().mockResolvedValue([]),
+    findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
+    upsertRecentlyViewed: jest.fn().mockResolvedValue(),
+    pruneRecentlyViewed: jest.fn().mockResolvedValue(),
+    createProduct: jest.fn().mockResolvedValue({ id: 1 }),
+    saveProduct: jest.fn().mockResolvedValue(),
+    deleteProduct: jest.fn().mockResolvedValue(),
+    findCategoriesByIds: jest.fn().mockResolvedValue([]),
+    setProductCategories: jest.fn().mockResolvedValue(),
+    createProductSpecifications: jest.fn().mockResolvedValue(),
+    createProductAttributes: jest.fn().mockResolvedValue(),
+    clearProductAttributes: jest.fn().mockResolvedValue(),
+    createProductVariants: jest.fn().mockResolvedValue([]),
+    clearProductVariants: jest.fn().mockResolvedValue(),
+    clearProductImages: jest.fn().mockResolvedValue(),
+    createProductImages: jest.fn().mockResolvedValue(),
+    // runInTransaction: capture tx object, truyền vào callback
+    runInTransaction: jest.fn(async (fn) => {
+      _capturedTx = { __txMarker: 'captured-transaction' };
+      return fn(_capturedTx);
+    }),
+    ...repoOverrides,
+  };
+
+  const service = new CatalogService({
+    catalogRepository,
+    eventBus: { publish: jest.fn() },
+    logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+  });
+
+  const getCapturedTx = () => _capturedTx;
+  return { service, catalogRepository, getCapturedTx };
+}
+
+// ─── createProduct transaction args ──────────────────────────────────────
+
+describe('createProduct — createProduct repo call nhận { transaction } (L572)', () => {
+  it('createProduct được gọi với { transaction } là object từ runInTransaction (L572)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture();
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({ payload: { name: 'P', price: 5000 } });
+
+    const tx = getCapturedTx();
+    // Mutant { transaction } → {} sẽ truyền {} thay vì { transaction: tx }
+    expect(catalogRepository.createProduct).toHaveBeenCalledWith(expect.any(Object), {
+      transaction: tx,
+    });
+  });
+});
+
+describe('createProduct — setProductCategories nhận { transaction } (L580)', () => {
+  it('setProductCategories được gọi với { transaction } đúng (L580)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findCategoriesByIds: jest.fn().mockResolvedValue([{ id: 1 }]),
+    });
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: { name: 'P', categoryIds: [1] },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.setProductCategories).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Array),
+      { transaction: tx },
+    );
+  });
+});
+
+describe('createProduct — createProductSpecifications nhận { transaction } (L595)', () => {
+  it('createProductSpecifications được gọi với { transaction } đúng (L595)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture();
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: {
+        name: 'P',
+        specifications: [{ name: 'CPU', value: 'A17', category: 'Chip' }],
+      },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductSpecifications).toHaveBeenCalledWith(expect.any(Array), {
+      transaction: tx,
+    });
+  });
+});
+
+describe('createProduct — createProductAttributes (parentAttributes) nhận { transaction } (L607)', () => {
+  it('createProductAttributes với parentAttributes được gọi với { transaction } (L607)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture();
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: {
+        name: 'P',
+        parentAttributes: [{ name: 'Color', type: 'color', values: ['red'], required: false }],
+      },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductAttributes).toHaveBeenCalledWith(expect.any(Array), {
+      transaction: tx,
+    });
+  });
+});
+
+describe('createProduct — createProductAttributes (attributes) nhận { transaction } (L612)', () => {
+  it('createProductAttributes với attributes được gọi với { transaction } (L612)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture();
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: {
+        name: 'P',
+        attributes: [{ name: 'Color', value: 'Red' }],
+      },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductAttributes).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ name: 'Color' })]),
+      { transaction: tx },
+    );
+  });
+});
+
+describe('createProduct — createProductImages (product images) nhận { transaction } (L622)', () => {
+  it('createProductImages được gọi với { transaction } khi có images (L622)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture();
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: { name: 'P', images: ['img1.jpg', 'img2.jpg'] },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductImages).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ imageUrl: 'img1.jpg' })]),
+      { transaction: tx },
+    );
+  });
+});
+
+describe('createProduct — createProductVariants nhận { transaction } (L639)', () => {
+  it('createProductVariants được gọi với { transaction } (L639)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      createProductVariants: jest.fn().mockResolvedValue([{ id: 10 }]),
+    });
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: {
+        name: 'P',
+        variants: [{ sku: 'V1', price: 5000 }],
+      },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(expect.any(Array), {
+      transaction: tx,
+    });
+  });
+});
+
+describe('createProduct — createProductImages (variant images) nhận { transaction } (L660)', () => {
+  it('createProductImages cho variant images được gọi với { transaction } (L660)', async () => {
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      createProductVariants: jest.fn().mockResolvedValue([{ id: 50 }]),
+      createProductImages: jest.fn().mockResolvedValue(),
+    });
+    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 1 }));
+
+    await service.createProduct({
+      payload: {
+        name: 'P',
+        variants: [{ sku: 'V1', price: 5000, images: ['v1.jpg'] }],
+      },
+    });
+
+    const tx = getCapturedTx();
+    // createProductImages được gọi cho variant images với { transaction }
+    expect(catalogRepository.createProductImages).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ variantId: 50, imageUrl: 'v1.jpg' })]),
+      { transaction: tx },
+    );
+  });
+});
+
+// ─── updateProduct transaction args ──────────────────────────────────────
+
+describe('updateProduct — saveProduct nhận { transaction } (L695)', () => {
+  it('saveProduct được gọi với { transaction } đúng (L695)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({ id: 1, patch: { name: 'New Name' } });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.saveProduct).toHaveBeenCalledWith(expect.any(Object), {
+      transaction: tx,
+    });
+  });
+});
+
+describe('updateProduct — setProductCategories nhận { transaction } (L702)', () => {
+  it('setProductCategories được gọi với { transaction } khi patch.categoryIds hợp lệ (L702)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findCategoriesByIds: jest.fn().mockResolvedValue([{ id: 2 }]),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({ id: 1, patch: { categoryIds: [2] } });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.setProductCategories).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Array),
+      { transaction: tx },
+    );
+  });
+});
+
+describe('updateProduct — clearProductAttributes nhận { transaction } (L706)', () => {
+  it('clearProductAttributes được gọi với { transaction } khi patch có attributes (L706)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({ id: 1, patch: { attributes: [] } });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.clearProductAttributes).toHaveBeenCalledWith(1, { transaction: tx });
+  });
+});
+
+describe('updateProduct — createProductAttributes nhận { transaction } (L709)', () => {
+  it('createProductAttributes được gọi với { transaction } khi patch.attributes không rỗng (L709)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({
+      id: 1,
+      patch: { attributes: [{ name: 'Color', value: 'Red' }] },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductAttributes).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ name: 'Color' })]),
+      { transaction: tx },
+    );
+  });
+});
+
+describe('updateProduct — clearProductImages (product) nhận { transaction } (L714)', () => {
+  it('clearProductImages với null scope được gọi với { transaction } khi patch.images (L714)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({ id: 1, patch: { images: [] } });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.clearProductImages).toHaveBeenCalledWith(1, null, { transaction: tx });
+  });
+});
+
+describe('updateProduct — createProductImages (product images) nhận { transaction } (L722)', () => {
+  it('createProductImages cho product images được gọi với { transaction } (L722)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({
+      id: 1,
+      patch: { images: ['img1.jpg'] },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductImages).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ imageUrl: 'img1.jpg' })]),
+      { transaction: tx },
+    );
+  });
+});
+
+describe('updateProduct — clearProductImages (variants) nhận { transaction } (L727)', () => {
+  it('clearProductImages với "variants" scope được gọi với { transaction } khi patch.variants (L727)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({ id: 1, patch: { variants: [] } });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.clearProductImages).toHaveBeenCalledWith(1, 'variants', {
+      transaction: tx,
+    });
+  });
+});
+
+describe('updateProduct — clearProductVariants nhận { transaction } (L728)', () => {
+  it('clearProductVariants được gọi với { transaction } khi patch.variants (L728)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({ id: 1, patch: { variants: [] } });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.clearProductVariants).toHaveBeenCalledWith(1, { transaction: tx });
+  });
+});
+
+describe('updateProduct — createProductVariants nhận { transaction } (L735)', () => {
+  it('createProductVariants được gọi với { transaction } khi patch.variants không rỗng (L735)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      createProductVariants: jest.fn().mockResolvedValue([{ id: 30 }]),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({
+      id: 1,
+      patch: { variants: [{ sku: 'V1', price: 5000 }] },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(expect.any(Array), {
+      transaction: tx,
+    });
+  });
+});
+
+describe('updateProduct — createProductImages (variant images) nhận { transaction } (L756)', () => {
+  it('createProductImages cho variant images được gọi với { transaction } (L756)', async () => {
+    const product = makeProductRow({ id: 1 });
+    const { service, catalogRepository, getCapturedTx } = makeServiceWithTxCapture({
+      findProductByPk: jest.fn().mockResolvedValue(product),
+      createProductVariants: jest.fn().mockResolvedValue([{ id: 60 }]),
+      createProductImages: jest.fn().mockResolvedValue(),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(product),
+    });
+
+    await service.updateProduct({
+      id: 1,
+      patch: { variants: [{ sku: 'V1', price: 5000, images: ['v.jpg'] }] },
+    });
+
+    const tx = getCapturedTx();
+    expect(catalogRepository.createProductImages).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ variantId: 60, imageUrl: 'v.jpg' })]),
+      { transaction: tx },
+    );
+  });
+});

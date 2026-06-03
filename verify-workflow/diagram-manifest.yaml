@@ -22,7 +22,7 @@ usecase:
   - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: pending }
   - { seq: 11, scope: checkout,                    section: "§2.3b", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }
   - { seq: 12, scope: orders-customer,            section: "§2.4a", module: orders,   notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: getByNumber gộp vào "Xem chi tiết" (quyết định A)
-  - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: 3 actor (customer/staff stick-figure + gateway = hộp «external system», UML 2.5 §11.3.2 non-human actor), 5 UC phủ 7 route. Verify 4 vòng diagram-verifier (round 3+4 sạch liên tiếp, forward+reverse lens). Quyết định: gateway CHỈ nối IPN (s2s thật), KHÔNG nối "Trang trả về" (browser KH gọi endpoint, verifyReturnUrl HMAC cục bộ); refund staff-only (admin 403); tên UC "Khởi tạo thanh toán" (handler chỉ tạo URL redirect)
   - { seq: 14, scope: orders-admin,               section: "§2.4c", module: orders,   notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: staff status/cancel + admin xem-only, verify vs admin/routes
   - { seq: 15, scope: reviews,                     section: "§2.5",  module: reviews,  notation: UML, tool: plantuml, status: pending }
   - { seq: 16, scope: inventory,                   section: "§2.6",  module: inventory, notation: UML, tool: plantuml, status: pending }

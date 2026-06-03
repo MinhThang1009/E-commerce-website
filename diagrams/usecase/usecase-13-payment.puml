@@ -1,0 +1,64 @@
+@startuml usecase-13-payment
+' Use case — Thanh toán (Payment) — module payment
+' Ground-truth (verify vs backend/src/modules/payment/routes.js):
+'   routes.js:69 POST /api/payments/momo/create-url   authenticate                    — KH tạo URL thanh toán MoMo
+'   routes.js:75 POST /api/payments/vnpay/create-url  authenticate                    — KH tạo URL thanh toán VNPay
+'   routes.js:63 GET  /api/payments/momo/return       public                          — gateway redirect browser về (MoMo: chỉ redirect)
+'   routes.js:64 POST /api/payments/momo/ipn          public + rateLimit              — MoMo IPN s2s (mutate paymentStatus/order.status)
+'   routes.js:65 GET  /api/payments/vnpay/return      public                          — gateway redirect (VNPay: CÓ mutate state)
+'   routes.js:66 GET  /api/payments/vnpay/ipn         public + rateLimit              — VNPay IPN s2s
+'   routes.js:83 POST /api/payments/refund            authenticate + authorize('staff') — Staff hoàn tiền (chỉ VNPay)
+' RBAC: refund authorize('staff') → CHỈ staff (admin role=admin bị 403, xem-only) — authorize.js:16.
+' Post-payment effects (tăng discount.usedCount, xóa giỏ, gửi email) là bước NỘI BỘ của IPN/return success
+'   → để trong note, KHÔNG tách use case riêng (giữ altitude actor-goal).
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách hàng\n(Customer)" as customer
+actor "Nhân viên\n(Staff)" as staff
+' Actor hệ-thống-ngoài: ký pháp UML thay thế = hình chữ nhật (UML 2.5 §11.3.2 cho non-human actor),
+'   stereotype «external system» phân biệt với actor con người (Customer/Staff = stick figure).
+'   Vai actor đã ngầm rõ qua vị trí ngoài boundary + association tới use case → bỏ keyword «actor» cho gọn.
+rectangle "Cổng thanh toán\n(MoMo / VNPay)" as gateway <<external system>>
+
+rectangle "Thanh toán — TechStore" {
+  usecase "Khởi tạo thanh toán MoMo" as UC_momo
+  usecase "Khởi tạo thanh toán VNPay" as UC_vnpay
+  usecase "Xử lý kết quả thanh toán\n(IPN — server-to-server)" as UC_ipn
+  usecase "Trang trả về sau thanh toán" as UC_return
+  usecase "Hoàn tiền đơn hàng\n(chỉ VNPay)" as UC_refund
+}
+
+' Primary actors (trái)
+customer -- UC_momo
+customer -- UC_vnpay
+customer -- UC_return
+staff -- UC_refund
+
+' Secondary actor (phải) — cổng thanh toán gọi IPN callback (server-to-server thật sự).
+' UC_return KHÔNG nối gateway: chỉ browser KH gọi endpoint return; cổng chỉ cung cấp
+'   params đã ký qua redirect (verifyReturnUrl là HMAC cục bộ, hệ thống không gọi ra cổng).
+UC_ipn -- gateway
+
+note bottom of UC_ipn
+  IPN xác nhận thanh toán (server-to-server: verify chữ ký + khớp số tiền, idempotent):
+  - Thành công: order.status = 'processing' + paymentStatus = 'paid'
+    → tăng discount.usedCount, xóa giỏ hàng, gửi email xác nhận.
+  - Thất bại: chỉ paymentStatus = 'failed' (order.status KHÔNG đổi).
+end note
+
+note bottom of UC_return
+  Cổng redirect trình duyệt KH về site (KH gọi endpoint; cổng cung cấp params đã ký).
+  MoMo: chỉ redirect (đổi trạng thái ở IPN).
+  VNPay: CÓ mutate state — verify số tiền + mark paid, rồi tăng
+    discount.usedCount, xóa giỏ, gửi email (giống IPN success).
+end note
+@enduml

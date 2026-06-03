@@ -119,7 +119,22 @@ diagrams/
 - `scope` = kebab-case English, mô tả ngắn (module/đối tượng)
 - File `.png` cùng tên `.puml`/`.mmd`/`.dbml` (chỉ khác đuôi)
 
-**Render:** `export GRAPHVIZ_DOT="C:\Program Files\Graphviz\bin\dot.exe"; java -jar C:\Users\Admin\plantuml\plantuml.jar -charset UTF-8 -tpng diagrams/<type>/<file>.puml`
+**Render (3 định dạng — quy trình CHỐT 2026-06-03):**
+```
+# bash: dùng forward-slash cho path (backslash bị nuốt)
+export GRAPHVIZ_DOT="C:/Program Files/Graphviz/bin/dot.exe"
+# 1) PNG preview — ⚠️ BẮT BUỘC -DPLANTUML_LIMIT_SIZE=16384 (default 4096 CẮT sơ đồ cao như uc-02/03!)
+java -DPLANTUML_LIMIT_SIZE=16384 -jar "C:/Users/Admin/plantuml/plantuml.jar" -charset UTF-8 -tpng <file>.puml
+# 2) SVG = file TẠM (trung gian để ra pdf — Inkscape không đọc .puml). gitignored, KHÔNG commit.
+java -jar "C:/Users/Admin/plantuml/plantuml.jar" -charset UTF-8 -tsvg <file>.puml
+# 3) PDF VECTOR để CHÈN LATEX (scale tự do, không vỡ pixel, font tiếng Việt OK):
+#    svg -> pdf bằng Inkscape, --export-text-to-path biến chữ thành đường (KHÔNG lỗi font)
+"C:/Program Files/Inkscape/bin/inkscape.exe" <file>.svg --export-type=pdf --export-text-to-path --export-filename=<file>.pdf
+# rm <file>.svg   # xóa svg tạm sau khi có pdf
+```
+- ⚠️ **KHÔNG** dùng PlantUML `-tpdf` (Batik/FOP **lỗi font tiếng Việt**). PHẢI svg→pdf qua Inkscape.
+- ⚠️ PNG xuất THẲNG từ .puml (`-tpng`), KHÔNG qua svg. svg và png là 2 nhánh song song từ .puml.
+- LaTeX chèn: `\includegraphics[width=\linewidth]{diagrams/<type>/<file>.pdf}` — vector, scale tùy ý, nét mọi cỡ (KHÔNG gò 1 tỉ lệ như PNG raster). **Giữ 3 đuôi/sơ đồ:** `.puml`(nguồn) `.pdf`(chèn LaTeX) `.png`(preview). `.svg` là tạm (gitignored).
 
 #### NHÓM A — SAI KÝ PHÁP (bắt buộc vẽ lại bằng PlantUML — 28 sơ đồ)
 
@@ -507,8 +522,9 @@ BE test:        cd backend && npm run test:fast        # unit nhanh
                 npm run test:integration|api|e2e       # cần MySQL
                 npm run check:routes / check:unused / check:patch-coverage / test:mutation
 FE:             cd frontend && npm run typecheck / test / check:unused / check:patch-coverage
-PlantUML:       export GRAPHVIZ_DOT="C:\Program Files\Graphviz\bin\dot.exe"; \
-                java -jar C:\Users\Admin\plantuml\plantuml.jar -charset UTF-8 -tpng <file.puml>   # jar+graphviz NGOÀI repo
+PlantUML:       export GRAPHVIZ_DOT="C:/Program Files/Graphviz/bin/dot.exe"; \
+                java -DPLANTUML_LIMIT_SIZE=16384 -jar "C:/Users/Admin/plantuml/plantuml.jar" -charset UTF-8 -tpng <file.puml>  # -D...=16384 BẮT BUỘC (4096 cắt!); -tsvg cho vector
+svg->pdf LaTeX: "C:/Program Files/Inkscape/bin/inkscape.exe" <file>.svg --export-type=pdf --export-text-to-path --export-filename=<file>.pdf  # vector chèn LaTeX, font VN OK (KHÔNG dùng plantuml -tpdf: lỗi font)
 mermaid:        npx -y @mermaid-js/mermaid-cli mmdc -i <file.mmd> -o <file.png>                   # npx tự tải, KHÔNG để trong repo
 ERD (DBML):     npx -y @dbml/cli db2dbml mysql "<conn>" -o erd-01-schema.dbml                     # auto từ DB thật; rồi import dbdiagram.io
 db:             cd backend && npm run db:migrate / db:seed

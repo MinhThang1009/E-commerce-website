@@ -115,3 +115,6 @@ unpacked/
 *.zip
 *.bak
 .~lock*
+
+# Sơ đồ: .svg chỉ là file TẠM để Inkscape convert sang .pdf (chèn LaTeX). Không commit.
+diagrams/**/*.svg

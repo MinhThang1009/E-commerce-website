@@ -330,6 +330,53 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
     expect(res.body.message).toMatch(/tồn kho/i);
   });
 
+  // Biên tồn kho (mutation-kill: `<` → `<=` ở cart-service _assertStock/updateCartItem).
+  // Test cũ chỉ kiểm qty > stock (reject) — KHÔNG phân biệt được `<` vs `<=`.
+  // qty === stock phải CHO đặt: `stock < qty` = false → ok; mutant `stock <= qty` = true → reject sai.
+  test('Biên: quantity === stock tồn kho base → CHO cập nhật → 200', async () => {
+    const mockSaveFn = jest.fn().mockResolvedValue(undefined);
+    const mockItem = {
+      id: 5,
+      Cart: { id: 10, userId: 1 },
+      Product: { id: 1, defaultVariant: { stockQuantity: 5 } },
+      ProductVariant: null,
+      quantity: 1,
+      save: mockSaveFn,
+    };
+    CartItem.findByPk.mockResolvedValue(mockItem);
+
+    const res = await request
+      .put('/api/cart/items/5')
+      .set('Authorization', 'Bearer test-token')
+      .send({ quantity: 5 }); // đặt ĐÚNG bằng tồn kho
+
+    expect(res.status).toBe(200);
+    expect(mockSaveFn).toHaveBeenCalled();
+    expect(mockItem.quantity).toBe(5);
+  });
+
+  test('Biên: quantity === stock tồn kho variant → CHO cập nhật → 200', async () => {
+    const mockSaveFn = jest.fn().mockResolvedValue(undefined);
+    const mockItem = {
+      id: 5,
+      Cart: { id: 10, userId: 1 },
+      Product: { id: 1, defaultVariant: { stockQuantity: 0 } },
+      ProductVariant: { stockQuantity: 4 },
+      quantity: 1,
+      save: mockSaveFn,
+    };
+    CartItem.findByPk.mockResolvedValue(mockItem);
+
+    const res = await request
+      .put('/api/cart/items/5')
+      .set('Authorization', 'Bearer test-token')
+      .send({ quantity: 4 }); // = tồn kho variant
+
+    expect(res.status).toBe(200);
+    expect(mockSaveFn).toHaveBeenCalled();
+    expect(mockItem.quantity).toBe(4);
+  });
+
   test('Số lượng hợp lệ → save được gọi với quantity mới → 200', async () => {
     // Phase 42 modules/cart dùng item.save() sau khi mutate quantity (thay vì item.update)
     const mockSaveFn = jest.fn().mockResolvedValue(undefined);

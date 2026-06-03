@@ -313,4 +313,64 @@ describe('POST /api/cart — thêm sản phẩm vào giỏ hàng', () => {
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/tồn kho/);
   });
+
+  // Biên tồn kho (mutation-kill `<` → `<=` ở _assertStock base, cart-service L114).
+  // qty === stock phải CHO thêm: `stock < qty` = false → ok; mutant `<=` → reject sai.
+  test('Biên: quantity === tồn kho base → CHO thêm (create) → 200/201', async () => {
+    mockProductFindByPkImpl.mockResolvedValue({
+      ...PRODUCT_IN_STOCK,
+      stockQuantity: 5,
+      defaultVariant: { stockQuantity: 5 },
+    });
+    mockVariantFindOneImpl.mockResolvedValue(null);
+    mockCartItemFindOneImpl.mockResolvedValue(null);
+    CartItem.create.mockResolvedValue({
+      id: 1,
+      quantity: 5,
+      productId: 1,
+      variantId: null,
+      cartId: 10,
+    });
+
+    const res = await request
+      .post('/api/cart')
+      .set('Authorization', 'Bearer test-token')
+      .send({ productId: 1, quantity: 5 }); // đặt ĐÚNG bằng tồn kho
+
+    expect(CartItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: 1, quantity: 5 }),
+      expect.anything(),
+    );
+    expect([200, 201]).toContain(res.status);
+  });
+
+  // Biên tồn kho variant (mutation-kill `<` → `<=` ở _assertStock variant, cart-service L111).
+  test('Biên: quantity === tồn kho variant → CHO thêm → 200/201', async () => {
+    mockProductFindByPkImpl.mockResolvedValue({
+      ...PRODUCT_IN_STOCK,
+      defaultVariant: { stockQuantity: 0 }, // base hết nhưng có variant
+    });
+    mockVariantFindOneImpl.mockResolvedValue({
+      id: 7,
+      productId: 1,
+      stockQuantity: 4,
+      price: 12000000,
+    });
+    mockCartItemFindOneImpl.mockResolvedValue(null);
+    CartItem.create.mockResolvedValue({
+      id: 1,
+      quantity: 4,
+      productId: 1,
+      variantId: 7,
+      cartId: 10,
+    });
+
+    const res = await request
+      .post('/api/cart')
+      .set('Authorization', 'Bearer test-token')
+      .send({ productId: 1, variantId: 7, quantity: 4 }); // = tồn kho variant
+
+    expect([200, 201]).toContain(res.status);
+    expect(CartItem.create).toHaveBeenCalled();
+  });
 });

@@ -629,3 +629,254 @@ describe('uploadMultiple — logic controller', () => {
     );
   });
 });
+
+// ============================================================
+// MUTATION-KILL — message cụ thể + options + url shape
+// ============================================================
+
+describe('mutation-kill: controller messages + options + url', () => {
+  let ctrl;
+  let res;
+  let next;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    setMulterSingle('success');
+    setMulterArray('success');
+    jest.resetModules();
+    jest.mock('@modules/image/services/image-service', () => ({
+      uploadImage: (...args) => mockUploadImage(...args),
+      uploadMultipleImages: (...args) => mockUploadMultipleImages(...args),
+      getImageById: (...args) => mockGetImageById(...args),
+      getImagesByProductId: (...args) => mockGetImagesByProductId(...args),
+      deleteImage: (...args) => mockDeleteImage(...args),
+      convertBase64ToFile: (...args) => mockConvertBase64ToFile(...args),
+      cleanupOrphanedFiles: (...args) => mockCleanupOrphanedFiles(...args),
+    }));
+    ctrl = require('./image-controller');
+    res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    next = jest.fn();
+  });
+  afterEach(() => {
+    setMulterSingle('success');
+    setMulterArray('success');
+  });
+
+  // ── uploadSingle ──
+  test('uploadSingle success → options + message "Ảnh đã được upload thành công"', async () => {
+    mockUploadImage.mockResolvedValue({ id: 1 });
+    const req = {
+      body: { category: 'user', productId: 'p1', generateThumbs: 'false', optimize: 'false' },
+      user: { id: 5 },
+      headers: {},
+    };
+
+    await ctrl.uploadSingle(req, res, next);
+
+    expect(mockUploadImage).toHaveBeenCalledWith(
+      expect.objectContaining({ originalname: 'photo.jpg' }),
+      { category: 'user', productId: 'p1', userId: 5, generateThumbs: false, optimize: false },
+    );
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Ảnh đã được upload thành công', data: { id: 1 } }),
+    );
+  });
+
+  test('uploadSingle body rỗng → options mặc định (product/null/null/true/true)', async () => {
+    mockUploadImage.mockResolvedValue({ id: 1 });
+    const req = { body: {}, headers: {} }; // không user → userId null
+
+    await ctrl.uploadSingle(req, res, next);
+
+    expect(mockUploadImage).toHaveBeenCalledWith(expect.any(Object), {
+      category: 'product',
+      productId: null,
+      userId: null,
+      generateThumbs: true,
+      optimize: true,
+    });
+  });
+
+  test('uploadSingle LIMIT_FILE_SIZE → next("File quá lớn. Kích thước tối đa là 10MB")', async () => {
+    setMulterSingle('limitFileSize');
+    await ctrl.uploadSingle({ body: {}, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'File quá lớn. Kích thước tối đa là 10MB',
+        statusCode: 400,
+      }),
+    );
+  });
+
+  test('uploadSingle MulterError khác → next("Lỗi upload: ...")', async () => {
+    setMulterSingle('other'); // LIMIT_UNEXPECTED_FILE
+    await ctrl.uploadSingle({ body: {}, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('Lỗi upload:'), statusCode: 400 }),
+    );
+  });
+
+  test('uploadSingle noFile → next("Không có file nào được upload")', async () => {
+    setMulterSingle('noFile');
+    await ctrl.uploadSingle({ body: {}, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Không có file nào được upload', statusCode: 400 }),
+    );
+    expect(mockUploadImage).not.toHaveBeenCalled();
+  });
+
+  // ── uploadMultiple ──
+  test('uploadMultiple LIMIT_FILE_SIZE → message "File quá lớn..."', async () => {
+    setMulterArray('limitFileSize');
+    await ctrl.uploadMultiple({ body: {}, user: { id: 1 }, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'File quá lớn. Kích thước tối đa là 10MB' }),
+    );
+  });
+
+  test('uploadMultiple LIMIT_FILE_COUNT → message "Quá nhiều file. Tối đa là 10 file"', async () => {
+    setMulterArray('limitFileCount');
+    await ctrl.uploadMultiple({ body: {}, user: { id: 1 }, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Quá nhiều file. Tối đa là 10 file' }),
+    );
+  });
+
+  test('uploadMultiple MulterError khác → message "Lỗi upload: ..."', async () => {
+    setMulterArray('other');
+    await ctrl.uploadMultiple({ body: {}, user: { id: 1 }, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('Lỗi upload:') }),
+    );
+  });
+
+  test('uploadMultiple noFiles → message "Không có file nào được upload"', async () => {
+    setMulterArray('noFiles');
+    await ctrl.uploadMultiple({ body: {}, user: { id: 1 }, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Không có file nào được upload' }),
+    );
+  });
+
+  test('uploadMultiple success → message "{n} ảnh đã được upload thành công" + options', async () => {
+    mockUploadMultipleImages.mockResolvedValue({
+      successful: [{ id: 1 }, { id: 2 }],
+      failed: [],
+      count: { total: 2, successful: 2, failed: 0 },
+    });
+    const req = { body: { category: 'review' }, user: { id: 8 }, headers: {} };
+
+    await ctrl.uploadMultiple(req, res, next);
+
+    expect(mockUploadMultipleImages).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ category: 'review', userId: 8 }),
+    );
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: '2 ảnh đã được upload thành công' }),
+    );
+  });
+
+  test('uploadMultiple options ĐẦY ĐỦ (category/productId/generateThumbs/optimize) (kill L67/68/70/71)', async () => {
+    mockUploadMultipleImages.mockResolvedValue({
+      successful: [],
+      failed: [],
+      count: { successful: 0 },
+    });
+    const req = {
+      body: { category: 'user', productId: 'p9', generateThumbs: 'false', optimize: 'false' },
+      user: { id: 4 },
+      headers: {},
+    };
+
+    await ctrl.uploadMultiple(req, res, next);
+
+    expect(mockUploadMultipleImages).toHaveBeenCalledWith(expect.any(Array), {
+      category: 'user',
+      productId: 'p9',
+      userId: 4,
+      generateThumbs: false,
+      optimize: false,
+    });
+  });
+
+  test('uploadMultiple options MẶC ĐỊNH (product/null/true/true) khi body rỗng', async () => {
+    mockUploadMultipleImages.mockResolvedValue({
+      successful: [],
+      failed: [],
+      count: { successful: 0 },
+    });
+    const req = { body: {}, headers: {} }; // không user → userId null
+
+    await ctrl.uploadMultiple(req, res, next);
+
+    expect(mockUploadMultipleImages).toHaveBeenCalledWith(expect.any(Array), {
+      category: 'product',
+      productId: null,
+      userId: null,
+      generateThumbs: true,
+      optimize: true,
+    });
+  });
+
+  // ── convertBase64 + cleanup + getImagesByProductId ──
+  test('convertBase64 thiếu base64Data → next("base64Data là bắt buộc")', async () => {
+    await ctrl.convertBase64({ body: {}, headers: {} }, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'base64Data là bắt buộc', statusCode: 400 }),
+    );
+    expect(mockConvertBase64ToFile).not.toHaveBeenCalled();
+  });
+
+  test('convertBase64 hợp lệ → service(options) + message', async () => {
+    mockConvertBase64ToFile.mockResolvedValue({ id: 1 });
+    const req = {
+      body: { base64Data: 'data:image/png;base64,x', category: 'user' },
+      user: { id: 3 },
+      headers: {},
+    };
+
+    await ctrl.convertBase64(req, res, next);
+
+    expect(mockConvertBase64ToFile).toHaveBeenCalledWith('data:image/png;base64,x', {
+      category: 'user',
+      productId: null,
+      userId: 3,
+    });
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Đã chuyển đổi base64 sang file thành công' }),
+    );
+  });
+
+  test('cleanupOrphanedFiles → message "Đã dọn dẹp..." + data', async () => {
+    mockCleanupOrphanedFiles.mockResolvedValue({ deletedFiles: 3 });
+    await ctrl.cleanupOrphanedFiles({ headers: {} }, res, next);
+
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Đã dọn dẹp các file không còn được tham chiếu thành công',
+      data: { deletedFiles: 3 },
+    });
+  });
+
+  test('getImagesByProductId → mỗi ảnh có url /uploads/{filePath} + count', async () => {
+    mockGetImagesByProductId.mockResolvedValue([
+      { toJSON: () => ({ id: 1 }), filePath: 'images/product/x.webp' },
+      { toJSON: () => ({ id: 2 }), filePath: 'images/product/y.webp' },
+    ]);
+    await ctrl.getImagesByProductId({ params: { productId: 7 }, headers: {} }, res, next);
+
+    const body = res.json.mock.calls[0][0];
+    expect(body.data.count).toBe(2);
+    expect(body.data.images[0].url).toBe('/uploads/images/product/x.webp');
+  });
+});

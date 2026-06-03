@@ -11,6 +11,7 @@ const { AppError } = require('@shared/errors');
 // Quy tắc validate số lượng nhập kho và thao tác tăng/giảm tồn kho
 function _validateRestockQty(quantity) {
   const qty = parseInt(quantity, 10);
+  // Stryker disable next-line EqualityOperator: !qty đã bắt qty===0 (parseInt("0")=0); qty<0 vs qty<=0 identical cho integer input
   if (!qty || qty <= 0) return { valid: false, reason: 'Số lượng nhập phải là số nguyên dương' };
   return { valid: true, quantity: qty };
 }
@@ -48,6 +49,7 @@ class InventoryService {
       kind = 'variant';
     } else {
       stockable = product;
+      // Stryker disable next-line StringLiteral: kind chỉ so sánh với 'variant' (L61); "" và 'product' đều rơi vào else branch — behavior identical
       kind = 'product';
     }
 

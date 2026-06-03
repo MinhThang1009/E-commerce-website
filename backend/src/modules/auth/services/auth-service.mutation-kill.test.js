@@ -411,6 +411,25 @@ describe('AuthService — mutation kill (message + token + expiry + otp)', () =>
         'auth.otpInvalidOrExpired',
       );
     });
+
+    test('otpExpires === ĐÚNG khoảnh khắc now → VẪN còn hạn (biên >, không >=) (L177)', async () => {
+      // Fake timers: new Date() trong service == FIXED. otpExpires = FIXED (hết hạn
+      // đúng lúc này). Semantics: > nghĩa "chỉ hết hạn khi QUÁ mốc" → tại đúng mốc
+      // vẫn valid. Mutant >= sẽ coi là hết hạn → throw otpExpired.
+      const FIXED = 1_700_000_000_000;
+      jest.useFakeTimers().setSystemTime(FIXED);
+      try {
+        const deps = makeDeps();
+        const user = userWithOtp('123456', { otpExpires: new Date(FIXED) });
+        deps.authRepository.findByEmail.mockResolvedValue(user);
+        const service = makeService(deps);
+
+        const result = await service.verifyOtp({ email: 'a@b.c', otp: '123456' });
+        expect(result.message).toBe('auth.emailVerified'); // > : FIXED>FIXED=false → không hết hạn
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 
   // ── resendVerification: expiry + generic + log ─────────────────

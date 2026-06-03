@@ -544,12 +544,12 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - [ ] **orders-service** (91.30%, 52 sv) + **payment-service** (97%, 11 sv): review survivor còn lại, giết cái về money/stock/status, bỏ qua plumbing/display.
 - [ ] ⚠️ Mọi test mới PHẢI assert OUTCOME nghiệp vụ (số/kho/status), KHÔNG tautological. Re-run mutation sau mỗi module để xác nhận giết thật.
 
-#### G.4 — Hoàn tất coverage 4 file <100% branch ("làm tất cả")
+#### G.4 — Hoàn tất coverage 4 file <100% branch ("làm tất cả") ✅ DONE (commit `dcf019c1`, 2026-06-03)
 - [x] `fuzzy-expander:93` — OUTCOME test thêm rồi (branch 92.18→93.75%).
-- [ ] `admin-product-service:483` (`categoryId null` khi categoryIds rỗng): OUTCOME test thật — update SP với `categoryIds:[]` → assert `categoryId === null`. (Test admin ở `admin/controllers/admin-controller*.test.js`.)
-- [ ] `chatbot-service:475` (ternary nhãn log pronoun/follow-up): test enrich 2 nhánh (query có đại từ + follow-up ngắn) — giá trị thấp nhưng exercise enrich thật.
-- [ ] Nhánh unreachable/defensive → `/* istanbul ignore next */` + comment lý do: `fuzzy:80/126/172-173` (default-param/`??` không reach qua public API), `keyword:310` (categoryPrefixTerms đảm bảo prefixCount>0), `chatbot:540` (catch defensive). `keyword:218` (equivalent) — cover được nhưng mutant equivalent, tùy.
-- [ ] Verify `npm test` → 100% branch (hoặc ~99.9% nếu chừa equivalent) + 4079 test xanh. Cân nhắc KHÔNG bump threshold lên 100 (giữ 99.7% tránh brittle).
+- [x] `admin-product-service:483` — **2 test thật** cả 2 nhánh: `categoryIds:[]`→`categoryId===null` + `categoryIds:[id]`→`categoryId===id` (admin-controller.edge-cases.test.js).
+- [x] `chatbot-service:475` — **test thật** 2 nhánh enrich (đại từ "đó" → Pronoun; query ngắn không brand → Implicit follow-up).
+- [x] **Quyết định 2026-06-03 (user chốt):** nhánh REACH được → **test thật** thay vì ignore. Đã cover thật: `keyword:218` (negation term ≤2 ký tự → excludedTerms rỗng), `chatbot:540` (catch refined-search throw → giữ lowConfidence — GỠ ignore), `fuzzy:115` (sort comparator: prefix mơ hồ 2 SP → chọn term ngắn nhất). Chỉ GIỮ istanbul-ignore cho 4 nhánh THỰC SỰ không reach qua public API: `fuzzy:80/126` (default param hàm internal), `fuzzy:172-173` (nullish trên giá trị đảm bảo truthy), `keyword:310` (guard luôn đúng). Không có dead code cần xóa.
+- [x] Verify: `npm test` → **4091 test xanh** (+7), global **statements/branch/lines 100%** (funcs 99.91% — file ngoài scope). Lint sạch. Threshold giữ 99.7% (KHÔNG bump lên 100 tránh brittle).
 
 #### G.5 — Mở rộng stack 6 lớp (lấp gap — làm SAU G.2/G.3)
 - [ ] **Property-based (fast-check)** mở rộng từ discount-code → orders/cart/inventory/payment, dùng **27 invariant GATE-A** làm oracle: `stock_sau = stock_trước − qty`, `cancel→hoàn kho`, `cart merge: total=Σ(item)`, `total = subtotal + ship − discount`. fast-check sinh qty/giá/seq ngẫu nhiên phá invariant. Mẫu: `discount-code-service.property.test.js`.

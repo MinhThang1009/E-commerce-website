@@ -1,7 +1,7 @@
 @startuml usecase-02-overview-customer
 ' Sơ đồ use case — Khách hàng (Customer) — tổng quát, chuẩn ký pháp UML
 ' Ground-truth: route customer-facing (authenticate) xuyên module:
-'   catalog (duyệt/chi tiết), cart, orders+checkout+payment, reviews (hasUserPurchased),
+'   catalog (duyệt/chi tiết, recently-viewed cần auth — catalog/routes.js:313), cart, orders+checkout+payment, reviews (hasUserPurchased),
 '   wishlist, users (profile/address), ai/chatbot, content (feedback), search-history.
 ' Customer kế thừa năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập) + thao tác cần đăng nhập.
 left to right direction
@@ -21,6 +21,7 @@ rectangle "Hệ thống TechStore" {
   package "Mua sắm" {
     usecase "Duyệt & tìm kiếm sản phẩm" as UC_browse
     usecase "Xem chi tiết sản phẩm" as UC_detail
+    usecase "Xem sản phẩm đã xem gần đây" as UC_recent
     usecase "Quản lý giỏ hàng" as UC_cart
     usecase "Quản lý yêu thích (wishlist)" as UC_wish
   }
@@ -35,6 +36,7 @@ rectangle "Hệ thống TechStore" {
     usecase "Quản lý tài khoản & địa chỉ" as UC_profile
     usecase "Đánh giá sản phẩm" as UC_review
     usecase "Chat AI & tìm kiếm thông minh" as UC_ai
+    usecase "Xem & xóa lịch sử tìm kiếm" as UC_searchhist
     usecase "Gửi phản hồi / liên hệ" as UC_feedback
   }
 
@@ -43,6 +45,7 @@ rectangle "Hệ thống TechStore" {
 
 customer -- UC_browse
 customer -- UC_detail
+customer -- UC_recent
 customer -- UC_cart
 customer -- UC_wish
 customer -- UC_order
@@ -52,11 +55,15 @@ customer -- UC_track
 customer -- UC_profile
 customer -- UC_review
 customer -- UC_ai
+customer -- UC_searchhist
 customer -- UC_feedback
 
 note left of customer
-  • Customer kế thừa toàn bộ năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập).
+  • Customer kế thừa toàn bộ năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập;
+    gửi phản hồi là endpoint công khai — guest cũng dùng được).
   • Thanh toán lại (repay): chỉ đơn pending online chưa trả, KHÔNG COD.
   • Đánh giá sản phẩm: yêu cầu đã mua hàng (hasUserPurchased).
+  • Lịch sử tìm kiếm: lưu khi tìm (tự động) + xem/xóa từng mục/xóa tất cả
+    (GET/DELETE /api/search-histories — cần đăng nhập).
 end note
 @enduml

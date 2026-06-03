@@ -11,8 +11,8 @@ meta:
 # ===== NHÓM A — use case (24): flowchart-giả -> actor/oval/association =====
 usecase:
   - { seq: 1,  scope: overview-guest,             section: "§1.1", module: _overview, notation: UML, tool: plantuml, status: signed }   # 9 UC. CỐ Ý không thêm "tra cứu đơn công khai": createOrder bắt buộc auth (routes.js:128/130) → guest không có đơn để tra; /track public phục vụ KH chưa đăng nhập (model ở uc-12)
-  - { seq: 2,  scope: overview-customer,          section: "§1.2", module: _overview, notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: 12 UC/3 package, note vàng UML bên trái actor (note left of customer → actor về giữa, line tỏa radial đều, hết rối), spline (bỏ polyline → hết gấp khúc); chi tiết (search-history/recently-viewed) ở use case per-module
-  - { seq: 3,  scope: overview-admin,             section: "§1.3", module: _overview, notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: actor generalization (Admin/Staff --|> Người dùng back-office) + 3 package RBAC §0; category-brand/import-export ở use case per-module
+  - { seq: 2,  scope: overview-customer,          section: "§1.2", module: _overview, notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03 (re-vẽ + verify độc lập MATCH): +UC "Xem & xóa lịch sử tìm kiếm" (GET/DELETE /api/search-histories) + "Xem SP đã xem gần đây" (catalog/routes.js:313 recently-viewed, authenticate) → 15 UC; note feedback = endpoint CÔNG KHAI. Verify vs routes 9 module
+  - { seq: 3,  scope: overview-admin,             section: "§1.3", module: _overview, notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03 (re-vẽ + verify độc lập MATCH): +UC "Quản lý danh mục & thương hiệu (CRUD)" (catalog/routes.js authorize('staff')) + "Nhập SP hàng loạt (import CSV)" (admin/routes.js:167/169 staffOnly) → 9 UC staff. Export=backoffice đã gộp vào analytics. Verify vs admin+catalog routes
   - { seq: 4,  scope: auth,                        section: "§2.1a", module: auth,     notation: UML, tool: plantuml, status: pending }
   - { seq: 5,  scope: user,                        section: "§2.1b", module: users,    notation: UML, tool: plantuml, status: pending }
   - { seq: 6,  scope: catalog-browse,             section: "§2.2a", module: catalog,  notation: UML, tool: plantuml, status: pending }
@@ -44,7 +44,7 @@ component:
 
 # ===== NHÓM B — state (4): PlantUML =====
 state:
-  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03: cancelled terminal sau fix F7 (repay không phải transition)
+  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03 (re-vẽ + verify độc lập MATCH 13 transition, logic_heavy): cập nhật theo fix F9-F14 — +cung shipped→cancelled (KHÔNG hoàn kho, staff, INV-STK-6) + cung CHẶN delivered→cancelled (đỏ nét đứt, từ chối 400, F13); note 422 cancelled→* terminal (F14) + INV-PAY-3. Verify vs orders-service.updateOrderStatus L578. Trước: GATE-D cancelled terminal sau F7
   - { seq: 2, scope: payment, section: "§7.2", module: payment, notation: UML, tool: plantuml, status: pending }
   - { seq: 3, scope: product, section: "§7.3", module: catalog, notation: UML, tool: plantuml, status: pending }
   - { seq: 4, scope: user,    section: "§7.4", module: auth,    notation: UML, tool: plantuml, status: pending }

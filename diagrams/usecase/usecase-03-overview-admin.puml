@@ -4,6 +4,10 @@
 '   backoffice (admin+staff XEM): dashboard, analytics/*, reports/export, list (đơn/SP/kho/review/discount), chatbot/stats
 '   staffOnly (CRUD nghiệp vụ): products, orders status+cancel, inventory restock, discount, reviews verify/delete,
 '                               catalog write, payment refund, attribute
+'   ⚠️ Danh mục & thương hiệu CRUD nằm ở catalog/routes.js (POST/PUT/DELETE /api/categories|/api/brands
+'      guard authenticate+authorize('staff')) — KHÔNG ở admin module; sản phẩm CRUD có ở CẢ catalog & admin.
+'   ⚠️ Import sản phẩm hàng loạt = staffOnly (admin/routes.js:167 import-template + :168 import). Export = backoffice
+'      (GET /admin/products|reports/export) → đã gộp vào UC "analytics & báo cáo (export)", KHÔNG tách UC riêng.
 '   adminOnly (độc quyền): users CRUD, analytics/user-growth
 ' Mô hình hóa: Admin & Staff KẾ THỪA actor "Người dùng back-office" → cùng quyền XEM (giám sát);
 '   mỗi vai thêm quyền riêng (Admin = users; Staff = CRUD nghiệp vụ). Admin = XEM-ONLY back-office.
@@ -38,6 +42,8 @@ rectangle "Back-office TechStore" {
   }
   package "Nghiệp vụ bán hàng (CRUD - chỉ Staff)" {
     usecase "Quản lý sản phẩm (CRUD)" as UC_product
+    usecase "Nhập sản phẩm hàng loạt\n(import CSV)" as UC_import
+    usecase "Quản lý danh mục & thương hiệu\n(CRUD)" as UC_catalog
     usecase "Cập nhật & hủy đơn hàng" as UC_order
     usecase "Nhập kho (restock)" as UC_stock
     usecase "Quản lý mã giảm giá" as UC_discount
@@ -59,6 +65,8 @@ admin -- UC_growth
 
 ' Staff độc quyền (nghiệp vụ bán hàng)
 staff -- UC_product
+staff -- UC_import
+staff -- UC_catalog
 staff -- UC_order
 staff -- UC_stock
 staff -- UC_discount

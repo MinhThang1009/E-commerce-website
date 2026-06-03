@@ -1,6 +1,7 @@
 @startuml state-01-order
 ' Sơ đồ trạng thái — Vòng đời đơn hàng (order.status)
-' Verify vs backend/src/modules/orders/services/orders-service.js (STATUS, _canCancel, _canConfirmReceived, _canRepay)
+' Verify vs backend/src/modules/orders/services/orders-service.js
+'   (STATUS, _canCancel L21, _canConfirmReceived L29, _canRepay L26, updateOrderStatus L578 guards F13/F14/INV-STK-6)
 hide empty description
 skinparam dpi 300
 skinparam backgroundColor #FFFFFF
@@ -25,20 +26,31 @@ processing --> shipped    : staff cập nhật giao vận
 shipped    --> delivered  : staff cập nhật\nhoặc khách xác nhận nhận hàng
 processing --> delivered  : khách xác nhận nhận hàng\n(confirmReceived)
 
-pending    --> cancelled : hủy đơn\n(khách / staff / đặt đơn mới)
-processing --> cancelled : hủy đơn\n(khách / staff)
+' Hủy đơn CHƯA giao → HOÀN kho (INV-STK-2/6)
+pending    --> cancelled : hủy đơn (khách / staff / đặt đơn mới)\n→ HOÀN kho
+processing --> cancelled : hủy đơn (khách / staff)\n→ HOÀN kho
+' Hủy đơn ĐÃ giao vận → KHÔNG hoàn kho (hàng đã rời kho, INV-STK-6); chỉ staff (back-office)
+shipped    --> cancelled : hủy bởi staff\n→ KHÔNG hoàn kho
+
+' Cung BỊ CHẶN (guard nghiệp vụ — không phải transition hợp lệ)
+delivered -[#CC0000,dashed]-> cancelled : <color:#CC0000>✗ từ chối 400</color>\n<color:#CC0000>không hủy đơn đã giao (F13)</color>
 
 delivered --> [*]
 cancelled --> [*]
 
 note bottom
-  • Staff (updateOrderStatus) là back-office, có thể điều chỉnh
-    trạng thái tự do; sơ đồ thể hiện luồng nghiệp vụ chuẩn.
-  • Hủy chỉ từ pending/processing (_canCancel).
+  • Staff (updateOrderStatus) là back-office, điều chỉnh trạng thái khá tự do,
+    NHƯNG bị chặn 2 cung phi nghiệp vụ (sau fix F9–F14):
+      – delivered → cancelled: từ chối 400 (hàng đã giao, không hoàn kho ảo).
+      – cancelled → * (hồi sinh): từ chối 422 — cancelled là TERMINAL.
+  • Khách hủy (cancelOrder) chỉ từ pending/processing (_canCancel);
+    staff còn hủy được đơn shipped qua updateOrderStatus (KHÔNG hoàn kho).
+  • Hoàn kho: chỉ khi hủy từ pending/processing. shipped/delivered KHÔNG hoàn
+    (hàng đã rời kho) — INV-STK-6.
+  • Thanh toán online late-success trên đơn đã cancelled → payment-service
+    GIỮ nguyên cancelled (INV-PAY-3), không hồi sinh đơn.
   • Xác nhận nhận hàng chỉ từ shipped/processing (_canConfirmReceived);
     gọi lại khi đã delivered → lỗi 422.
-  • cancelled là TERMINAL: đơn đã hủy không kích hoạt lại
-    (muốn mua lại → đặt đơn mới).
   • repayOrder (đơn online pending chưa trả tiền): chỉ retry thanh toán —
     reset paymentStatus failed→pending, KHÔNG đổi order.status
     (không phải chuyển trạng thái nên không có cạnh trên sơ đồ).

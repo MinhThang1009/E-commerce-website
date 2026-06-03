@@ -96,4 +96,28 @@ describe('ContentService', () => {
       );
     });
   });
+
+  // ── mutation-kill: từng field required riêng lẻ + message ──────
+  describe('sendFeedback — validation từng field (mutation kill)', () => {
+    const full = { name: 'A', email: 'a@b.c', subject: 's', content: 'c' };
+
+    test.each([['name'], ['email'], ['subject'], ['content']])(
+      'thiếu %s → throw content.requiredFieldsMissing 400',
+      async (field) => {
+        const payload = { ...full };
+        delete payload[field];
+        await expect(service.sendFeedback({ payload })).rejects.toThrow(
+          'content.requiredFieldsMissing',
+        );
+        expect(contentRepository.createFeedback).not.toHaveBeenCalled();
+      },
+    );
+
+    test('đủ 4 field bắt buộc → KHÔNG throw, tạo feedback', async () => {
+      contentRepository.createFeedback.mockResolvedValue({ id: 9 });
+      const result = await service.sendFeedback({ payload: full });
+      expect(result.id).toBe(9);
+      expect(contentRepository.createFeedback).toHaveBeenCalledTimes(1);
+    });
+  });
 });

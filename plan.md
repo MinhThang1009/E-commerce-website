@@ -538,8 +538,8 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - [ ] Module nào test đã sạch factory → thử `coverageAnalysis: perTest` riêng scope đó, verify dry-run qua + nhanh hơn.
 
 #### G.3 — Mạnh hóa SURVIVOR critical (lõi chống F1/F2 — ưu tiên CAO NHẤT, dùng OUTCOME + property-based)
-- [ ] **cart-service** (79.33%, 93 sv): viết test OUTCOME assert biên tồn kho — `stockQuantity === quantity` phải CHO đặt, `=== quantity+1` phải TỪ CHỐI (giết `<`→`<=` ở L111/114/272/275); assert giá trị tổng tồn kho variant (giết `+`→`-` L41). Re-run mutation cart → mục tiêu ≥90%.
-- [ ] **inventory-service** (73.61%, 19 sv): assert restock `qty=0` bị từ chối (giết `<=0`→`<0` L14); review survivor còn lại (pagination L99 = display, thấp).
+- [x] **cart-service** (79.33%→**80.22%**, verified 2026-06-03): +4 OUTCOME test biên `qty===stock → CHO đặt` (addToCart base/variant L111/114 + updateCartItem base/variant L272/275). **4 survivor stock-boundary GIẾT** (commit `e391c47e`). Còn 89 sv = display/plumbing (L41 sum variant-stock cho inStock display = medium; price-format, response-shape = thấp). KHÔNG chase tới 90% (brittle-chase trivial). L41 sum: cân nhắc 1 test assert variantStock trong getCart response nếu muốn.
+- [ ] **inventory-service** (73.61%, 19 sv): ⚠️ L14 `<=0`→`<0` = **EQUIVALENT** (`!qty` đã bắt qty=0 ở vế `||` đầu → không input nào phân biệt → KHÔNG killable, để nguyên/disable). Survivor thật còn lại: L99 pagination `*`→`/` (offset sai — medium), L102/103 filter `if(x)`→`if(true)` (where sai khi thiếu param — medium). Đều list/display, không phải money/stock → ưu tiên thấp.
 - [ ] **vnpay-service** (58%, 39 sv) + **momo-service** (47.62%, 33 sv): phần lớn survivor = HMAC/URL/string. Lọc survivor THẬT critical (verify signature, amount, resultCode) → strengthen; còn lại (format URL) chấp nhận hoặc disable có lý do.
 - [ ] **orders-service** (91.30%, 52 sv) + **payment-service** (97%, 11 sv): review survivor còn lại, giết cái về money/stock/status, bỏ qua plumbing/display.
 - [ ] ⚠️ Mọi test mới PHẢI assert OUTCOME nghiệp vụ (số/kho/status), KHÔNG tautological. Re-run mutation sau mỗi module để xác nhận giết thật.

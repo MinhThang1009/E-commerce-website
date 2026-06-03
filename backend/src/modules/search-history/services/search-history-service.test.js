@@ -126,6 +126,22 @@ describe('saveSearch', () => {
     expect(repo.findDuplicate).toHaveBeenCalled();
     expect(result.created).toBe(true);
   });
+
+  test('dedup window = ĐÚNG 1 giờ trước now (since = now − 3.600.000ms)', async () => {
+    // Mock Date.now cố định → assert since chính xác (kill arithmetic mutant
+    // 60*60*1000 → 60*60/1000 hoặc 60/60, và Date.now() − ONE_HOUR_MS → +)
+    const FIXED = 1_700_000_000_000;
+    const spy = jest.spyOn(Date, 'now').mockReturnValue(FIXED);
+    repo.findDuplicate.mockResolvedValue(null);
+    repo.create.mockResolvedValue({ id: 1, keyword: 'x' });
+
+    await service.saveSearch({ keyword: 'x', resultsCount: 1, userId: 1, sessionId: null });
+
+    const { since } = repo.findDuplicate.mock.calls[0][0];
+    expect(since).toBeInstanceOf(Date);
+    expect(since.getTime()).toBe(FIXED - 60 * 60 * 1000); // 1 giờ = 3.600.000 ms, ở QUÁ KHỨ
+    spy.mockRestore();
+  });
 });
 
 // ─── getHistory ───────────────────────────────────────────────────────────────
@@ -181,6 +197,10 @@ describe('deleteOne', () => {
       statusCode: 404,
     });
     await expect(service.deleteOne({ id: 99, userId: 5 })).rejects.toBeInstanceOf(AppError);
+    // assert message (kill StringLiteral L27 → "")
+    await expect(service.deleteOne({ id: 99, userId: 5 })).rejects.toThrow(
+      'Không tìm thấy lịch sử tìm kiếm',
+    );
   });
 
   test('entry thuộc user khác → không tìm thấy (repository filter theo userId)', async () => {

@@ -255,7 +255,10 @@ describe('deleteSearchHistory', () => {
     expect(SearchHistory.findOne).toHaveBeenCalledWith({ where: { id: '3', userId: 5 } });
     expect(historyItem.destroy).toHaveBeenCalledTimes(1);
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Xóa lịch sử tìm kiếm thành công',
+    });
   });
 
   test('ném AppError 404 khi không tìm thấy record', async () => {
@@ -300,7 +303,10 @@ describe('clearAllSearchHistory', () => {
 
     expect(SearchHistory.destroy).toHaveBeenCalledWith({ where: { userId: 8 } });
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      message: 'Xóa tất cả lịch sử tìm kiếm thành công',
+    });
   });
 
   test('gọi next(error) khi destroy ném lỗi', async () => {

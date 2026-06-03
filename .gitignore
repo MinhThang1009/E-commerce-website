@@ -118,3 +118,8 @@ unpacked/
 
 # Sơ đồ: .svg chỉ là file TẠM để Inkscape convert sang .pdf (chèn LaTeX). Không commit.
 diagrams/**/*.svg
+
+# Stryker mutation testing — temp sandbox + reports (không commit)
+backend/.stryker-tmp/
+backend/reports/
+.stryker-tmp/

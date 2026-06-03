@@ -472,7 +472,8 @@ class CartService {
 
       const currentPrice = item.ProductVariant
         ? item.ProductVariant.price
-        : (item.Product?.basePrice ?? 0);
+        : // Stryker disable next-line OptionalChaining: item.Product đã được guard !== null ở L462 (if !item.Product → return) nên ?. tương đương . — equivalent mutant
+          (item.Product?.basePrice ?? 0);
       const baseStockQuantity = item.Product.defaultVariant
         ? item.Product.defaultVariant.stockQuantity
         : 0;

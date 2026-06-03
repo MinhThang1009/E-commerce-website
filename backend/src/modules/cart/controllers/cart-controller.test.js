@@ -374,4 +374,176 @@ describe('CartController', () => {
       });
     });
   });
+
+  // ════════════════════════════════════════════════════════════════
+  // MUTATION-KILL bổ sung — assert: (1) service nhận đúng cookieSessionId
+  // (kill guard req.cookies && req.cookies.sessionId), (2) cookie undefined
+  // (kill mutant && → true vì req.cookies=undefined gây throw), (3) next ĐƯỢC
+  // GỌI khi error (kill catch block → {}), (4) updateCartItem/removeCartItem
+  // (chưa có test ở trên), (5) response body chính xác (kill ObjectLiteral/String).
+  // ════════════════════════════════════════════════════════════════
+  describe('mutation-kill: cookieSessionId + next() được gọi + response shape', () => {
+    test('getCartCount: truyền đúng cookieSessionId từ cookie', async () => {
+      cartService.getCartCount.mockResolvedValue({ count: 3 });
+      const req = makeReq({ cookies: { sessionId: 'sess-gc' } });
+      await controller.getCartCount(req, makeRes(), jest.fn());
+
+      expect(cartService.getCartCount).toHaveBeenCalledWith({
+        user: req.user,
+        cookieSessionId: 'sess-gc',
+      });
+    });
+
+    test('getCartCount: req.cookies undefined → cookieSessionId undefined (không throw)', async () => {
+      cartService.getCartCount.mockResolvedValue({ count: 0 });
+      const req = makeReq({ cookies: undefined });
+      const next = jest.fn();
+      await controller.getCartCount(req, makeRes(), next);
+
+      // mutant && → req.cookies || ... sẽ throw vì undefined.sessionId; ở đây next KHÔNG được gọi với error
+      expect(next).not.toHaveBeenCalled();
+      expect(cartService.getCartCount).toHaveBeenCalledWith(
+        expect.objectContaining({ cookieSessionId: undefined }),
+      );
+    });
+
+    test('getCartCount: error → next ĐƯỢC GỌI với err (kill catch block)', async () => {
+      const err = new Error('count lỗi');
+      cartService.getCartCount.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.getCartCount(makeReq(), makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    test('updateCartItem: truyền user/cookieSessionId/itemId/quantity + response 200', async () => {
+      const data = { items: [{ id: 1 }] };
+      cartService.updateCartItem.mockResolvedValue({ data });
+      const req = makeReq({
+        cookies: { sessionId: 'sess-u' },
+        params: { id: '42' },
+        body: { quantity: 3 },
+      });
+      const res = makeRes();
+      await controller.updateCartItem(req, res, jest.fn());
+
+      expect(cartService.updateCartItem).toHaveBeenCalledWith({
+        user: req.user,
+        cookieSessionId: 'sess-u',
+        itemId: '42',
+        quantity: 3,
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ status: 'success', data });
+    });
+
+    test('updateCartItem: req.cookies undefined → cookieSessionId undefined', async () => {
+      cartService.updateCartItem.mockResolvedValue({ data: {} });
+      const req = makeReq({ cookies: undefined, params: { id: '1' }, body: { quantity: 1 } });
+      const next = jest.fn();
+      await controller.updateCartItem(req, makeRes(), next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(cartService.updateCartItem).toHaveBeenCalledWith(
+        expect.objectContaining({ cookieSessionId: undefined }),
+      );
+    });
+
+    test('updateCartItem: error → next(err)', async () => {
+      const err = new Error('update lỗi');
+      cartService.updateCartItem.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.updateCartItem(
+        makeReq({ params: { id: '1' }, body: { quantity: 1 } }),
+        makeRes(),
+        next,
+      );
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    test('removeCartItem: truyền user/cookieSessionId/itemId + response 200', async () => {
+      const data = { items: [] };
+      cartService.removeCartItem.mockResolvedValue({ data });
+      const req = makeReq({ cookies: { sessionId: 'sess-r' }, params: { id: '7' } });
+      const res = makeRes();
+      await controller.removeCartItem(req, res, jest.fn());
+
+      expect(cartService.removeCartItem).toHaveBeenCalledWith({
+        user: req.user,
+        cookieSessionId: 'sess-r',
+        itemId: '7',
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({ status: 'success', data });
+    });
+
+    test('removeCartItem: req.cookies undefined → cookieSessionId undefined', async () => {
+      cartService.removeCartItem.mockResolvedValue({ data: {} });
+      const req = makeReq({ cookies: undefined, params: { id: '1' } });
+      const next = jest.fn();
+      await controller.removeCartItem(req, makeRes(), next);
+
+      expect(next).not.toHaveBeenCalled();
+      expect(cartService.removeCartItem).toHaveBeenCalledWith(
+        expect.objectContaining({ cookieSessionId: undefined }),
+      );
+    });
+
+    test('removeCartItem: error → next(err)', async () => {
+      const err = new Error('remove lỗi');
+      cartService.removeCartItem.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.removeCartItem(makeReq({ params: { id: '1' } }), makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    test('clearCart: truyền đúng arg {user, cookieSessionId} (kill ObjectLiteral L89)', async () => {
+      cartService.clearCart.mockResolvedValue({ message: 'cart.cleared', data: null });
+      const req = makeReq({ cookies: { sessionId: 'sess-c' } });
+      await controller.clearCart(req, makeRes(), jest.fn());
+
+      expect(cartService.clearCart).toHaveBeenCalledWith({
+        user: req.user,
+        cookieSessionId: 'sess-c',
+      });
+    });
+
+    test('clearCart: error → next ĐƯỢC GỌI với err (kill catch block)', async () => {
+      const err = new Error('clear lỗi');
+      cartService.clearCart.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.clearCart(makeReq(), makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    test('syncCart: error → next ĐƯỢC GỌI với err', async () => {
+      const err = new Error('sync lỗi');
+      cartService.syncCart.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.syncCart(makeReq({ body: { items: [] } }), makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    test('mergeCart: error → next ĐƯỢC GỌI với err', async () => {
+      const err = new Error('merge lỗi');
+      cartService.mergeCart.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.mergeCart(makeReq(), makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    test('validateCart: error → next ĐƯỢC GỌI với err', async () => {
+      const err = new Error('validate lỗi');
+      cartService.validateCart.mockRejectedValue(err);
+      const next = jest.fn();
+      await controller.validateCart(makeReq(), makeRes(), next);
+
+      expect(next).toHaveBeenCalledWith(err);
+    });
+  });
 });

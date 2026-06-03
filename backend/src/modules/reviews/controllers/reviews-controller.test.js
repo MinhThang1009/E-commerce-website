@@ -276,6 +276,11 @@ describe('ReviewsController', () => {
 
       await controller.verifyReview(req, res, next);
 
+      // assert service nhận đúng { reviewId, isVerified } (kill ObjectLiteral L89)
+      expect(reviewsService.verifyReview).toHaveBeenCalledWith({
+        reviewId: '99',
+        isVerified: true,
+      });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         status: 'success',

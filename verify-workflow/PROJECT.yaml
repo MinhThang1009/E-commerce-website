@@ -40,6 +40,30 @@ denominator_tools:
   db_verify_cmd:        "cd backend && npm run db:verify"               # scripts/db-verify.js
   ledger_gate_cmd:      "npm run wf:gate"                               # lint-config + invariants-approved + ledger (enforce)
 
+# --- Mutation runner config (agent test-strengthener đọc — runner-agnostic) ---
+mutation:
+  runner: stryker
+  # per_target_cmd: mutate file CỤ THỂ (KHÁC denominator_tools.mutation_critical_cmd = gate full-scope).
+  # {targets} = comma-separated EXACT paths (KHÔNG glob — xem gotchas).
+  per_target_cmd: 'cd backend && npx stryker run stryker.critical.conf.json --mutate "{targets}" --coverageAnalysis off --reporters json,clear-text'
+  report_format: stryker-json
+  report_path: 'backend/reports/mutation/mutation.json'   # stryker json default; agent pre-flight confirm, fallback parse clear-text
+  classifier_cmd: 'node verify-workflow/mutation-survivors.mjs --report {report}'
+  disable_syntax: '// Stryker disable next-line {mutator}: {reason}'
+  test_framework: jest
+  scope_globs:   # nhóm file đáng mutation (logic); LOẠI repositories(SQL→integration)/routes/validators/dtos/models
+    - "backend/src/modules/*/services/**/*.js"
+    - "backend/src/modules/*/controllers/*.js"
+    - "backend/src/services/**/*.js"          # shared: vector-store/email/embedding (KHÔNG khớp modules/*/services)
+    - "backend/src/middlewares/*.js"
+    - "backend/src/shared/**/*.js"
+    - "backend/src/jobs/*.js"
+    - "backend/src/utils/{product-helpers,localize,image-url}.js"
+  gotchas:
+    - 'exact-path --mutate (comma-separated). KHÔNG glob **/*.js — CLI glob drop exclusion !*.test.js của config → mutate cả file .test.js → jest.mock(path,factory) vỡ babel-hoist ("2nd arg must be inline") ở dry-run.'
+    - 'coverageAnalysis off BẮT BUỘC — test dùng jest.mock factory inline; perTest instrument factory body → babel-plugin-jest-hoist từ chối. (enableFindRelatedTests=true trong config giữ tốc độ.)'
+    - 'argument-mutant {transaction}→{} là KILLABLE (atomicity), KHÔNG equivalent — assert toHaveBeenCalledWith(...,{transaction}).'
+
 # --- P9: test suite ---
 test_cmd:
   unit:        "cd backend && npm run test:fast"

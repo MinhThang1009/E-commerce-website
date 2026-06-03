@@ -795,3 +795,113 @@ describe('AuthController._setRefreshCookie — JWT_REFRESH_EXPIRES_IN không set
     process.env.JWT_REFRESH_EXPIRES_IN = saved || '7d';
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MUTATION-KILL — secure theo NODE_ENV (prod), clearCookie options, googleLogin
+// arg, OptionalChaining cookies/body
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('AuthController — mutation kill', () => {
+  it('_setRefreshCookie: secure=true khi NODE_ENV=production (kill L21 cond + "production")', async () => {
+    const saved = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const authService = makeMockAuthService({
+        login: jest
+          .fn()
+          .mockResolvedValue({ token: 'at', refreshToken: 'rt', user: makeFakeUser() }),
+      });
+      const controller = new AuthController({ authService });
+      const res = makeRes();
+      await controller.login(makeReq({ body: { email: 'a@b.c', password: 'p' } }), res, makeNext());
+
+      expect(res.cookie.mock.calls[0][2].secure).toBe(true);
+    } finally {
+      process.env.NODE_ENV = saved;
+    }
+  });
+
+  it('_clearRefreshCookie: secure=false (test) + sameSite=strict + path (kill L31/L32)', async () => {
+    const authService = makeMockAuthService({ logout: jest.fn().mockResolvedValue(undefined) });
+    const controller = new AuthController({ authService });
+    const res = makeRes();
+    await controller.logout(makeReq({ headers: {}, cookies: {} }), res, makeNext());
+
+    const opts = res.clearCookie.mock.calls[0][1];
+    expect(opts.secure).toBe(false); // NODE_ENV=test → kill EqualityOperator !== (đảo thành true)
+    expect(opts.sameSite).toBe('strict');
+    expect(opts.path).toBe('/api/auth');
+  });
+
+  it('_clearRefreshCookie: secure=true khi NODE_ENV=production (kill L31 cond/"production")', async () => {
+    const saved = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const authService = makeMockAuthService({ logout: jest.fn().mockResolvedValue(undefined) });
+      const controller = new AuthController({ authService });
+      const res = makeRes();
+      await controller.logout(makeReq({ headers: {}, cookies: {} }), res, makeNext());
+
+      expect(res.clearCookie.mock.calls[0][1].secure).toBe(true);
+    } finally {
+      process.env.NODE_ENV = saved;
+    }
+  });
+
+  it('googleLogin: truyền đúng { token } vào service (kill ObjectLiteral L75)', async () => {
+    const authService = makeMockAuthService({
+      googleLogin: jest
+        .fn()
+        .mockResolvedValue({ token: 'at', refreshToken: 'rt', user: makeFakeUser() }),
+    });
+    const controller = new AuthController({ authService });
+    await controller.googleLogin(
+      makeReq({ body: { token: 'google-id-token' } }),
+      makeRes(),
+      makeNext(),
+    );
+
+    expect(authService.googleLogin).toHaveBeenCalledWith({ token: 'google-id-token' });
+  });
+
+  it('logout: req.cookies undefined → refreshToken=null, KHÔNG throw (kill OptionalChaining L92)', async () => {
+    const authService = makeMockAuthService({ logout: jest.fn().mockResolvedValue(undefined) });
+    const controller = new AuthController({ authService });
+    const next = makeNext();
+    const res = makeRes();
+    await controller.logout(makeReq({ headers: {}, cookies: undefined }), res, next);
+
+    // mutant req.cookies.refreshToken sẽ throw TypeError → next(err), không tới 204
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(204);
+    expect(authService.logout).toHaveBeenCalledWith(
+      expect.objectContaining({ refreshToken: null }),
+    );
+  });
+
+  it('refreshToken: cookies undefined, body có token → dùng body, KHÔNG throw (kill OptionalChaining L122 cookies)', async () => {
+    const authService = makeMockAuthService({
+      refreshToken: jest.fn().mockResolvedValue({ token: 'new', refreshToken: 'newr' }),
+    });
+    const controller = new AuthController({ authService });
+    await controller.refreshToken(
+      makeReq({ cookies: undefined, body: { refreshToken: 'from-body' } }),
+      makeRes(),
+      makeNext(),
+    );
+
+    expect(authService.refreshToken).toHaveBeenCalledWith({ refreshToken: 'from-body' });
+  });
+
+  it('refreshToken: body undefined → optional chain (kill OptionalChaining L122 body)', async () => {
+    const authService = makeMockAuthService({
+      refreshToken: jest.fn().mockResolvedValue({ token: 'new', refreshToken: 'newr' }),
+    });
+    const controller = new AuthController({ authService });
+    await controller.refreshToken(makeReq({ cookies: {}, body: undefined }), makeRes(), makeNext());
+
+    // original: cookies?.x(undef) || body?.x(undef) = undefined → service vẫn ĐƯỢC GỌI
+    // mutant req.body.refreshToken throw trước khi gọi service → không gọi
+    expect(authService.refreshToken).toHaveBeenCalledWith({ refreshToken: undefined });
+  });
+});

@@ -151,6 +151,17 @@ describe('fuzzyExpandQuery', () => {
     expect(result.expanded.toLowerCase()).toContain('iphone');
   });
 
+  test('edit-distance khớp prefix mơ hồ (2 SP chung prefix) → sort chọn term ngắn nhất', () => {
+    // "samsx" (typo) KHÔNG phải exact prefix → vào nhánh edit-distance.
+    // Prefix "sams" được chia sẻ bởi cả "Samsung" và "Samsonite" → terms.size=2
+    // → [...terms].sort(theo độ dài)[0] chọn term NGẮN NHẤT = "Samsung" (7 < "Samsonite" 9).
+    const names = ['Samsung Galaxy', 'Samsonite Bag'];
+    const result = fuzzyExpandQuery('samsx', names);
+    expect(result.changed).toBe(true);
+    expect(result.expanded.toLowerCase()).toContain('samsung');
+    expect(result.expanded.toLowerCase()).not.toContain('samsonite');
+  });
+
   test('changes array chứa thông tin chi tiết khi expand', () => {
     const result = fuzzyExpandQuery('macb', productNames);
     expect(result.changed).toBe(true);

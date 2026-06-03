@@ -77,7 +77,9 @@ function buildPrefixIndex(productNames) {
  *
  * @param {string|null} nextNumSeg - Số model liền sau (nếu có), dùng để disambiguate.
  */
-function expandLetterToken(token, index, threshold, nextNumSeg = null) {
+// nextNumSeg: default `null` là phòng thủ — call site duy nhất (expandTokenWithSplit)
+// luôn truyền giá trị (string|null), không bao giờ undefined → nhánh default không reach.
+function expandLetterToken(token, index, threshold, /* istanbul ignore next */ nextNumSeg = null) {
   if (token.length < 2) return { expanded: token, score: 1, method: 'keep' };
 
   // Exact prefix match
@@ -123,7 +125,8 @@ function expandLetterToken(token, index, threshold, nextNumSeg = null) {
  * "ip17pm" → ["ip", "17", "pm"] → expand từng phần → "iPhone 17pm"
  *   (số giữa không expand; "pm" chỉ expand nếu là prefix rõ ràng)
  */
-function expandTokenWithSplit(token, index, threshold = 0.75) {
+// threshold: default 0.75 là phòng thủ — mọi call site truyền threshold tường minh.
+function expandTokenWithSplit(token, index, /* istanbul ignore next */ threshold = 0.75) {
   // Tách token thành segments: chữ xen số
   // "ip17pm" → ["ip", "17", "pm"]  |  "samsung" → ["samsung"]
   const segments = token.match(/[a-zA-Z]+|\d+/g) || [token];
@@ -167,10 +170,12 @@ function expandTokenWithSplit(token, index, threshold = 0.75) {
     .join(' ')
     .trim();
   const firstChange = expandedParts.find((p) => p.changed);
+  // firstChange chắc chắn tồn tại vì anyChanged=true ở trên; part `changed` luôn có score+method
+  // (set tại nhánh didChange) → `?.` và `?? fallback` là phòng thủ, không reach.
   return {
     expanded: reconstructed,
-    score: firstChange?.score ?? 0.8,
-    method: firstChange?.method ?? 'split',
+    score: /* istanbul ignore next */ firstChange?.score ?? 0.8,
+    method: /* istanbul ignore next */ firstChange?.method ?? 'split',
   };
 }
 

@@ -570,6 +570,58 @@ describe('PUT /api/admin/products/:id — lines 1047-1048: price/stockQuantity n
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Line 483: updateProduct — categoryIds=[] → setCategories([]) + categoryId=null
+// (bỏ chọn hết danh mục → FK categoryId reset null, không trỏ danh mục cũ nữa)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('PUT /api/admin/products/:id — line 483: categoryIds=[] → categoryId=null', () => {
+  it('đặt categoryId=null khi gửi categoryIds là mảng rỗng (bỏ chọn hết danh mục)', async () => {
+    const product = makeProduct({ id: 9060, categoryId: 7 });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    Category.findAll.mockResolvedValueOnce([]); // findCategories({id:[]}) → [] danh mục
+
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9060').send({
+      categoryIds: [], // rỗng → categories.length===0 → nhánh ': null' của ternary
+    });
+
+    expect(res.status).toBe(200);
+    // OUTCOME: gỡ mọi liên kết M-N (setCategories([])) + FK categoryId reset về null
+    expect(product.setCategories).toHaveBeenCalledWith([], expect.anything());
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryId: null }),
+      expect.anything(),
+    );
+  });
+
+  it('đặt categoryId = id danh mục đầu khi categoryIds có phần tử (nhánh length>0)', async () => {
+    const product = makeProduct({ id: 9061, categoryId: null });
+    Product.findByPk.mockResolvedValueOnce(product).mockResolvedValueOnce(product);
+    const cat = { id: 5, name: 'Laptop' };
+    Category.findAll.mockResolvedValueOnce([cat]); // findCategories({id:[5]}) → [cat]
+
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    ProductVariant.findAll.mockResolvedValueOnce([]);
+    ProductSpecification.findAll.mockResolvedValueOnce([]);
+
+    const res = await request.put('/api/admin/products/9061').send({
+      categoryIds: [5], // có phần tử → categories.length>0 → nhánh categories[0].id
+    });
+
+    expect(res.status).toBe(200);
+    // OUTCOME: gán đúng danh mục M-N + đồng bộ FK categoryId = danh mục đầu tiên
+    expect(product.setCategories).toHaveBeenCalledWith([cat], expect.anything());
+    expect(product.update).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryId: 5 }),
+      expect.anything(),
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Line 1066: updateProduct — images sent but empty array → skip bulkCreate
 // ─────────────────────────────────────────────────────────────────────────────
 

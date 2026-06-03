@@ -307,6 +307,9 @@ function simpleKeywordMatch(userMessage, products) {
     const catFiltered = matchedProducts.filter((p) =>
       p.name?.toLowerCase().startsWith(categoryPrefixTerms[0]),
     );
+    // catFiltered luôn > 0: categoryPrefixTerms[0] đã được lọc với prefixCount>0 (L300)
+    // → nhánh `=== 0` không reach, guard chỉ để phòng thủ.
+    /* istanbul ignore next */
     if (catFiltered.length > 0) matchedProducts = catFiltered;
   }
 

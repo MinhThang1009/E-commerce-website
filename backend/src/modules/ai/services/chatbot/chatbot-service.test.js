@@ -4041,3 +4041,51 @@ describe('ChatbotService._retrieveProducts — line 513: fallback lowScore khi p
     chatbotService.rewriteQuery = originalRewrite;
   });
 });
+
+// ============================================================
+// Line 475: _enrichQueryFromHistory — nhãn log Pronoun vs Implicit follow-up
+// ============================================================
+
+describe('ChatbotService._enrichQueryFromHistory — line 475: nhãn log Pronoun vs Implicit follow-up', () => {
+  // 1 assistant message → extractTopProductFromResponse lấy bullet ĐẦU → "Điện thoại iPhone 15 Pro"
+  const history = [
+    { role: 'assistant', content: '• Điện thoại iPhone 15 Pro - 24.990.000đ\n• Samsung S24' },
+  ];
+
+  it('nhánh Pronoun: query chứa đại từ "đó" → enrich + nhãn Pronoun', () => {
+    const out = chatbotService._enrichQueryFromHistory('cái đó giá bao nhiêu', history);
+    // hasPronoun=true → append tên SP từ history
+    expect(out).toBe('cái đó giá bao nhiêu Điện thoại iPhone 15 Pro');
+  });
+
+  it('nhánh Implicit follow-up: query ngắn không brand/đại từ → enrich + nhãn follow-up', () => {
+    const out = chatbotService._enrichQueryFromHistory('giá bao nhiêu vậy', history);
+    // isImplicitFollowup=true (≤50 ký tự, không brand, không đại từ) → vẫn enrich
+    expect(out).toBe('giá bao nhiêu vậy Điện thoại iPhone 15 Pro');
+  });
+});
+
+// ============================================================
+// Line 543: catch refined-search throw → giữ lowConfidence từ initialResults
+// ============================================================
+
+describe('ChatbotService._retrieveProducts — line 543: refined search throw → giữ lowConfidence từ initialResults', () => {
+  it('map initialResults trong catch + giữ flag lowConfidence khi hybridSearch refined throw', async () => {
+    const originalRewrite = chatbotService.rewriteQuery.bind(chatbotService);
+    // llmRewrite KHÁC normalizedQuery → vào nhánh refined search (try/catch trong)
+    chatbotService.rewriteQuery = jest.fn().mockResolvedValue('iphone pro max');
+
+    vectorStoreService.hybridSearch
+      .mockResolvedValueOnce([
+        { metadata: { id: 'p1', name: 'iPhone 15' }, score: 0.3, lowConfidence: true },
+      ]) // L516 initialResults — có lowConfidence
+      .mockRejectedValueOnce(new Error('refined search fail')); // L526 refined → throw → catch
+
+    const result = await chatbotService._retrieveProducts('iphone', 'iphone');
+
+    // catch fallback về initialResults, nhánh `r.lowConfidence && {...}` truthy
+    expect(result.products).toEqual([expect.objectContaining({ id: 'p1', lowConfidence: true })]);
+
+    chatbotService.rewriteQuery = originalRewrite;
+  });
+});

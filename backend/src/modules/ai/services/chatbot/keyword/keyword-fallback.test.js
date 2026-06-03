@@ -136,6 +136,20 @@ describe('simpleKeywordMatch — negation filter', () => {
     const hasSamsung = result.products.some((p) => p.name.includes('Samsung'));
     expect(hasSamsung).toBe(false);
   });
+
+  // Line 218 (nhánh false): negation match nhưng term bị phủ định ≤2 ký tự → bị filter
+  // length>2 loại hết → excludedTerms rỗng → KHÔNG áp dụng negation filter.
+  test('"không muốn đỏ" (term 2 ký tự) → excludedTerms rỗng → KHÔNG loại SP chứa "đỏ"', () => {
+    const products = [
+      makeProduct({ id: 1, name: 'Điện thoại iPhone đỏ', shortDescription: 'màu đỏ' }),
+      makeProduct({ id: 2, name: 'Điện thoại Samsung', shortDescription: 'điện thoại Samsung' }),
+    ];
+    const result = simpleKeywordMatch('điện thoại không muốn đỏ', products);
+    // "đỏ".length === 2 → filter(w.length>2) loại bỏ → excludedTerms=[] → bỏ qua filter
+    // → khác test "không muốn iPhone": SP chứa "đỏ" VẪN được giữ
+    const hasRed = result.products.some((p) => p.name.includes('đỏ'));
+    expect(hasRed).toBe(true);
+  });
 });
 
 // ── simpleKeywordMatch — price range filter (lines 250-270) ──────────────────

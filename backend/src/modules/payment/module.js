@@ -24,6 +24,7 @@ module.exports = ({
   vnpayService,
   emailService,
   frontendUrl,
+  ordersService,
 }) => {
   if (!Order) throw new Error('payment module: Order model bắt buộc');
   if (!momoService) throw new Error('payment module: momoService bắt buộc');
@@ -61,6 +62,7 @@ module.exports = ({
     emailGateway,
     logger,
     frontendUrl: frontendUrl || process.env.FRONTEND_URL,
+    ordersService,
   });
 
   const paymentController = new PaymentController({ paymentService, logger });

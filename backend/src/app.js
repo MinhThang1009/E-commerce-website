@@ -166,6 +166,8 @@ const paymentModule = buildPaymentModule({
   momoService,
   vnpayService,
   emailService,
+  // Inject để refund đơn chưa giao hoàn kho qua path chung orders-service (INV-PAY-4 / H).
+  ordersService: ordersModule.ordersService,
 });
 paymentModule.subscribeEvents();
 
@@ -364,7 +366,8 @@ app.use('/api' + searchHistoryModule.basePath, searchHistoryModule.router);
 app.use('/api' + imageModule.basePath, imageModule.router);
 app.use('/api' + discountCodeModule.basePath, discountCodeModule.router);
 app.use('/api' + attributeModule.basePath, attributeModule.router);
-const adminModule = buildAdminModule();
+// Inject ordersService để admin delegate hủy/đổi-trạng-thái đơn về orders-service (1 path chung).
+const adminModule = buildAdminModule({ ordersService: ordersModule.ordersService });
 app.use('/api' + adminModule.basePath, adminModule.router);
 
 // Định nghĩa các API routes

@@ -65,6 +65,8 @@
     "stockInsufficient": "Sản phẩm \"{{name}}\" chỉ còn {{available}} sản phẩm",
     "cancelled": "Đơn hàng đã được hủy",
     "statusUpdated": "Cập nhật trạng thái đơn hàng thành công",
+    "cannotCancelDelivered": "Không thể hủy đơn hàng đã giao",
+    "cannotChangeCancelled": "Không thể thay đổi trạng thái đơn hàng đã hủy",
     "repaymentReady": "Đơn hàng đã được cập nhật để thanh toán lại",
     "alreadyConfirmed": "Đơn hàng đã được xác nhận và tích điểm trước đó",
     "deliveryConfirmed": "Xác nhận đã nhận hàng thành công",

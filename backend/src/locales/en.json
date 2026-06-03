@@ -64,6 +64,8 @@
     "stockInsufficient": "Product \"{{name}}\" only has {{available}} items left",
     "cancelled": "Order has been cancelled",
     "statusUpdated": "Order status updated successfully",
+    "cannotCancelDelivered": "Cannot cancel a delivered order",
+    "cannotChangeCancelled": "Cannot change the status of a cancelled order",
     "repaymentReady": "Order has been updated for repayment",
     "alreadyConfirmed": "Order has already been confirmed and points awarded",
     "deliveryConfirmed": "Delivery confirmation successful",

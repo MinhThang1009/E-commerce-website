@@ -24,6 +24,8 @@ function buildService(overrides = {}) {
     emailGateway: { sendOrderConfirmationEmail: jest.fn().mockResolvedValue(undefined) },
     logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
     frontendUrl: 'https://shop.test',
+    // refund đơn pending/processing delegate sang đây (INV-PAY-4); mock no-op cho unit.
+    ordersService: { updateOrderStatus: jest.fn().mockResolvedValue(undefined) },
   };
   return new PaymentService({ ...defaults, ...overrides });
 }
@@ -769,7 +771,10 @@ describe('PaymentService.createRefund', () => {
   });
 
   it('gọi vnpayGateway.refund với đúng tham số và cập nhật paymentStatus=refunded', async () => {
+    // delivered → nhánh direct (hàng đã giao, KHÔNG hoàn kho): set paymentStatus=refunded + saveOrder.
+    // Refund đơn chưa-giao (pending/processing) delegate sang orders-service — phủ ở integration.
     const order = buildOrder({
+      status: 'delivered',
       paymentStatus: 'paid',
       paymentProvider: 'vnpay',
       paymentTransactionId: 'VNP-TX-REF',
@@ -922,7 +927,9 @@ describe('PaymentService._sendOrderConfirmationEmailSafe — order có items', (
 
 describe('PaymentService.createRefund — provider là vnpay (nhánh if tại line 316)', () => {
   it('gọi vnpayGateway.refund khi paymentProvider = vnpay (covers if branch)', async () => {
+    // delivered → nhánh direct (set refunded + saveOrder); pending/processing delegate (integration).
     const order = buildOrder({
+      status: 'delivered',
       paymentStatus: 'paid',
       paymentProvider: 'vnpay',
       paymentTransactionId: 'VNP-TX-123',
@@ -962,6 +969,114 @@ describe('PaymentService.createRefund — provider không phải vnpay', () => {
     await expect(svc.createRefund({ orderId: 42, amount: 50000 })).rejects.toMatchObject({
       statusCode: 400,
     });
+  });
+});
+
+// ── INV-PAY-3 (F10): payment success KHÔNG hồi sinh đơn cancelled ─────────────
+describe('PaymentService — INV-PAY-3: bỏ qua đơn đã cancelled (skip mark-paid)', () => {
+  const vnpOk = (order) => ({
+    vnp_TxnRef: order.number,
+    vnp_ResponseCode: '00',
+    vnp_TransactionNo: 'VNP-CXL',
+    vnp_Amount: String(Number(order.total) * 100),
+  });
+
+  it('handleMomoIPN: order cancelled → KHÔNG mark paid', async () => {
+    const order = buildOrder({ status: 'cancelled', paymentStatus: 'pending' });
+    const repo = buildMockRepo({
+      runInTransaction: jest.fn(async (fn) => fn({})),
+      lockOrder: jest.fn().mockResolvedValue(order),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    await svc.handleMomoIPN({
+      body: {
+        resultCode: 0,
+        orderId: order.number,
+        transId: 'TX',
+        amount: order.total,
+        extraData: 'orderId=42',
+      },
+    });
+
+    expect(order.status).toBe('cancelled');
+    expect(order.paymentStatus).not.toBe('paid');
+  });
+
+  it('handleVnPayReturn: order cancelled → redirect KHÔNG success', async () => {
+    const order = buildOrder({ status: 'cancelled', paymentStatus: 'pending' });
+    const repo = buildMockRepo({
+      runInTransaction: jest.fn(async (fn) => fn({})),
+      findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(order),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    const { redirectUrl } = await svc.handleVnPayReturn({ vnp_Params: vnpOk(order) });
+    expect(redirectUrl).not.toContain('payment=success');
+    expect(order.paymentStatus).not.toBe('paid');
+  });
+
+  it('handleVnPayIPN: order cancelled → RspCode 02, KHÔNG paid', async () => {
+    const order = buildOrder({ status: 'cancelled', paymentStatus: 'pending' });
+    const repo = buildMockRepo({
+      runInTransaction: jest.fn(async (fn) => fn({})),
+      findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(order),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    const res = await svc.handleVnPayIPN({ vnp_Params: vnpOk(order) });
+    expect(res.RspCode).toBe('02');
+    expect(order.paymentStatus).not.toBe('paid');
+  });
+});
+
+// ── INV-PAY-4 (H): refund đơn CHƯA giao delegate cancel+restore sang orders-service ──
+describe('PaymentService.createRefund — INV-PAY-4 delegation (chưa giao)', () => {
+  it('refund đơn processing → delegate { status: cancelled, paymentStatus: refunded } sang ordersService', async () => {
+    const order = buildOrder({
+      status: 'processing',
+      paymentStatus: 'paid',
+      paymentProvider: 'vnpay',
+      paymentTransactionId: 'VNP-PROC',
+    });
+    const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
+    const ordersService = { updateOrderStatus: jest.fn().mockResolvedValue(undefined) };
+    const svc = buildService({ paymentRepository: repo, ordersService });
+
+    await svc.createRefund({ orderId: 42, amount: 100000, ipAddr: '1.2.3.4' });
+
+    expect(ordersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: order.id,
+      status: 'cancelled',
+      paymentStatus: 'refunded',
+    });
+    // Nhánh delegation KHÔNG tự saveOrder (orders-service lo) — phân biệt với nhánh delivered
+    expect(repo.saveOrder).not.toHaveBeenCalled();
+  });
+
+  it('refund đơn pending (paid, chưa giao) → CŨNG delegate (cover nhánh "pending" — kill mutant 378)', async () => {
+    // _canRefund chỉ check paymentStatus==='paid' (không check status) → pending+paid reachable.
+    // Test này phân biệt operand `=== 'pending'` trong điều kiện (mutation bỏ operand → đi else → FAIL).
+    const order = buildOrder({
+      status: 'pending',
+      paymentStatus: 'paid',
+      paymentProvider: 'vnpay',
+      paymentTransactionId: 'VNP-PEND',
+    });
+    const repo = buildMockRepo({ findOrderByPk: jest.fn().mockResolvedValue(order) });
+    const ordersService = { updateOrderStatus: jest.fn().mockResolvedValue(undefined) };
+    const svc = buildService({ paymentRepository: repo, ordersService });
+
+    await svc.createRefund({ orderId: 42, amount: 100000, ipAddr: '1.2.3.4' });
+
+    expect(ordersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: order.id,
+      status: 'cancelled',
+      paymentStatus: 'refunded',
+    });
+    expect(repo.saveOrder).not.toHaveBeenCalled(); // delegation branch, KHÔNG đi else
   });
 });
 

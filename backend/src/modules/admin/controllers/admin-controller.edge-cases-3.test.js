@@ -217,6 +217,10 @@ const {
   sequelize,
 } = require('@models');
 
+// Sau refactor: admin DELEGATE hủy/đổi-trạng-thái sang orders-service (inject qua setter).
+const adminOrderService = require('@modules/admin/services/admin-order-service');
+const mockOrdersService = { updateOrderStatus: jest.fn().mockResolvedValue(undefined) };
+
 const app = express();
 app.use(express.json());
 app.use('/api/admin', adminRouter);
@@ -293,6 +297,8 @@ function makeUser(overrides = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockOrdersService.updateOrderStatus.mockReset().mockResolvedValue(undefined);
+  adminOrderService.setOrdersService(mockOrdersService);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -807,35 +813,22 @@ describe('GET /api/admin/analytics/user-growth — groupBy=month', () => {
 // PUT /api/admin/orders/:id/status — chuyển trạng thái với variant items
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('PUT /api/admin/orders/:id/status — cancelled với variant', () => {
-  it('hoàn tồn kho variant khi order bị cancel', async () => {
-    const fakeVariant = {
-      id: 'v1',
-      stockQuantity: 5,
-      update: jest.fn().mockResolvedValue({ stockQuantity: 8 }),
-    };
-    const fakeOrder = makeOrder({
-      id: 20,
-      status: 'processing',
-      items: [
-        {
-          quantity: 3,
-          variantId: 'v1',
-          Product: makeProduct({ id: 5, stockQuantity: 10 }),
-          ProductVariant: fakeVariant,
-        },
-      ],
-    });
-    Order.findByPk
-      .mockResolvedValueOnce(fakeOrder)
-      .mockResolvedValueOnce(makeOrder({ id: 20, status: 'cancelled' }));
+// Logic hoàn kho variant khi cancel đã chuyển sang orders-service
+// (xem orders-edge-cases.integration F13/F14). Admin chỉ test delegation.
+describe('PUT /api/admin/orders/:id/status — cancelled delegation', () => {
+  it('delegate { id, status: "cancelled" } sang orders-service và re-fetch trả về 200', async () => {
+    const refetched = makeOrder({ id: 20, status: 'cancelled' });
+    Order.findByPk.mockResolvedValueOnce(refetched);
 
     const res = await request.put('/api/admin/orders/20/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
-    expect(fakeVariant.update).toHaveBeenCalledWith(
-      expect.objectContaining({ stockQuantity: 8 }),
-      expect.anything(),
-    );
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '20',
+      status: 'cancelled',
+      paymentStatus: undefined,
+      note: undefined,
+    });
+    expect(res.body.data.order.status).toBe('cancelled');
   });
 });

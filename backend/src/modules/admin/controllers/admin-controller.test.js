@@ -249,6 +249,11 @@ const {
   sequelize,
 } = require('@models');
 
+// Sau refactor: admin DELEGATE hủy/đổi-trạng-thái sang orders-service (inject qua setter).
+// Mock ordersService để admin test chỉ kiểm: delegate đúng tham số + propagate lỗi + re-fetch.
+const adminOrderService = require('@modules/admin/services/admin-order-service');
+const mockOrdersService = { updateOrderStatus: jest.fn().mockResolvedValue(undefined) };
+
 const app = express();
 app.use(express.json());
 app.use('/api/admin', adminRouter);
@@ -338,6 +343,8 @@ function makeUser(overrides = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockOrdersService.updateOrderStatus.mockReset().mockResolvedValue(undefined);
+  adminOrderService.setOrdersService(mockOrdersService);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1053,61 +1060,50 @@ describe('GET /api/admin/orders', () => {
 // PUT /api/admin/orders/:id/status
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Logic hoàn kho/updateData (COD→paid, restock variant/product) đã chuyển sang orders-service
+// (xem orders-edge-cases.integration F2/F12/F13/F14). Admin chỉ test delegation.
 describe('PUT /api/admin/orders/:id/status', () => {
-  it('trả về 200 khi cập nhật trạng thái đơn hàng thành công', async () => {
-    const fakeOrder = makeOrder({ id: 5, status: 'pending' });
-    Order.findByPk.mockResolvedValueOnce(fakeOrder);
+  const { AppError } = require('@shared/errors');
 
-    const res = await request.put('/api/admin/orders/5/status').send({ status: 'processing' });
+  it('delegate sang orders-service với { id, status, paymentStatus, note } và re-fetch order', async () => {
+    const refetched = makeOrder({ id: 5, status: 'processing' });
+    Order.findByPk.mockResolvedValueOnce(refetched); // re-fetch sau khi delegate
+
+    const res = await request
+      .put('/api/admin/orders/5/status')
+      .send({ status: 'processing', paymentStatus: 'paid', note: 'ghi chú' });
+
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('success');
+    // Admin phải forward đúng 4 tham số sang orders-service
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '5',
+      status: 'processing',
+      paymentStatus: 'paid',
+      note: 'ghi chú',
+    });
+    // Response trả về order đã re-fetch (id từ refetched, không phải echo input)
+    expect(res.body.data.order.id).toBe(5);
   });
 
-  it('trả về 404 khi đơn hàng không tồn tại', async () => {
-    Order.findByPk.mockResolvedValueOnce(null);
+  it('propagate 404 khi orders-service báo không tìm thấy đơn hàng', async () => {
+    mockOrdersService.updateOrderStatus.mockRejectedValueOnce(
+      new AppError('Không tìm thấy đơn hàng', 404),
+    );
 
     const res = await request.put('/api/admin/orders/9999/status').send({ status: 'delivered' });
     expect(res.status).toBe(404);
+    // Lỗi xảy ra trước re-fetch → không re-fetch order
+    expect(Order.findByPk).not.toHaveBeenCalled();
   });
 
-  it('tự động đặt paymentStatus=paid khi status=delivered và paymentMethod=cod', async () => {
-    const fakeOrder = makeOrder({
-      id: 6,
-      status: 'shipped',
-      paymentMethod: 'cod',
-      paymentStatus: 'pending',
-    });
-    Order.findByPk.mockResolvedValueOnce(fakeOrder);
-
-    const res = await request.put('/api/admin/orders/6/status').send({ status: 'delivered' });
-    expect(res.status).toBe(200);
-    // Kiểm tra update được gọi với paymentStatus=paid
-    expect(fakeOrder.update).toHaveBeenCalledWith(
-      expect.objectContaining({ paymentStatus: 'paid' }),
+  it('propagate 400 khi orders-service từ chối chuyển trạng thái (vd đơn đã giao)', async () => {
+    mockOrdersService.updateOrderStatus.mockRejectedValueOnce(
+      new AppError('Không thể hủy đơn hàng đã giao', 400),
     );
-  });
-
-  it('hoàn tồn kho khi status chuyển sang cancelled', async () => {
-    const mockProduct = makeProduct({ id: 10, stockQuantity: 5 });
-    const fakeOrder = makeOrder({
-      id: 7,
-      status: 'processing',
-      items: [
-        {
-          quantity: 3,
-          variantId: null,
-          Product: mockProduct,
-          ProductVariant: null,
-        },
-      ],
-    });
-    Order.findByPk.mockResolvedValueOnce(fakeOrder);
-    // Sau transaction, load lại order
-    const updatedOrder = makeOrder({ id: 7, status: 'cancelled' });
-    Order.findByPk.mockResolvedValueOnce(updatedOrder);
 
     const res = await request.put('/api/admin/orders/7/status').send({ status: 'cancelled' });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 });
 
@@ -1116,41 +1112,52 @@ describe('PUT /api/admin/orders/:id/status', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('PUT /api/admin/orders/:id/cancel', () => {
-  it('trả về 200 khi hủy đơn hàng thành công', async () => {
-    const mockProduct = makeProduct({ id: 10, stockQuantity: 5 });
-    const fakeOrder = makeOrder({
-      id: 10,
-      status: 'processing',
-      items: [{ quantity: 2, variantId: null, Product: mockProduct, ProductVariant: null }],
-    });
-    Order.findByPk.mockResolvedValueOnce(fakeOrder);
+  const { AppError } = require('@shared/errors');
+
+  it('delegate cancel sang orders-service với { id, status: "cancelled" } và trả về 200', async () => {
+    const fakeOrder = makeOrder({ id: 10, status: 'processing' });
+    Order.findByPk.mockResolvedValueOnce(fakeOrder); // pre-check findOrderById
 
     const res = await request.put('/api/admin/orders/10/cancel');
     expect(res.status).toBe(200);
     expect(res.body.message).toMatch(/hủy/i);
+    expect(res.body.data).toMatchObject({ orderId: 10, status: 'cancelled' });
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '10',
+      status: 'cancelled',
+    });
   });
 
-  it('trả về 404 khi đơn hàng không tồn tại', async () => {
+  it('trả về 404 (pre-check) khi đơn hàng không tồn tại, không delegate', async () => {
     Order.findByPk.mockResolvedValueOnce(null);
 
     const res = await request.put('/api/admin/orders/9999/cancel');
     expect(res.status).toBe(404);
+    expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
   });
 
-  it('trả về 400 khi đơn hàng đã bị hủy trước đó', async () => {
+  it('trả về 400 (pre-check) khi đơn hàng đã bị hủy trước đó, không delegate', async () => {
     const fakeOrder = makeOrder({ id: 11, status: 'cancelled', items: [] });
     Order.findByPk.mockResolvedValueOnce(fakeOrder);
 
     const res = await request.put('/api/admin/orders/11/cancel');
     expect(res.status).toBe(400);
+    expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
   });
 
-  it('trả về 400 khi đơn hàng đã giao không thể hủy', async () => {
+  it('propagate 400 khi orders-service từ chối hủy đơn đã giao', async () => {
     const fakeOrder = makeOrder({ id: 12, status: 'delivered', items: [] });
-    Order.findByPk.mockResolvedValueOnce(fakeOrder);
+    Order.findByPk.mockResolvedValueOnce(fakeOrder); // pre-check pass (chưa cancelled)
+    mockOrdersService.updateOrderStatus.mockRejectedValueOnce(
+      new AppError('Không thể hủy đơn hàng đã giao', 400),
+    );
 
     const res = await request.put('/api/admin/orders/12/cancel');
     expect(res.status).toBe(400);
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '12',
+      status: 'cancelled',
+    });
   });
 });
 

@@ -33,13 +33,23 @@ function _canRefund(order) {
 // Idempotency: _canProcessPayment check transactionId + paymentStatus
 // để webhook duplicate không double-process.
 class PaymentService {
-  constructor({ paymentRepository, momoGateway, vnpayGateway, emailGateway, logger, frontendUrl }) {
+  constructor({
+    paymentRepository,
+    momoGateway,
+    vnpayGateway,
+    emailGateway,
+    logger,
+    frontendUrl,
+    ordersService,
+  }) {
     this.repo = paymentRepository;
     this.momoGateway = momoGateway;
     this.vnpayGateway = vnpayGateway;
     this.emailGateway = emailGateway;
     this.logger = logger;
     this.frontendUrl = frontendUrl;
+    // Inject để refund đơn CHƯA giao hoàn kho qua path chung của orders-service (INV-PAY-4 / H).
+    this.ordersService = ordersService;
   }
 
   // ---------- Helpers ----------
@@ -148,6 +158,21 @@ class PaymentService {
         const order = await this.repo.lockOrder(orderId, tx);
         if (!order) return false;
 
+        // INV-PAY-3: đơn đã hủy là TERMINAL — KHÔNG hồi sinh dù IPN báo thành công muộn
+        // (kho đã hoàn lúc hủy; mark paid sẽ tạo đơn paid không có hàng = oversell).
+        // Tiền đã thu → cần hoàn thủ công.
+        if (order.status === 'cancelled') {
+          this.logger.warn(
+            'MoMo IPN success trên đơn đã HỦY — bỏ qua, KHÔNG mark paid (cần hoàn tiền thủ công)',
+            {
+              orderId,
+              transId,
+            },
+          );
+          return false;
+        }
+
+        // Stryker disable next-line EqualityOperator: floating point làm diff=0.01 thành 0.010000...>0.01 → cả > và >= cho cùng kết quả reject (true equivalent)
         if (body.amount && Math.abs(order.total - body.amount) > 0.01) {
           this.logger.warn('MoMo IPN amount mismatch', {
             expected: order.total,
@@ -221,8 +246,20 @@ class PaymentService {
         // handleVnPayIPN, tránh TOCTOU khi return URL và IPN tới đồng thời (double-process)
         const order = await this.repo.lockOrder(found.id, tx);
         if (!order) return null;
+        // INV-PAY-3: đơn đã hủy là TERMINAL — KHÔNG hồi sinh (kho đã hoàn → mark paid = oversell).
+        if (order.status === 'cancelled') {
+          this.logger.warn(
+            'VNPay return success trên đơn đã HỦY — bỏ qua, KHÔNG mark paid (cần hoàn tiền thủ công)',
+            {
+              orderNumber,
+              transNo,
+            },
+          );
+          return 'cancelled';
+        }
         // Xác minh số tiền khớp đơn (đồng nhất handleVnPayIPN) — KHÔNG mark paid nếu lệch tiền.
         // Bỏ qua khi gateway không gửi vnp_Amount (NaN) để giữ tương thích luồng cũ.
+        // Stryker disable next-line EqualityOperator: floating point làm diff=0.01 thành 0.010000...>0.01 → cả > và >= cho cùng kết quả reject (true equivalent)
         if (Number.isFinite(amount) && Math.abs(order.total - amount) > 0.01) {
           this.logger.warn('VNPay return amount mismatch', {
             expected: order.total,
@@ -245,6 +282,10 @@ class PaymentService {
       // Lệch tiền (dù chữ ký hợp lệ) → coi như thất bại, không báo success cho user
       if (processed === 'amount-mismatch') {
         return { redirectUrl: `${this.frontendUrl}/orders?payment=failed&code=04` };
+      }
+      // Đơn đã hủy → KHÔNG báo success (tránh hiển thị "thanh toán thành công" cho đơn đã hủy)
+      if (processed === 'cancelled') {
+        return { redirectUrl: `${this.frontendUrl}/orders?payment=failed&code=cancelled` };
       }
       if (processed) {
         await this._incrementDiscountCodeUsage(processed.id);
@@ -274,6 +315,19 @@ class PaymentService {
       const locked = await this.repo.lockOrder(found.id, tx);
       if (!locked) return { RspCode: '01', Message: 'Order not found' };
 
+      // INV-PAY-3: đơn đã hủy là TERMINAL — KHÔNG hồi sinh. Trả RspCode 02 để cổng ngừng retry.
+      if (locked.status === 'cancelled') {
+        this.logger.warn(
+          'VNPay IPN success trên đơn đã HỦY — bỏ qua, KHÔNG mark paid (cần hoàn tiền thủ công)',
+          {
+            orderNumber,
+            transNo,
+          },
+        );
+        return { RspCode: '02', Message: 'Order cancelled' };
+      }
+
+      // Stryker disable next-line EqualityOperator: floating point làm diff=0.01 thành 0.010000...>0.01 → cả > và >= cho cùng kết quả reject (true equivalent)
       if (Math.abs(locked.total - amount) > 0.01) {
         return { RspCode: '04', Message: 'Invalid amount' };
       }
@@ -330,8 +384,19 @@ class PaymentService {
       ipAddr,
     });
 
-    order.paymentStatus = 'refunded';
-    await this.repo.saveOrder(order);
+    // INV-PAY-4 (H): refund đơn CHƯA giao (pending/processing — hàng còn trong kho) → hoàn kho +
+    // set cancelled, delegate sang orders-service (path chung: atomic + SELECT FOR UPDATE + event).
+    // shipped/delivered (hàng đã rời kho) → CHỈ set refunded, KHÔNG hoàn kho (nhất quán INV-STK-6).
+    if (order.status === 'pending' || order.status === 'processing') {
+      await this.ordersService.updateOrderStatus({
+        id: order.id,
+        status: 'cancelled',
+        paymentStatus: 'refunded',
+      });
+    } else {
+      order.paymentStatus = 'refunded';
+      await this.repo.saveOrder(order);
+    }
     return refund;
   }
 }

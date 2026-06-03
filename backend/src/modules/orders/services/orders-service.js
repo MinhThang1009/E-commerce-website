@@ -166,6 +166,11 @@ class OrdersService {
         itemsToProcess = cart.items;
       }
 
+      // INV-STK-2 (F12): hủy đơn pending cũ + HOÀN kho cũ TRƯỚC khi lock/trừ kho đơn mới.
+      // Nếu đặt sau vòng decrement (như cũ), đơn pending cũ giữ unit cuối → đơn mới re-order
+      // cùng variant thấy stock=0 → throw stockInsufficient SAI (kho lẽ ra đã được hoàn).
+      await this.repo.cancelPendingOrdersByUser(userId, { transaction });
+
       // Validate stock + lock + tính subtotal
       let subtotal = 0;
       const pendingInventoryLogs = [];
@@ -250,12 +255,14 @@ class OrdersService {
 
         if (codeData.type === 'percent') {
           discount = (subtotal * parseFloat(codeData.value)) / 100;
+          // Stryker disable next-line EqualityOperator: discount === maxDiscountAmount tại boundary → cả 2 cho discount = maxDiscountAmount (true equivalent)
           if (codeData.maxDiscountAmount && discount > parseFloat(codeData.maxDiscountAmount)) {
             discount = parseFloat(codeData.maxDiscountAmount);
           }
         } else {
           discount = parseFloat(codeData.value);
         }
+        // Stryker disable next-line EqualityOperator: discount === subtotal tại boundary → cả 2 cho discount = subtotal (true equivalent)
         if (discount > subtotal) discount = subtotal;
         discountCodeId = codeData.id;
 
@@ -271,13 +278,12 @@ class OrdersService {
       // (server không tính khoảng cách) — giới hạn đã biết, chấp nhận.
       let shippingCost = typeof shippingCostFromFE === 'number' ? shippingCostFromFE : 0;
       if (subtotal >= this.constants.SHIPPING_FREE_THRESHOLD) shippingCost = 0;
+      // Stryker disable next-line EqualityOperator: shippingCost=0 tại boundary → cả 2 (< và <=) đều cho shippingCost=0 (true equivalent)
       if (shippingCost < 0) shippingCost = 0;
       const tax = 0;
+      // Stryker disable next-line ArithmeticOperator: tax luôn = 0 nên subtotal + tax === subtotal - tax (true equivalent)
       const total = subtotal + tax + shippingCost - discount;
       const orderNumber = this._generateOrderNumber();
-
-      // Cancel pending orders cũ (1 user / 1 pending tại một thời điểm)
-      await this.repo.cancelPendingOrdersByUser(userId, { transaction });
 
       // Create order
       const order = await this.repo.createOrder(
@@ -569,8 +575,9 @@ class OrdersService {
     };
   }
 
-  async updateOrderStatus({ id, status }) {
+  async updateOrderStatus({ id, status, paymentStatus, note }) {
     let updatedOrder;
+    let publishCancelled = false;
 
     await this.repo.runInTransaction(async (transaction) => {
       // Khóa hàng Order để hoàn kho an toàn (tránh double-restore race với cancelOrder của user)
@@ -581,12 +588,30 @@ class OrdersService {
       if (!order) throw new AppError('orders.notFound', 404);
 
       const previousStatus = order.status;
-      order.status = status;
 
-      // COD delivered → tự động paid
-      if (status === STATUS.DELIVERED && order.paymentMethod === 'cod') {
+      // INV-STK-3 (F13): KHÔNG cho hủy đơn ĐÃ giao (delivered) — hàng đã tới tay khách,
+      // hoàn kho sẽ tạo tồn ảo. Lấp path còn sót sau F8 (F8 chỉ chặn ở 2 path admin).
+      if (status === STATUS.CANCELLED && previousStatus === STATUS.DELIVERED) {
+        throw new AppError('orders.cannotCancelDelivered', 400);
+      }
+      // INV-ORD-8 (F14): 'cancelled' là TERMINAL — KHÔNG transition RA (hồi sinh sẽ tạo phantom
+      // stock vì kho đã hoàn lúc hủy mà không trừ lại; thanh toán đã chặn ở payment-service).
+      if (status && status !== STATUS.CANCELLED && previousStatus === STATUS.CANCELLED) {
+        throw new AppError('orders.cannotChangeCancelled', 422);
+      }
+
+      // Bản admin (qua delegation) có thể đổi kèm paymentStatus/note; staff route chỉ gửi status.
+      if (status) order.status = status;
+      if (paymentStatus !== undefined) order.paymentStatus = paymentStatus;
+      if (note !== undefined) order.note = note;
+
+      // COD delivered → tự động paid (ưu tiên hơn paymentStatus truyền vào)
+      if (order.status === STATUS.DELIVERED && order.paymentMethod === 'cod') {
         order.paymentStatus = 'paid';
       }
+
+      // Audit (K): đánh dấu để publish 'order.cancelled' sau transaction (inventory ghi log).
+      publishCancelled = status === STATUS.CANCELLED && previousStatus !== STATUS.CANCELLED;
 
       // Hủy đơn CHƯA giao (pending/processing) → hoàn kho. shipped/delivered: hàng đã đi,
       // KHÔNG hoàn. Bỏ qua nếu trạng thái cũ đã cancelled (tránh hoàn kho 2 lần).
@@ -608,6 +633,25 @@ class OrdersService {
       await this.repo.saveOrder(order, { transaction });
       updatedOrder = order;
     });
+
+    // Audit (K): publish 'order.cancelled' để inventory ghi InventoryLog (mọi path hủy đồng nhất —
+    // gồm cả admin qua delegation). Inventory subscriber chỉ ghi log, không đổi stock → an toàn.
+    if (publishCancelled) {
+      await this.eventBus.publish({
+        type: 'order.cancelled',
+        payload: {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.number,
+          userId: updatedOrder.userId,
+          items: (updatedOrder.items || []).map((i) => ({
+            productId: i.productId,
+            variantId: i.variantId,
+            quantity: i.quantity,
+          })),
+        },
+        occurredAt: new Date().toISOString(),
+      });
+    }
 
     // Email status update (ngoài transaction, fire-and-forget)
     if (updatedOrder.user?.email) {

@@ -229,6 +229,70 @@ describe('OrdersService › updateOrderStatus', () => {
     expect(result).toMatchObject({ id: 1, number: 'ORD-UPD', status: 'processing' });
   });
 
+  it('F13: delivered→cancelled → throw 400 (INV-STK-3, lấp path còn sót sau F8)', async () => {
+    const order = mkOrder({ status: 'delivered', number: 'ORD-DLV' });
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await expect(service.updateOrderStatus({ id: 1, status: 'cancelled' })).rejects.toMatchObject({
+      statusCode: 400,
+    });
+    expect(order.status).toBe('delivered'); // KHÔNG đổi
+  });
+
+  it('F14: cancelled→processing → throw 422 (INV-ORD-8, cancelled terminal)', async () => {
+    const order = mkOrder({ status: 'cancelled', number: 'ORD-CXLD' });
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await expect(service.updateOrderStatus({ id: 1, status: 'processing' })).rejects.toMatchObject({
+      statusCode: 422,
+    });
+    expect(order.status).toBe('cancelled'); // KHÔNG hồi sinh
+  });
+
+  it('admin delegation: áp paymentStatus + note kèm status', async () => {
+    const order = mkOrder({ status: 'processing', number: 'ORD-PN' });
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await service.updateOrderStatus({
+      id: 1,
+      status: 'shipped',
+      paymentStatus: 'paid',
+      note: 'ghi chú',
+    });
+
+    expect(order.status).toBe('shipped');
+    expect(order.paymentStatus).toBe('paid');
+    expect(order.note).toBe('ghi chú');
+  });
+
+  it('update chỉ paymentStatus/note (không gửi status) → giữ status cũ', async () => {
+    const order = mkOrder({ status: 'processing', number: 'ORD-PN2' });
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await service.updateOrderStatus({ id: 1, paymentStatus: 'refunded', note: '' });
+
+    expect(order.status).toBe('processing'); // status undefined → giữ nguyên
+    expect(order.paymentStatus).toBe('refunded');
+    expect(order.note).toBe('');
+  });
+
+  it('hủy đơn shipped → KHÔNG hoàn kho (INV-STK-6) nhưng VẪN publish order.cancelled (items null → [])', async () => {
+    const order = mkOrder({ status: 'shipped', number: 'ORD-SHP' });
+    order.items = null; // covers nhánh (items || [])
+    repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+
+    await service.updateOrderStatus({ id: 1, status: 'cancelled' });
+
+    expect(order.status).toBe('cancelled');
+    expect(repo.restoreVariantStock).not.toHaveBeenCalled(); // shipped: hàng đã đi, KHÔNG hoàn
+    expect(eventBus.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'order.cancelled',
+        payload: expect.objectContaining({ items: [] }),
+      }),
+    );
+  });
+
   it('hủy đơn CHƯA giao (processing) → hoàn kho variant + product', async () => {
     const variant = { id: 5 };
     const product = { id: 9 };

@@ -55,5 +55,7 @@ module.exports = ({
     basePath: '/orders',
     router,
     subscribeEvents() {},
+    // Expose để app.js inject vào admin module (admin delegate hủy/đổi-trạng-thái — 1 path chung).
+    ordersService,
   };
 };

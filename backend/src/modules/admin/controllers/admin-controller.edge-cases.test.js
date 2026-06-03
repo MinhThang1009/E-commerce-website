@@ -237,6 +237,11 @@ const {
   sequelize,
 } = require('@models');
 
+// Sau refactor: admin DELEGATE hủy/đổi-trạng-thái sang orders-service (inject qua setter).
+const adminOrderService = require('@modules/admin/services/admin-order-service');
+const { AppError } = require('@shared/errors');
+const mockOrdersService = { updateOrderStatus: jest.fn().mockResolvedValue(undefined) };
+
 const app = express();
 app.use(express.json());
 app.use('/api/admin', adminRouter);
@@ -324,6 +329,10 @@ beforeEach(() => {
     if (typeof cb === 'function') return cb(newTx);
     return newTx;
   });
+
+  // resetAllMocks xóa implementation của mockOrdersService — restore + re-inject
+  mockOrdersService.updateOrderStatus.mockReset().mockResolvedValue(undefined);
+  adminOrderService.setOrdersService(mockOrdersService);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -987,103 +996,36 @@ describe('GET /api/admin/orders — lines 1732-1734: order item edge cases', () 
 // Line 1788: updateOrderStatus — note='' → note === '' → null
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('PUT /api/admin/orders/:id/status — line 1788: note="" → null', () => {
-  it('đặt note=null khi note="" được gửi', async () => {
-    const order = {
-      id: 9400,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: [],
-      update: jest.fn().mockResolvedValue({ id: 9400, status: 'shipped' }),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
+// Logic hoàn kho/updateData (note=''→null, restock variant/product khi cancel) đã chuyển sang
+// orders-service (xem orders-edge-cases.integration F2/F12/F13/F14). Admin chỉ test delegation.
+describe('PUT /api/admin/orders/:id/status — delegation sang orders-service', () => {
+  it('forward { id, status, paymentStatus, note } y nguyên và re-fetch order', async () => {
+    Order.findByPk.mockResolvedValueOnce({ id: 9400, status: 'shipped' });
 
     const res = await request
       .put('/api/admin/orders/9400/status')
-      .send({ status: 'shipped', note: '' });
+      .send({ status: 'shipped', note: '', paymentStatus: 'paid' });
 
     expect(res.status).toBe(200);
-    // note='' → note === '' ? null : order.note → null (line 1790 conditional)
-    expect(order.update).toHaveBeenCalledWith(expect.objectContaining({ note: null }));
+    // Admin KHÔNG transform note/paymentStatus — chuyển nguyên sang orders-service
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '9400',
+      status: 'shipped',
+      paymentStatus: 'paid',
+      note: '',
+    });
+    expect(res.body.data.order.status).toBe('shipped');
   });
-});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 1802, 1808: updateOrderStatus cancel — variant and product restock paths
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock', () => {
-  it('hoàn tồn kho variant khi cancel đơn hàng có variantId (line 1802-1806)', async () => {
-    const variantMock = { stockQuantity: 8, update: jest.fn().mockResolvedValue(undefined) };
-    const order = {
-      id: 9410,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'cod',
-      items: [{ variantId: 3, quantity: 2, ProductVariant: variantMock, Product: null }],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
+  it('propagate 400 khi orders-service từ chối (vd hủy đơn đã giao)', async () => {
+    mockOrdersService.updateOrderStatus.mockRejectedValueOnce(
+      new AppError('Không thể hủy đơn hàng đã giao', 400),
+    );
 
     const res = await request.put('/api/admin/orders/9410/status').send({ status: 'cancelled' });
 
-    expect(res.status).toBe(200);
-    // variantId truthy + ProductVariant exists → restock variant (line 1802-1806)
-    expect(variantMock.update).toHaveBeenCalledWith(
-      { stockQuantity: 10 }, // 8 + 2
-      expect.anything(),
-    );
-  });
-
-  it('hoàn tồn kho product khi cancel và item không có variantId (line 1808-1812)', async () => {
-    const productMock = { stockQuantity: 15, update: jest.fn().mockResolvedValue(undefined) };
-    const order = {
-      id: 9411,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'cod',
-      items: [{ variantId: null, quantity: 3, ProductVariant: null, Product: productMock }],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-
-    const res = await request.put('/api/admin/orders/9411/status').send({ status: 'cancelled' });
-
-    expect(res.status).toBe(200);
-    // no variantId → else if (item.Product) → restock product (line 1808)
-    expect(productMock.update).toHaveBeenCalledWith(
-      { stockQuantity: 18 }, // 15 + 3
-      expect.anything(),
-    );
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 1859: adminCancelOrder — item.Product path (no variantId)
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('PUT /api/admin/orders/:id/cancel — line 1859: product restock', () => {
-  it('hoàn tồn kho product khi item không có variantId trong adminCancelOrder', async () => {
-    const productMock = { stockQuantity: 12, update: jest.fn().mockResolvedValue(undefined) };
-    const order = {
-      id: 9500,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: [{ variantId: null, quantity: 4, ProductVariant: null, Product: productMock }],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-
-    const res = await request.put('/api/admin/orders/9500/cancel');
-
-    expect(res.status).toBe(200);
-    // else if (item.Product) → restock product (line 1859)
-    expect(productMock.update).toHaveBeenCalledWith(
-      { stockQuantity: 16 }, // 12 + 4
-      expect.anything(),
-    );
+    expect(res.status).toBe(400);
+    expect(Order.findByPk).not.toHaveBeenCalled();
   });
 });
 
@@ -1600,101 +1542,29 @@ describe('GET /api/admin/orders — line 1732: order.items falsy → skip item t
 // → need status to be falsy (not sent)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('PUT /api/admin/orders/:id/status — line 1788: status falsy → use order.status', () => {
-  it('giữ nguyên status từ order khi status không được gửi', async () => {
-    const order = {
-      id: 9400,
-      status: 'shipped',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: [],
-      update: jest.fn().mockResolvedValue({ id: 9400 }),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-
-    // Send only paymentStatus, not status → status undefined → right branch of || (line 1788)
-    const res = await request.put('/api/admin/orders/9400/status').send({ paymentStatus: 'paid' });
-
-    expect(res.status).toBe(200);
-    // status undefined → status || order.status = order.status = 'shipped'
-    expect(order.update).toHaveBeenCalledWith(expect.objectContaining({ status: 'shipped' }));
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 1802: updateOrderStatus cancel — order.items is null → || [] empty loop
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('PUT /api/admin/orders/:id/status — line 1802: order.items null → || []', () => {
-  it('không crash khi status=cancelled và order.items là null', async () => {
-    const order = {
-      id: 9410,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: null, // null → order.items || [] = [] → empty loop (line 1802 right branch)
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-    Order.findByPk.mockResolvedValueOnce(order); // for the after-cancel fetch
-
-    const res = await request.put('/api/admin/orders/9410/status').send({ status: 'cancelled' });
-
-    expect(res.status).toBe(200);
-    // order.items null → || [] → loop over [] → no restock needed
-    expect(order.update).toHaveBeenCalled();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 1808: updateOrderStatus cancel — item with no variantId AND no Product
-// → both if/else-if branches false → fall through
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('PUT /api/admin/orders/:id/status — line 1808: item without Product falls through', () => {
-  it('không crash khi item không có variantId và không có Product', async () => {
-    const order = {
-      id: 9420,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      // Item with neither variantId nor Product → both if conditions false
-      items: [{ variantId: null, quantity: 1, ProductVariant: null, Product: null }],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-    Order.findByPk.mockResolvedValueOnce(order);
-
-    const res = await request.put('/api/admin/orders/9420/status').send({ status: 'cancelled' });
-
-    expect(res.status).toBe(200);
-    // Neither restock path taken → order still cancelled
-    expect(order.update).toHaveBeenCalled();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Line 1859: adminCancelOrder — item has no Product (false branch)
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('PUT /api/admin/orders/:id/cancel — line 1859: item without Product falls through', () => {
-  it('không crash khi item không có variantId và không có Product trong adminCancelOrder', async () => {
-    const order = {
-      id: 9500,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      // Neither variantId nor Product
-      items: [{ variantId: null, quantity: 1, ProductVariant: null, Product: null }],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
+// Status-fallback + restock fall-through (item không variantId/Product, items null) đã chuyển
+// sang orders-service. Admin chỉ giữ pre-check cancelled + delegate cancel.
+describe('PUT /api/admin/orders/:id/cancel — pre-check + delegation', () => {
+  it('hủy thành công: pre-check pass → delegate { id, status: "cancelled" }', async () => {
+    Order.findByPk.mockResolvedValueOnce({ id: 9500, status: 'processing' });
 
     const res = await request.put('/api/admin/orders/9500/cancel');
 
     expect(res.status).toBe(200);
-    // else if (item.Product) → false (null) → falls through, no restock
-    expect(order.update).toHaveBeenCalled();
+    expect(res.body.data).toMatchObject({ orderId: 9500, status: 'cancelled' });
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '9500',
+      status: 'cancelled',
+    });
+  });
+
+  it('trả về 400 (pre-check) khi đơn đã hủy trước đó, không delegate', async () => {
+    Order.findByPk.mockResolvedValueOnce({ id: 9501, status: 'cancelled' });
+
+    const res = await request.put('/api/admin/orders/9501/cancel');
+
+    expect(res.status).toBe(400);
+    expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
   });
 });
 

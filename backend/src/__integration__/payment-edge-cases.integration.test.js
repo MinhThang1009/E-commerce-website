@@ -19,11 +19,14 @@ const {
   Cart,
   CartItem,
   DiscountCode,
+  InventoryLog,
 } = require('@models');
 const { Op } = require('sequelize');
 
 const PaymentService = require('@modules/payment/services/payment-service');
 const SequelizePaymentRepository = require('@modules/payment/repositories/sequelize-payment-repository');
+const OrdersService = require('@modules/orders/services/orders-service');
+const SequelizeOrdersRepository = require('@modules/orders/repositories/sequelize-orders-repository');
 
 const TS = Date.now();
 const TOTAL = 5_000_000;
@@ -109,6 +112,32 @@ beforeAll(async () => {
   };
   const momoGateway = { verifySignature: () => true, createPaymentUrl: () => ({}) };
   const emailGateway = { sendOrderConfirmationEmail: async () => {} };
+
+  // ordersService THẬT (DB thật) để refund đơn chưa giao hoàn kho qua path chung (INV-PAY-4 / H).
+  const ordersRepo = new SequelizeOrdersRepository({
+    Order,
+    OrderItem,
+    Cart,
+    CartItem,
+    Product,
+    ProductVariant,
+    User,
+    DiscountCode,
+    InventoryLog,
+    sequelize,
+  });
+  const ordersService = new OrdersService({
+    ordersRepository: ordersRepo,
+    emailGateway: {
+      sendOrderConfirmationEmail: async () => {},
+      sendOrderCancellationEmail: async () => {},
+      sendOrderStatusUpdateEmail: async () => {},
+    },
+    eventBus: { publish: async () => {} },
+    logger: silentLogger,
+    constants: { SHIPPING_FREE_THRESHOLD: 500_000 },
+  });
+
   svc = new PaymentService({
     paymentRepository: repo,
     momoGateway,
@@ -116,6 +145,7 @@ beforeAll(async () => {
     emailGateway,
     logger: silentLogger,
     frontendUrl: 'http://test.local',
+    ordersService,
   });
 });
 
@@ -243,14 +273,90 @@ describe('PaymentService — discount usedCount + refund (service thật + DB)',
     expect(fresh.usedCount).toBe(1);
   });
 
-  test('createRefund đơn đã paid (vnpay) → paymentStatus=refunded (assert DB)', async () => {
-    const order = await makeOrder('refund', {
+  const makeItem = (order, qty) =>
+    OrderItem.create({
+      orderId: order.id,
+      productId: product.id,
+      variantId: variant.id,
+      name: product.nameVi,
+      unitPrice: TOTAL,
+      quantity: qty,
+      subtotal: TOTAL * qty,
+    });
+
+  test('INV-PAY-4 (H): refund đơn processing (CHƯA giao) → hoàn kho + cancelled + refunded', async () => {
+    await variant.update({ stockQuantity: 48 }); // giả lập đã bán 2
+    const order = await makeOrder('refund-proc', {
+      status: 'processing',
       paymentStatus: 'paid',
       paymentProvider: 'vnpay',
-      paymentTransactionId: `VNP-REF-${TS}`,
+      paymentTransactionId: `VNP-REFP-${TS}`,
     });
+    await makeItem(order, 2);
+
     await svc.createRefund({ orderId: order.id, amount: TOTAL, ipAddr: '1.2.3.4' });
+
     const fresh = await Order.findByPk(order.id);
     expect(fresh.paymentStatus).toBe('refunded');
+    expect(fresh.status).toBe('cancelled'); // chưa giao → cancel
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(50); // 48 + 2 hoàn (FAIL nếu revert H)
+  });
+
+  test('INV-PAY-4 (H): refund đơn delivered (ĐÃ giao) → CHỈ refunded, KHÔNG hoàn kho, giữ status', async () => {
+    await variant.update({ stockQuantity: 48 });
+    const order = await makeOrder('refund-deliv', {
+      status: 'delivered',
+      paymentStatus: 'paid',
+      paymentProvider: 'vnpay',
+      paymentTransactionId: `VNP-REFD-${TS}`,
+    });
+    await makeItem(order, 2);
+
+    await svc.createRefund({ orderId: order.id, amount: TOTAL, ipAddr: '1.2.3.4' });
+
+    const fresh = await Order.findByPk(order.id);
+    expect(fresh.paymentStatus).toBe('refunded');
+    expect(fresh.status).toBe('delivered'); // đã giao → KHÔNG cancel
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(48); // KHÔNG hoàn (hàng đã rời kho)
+  });
+});
+
+describe('INV-PAY-3 (F10) — payment success KHÔNG hồi sinh đơn đã HỦY', () => {
+  // Kịch bản: đơn online pending bị hủy (kho đã hoàn). IPN/return success tới muộn.
+  // Đúng nghiệp vụ: GIỮ cancelled, KHÔNG mark paid (nếu revive → oversell). FAIL nếu revert F10.
+  test('VNPay IPN success trên đơn cancelled → RspCode 02, GIỮ cancelled, KHÔNG paid', async () => {
+    const order = await makeOrder('cxl-ipn', { status: 'cancelled' });
+    const res = await svc.handleVnPayIPN({ vnp_Params: vnpParams(order) });
+    expect(res.RspCode).toBe('02');
+    const fresh = await Order.findByPk(order.id);
+    expect(fresh.status).toBe('cancelled');
+    expect(fresh.paymentStatus).not.toBe('paid');
+  });
+
+  test('VNPay return success trên đơn cancelled → redirect KHÔNG success, GIỮ cancelled', async () => {
+    const order = await makeOrder('cxl-ret', { status: 'cancelled' });
+    const { redirectUrl } = await svc.handleVnPayReturn({ vnp_Params: vnpParams(order) });
+    expect(redirectUrl).not.toContain('payment=success');
+    const fresh = await Order.findByPk(order.id);
+    expect(fresh.status).toBe('cancelled');
+    expect(fresh.paymentStatus).not.toBe('paid');
+  });
+
+  test('MoMo IPN success trên đơn cancelled → GIỮ cancelled, KHÔNG paid', async () => {
+    const order = await makeOrder('cxl-momo', { status: 'cancelled' });
+    await svc.handleMomoIPN({
+      body: {
+        resultCode: 0,
+        orderId: order.number,
+        transId: `MOMO-CXL-${order.number}`,
+        amount: TOTAL,
+        extraData: `orderId=${order.id}`,
+      },
+    });
+    const fresh = await Order.findByPk(order.id);
+    expect(fresh.status).toBe('cancelled');
+    expect(fresh.paymentStatus).not.toBe('paid');
   });
 });

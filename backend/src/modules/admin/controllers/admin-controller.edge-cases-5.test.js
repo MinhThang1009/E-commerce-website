@@ -224,6 +224,11 @@ const {
   sequelize,
 } = require('@models');
 
+// Sau refactor: admin DELEGATE hủy/đổi-trạng-thái sang orders-service (inject qua setter).
+const adminOrderService = require('@modules/admin/services/admin-order-service');
+const { AppError } = require('@shared/errors');
+const mockOrdersService = { updateOrderStatus: jest.fn().mockResolvedValue(undefined) };
+
 const app = express();
 app.use(express.json());
 app.use('/api/admin', adminRouter);
@@ -297,6 +302,10 @@ beforeEach(() => {
     if (typeof cb === 'function') return cb(tx);
     return tx;
   });
+
+  // resetAllMocks xóa implementation của mockOrdersService — restore + re-inject
+  mockOrdersService.updateOrderStatus.mockReset().mockResolvedValue(undefined);
+  adminOrderService.setOrdersService(mockOrdersService);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -605,44 +614,25 @@ describe('GET /api/admin/orders — lines 1732-1737: transform order items', () 
 // updateOrderStatus — line 1788,1790: note='' → null; status=delivered+cod → paid
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('PUT /api/admin/orders/:id/status — lines 1788,1790: note/delivered+cod', () => {
-  it('đặt note=null khi gửi note="" (empty string)', async () => {
-    const order = {
-      id: 700,
-      status: 'pending',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: [],
-      update: jest.fn().mockResolvedValue({ id: 700, status: 'processing' }),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
+// Note handling (note=''→null) + COD→paid auto đã chuyển sang orders-service
+// (xem orders-edge-cases.integration F2/F12). Admin chỉ forward tham số thô + re-fetch.
+describe('PUT /api/admin/orders/:id/status — forward tham số sang orders-service', () => {
+  it('forward note nguyên văn (không tự transform) cùng status + re-fetch trả về 200', async () => {
+    Order.findByPk.mockResolvedValueOnce({ id: 700, status: 'processing' });
 
     const res = await request
       .put('/api/admin/orders/700/status')
-      .send({ status: 'processing', note: '' });
+      .send({ status: 'processing', note: 'cập nhật ghi chú' });
 
     expect(res.status).toBe(200);
-    // note='' → note === '' → null
-    expect(order.update).toHaveBeenCalledWith(expect.objectContaining({ note: null }));
-  });
-
-  it('tự động đặt paymentStatus=paid khi delivered + cod', async () => {
-    const order = {
-      id: 701,
+    // Admin KHÔNG transform note — chuyển y nguyên sang orders-service
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '700',
       status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'cod',
-      items: [],
-      update: jest.fn().mockResolvedValue({ id: 701, status: 'delivered' }),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-
-    const res = await request.put('/api/admin/orders/701/status').send({ status: 'delivered' });
-
-    expect(res.status).toBe(200);
-    expect(order.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'delivered', paymentStatus: 'paid' }),
-    );
+      paymentStatus: undefined,
+      note: 'cập nhật ghi chú',
+    });
+    expect(res.body.data.order.status).toBe('processing');
   });
 });
 
@@ -650,87 +640,34 @@ describe('PUT /api/admin/orders/:id/status — lines 1788,1790: note/delivered+c
 // updateOrderStatus — lines 1802,1808: cancel branch — variant và product restock
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('PUT /api/admin/orders/:id/status — lines 1802,1808: cancel restock', () => {
-  it('hoàn tồn kho variant khi cancel đơn hàng có variantId', async () => {
-    const mockVariant = { stockQuantity: 5, update: jest.fn().mockResolvedValue(undefined) };
-    const mockOrderProduct = { stockQuantity: 10, update: jest.fn().mockResolvedValue(undefined) };
-
-    const order = {
-      id: 710,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: [
-        {
-          variantId: 1,
-          quantity: 3,
-          ProductVariant: mockVariant,
-          Product: mockOrderProduct,
-        },
-      ],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
+// Hoàn kho variant/product khi cancel đã chuyển sang orders-service
+// (xem orders-edge-cases.integration F13/F14). Admin chỉ delegate + propagate.
+describe('PUT /api/admin/orders/:id/status — cancel delegation/propagation', () => {
+  it('delegate { id, status: "cancelled" } sang orders-service khi đổi trạng thái sang cancelled', async () => {
+    Order.findByPk.mockResolvedValueOnce({ id: 710, status: 'cancelled' });
 
     const res = await request.put('/api/admin/orders/710/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(200);
-    // Variant được cộng thêm quantity
-    expect(mockVariant.update).toHaveBeenCalledWith(
-      { stockQuantity: 8 }, // 5 + 3
-      expect.anything(),
-    );
+    expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
+      id: '710',
+      status: 'cancelled',
+      paymentStatus: undefined,
+      note: undefined,
+    });
   });
 
-  it('hoàn tồn kho product khi cancel đơn hàng không có variantId', async () => {
-    const mockOrderProduct = { stockQuantity: 10, update: jest.fn().mockResolvedValue(undefined) };
-
-    const order = {
-      id: 711,
-      status: 'processing',
-      paymentStatus: 'unpaid',
-      paymentMethod: 'bank',
-      items: [
-        {
-          variantId: null, // không có variant
-          quantity: 2,
-          ProductVariant: null,
-          Product: mockOrderProduct,
-        },
-      ],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
-
-    const res = await request.put('/api/admin/orders/711/status').send({ status: 'cancelled' });
-
-    expect(res.status).toBe(200);
-    // Product được cộng thêm quantity
-    expect(mockOrderProduct.update).toHaveBeenCalledWith(
-      { stockQuantity: 12 }, // 10 + 2
-      expect.anything(),
+  it('propagate 400 khi orders-service từ chối hủy đơn ĐÃ GIAO (chống tồn ảo)', async () => {
+    mockOrdersService.updateOrderStatus.mockRejectedValueOnce(
+      new AppError('Không thể hủy đơn hàng đã giao', 400),
     );
-  });
-
-  it('trả về 400 khi hủy đơn ĐÃ GIAO qua đổi trạng thái — KHÔNG hoàn kho (chống tồn ảo)', async () => {
-    const mockVariant = { stockQuantity: 5, update: jest.fn().mockResolvedValue(undefined) };
-    const order = {
-      id: 712,
-      status: 'delivered',
-      paymentStatus: 'paid',
-      paymentMethod: 'cod',
-      items: [{ variantId: 1, quantity: 3, ProductVariant: mockVariant, Product: null }],
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-    Order.findByPk.mockResolvedValueOnce(order);
 
     const res = await request.put('/api/admin/orders/712/status').send({ status: 'cancelled' });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/không thể hủy/i);
-    // Đơn đã giao → KHÔNG được hoàn kho (nếu hoàn sẽ tạo tồn ảo)
-    expect(mockVariant.update).not.toHaveBeenCalled();
-    expect(order.update).not.toHaveBeenCalled();
+    // Lỗi xảy ra trong delegate → admin KHÔNG re-fetch order
+    expect(Order.findByPk).not.toHaveBeenCalled();
   });
 });
 

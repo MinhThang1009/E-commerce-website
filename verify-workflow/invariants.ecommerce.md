@@ -1,6 +1,7 @@
 # invariants.ecommerce.md — ORACLE NGHIỆP VỤ (GATE-A)
 
-> ✅ **DUYỆT 2026-06-03 (human):** toàn bộ 21 invariant đã `[x]` — hợp lệ làm oracle tầng 0/GATE-B. INV-ORD-5/8 phản ánh quyết định Option 2 (repay pending-online, cancelled terminal).
+> ✅ **DUYỆT 2026-06-03 (human):** toàn bộ 25 invariant đã `[x]` — hợp lệ làm oracle tầng 0/GATE-B. INV-ORD-5/8 phản ánh quyết định Option 2 (repay pending-online, cancelled terminal).
+> 🔄 **BỔ SUNG 2026-06-03 (GATE-B sau audit ma trận cancel×stock×status — F9-F13):** INV-STK-6/7, INV-PAY-3/4. Quyết định human: (a) hủy `shipped` KHÔNG hoàn kho; (b) refund đơn chưa-giao hoàn kho + cancel.
 
 > ⚠️ **ĐÂY LÀ DRAFT do agent seed từ code + CLAUDE.md gotchas — KHÔNG phải oracle hợp lệ cho tới khi HUMAN DUYỆT.**
 > Lý do: invariant rút từ code chỉ cho biết *"code ĐANG làm gì"*, **không** phải *"nghiệp vụ NÊN làm gì"*. Nếu agent tự coi đây là chân lý = đúng lỗ hổng O1 (vòng tự-tham-chiếu).
@@ -15,9 +16,11 @@
 |---|---|---|---|---|
 | INV-STK-1 | Hủy đơn ở trạng thái `pending` hoặc `processing` | `stock += quantity` của từng item (hoàn kho), trong transaction | F1/F2; orders-service cancelOrder L504 | [x] |
 | INV-STK-2 | Hủy đơn `cancelPendingOrdersByUser` (đặt đơn mới) | stock cũ được hoàn trước khi trừ stock đơn mới | F1; repo L212 | [x] |
-| INV-STK-3 | Staff hủy đơn ĐÃ `delivered` | **TỪ CHỐI** (lỗi 400), KHÔNG đổi stock | admin-order-service L266 | [x] |
+| INV-STK-3 | Staff/admin hủy đơn ĐÃ `delivered` — **MỌI path** (`orders-service.updateOrderStatus` + admin `updateOrderStatus`/`adminCancelOrder`) | **TỪ CHỐI** (lỗi 400), KHÔNG đổi stock | admin-order-service L225/271; F8/F13 (orders-service còn sót) | [x] |
 | INV-STK-4 | Tạo đơn (decrement stock) | LUÔN trong transaction + `SELECT FOR UPDATE` (lockVariant/lockProduct) | CLAUDE.md gotcha; orders-service createOrder | [x] |
 | INV-STK-5 | 2 request tạo đơn đồng thời cùng variant tồn kho thấp | KHÔNG oversell (tổng trừ ≤ stock ban đầu) | gotcha SELECT FOR UPDATE | [x] |
+| INV-STK-6 | Hủy đơn ở trạng thái `shipped` (MỌI path) | **KHÔNG hoàn kho** (hàng đã rời kho, như `delivered`); return/RMA xử riêng | GATE-B 2026-06-03; F9 (admin đang hoàn → tồn ảo) | [x] |
+| INV-STK-7 | Mọi thao tác hoàn kho (cancel/refund, mọi actor) | atomic `increment` + đọc Order có `SELECT FOR UPDATE` (chống double-restore/lost-update) | GATE-B 2026-06-03; E (admin read-modify-write phi atomic) | [x] |
 
 ## II. Trạng thái đơn (order.status)
 
@@ -53,7 +56,9 @@
 | ID | WHEN | THEN | Nguồn DRAFT | Duyệt |
 |---|---|---|---|---|
 | INV-PAY-1 | VNPay return/IPN | mark paid CHỈ KHI verify checksum + **amount khớp** + chưa paid | P1 fix; payment-service handleVnPayReturn | [x] |
-| INV-PAY-2 | Refund | `paymentStatus='refunded'`; (hiện KHÔNG đổi order.status/restore stock — P5 business decision) | payment-service L333 | [x] |
+| INV-PAY-2 | Refund | `paymentStatus='refunded'` (xem INV-PAY-4 cho hành vi kho/status — ĐÃ cập nhật GATE-B, thay quyết định P5 cũ) | payment-service L333 | [x] |
+| INV-PAY-3 | Payment success (IPN/return — MoMo/VNPay) khi `order.status === 'cancelled'` | **KHÔNG** mark paid, **KHÔNG** hồi sinh đơn (giữ `cancelled`, không trừ lại kho); `logger.warn` để xử refund thủ công (đã thu tiền). Enforce INV-ORD-8 | GATE-B 2026-06-03; C (payment không check order.status → oversell) | [x] |
+| INV-PAY-4 | Refund (chỉ VNPay) theo `order.status`: `∈ {pending,processing}` (CHƯA giao — hàng còn trong kho) | hoàn kho + set `order.status='cancelled'` + `paymentStatus='refunded'`, trong transaction + `SELECT FOR UPDATE`; `shipped`/`delivered` (hàng ĐÃ rời kho) → CHỈ `paymentStatus='refunded'`, KHÔNG hoàn kho (nhất quán INV-STK-6: hàng đã đi không hoàn) | GATE-B 2026-06-03; H (refund không hoàn kho → tồn thiếu ảo). shipped reconcile với A/INV-STK-6 | [x] |
 
 ---
 

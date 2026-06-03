@@ -5,15 +5,21 @@
  * @description CRUD orders + reviews cho admin
  */
 const adminRepository = require('@modules/admin/repositories/sequelize-admin-repository');
-const sequelize = adminRepository.getSequelize();
 const Op = adminRepository.getOp();
-const Sequelize = adminRepository.getSequelizeFns();
-const { Product, ProductImage, User, Order, OrderItem, Review, ProductVariant } =
-  adminRepository.getModels();
+const { Product, ProductImage, User, OrderItem } = adminRepository.getModels();
 
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+
+// ordersService được inject từ app.js (pattern setter — giống attribute.setNameGenerator).
+// Hủy/đổi-trạng-thái đơn DELEGATE sang orders-service để dùng CHUNG 1 path (guard delivered/
+// cancelled, hoàn kho atomic + SELECT FOR UPDATE theo trạng thái, publish order.cancelled),
+// tránh logic trùng từng gây F8/F9/F11/K.
+let _ordersService = null;
+const setOrdersService = (svc) => {
+  _ordersService = svc;
+};
 
 const getAllReviews = catchAsync(async (req, res) => {
   const {
@@ -193,109 +199,36 @@ const updateOrderStatus = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { status, paymentStatus, note } = req.body;
 
-  const order = await adminRepository.findOrderById(id, {
-    include:
-      status === 'cancelled'
-        ? [
-            {
-              model: OrderItem,
-              as: 'items',
-              include: [{ model: Product }, { model: ProductVariant }],
-            },
-          ]
-        : [],
-  });
-  if (!order) {
-    throw new AppError('Không tìm thấy đơn hàng', 404);
-  }
+  // DELEGATE sang orders-service (1 path chung): guard delivered→400 / cancelled→422,
+  // hoàn kho atomic + SELECT FOR UPDATE CHỈ khi pending/processing (shipped KHÔNG hoàn — INV-STK-6),
+  // publish order.cancelled. KHÔNG còn logic hoàn kho trùng tại admin (F9/F11/F13/K fixed).
+  await _ordersService.updateOrderStatus({ id, status, paymentStatus, note });
 
-  const updateData = {
-    status: status || order.status,
-    paymentStatus: paymentStatus || order.paymentStatus,
-    note: note || (note === '' ? null : order.note),
-  };
-
-  if (status === 'delivered' && order.paymentMethod === 'cod') {
-    updateData.paymentStatus = 'paid';
-  }
-
-  if (status === 'cancelled' && order.status !== 'cancelled') {
-    // Không cho hủy đơn đã giao qua đổi trạng thái — hàng đã đến tay khách,
-    // hoàn kho sẽ tạo tồn ảo. Đồng bộ với adminCancelOrder (cũng chặn delivered).
-    if (order.status === 'delivered') {
-      throw new AppError('Không thể hủy đơn hàng đã giao', 400);
-    }
-    await sequelize.transaction(async (t) => {
-      await order.update(updateData, { transaction: t });
-      for (const item of order.items || []) {
-        if (item.variantId && item.ProductVariant) {
-          await item.ProductVariant.update(
-            { stockQuantity: item.ProductVariant.stockQuantity + item.quantity },
-            { transaction: t },
-          );
-        } else if (item.Product) {
-          await item.Product.update(
-            { stockQuantity: item.Product.stockQuantity + item.quantity },
-            { transaction: t },
-          );
-        }
-      }
-    });
-    const updatedOrder = await adminRepository.findOrderById(id);
-    return res.status(200).json({ status: 'success', data: { order: updatedOrder } });
-  }
-
-  const updatedOrder = await order.update(updateData);
-
-  res.status(200).json({
-    status: 'success',
-    data: { order: updatedOrder },
-  });
+  const order = await adminRepository.findOrderById(id);
+  res.status(200).json({ status: 'success', data: { order } });
 });
 
 const adminCancelOrder = catchAsync(async (req, res) => {
   const { id } = req.params;
 
-  const order = await adminRepository.findOrderById(id, {
-    include: [
-      {
-        model: OrderItem,
-        as: 'items',
-        include: [{ model: Product }, { model: ProductVariant }],
-      },
-    ],
-  });
+  // Giữ contract cũ: đơn đã hủy → 400 (orders-service coi cancelled→cancelled là no-op 200).
+  const existing = await adminRepository.findOrderById(id);
+  if (!existing) throw new AppError('Không tìm thấy đơn hàng', 404);
+  if (existing.status === 'cancelled') throw new AppError('Đơn hàng đã bị hủy trước đó', 400);
 
-  if (!order) throw new AppError('Không tìm thấy đơn hàng', 404);
-  if (order.status === 'cancelled') throw new AppError('Đơn hàng đã bị hủy trước đó', 400);
-  if (order.status === 'delivered') throw new AppError('Không thể hủy đơn hàng đã giao', 400);
-
-  await sequelize.transaction(async (t) => {
-    await order.update({ status: 'cancelled' }, { transaction: t });
-
-    for (const item of order.items) {
-      if (item.variantId && item.ProductVariant) {
-        await item.ProductVariant.update(
-          { stockQuantity: item.ProductVariant.stockQuantity + item.quantity },
-          { transaction: t },
-        );
-      } else if (item.Product) {
-        await item.Product.update(
-          { stockQuantity: item.Product.stockQuantity + item.quantity },
-          { transaction: t },
-        );
-      }
-    }
-  });
+  // DELEGATE sang orders-service: guard delivered→400; hoàn kho atomic + lock CHỈ khi
+  // pending/processing (shipped KHÔNG hoàn — INV-STK-6); publish order.cancelled (audit).
+  await _ordersService.updateOrderStatus({ id, status: 'cancelled' });
 
   res.status(200).json({
     status: 'success',
-    message: 'Đã hủy đơn hàng và hoàn tồn kho thành công',
-    data: { orderId: parseInt(id), status: 'cancelled' },
+    message: 'Đã hủy đơn hàng thành công',
+    data: { orderId: parseInt(id, 10), status: 'cancelled' },
   });
 });
 
 module.exports = {
+  setOrdersService,
   getAllReviews,
   deleteReview,
   getAllOrders,

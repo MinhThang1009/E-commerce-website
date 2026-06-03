@@ -342,6 +342,24 @@ describe('Orders edge cases — validation trạng thái', () => {
       }),
     ).rejects.toThrow();
   });
+
+  test('F13: updateOrderStatus delivered→cancelled → throw 400 (INV-STK-3, lấp path còn sót sau F8)', async () => {
+    const service = makeService();
+    await expect(
+      service.updateOrderStatus({ id: deliveredOrder.id, status: 'cancelled' }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    const fresh = await Order.findByPk(deliveredOrder.id);
+    expect(fresh.status).toBe('delivered'); // KHÔNG bị set cancelled
+  });
+
+  test('F14: updateOrderStatus cancelled→processing → throw 422 (INV-ORD-8, cancelled terminal)', async () => {
+    const service = makeService();
+    await expect(
+      service.updateOrderStatus({ id: cancelledOrder.id, status: 'processing' }),
+    ).rejects.toMatchObject({ statusCode: 422 });
+    const fresh = await Order.findByPk(cancelledOrder.id);
+    expect(fresh.status).toBe('cancelled'); // KHÔNG bị hồi sinh
+  });
 });
 
 // Verify logic THẬT qua service (không tautological) — bắt các bug F1/F2/F3 mà unit mock bỏ lọt.
@@ -428,5 +446,25 @@ describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
     });
     const ord = await Order.findByPk(created.id);
     expect(Number(ord.shippingCost)).toBe(0);
+  });
+
+  test('F12: re-order cùng variant khi đơn pending cũ giữ unit cuối → THÀNH CÔNG (không false stockInsufficient)', async () => {
+    const service = makeService();
+    const user = { id: userC.id, email: userC.email };
+    await variant.update({ stockQuantity: 1 });
+    await variant.reload();
+
+    // Đơn 1: lấy unit cuối → stock 1→0
+    await service.createOrder({ user, body: buyNowBody(1), sessionIdCookie: null });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(0);
+
+    // Đơn 2 cùng variant: cancelPending hủy đơn 1 + HOÀN 1 → 1, rồi trừ 1 → 0.
+    // FAIL nếu revert F12 (cancelPending chạy SAU decrement → lockVariant thấy 0 → throw stockInsufficient SAI).
+    await expect(
+      service.createOrder({ user, body: buyNowBody(1), sessionIdCookie: null }),
+    ).resolves.toBeDefined();
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(0);
   });
 });

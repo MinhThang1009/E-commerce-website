@@ -422,3 +422,71 @@ describe('createOrder — không tạo inventory logs khi items = 0 (line 309 fa
     expect(repo.createInventoryLogs).toHaveBeenCalled();
   });
 });
+
+// ─── L259: cap mã giảm giá theo maxDiscountAmount (money-logic mutation kill) ──────
+describe('createOrder — cap discount theo maxDiscountAmount (L259)', () => {
+  // Setup buy-now: subtotal = basePrice*qty = 100000; percent 10% → discount thô = 10000.
+  function setupDiscount(maxDiscountAmount) {
+    const { service, repo } = buildService();
+    const product = mkProduct({ basePrice: 100000, stockQuantity: 10 });
+    repo.findProductWithDefaultVariant.mockResolvedValue(product);
+    repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
+    repo.findActiveDiscountCode.mockResolvedValue({
+      id: 7,
+      code: 'P10',
+      type: 'percent',
+      value: 10,
+      minOrderAmount: 0,
+      maxDiscountAmount,
+      usageLimit: null,
+      usedCount: 0,
+      startDate: null,
+      endDate: null,
+    });
+    let captured;
+    repo.createOrder.mockImplementation(async (data) => {
+      captured = data;
+      return { id: 1, number: 'ORD-DISC', userId: 1, createdAt: new Date(), ...data };
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 1,
+      productId: 1,
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    });
+    const run = () =>
+      service.createOrder({
+        user: { id: 1, email: 'u@t.com' },
+        body: mkOrderBody({
+          items: [{ productId: 1, quantity: 1 }],
+          discountCode: 'P10',
+          paymentMethod: 'cod',
+        }),
+        sessionIdCookie: null,
+      });
+    return { run, getCaptured: () => captured };
+  }
+
+  it('maxDiscountAmount=0 (falsy) → KHÔNG cap, discount=10000 (kill LogicalOperator &&→||)', async () => {
+    // && short-circuit: maxDiscountAmount=0 falsy → bỏ cap → discount = 10% × 100000 = 10000.
+    // Nếu &&→||: `0 || (10000 > parseFloat(0)=0)` = true → cap về parseFloat(0)=0 → discount=0 (SAI).
+    const { run, getCaptured } = setupDiscount(0);
+    await run();
+    expect(getCaptured().discount).toBe(10000);
+  });
+
+  it('discount < maxDiscountAmount → KHÔNG cap, discount=10000 (kill ConditionalExpression→true)', async () => {
+    // maxDiscountAmount=50000 > discount thô 10000 → điều kiện cap = false → discount giữ 10000.
+    // Nếu Conditional→true: luôn cap về 50000 → discount=50000 (SAI).
+    const { run, getCaptured } = setupDiscount(50000);
+    await run();
+    expect(getCaptured().discount).toBe(10000);
+  });
+
+  it('discount > maxDiscountAmount → CAP về maxDiscountAmount (5000)', async () => {
+    const { run, getCaptured } = setupDiscount(5000);
+    await run();
+    expect(getCaptured().discount).toBe(5000);
+  });
+});

@@ -189,6 +189,105 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       expect(data.items[0].Product.thumbnail).toBe('thumb.jpg');
     });
 
+    test('không productImages VÀ không thumbnail → thumbnail = null (else block L64)', async () => {
+      const repo = makeRepo();
+      repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+      repo.findCartItemsWithDetails.mockResolvedValue([
+        cartItem({
+          id: 1,
+          quantity: 1,
+          productId: 1,
+          Product: {
+            id: 1,
+            nameVi: 'SP',
+            basePrice: 100,
+            // KHÔNG có field thumbnail → product.thumbnail || null = null
+            variants: [{ stockQuantity: 3, price: 100 }],
+            defaultVariant: { stockQuantity: 3, price: 100 },
+            productImages: [],
+          },
+        }),
+      ]);
+      const service = makeService(repo);
+
+      const { data } = await service.getCart({ user: { id: 1 }, cookieSessionId: null });
+
+      // mutant else→{} sẽ để thumbnail = undefined (toBeNull fail cho undefined)
+      expect(data.items[0].Product.thumbnail).toBeNull();
+    });
+
+    test('có variantId → chọn ảnh variant KHỚP (không phải ảnh đầu) (L54 find condition)', async () => {
+      const repo = makeRepo();
+      repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+      repo.findCartItemsWithDetails.mockResolvedValue([
+        cartItem({
+          id: 1,
+          quantity: 1,
+          productId: 1,
+          variantId: 5,
+          Product: {
+            id: 1,
+            nameVi: 'SP',
+            basePrice: 100,
+            variants: [{ stockQuantity: 3, price: 100 }],
+            defaultVariant: { stockQuantity: 3, price: 100 },
+            productImages: [
+              { variant_id: 111, variantId: 111, imageUrl: 'nomatch.jpg', isThumbnail: false },
+              { variant_id: 5, variantId: 5, imageUrl: 'match.jpg', isThumbnail: false },
+            ],
+          },
+        }),
+      ]);
+      const service = makeService(repo);
+
+      const { data } = await service.getCart({ user: { id: 1 }, cookieSessionId: null });
+
+      // mutant find condition→true sẽ trả ảnh đầu nomatch.jpg
+      expect(data.items[0].Product.thumbnail).toBe('match.jpg');
+    });
+
+    test('ảnh thumbnail nhận bằng is_thumbnail (snake_case) khi nằm KHÔNG đầu mảng (L60)', async () => {
+      const repo = makeRepo();
+      repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+      repo.findCartItemsWithDetails.mockResolvedValue([
+        cartItem({
+          id: 1,
+          quantity: 1,
+          productId: 1,
+          variantId: null,
+          Product: {
+            id: 1,
+            nameVi: 'SP',
+            basePrice: 100,
+            variants: [{ stockQuantity: 3, price: 100 }],
+            defaultVariant: { stockQuantity: 3, price: 100 },
+            productImages: [
+              {
+                variant_id: null,
+                variantId: null,
+                imageUrl: 'first.jpg',
+                isThumbnail: false,
+                is_thumbnail: false,
+              },
+              {
+                variant_id: null,
+                variantId: null,
+                imageUrl: 'snake-thumb.jpg',
+                isThumbnail: false,
+                is_thumbnail: true,
+              },
+            ],
+          },
+        }),
+      ]);
+      const service = makeService(repo);
+
+      const { data } = await service.getCart({ user: { id: 1 }, cookieSessionId: null });
+
+      // mutant is_thumbnail===true → false/===false sẽ rớt về first.jpg
+      expect(data.items[0].Product.thumbnail).toBe('snake-thumb.jpg');
+    });
+
     test('price = MIN giá variant khi không có defaultVariant.price (L71-78)', async () => {
       const repo = makeRepo();
       repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });

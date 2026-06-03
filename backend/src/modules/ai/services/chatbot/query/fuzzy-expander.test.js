@@ -419,3 +419,18 @@ describe('expandTokenWithSplit — firstChange score/method fallback (lines 172-
     expect(typeof result.expanded).toBe('string');
   });
 });
+
+// ── expandLetterToken — prefix nhiều candidate + số model KHÔNG disambiguate → giữ nguyên (line 93 false) ─
+describe('fuzzyExpandQuery — prefix mơ hồ (nhiều candidate), số kế tiếp không lọc được → KHÔNG expand', () => {
+  test('"ip17" với catalog có cả iPhone lẫn iPad → prefix "ip" 2 candidate, "17" không khớp tên nào → giữ nguyên', () => {
+    // buildPrefixIndex(['iPhone 15','iPad Air']) → "ip" → {iPhone, iPad} (2 candidate).
+    // expandLetterToken("ip", nextNumSeg="17"): candidates.length=2 (bỏ qua nhánh exact 1-candidate),
+    //   withNum = ['iphone','ipad'].filter(c => c.includes('17')) = [] → withNum.length !== 1 (line 93 false)
+    //   → KHÔNG disambiguate → trả {method:'keep', score:0} → "ip" giữ nguyên.
+    // OUTCOME nghiệp vụ: query mơ hồ KHÔNG bị expand bừa thành 1 trong 2 SP (chống false expansion).
+    const names = ['iPhone 15', 'iPad Air'];
+    const result = fuzzyExpandQuery('ip17', names);
+    expect(result.changed).toBe(false);
+    expect(result.expanded).toBe('ip17');
+  });
+});

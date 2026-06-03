@@ -1,12 +1,13 @@
 {
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "_comment": "Mutation testing cho FILE CRITICAL (tiền/kho/trạng-thái) với break=70 — survivor vượt ngưỡng FAIL pipeline (wire stop-condition #3 của verify-workflow, khác stryker.conf.json để break=null chỉ báo cáo). Chạy ĐỊNH KỲ: npm run test:mutation:critical. KHÔNG pre-commit (chậm).",
+  "_coverageAnalysisNote": "coverageAnalysis=off (KHÔNG perTest): test files dùng jest.mock(path, factory) inline; perTest instrument chèn stryCov_ vào body factory → babel-plugin-jest-hoist từ chối → dry-run sập. off bỏ instrument đó. enableFindRelatedTests vẫn giới hạn test theo file mutate nên không quá chậm. Khi refactor jest.mock→manual __mocks__ xong cho 1 module thì có thể bật lại perTest cho nhanh hơn (xem plan majestic-baking-yao.md).",
   "testRunner": "jest",
   "jest": {
     "configFile": "jest.stryker.config.js",
     "enableFindRelatedTests": true
   },
-  "coverageAnalysis": "perTest",
+  "coverageAnalysis": "off",
   "mutate": [
     "src/modules/orders/services/**/*.js",
     "src/modules/payment/services/**/*.js",

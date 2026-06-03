@@ -308,7 +308,13 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - **Phase 6 (H/INV-PAY-4):** `createRefund` đơn pending/processing → delegate `updateOrderStatus({status:'cancelled', paymentStatus:'refunded'})` (hoàn kho + cancel); shipped/delivered → chỉ refunded. payment nhận `ordersService` qua DI. +2 integration (processing→hoàn / delivered→không).
 - **Verify:** BE unit **4079 pass + coverage branches 99.74%** (orders/admin/payment-service 100%); **integration 207 pass**; lint:strict sạch; architecture hook qua; **review độc lập (code-reviewer, no edit-intent): 0 bug chặn merge, mọi invariant thỏa**. Dead vars dọn (sequelize/ProductVariant tôi tạo + Sequelize/Order/Review pre-existing, user duyệt).
 - **Mutation test-strengthening (orders+payment core):** 79.20% → **93.48%** (payment-service 97.01%, orders-service ~90%); **money/status-logic survivor = 0** (payment gating chặn discount/cart/email khi đơn cancelled/lệch tiền/idempotent; cap discount L259 — đều kill bằng test assert OUTCOME); 7 equivalent disabled có lý do (tax=0, float boundary). +~315 test. Còn 63 survivor = plumbing/display/guard-artifact (chấp nhận, không brittle-chase).
-- **⚠️ Blocker mutation full-critical (DEFER — task test-infra riêng):** cart/inventory/discount KHÔNG đo được mutation — test files dùng `jest.mock(module, factory)`, Stryker instrument (`stryMutAct`) phá `babel-plugin-jest-hoist` → BABEL_TRANSFORM_ERROR. orders/payment thoát vì dùng manual DI mock. Gate `test:mutation:critical` của project khả năng cũng dính khi chạy full 5 module. Fix = refactor `jest.mock`→manual-mock HOẶC chỉnh Stryker config (chưa làm, user duyệt defer).
+- **✅ Blocker mutation full-critical ĐÃ GIẢI QUYẾT (2026-06-03):** nguyên nhân = `jest.mock(path, factory)` inline; perTest instrument chèn `stryCov_` vào body factory → `babel-plugin-jest-hoist` từ chối. **Fix = `coverageAnalysis: "off"`** trong `stryker.critical.conf.json` (verify chạy full 5 module OK, dry-run 1326 test pass). `enableFindRelatedTests` giữ scope theo file nên không quá chậm (~22 phút). Refactor `jest.mock`→manual `__mocks__` (đã tạo 6 mock: logger/email/vector-store/product-helpers/rate-limiter/authenticate) để bật lại perTest = pha sau (plan `majestic-baking-yao.md`).
+- **📊 BASELINE MUTATION 5 module critical (2026-06-03, coverageAnalysis off, 1921 mutant):** **All files 84.11%** (1610 killed / 305 survived / 4 timeout). Per-file: `discount-code-service` **100%** (mẫu — đã strengthen) · `payment-service` 97.01% (11 sv) · `orders-service` 91.30% (52 sv) · `cart-service` **79.33%** (93 sv) · `inventory-service` 73.61% (19 sv) · `vnpay-service` 58.06% (39 sv) · `momo-service` 47.62% (33 sv). (dto/validator/module/routes của discount = 0% do mutate scope gồm cả file không có service-test — noise.)
+- **🎯 SURVIVOR CRITICAL (test-mù logic tiền/kho/status — ưu tiên strengthen Phase 3):**
+  - `cart-service:111/114/272/275` `stockQuantity < quantity` → `<= quantity` SỐNG → **off-by-one biên tồn kho** (tồn = đúng qty đặt không assert). Họ F1/F2.
+  - `cart-service:41` `sum + (stockQuantity||0)` → `sum - ...` SỐNG → tổng tồn kho variant **không assert giá trị**.
+  - `inventory-service:14` `qty <= 0` → `qty < 0` SỐNG → restock qty=0 không bị test chặn.
+  - momo/vnpay survivor đa số = HMAC/URL/string (ít critical). cart/inventory/orders = nơi đáng strengthen nhất.
 - **✅ 3 sơ đồ FAIL đã VẼ LẠI + KÝ GATE-D 2026-06-03 (T0+T1+T2 done, status `signed`; verify độc lập 3 diagram-verifier = MATCH 0 blocker):**
   - `state-01-order`: +cung `shipped→cancelled` (KHÔNG hoàn kho, staff-only, INV-STK-6) + cung CHẶN `delivered→cancelled` (đỏ nét đứt, từ chối 400, F13) + note `cancelled→*` 422 terminal (F14) & INV-PAY-3. Verify vs `orders-service.updateOrderStatus` L578 (13 transition đối chiếu file:line).
   - `uc-02-overview-customer` (15 UC): +UC "Xem & xóa lịch sử tìm kiếm" (`search-history/routes.js:52-54`) + "Xem SP đã xem gần đây" (`catalog/routes.js:313` recently-viewed, authenticate); note feedback là endpoint CÔNG KHAI (`content/routes.js:20`).
@@ -514,6 +520,49 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - [ ] Thêm mục **thiết kế role/RBAC 4 actor** (guest/customer/staff/admin) — phản ánh code mới.
 - [ ] Cập nhật mọi số liệu khớp code (25 model, 17 module, 13 feature, 62 migration, các ngưỡng RAG 0.45/0.05/0.15, MAX_SESSIONS=500/TTL30/MAX_HISTORY_TURNS=10, bcrypt 12...).
 - [ ] **Kiểm các `.tex` NGOÀI c1-c4** trong `docs/chapters/` (`abtract_en/vi`, `glossary`, `introduction`, `method`, `evaluation`, `conclusion`, `acknowledgement`, `assurance`) — cập nhật nếu đụng **số liệu** (abstract) / **thuật ngữ** (glossary) / RBAC. ⚠️ Xác nhận `docs/thesis.tex` `\input` để biết file nào ACTIVE trước (grep `\input` rỗng → kiểm cú pháp include thật).
+
+### G. Pha — CHẤT LƯỢNG TEST / MUTATION (NEW 2026-06-03 — chống "test pass nhưng có bug")
+
+**Bối cảnh:** coverage 99.7% nhưng KHÔNG đảm bảo đúng (F1/F2 lọt). Mục tiêu: dùng **mutation** (đo độ mạnh test) + **assert OUTCOME** + **integration MySQL thật** + **property-based/invariant** (oracle độc lập) + review người. Plan refactor mutation chi tiết: [`majestic-baking-yao.md`](../../.claude/plans/majestic-baking-yao.md). Stack 6 lớp đã có ~80% (27 invariant GATE-A, 6 integration edge-cases, mutation, fast-check ^4.8.0); gap chính = **property-based chỉ phủ discount-code**.
+
+**Trạng thái khi ghi:** Phase 0 DONE (baseline 84.11% — xem §D.2). 6 manual mock đã tạo. fuzzy:93 test đã thêm. **CHƯA commit** (stryker config + 6 mock + fuzzy test).
+
+#### G.1 — Commit checkpoint in-flight (làm NGAY, chờ user duyệt commit)
+- [ ] Commit: `stryker.critical.conf.json` (coverageAnalysis off + note) + 6 manual mock (`src/{utils,services,services/vector-store,middlewares}/__mocks__/*.js`) + `fuzzy-expander.test.js` (+test fuzzy:93). Message `test(mutation): unblock Stryker (coverageAnalysis off) + manual mocks + fuzzy:93`.
+
+#### G.2 — Refactor jest.mock → manual __mocks__ (bật lại perTest, nhanh hơn 20-100×) — majestic plan Phase 1-2
+- [ ] Convert factory UNIFORM → bare `jest.mock(path)` trong 11 file critical (dùng 6 mock đã tạo). Verify TỪNG file: `npm test` giữ 167 suite/4079 xanh + coverage ≥ threshold. File rep: `payment/services/{momo-service,vnpay-service.unit}.test.js`, `orders/services/orders-service.edge-cases-{3,4}.test.js`, `cart/services/cart-service.edge-cases-{2,3}.test.js`, `inventory/{repositories,services}/*.test.js`, `discount-code/{repositories/*,routes}.test.js`, `payment/controllers/payment-controller.unit.test.js`.
+  - vnpay: `jest.mock('axios', ()=>({post:jest.fn()}))` → bare `jest.mock('axios')` (auto-mock).
+  - momo: logger factory → bare; phần re-mock-in-body (`jest.resetModules`+`jest.mock` trong `it()`) là runtime → kiểm có cần đụng không.
+- [ ] Factory CUSTOM rủi ro cao (`@config/sequelize` transaction callback, `@models` mockTx+`require('sequelize')`): đánh giá từng cái — manual mock được thì làm (sequelize: `transaction: jest.fn(cb=>cb(mockTx))`), KHÔNG an toàn thì giữ inline + để module đó chạy `coverageAnalysis off`. momo re-mock-in-body: KHÔNG refactor (backlog).
+- [ ] Module nào test đã sạch factory → thử `coverageAnalysis: perTest` riêng scope đó, verify dry-run qua + nhanh hơn.
+
+#### G.3 — Mạnh hóa SURVIVOR critical (lõi chống F1/F2 — ưu tiên CAO NHẤT, dùng OUTCOME + property-based)
+- [ ] **cart-service** (79.33%, 93 sv): viết test OUTCOME assert biên tồn kho — `stockQuantity === quantity` phải CHO đặt, `=== quantity+1` phải TỪ CHỐI (giết `<`→`<=` ở L111/114/272/275); assert giá trị tổng tồn kho variant (giết `+`→`-` L41). Re-run mutation cart → mục tiêu ≥90%.
+- [ ] **inventory-service** (73.61%, 19 sv): assert restock `qty=0` bị từ chối (giết `<=0`→`<0` L14); review survivor còn lại (pagination L99 = display, thấp).
+- [ ] **vnpay-service** (58%, 39 sv) + **momo-service** (47.62%, 33 sv): phần lớn survivor = HMAC/URL/string. Lọc survivor THẬT critical (verify signature, amount, resultCode) → strengthen; còn lại (format URL) chấp nhận hoặc disable có lý do.
+- [ ] **orders-service** (91.30%, 52 sv) + **payment-service** (97%, 11 sv): review survivor còn lại, giết cái về money/stock/status, bỏ qua plumbing/display.
+- [ ] ⚠️ Mọi test mới PHẢI assert OUTCOME nghiệp vụ (số/kho/status), KHÔNG tautological. Re-run mutation sau mỗi module để xác nhận giết thật.
+
+#### G.4 — Hoàn tất coverage 4 file <100% branch ("làm tất cả")
+- [x] `fuzzy-expander:93` — OUTCOME test thêm rồi (branch 92.18→93.75%).
+- [ ] `admin-product-service:483` (`categoryId null` khi categoryIds rỗng): OUTCOME test thật — update SP với `categoryIds:[]` → assert `categoryId === null`. (Test admin ở `admin/controllers/admin-controller*.test.js`.)
+- [ ] `chatbot-service:475` (ternary nhãn log pronoun/follow-up): test enrich 2 nhánh (query có đại từ + follow-up ngắn) — giá trị thấp nhưng exercise enrich thật.
+- [ ] Nhánh unreachable/defensive → `/* istanbul ignore next */` + comment lý do: `fuzzy:80/126/172-173` (default-param/`??` không reach qua public API), `keyword:310` (categoryPrefixTerms đảm bảo prefixCount>0), `chatbot:540` (catch defensive). `keyword:218` (equivalent) — cover được nhưng mutant equivalent, tùy.
+- [ ] Verify `npm test` → 100% branch (hoặc ~99.9% nếu chừa equivalent) + 4079 test xanh. Cân nhắc KHÔNG bump threshold lên 100 (giữ 99.7% tránh brittle).
+
+#### G.5 — Mở rộng stack 6 lớp (lấp gap — làm SAU G.2/G.3)
+- [ ] **Property-based (fast-check)** mở rộng từ discount-code → orders/cart/inventory/payment, dùng **27 invariant GATE-A** làm oracle: `stock_sau = stock_trước − qty`, `cancel→hoàn kho`, `cart merge: total=Σ(item)`, `total = subtotal + ship − discount`. fast-check sinh qty/giá/seq ngẫu nhiên phá invariant. Mẫu: `discount-code-service.property.test.js`.
+- [ ] **Thêm `inventory-edge-cases.integration.test.js`** (lớp 3 còn thiếu — 6 module khác đã có) gọi service thật + MySQL assert outcome restock/log.
+- [ ] (Tùy) **Testcontainers MySQL** (`@testcontainers/mysql`) → integration ephemeral reproducible trong CI (hiện phụ thuộc MySQL thủ công).
+- [ ] Document **công thức 6 bước** (invariant→unit OUTCOME→integration→property→mutation→review) vào `QUALITY_CHECKS.md` làm chuẩn dự án.
+
+#### G.6 — Doc/memory test-quality
+- [ ] Cập nhật memory `project-mutation-stryker-jestmock-blocker` (blocker đã giải bằng coverageAnalysis off + manual mocks).
+- [ ] `QUALITY_CHECKS.md`: thêm quy trình chạy mutation (`coverageAnalysis off`, scope critical, đọc survivor), bảng baseline 84.11%.
+- [ ] `TESTING_STRATEGY.md`: thêm tầng mutation + property-based + bảng mutation score per-module.
+
+**Thứ tự đề xuất:** G.1 (commit) → G.3 (survivor critical — giá trị cao nhất, chống F1/F2) → G.4 (coverage, nhanh) → G.2 (refactor perTest — tối ưu tốc độ) → G.5 (property-based — lấp gap oracle) → G.6 (doc). KHÔNG mở >1 thread song song.
 
 ## 4. TOOLCHAIN & LỆNH
 ```

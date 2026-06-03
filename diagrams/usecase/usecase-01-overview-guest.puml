@@ -1,5 +1,9 @@
 @startuml usecase-01-overview-guest
 ' Sơ đồ use case — Khách vãng lai (Guest) — chuẩn ký pháp UML
+' Ground-truth (endpoint KHÔNG yêu cầu authenticate):
+'   UC1 duyệt SP/danh mục/brand: catalog/routes.js:312 (products), :94 (categories), :172 (brands) — public
+'   UC10 xem đánh giá SP: reviews/routes.js:85 GET /api/reviews/product/:productId — public ("// Public")
+'   Tra cứu đơn công khai (/track) model ở uc-12 (guest -- UC_track), KHÔNG lặp ở đây.
 left to right direction
 skinparam dpi 300
 skinparam backgroundColor #FFFFFF
@@ -13,9 +17,10 @@ skinparam actorStyle awesome
 actor "Khách vãng lai\n(Guest)" as guest
 
 rectangle "Hệ thống TechStore" {
-  usecase "Xem danh sách sản phẩm" as UC1
+  usecase "Duyệt sản phẩm, danh mục\n& thương hiệu" as UC1
   usecase "Tìm kiếm và lọc sản phẩm" as UC2
   usecase "Xem chi tiết sản phẩm" as UC3
+  usecase "Xem đánh giá sản phẩm" as UC10
   usecase "Thêm vào giỏ hàng (guest)" as UC4
   usecase "Chat với AI Chatbot" as UC5
   usecase "Gửi phản hồi / liên hệ" as UC6
@@ -27,6 +32,7 @@ rectangle "Hệ thống TechStore" {
 guest -- UC1
 guest -- UC2
 guest -- UC3
+guest -- UC10
 guest -- UC4
 guest -- UC5
 guest -- UC6

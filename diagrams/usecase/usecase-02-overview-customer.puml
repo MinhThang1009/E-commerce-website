@@ -38,6 +38,7 @@ rectangle "Hệ thống TechStore" {
     usecase "Chat AI & tìm kiếm thông minh" as UC_ai
     usecase "Xem & xóa lịch sử tìm kiếm" as UC_searchhist
     usecase "Gửi phản hồi / liên hệ" as UC_feedback
+    usecase "Tải ảnh lên\n(avatar / ảnh đánh giá)" as UC_upload
   }
 
   UC_discount .> UC_order : <<extend>>
@@ -57,6 +58,7 @@ customer -- UC_review
 customer -- UC_ai
 customer -- UC_searchhist
 customer -- UC_feedback
+customer -- UC_upload
 
 note left of customer
   • Customer kế thừa toàn bộ năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập;
@@ -65,5 +67,9 @@ note left of customer
   • Đánh giá sản phẩm: yêu cầu đã mua hàng (hasUserPurchased).
   • Lịch sử tìm kiếm: lưu khi tìm (tự động) + xem/xóa từng mục/xóa tất cả
     (GET/DELETE /api/search-histories — cần đăng nhập).
+  • Tải ảnh: avatar (hồ sơ) + ảnh đính kèm đánh giá
+    (POST /api/uploads/:type/single|multiple — cần đăng nhập).
+  • Ước tính phí ship + thêm SP vào giỏ qua chatbot: chi tiết ở use case
+    per-module (uc-12 orders, uc-17 AI).
 end note
 @enduml

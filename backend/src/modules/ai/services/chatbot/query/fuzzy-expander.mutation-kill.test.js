@@ -85,6 +85,38 @@ describe('fuzzyExpandQuery output', () => {
     });
   });
 
+  it('giữ nguyên nhiều khoảng trắng giữa token (split /(\\s+)/ gom nhóm)', () => {
+    expect(fuzzyExpandQuery('ip  mini', ['iPhone', 'mini case'])).toEqual({
+      expanded: 'IPhone  mini',
+      changes: [{ original: 'ip', expanded: 'IPhone', score: '100%', method: 'exact_prefix' }],
+      changed: true,
+    });
+  });
+
+  it('dedup số model + segment chữ theo sau: "re8x" → "Reno8 x"', () => {
+    expect(fuzzyExpandQuery('re8x', ['Reno8 Pro'])).toEqual({
+      expanded: 'Reno8 x',
+      changes: [{ original: 're8x', expanded: 'Reno8 x', score: '100%', method: 'exact_prefix' }],
+      changed: true,
+    });
+  });
+
+  it('nhiều token: chỉ expand token khớp, giữ token + whitespace còn lại', () => {
+    expect(fuzzyExpandQuery('ss va ip', ['Samsung', 'iPhone'])).toEqual({
+      expanded: 'ss va IPhone',
+      changes: [{ original: 'ip', expanded: 'IPhone', score: '100%', method: 'exact_prefix' }],
+      changed: true,
+    });
+  });
+
+  it('edit_distance nội suy khác (samsn → Samsung, 83%)', () => {
+    expect(fuzzyExpandQuery('samsn', ['Samsung'])).toEqual({
+      expanded: 'Samsung',
+      changes: [{ original: 'samsn', expanded: 'Samsung', score: '83%', method: 'edit_distance' }],
+      changed: true,
+    });
+  });
+
   it('query rỗng → giữ nguyên', () => {
     expect(fuzzyExpandQuery('', ['iPhone'])).toEqual({ expanded: '', changes: [], changed: false });
   });

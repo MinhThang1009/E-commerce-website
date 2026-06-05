@@ -147,7 +147,7 @@ backend/
 │   ├── middlewares/
 │   │   ├── authenticate.js  # JWT verify + optional variant
 │   │   ├── admin-auth.js    # JWT verify dành riêng cho admin panel (adminAuthenticate)
-│   │   ├── authorize.js     # Role-based access (admin/customer)
+│   │   ├── authorize.js     # Role-based access (RBAC 4-actor: guest/customer/staff/admin)
 │   │   ├── rate-limiter.js  # apiLimiter, authLimiter, otpLimiter, chatbotLimiter, chatLimiter
 │   │   ├── detect-locale.js # Accept-Language → req.locale
 │   │   ├── validate-request.js  # Zod validation middleware
@@ -170,7 +170,7 @@ backend/
 │   │   └── en.json          # English
 │   ├── routes/
 │   │   └── index.js         # Health check endpoint (/api/health)
-│   └── migrations/          # 61 Sequelize migrations (src/migrations — xem .sequelizerc)
+│   └── migrations/          # 62 Sequelize migrations (src/migrations — xem .sequelizerc)
 ├── data/
 │   ├── vector-db.json       # AI vector store snapshot
 │   └── *.sql                # SQL dumps + seed files

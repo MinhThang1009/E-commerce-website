@@ -34,7 +34,7 @@ File: `.github/workflows/ci.yml`
 
 ## 1.2 Jobs
 
-3 jobs: `backend` và `frontend` chạy song song, `summary` chờ cả 2.
+4 jobs: `backend` và `frontend` chạy song song, `summary` chờ cả 2, `patch-quality` chỉ chạy trên PR.
 
 **Node version:** 22 (cả backend và frontend)
 
@@ -87,6 +87,19 @@ Steps theo thứ tự:
 ### Job: summary
 
 `needs: [backend, frontend]`, `if: always()`. Fail nếu backend hoặc frontend fail.
+
+### Job: patch-quality
+
+`if: github.event_name == 'pull_request'`, `timeout-minutes: 15`. Chỉ chạy trên PR (cần `fetch-depth: 0` để diff vs base ref). Các bước:
+
+1. **check:routes** (informational) — endpoint thừa/orphan
+2. **check-doc-freshness.mjs** (informational) — `.md` stale khi code đổi mà doc không
+3. **check-docs** (`npm run check-docs`, **informational** — `continue-on-error`) — đối chiếu giá trị hằng số trong code (timeout/max-tokens/min-score…) vs giá trị viết trong `RAG_CHATBOT_PIPELINE.md`
+4. **check-i18n.js** (**GATE** — fail PR) — key parity `frontend/src/locales/vi.json` ↔ `en.json` (thiếu key 1 bên → raw key hiển thị)
+5. **Patch-coverage gate BE + FE** — code mới phải có test phủ (≥80% lines)
+6. **knip** FE dead-code (informational)
+
+> Lưu ý: `verify-doc-nodes.js` / `verify-doc-evidence.py` là script kiểm sơ đồ của workflow `verify-then-draw` (§D) — KHÔNG wire vào CI chung (cần arg diagram cụ thể).
 
 ## 1.3 Coverage thresholds
 

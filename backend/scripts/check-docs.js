@@ -37,7 +37,8 @@ const ACTUALS = {
   SESSION_TTL_MIN:       extract(/const SESSION_TTL_MS\s*=\s*(\d+)\s*\*\s*60\s*\*\s*1000/),
   LLM_TEMPERATURE:       +csSource.match(/const LLM_TEMPERATURE\s*=\s*([\d.]+)/)?.[1],
   LLM_MAX_TOKENS:        extract(/const LLM_MAX_TOKENS\s*=\s*(\d+)/),
-  LLM_REWRITE_TIMEOUT_S: extract(/const LLM_REWRITE_TIMEOUT_MS\s*=\s*(\d+)/) / 1000,
+  // Env-configurable: `const X = Number(process.env.X) || 8000` → bắt fallback sau `||` (hoặc literal trực tiếp)
+  LLM_REWRITE_TIMEOUT_S: extract(/const LLM_REWRITE_TIMEOUT_MS\s*=(?:[^;]*?\|\|)?\s*(\d+)/) / 1000,
   HYBRID_SEARCH_DEFAULT: 5,   // hybridSearch default limit — hardcoded trong vector-store.js
   CHATBOT_SEARCH_TOPK:   10,  // chatbot gọi hybridSearch với limit=10
   FALLBACK_TOPK:         3,   // fallback hybridSearch khi 0 kết quả

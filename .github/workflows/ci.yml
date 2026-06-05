@@ -188,6 +188,14 @@ jobs:
           CHECK_BASE: origin/${{ github.event.pull_request.base.ref }}
         run: node scripts/check-doc-freshness.mjs
 
+      - name: Doc-vs-code values — check-docs (informational)
+        working-directory: backend
+        run: npm run check-docs
+        continue-on-error: true
+
+      - name: i18n key parity vi/en (gate)
+        run: node scripts/check-i18n.js
+
       - name: Patch-coverage gate BE (code mới phải có test phủ)
         working-directory: backend
         env:

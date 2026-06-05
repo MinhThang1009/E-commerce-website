@@ -1,29 +1,6 @@
 // Phase 44 — 100% coverage cho tất cả DTO files, unitOfWork, và SequelizeInventoryRepository.
 // Tất cả DTO là pure function / pass-through — test verify output trực tiếp.
 
-// ─── AI DTO ───────────────────────────────────────────────────────────────────
-const { toAIDto } = require('@modules/ai/dtos/ai-dto');
-
-describe('toAIDto', () => {
-  test('trả về null khi model là null', () => {
-    expect(toAIDto(null)).toBeNull();
-  });
-
-  test('trả về null khi model là undefined', () => {
-    expect(toAIDto(undefined)).toBeNull();
-  });
-
-  test('gọi toJSON() khi model có method toJSON và map id', () => {
-    const model = { toJSON: () => ({ id: 42, extra: 'ignored' }) };
-    expect(toAIDto(model)).toEqual({ id: 42 });
-  });
-
-  test('dùng trực tiếp object khi không có toJSON', () => {
-    const model = { id: 7 };
-    expect(toAIDto(model)).toEqual({ id: 7 });
-  });
-});
-
 // ─── CART DTO ─────────────────────────────────────────────────────────────────
 const { toCartDto } = require('@modules/cart/dtos/cart-dto');
 

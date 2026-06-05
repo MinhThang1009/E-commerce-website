@@ -1114,82 +1114,6 @@ const toggleProductStatus = catchAsync(async (req, res) => {
   });
 });
 
-const restockProduct = catchAsync(async (req, res) => {
-  const { productId } = req.params;
-  const { variantId, quantity, note } = req.body;
-  const qty = parseInt(quantity, 10);
-
-  if (!qty || qty <= 0) {
-    throw new AppError('Số lượng nhập phải là số nguyên dương', 400);
-  }
-
-  const product = await adminRepository.findProductById(productId);
-  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
-
-  let prevStock, newStock;
-
-  if (variantId) {
-    const variant = await adminRepository.findProductVariantById(variantId, productId);
-    if (!variant) throw new AppError('Không tìm thấy biến thể', 404);
-
-    prevStock = variant.stockQuantity;
-    newStock = prevStock + qty;
-    await variant.update({ stockQuantity: newStock, isAvailable: true });
-
-    const total = (await adminRepository.sumProductVariantStock(productId)) || 0;
-    await product.update({ stockQuantity: total || 0 });
-  } else {
-    prevStock = product.stockQuantity;
-    newStock = prevStock + qty;
-    await product.update({ stockQuantity: newStock });
-  }
-
-  const log = await adminRepository.createInventoryLog({
-    productId: parseInt(productId, 10),
-    variantId: variantId ? parseInt(variantId, 10) : null,
-    changeType: 'restock',
-    changeAmount: qty,
-    previousStock: prevStock,
-    newStock,
-    note: note || null,
-    createdBy: req.user.id,
-  });
-
-  try {
-    const { enrichProductData } = require('@utils/product-helpers');
-    await vectorStoreService.loadPromise;
-    const productForIndex = await adminRepository.findProductById(productId, {
-      include: [
-        { model: Category, as: 'categories', through: { attributes: [] } },
-        { model: ProductVariant, as: 'variants', attributes: ['stockQuantity'] },
-        {
-          model: ProductImage,
-          as: 'productImages',
-          attributes: ['imageUrl', 'isThumbnail'],
-          required: false,
-        },
-      ],
-    });
-    if (productForIndex && productForIndex.status === 'active') {
-      await vectorStoreService.upsertProduct(enrichProductData(productForIndex.toJSON()));
-      await vectorStoreService.save();
-    }
-  } catch (syncErr) {
-    logger.error('Lỗi đồng bộ vector store sau khi nhập hàng:', syncErr.message);
-  }
-
-  res.status(200).json({
-    data: {
-      productId: parseInt(productId, 10),
-      variantId: variantId || null,
-      previousStock: prevStock,
-      newStock,
-      quantity: qty,
-      log,
-    },
-  });
-});
-
 module.exports = {
   getProductById,
   createProduct,
@@ -1199,5 +1123,4 @@ module.exports = {
   updateProductStock,
   cloneProduct,
   toggleProductStatus,
-  restockProduct,
 };

@@ -1,7 +1,7 @@
 /**
  * Mutation-kill batch 2 cho admin-product-service.js — phần CRUD sâu chưa cover
  * ở batch 1: createProduct (data detail), updateProduct (variants/attributes/specs
- * CRUD), getAllProducts (include/sort literal), cloneProduct (sku suffix), restock.
+ * CRUD), getAllProducts (include/sort literal), cloneProduct (sku suffix).
  * Tách file riêng để dễ quản lý; mutation --mutate cùng source gom cả 2 file.
  */
 
@@ -562,40 +562,5 @@ describe('cloneProduct deep', () => {
     expect(vd.sku).toMatch(/^SKU-\d+-\d+-RED$/);
     expect(vd.productId).toBe(20);
     expect(vd.id).toBeUndefined();
-  });
-});
-
-// ─── restockProduct deep ────────────────────────────────────────────────────
-
-describe('restockProduct deep', () => {
-  test('product active → sync vector store', async () => {
-    const p = { stockQuantity: 1, status: 'draft', update: jest.fn() };
-    repo.findProductById.mockResolvedValueOnce(p);
-    repo.createInventoryLog.mockResolvedValueOnce({ id: 1 });
-    repo.findProductById.mockResolvedValueOnce({ status: 'active', toJSON: () => ({ id: 5 }) });
-    await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '3' },
-      user: { id: 1 },
-    });
-    expect(vectorStore.upsertProduct).toHaveBeenCalled();
-  });
-
-  test('variantId → inventory log có variantId parseInt', async () => {
-    const p = { stockQuantity: 100, status: 'draft', update: jest.fn() };
-    const variant = { stockQuantity: 2, update: jest.fn() };
-    repo.findProductById.mockResolvedValueOnce(p);
-    repo.findProductVariantById.mockResolvedValueOnce(variant);
-    repo.sumProductVariantStock.mockResolvedValueOnce(5);
-    repo.createInventoryLog.mockResolvedValueOnce({ id: 1 });
-    repo.findProductById.mockResolvedValueOnce({ status: 'draft', toJSON: () => ({ id: 5 }) });
-    await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '3', variantId: '9' },
-      user: { id: 1 },
-    });
-    expect(repo.createInventoryLog).toHaveBeenCalledWith(
-      expect.objectContaining({ productId: 5, variantId: 9, changeAmount: 3 }),
-    );
   });
 });

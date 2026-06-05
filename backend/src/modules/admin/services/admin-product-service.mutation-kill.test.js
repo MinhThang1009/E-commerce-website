@@ -475,69 +475,6 @@ describe('toggleProductStatus', () => {
   });
 });
 
-// ─── restockProduct ─────────────────────────────────────────────────────────
-
-describe('restockProduct', () => {
-  test('quantity <= 0 → 400', async () => {
-    const { err } = await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '0' },
-      user: { id: 1 },
-    });
-    expect(err.statusCode).toBe(400);
-    expect(err.message).toBe('Số lượng nhập phải là số nguyên dương');
-  });
-
-  test('không tìm thấy product → 404', async () => {
-    repo.findProductById.mockResolvedValueOnce(null);
-    const { err } = await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '5' },
-      user: { id: 1 },
-    });
-    expect(err.statusCode).toBe(404);
-  });
-
-  test('không variantId → cộng dồn product stock + inventory log', async () => {
-    const prod = { stockQuantity: 10, status: 'draft', update: jest.fn() };
-    repo.findProductById.mockResolvedValueOnce(prod);
-    repo.createInventoryLog.mockResolvedValueOnce({ id: 99 });
-    const { res } = await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '7', note: 'nhập' },
-      user: { id: 2 },
-    });
-    expect(prod.update).toHaveBeenCalledWith({ stockQuantity: 17 }); // 10 + 7
-    expect(repo.createInventoryLog).toHaveBeenCalledWith({
-      productId: 5,
-      variantId: null,
-      changeType: 'restock',
-      changeAmount: 7,
-      previousStock: 10,
-      newStock: 17,
-      note: 'nhập',
-      createdBy: 2,
-    });
-    expect(res.payload.data).toMatchObject({ previousStock: 10, newStock: 17, quantity: 7 });
-  });
-
-  test('có variantId → cộng variant + tổng lại product', async () => {
-    const prod = { stockQuantity: 100, status: 'draft', update: jest.fn() };
-    const variant = { stockQuantity: 3, update: jest.fn() };
-    repo.findProductById.mockResolvedValueOnce(prod);
-    repo.findProductVariantById.mockResolvedValueOnce(variant);
-    repo.sumProductVariantStock.mockResolvedValueOnce(8);
-    repo.createInventoryLog.mockResolvedValueOnce({ id: 1 });
-    await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '5', variantId: '9' },
-      user: { id: 1 },
-    });
-    expect(variant.update).toHaveBeenCalledWith({ stockQuantity: 8, isAvailable: true });
-    expect(prod.update).toHaveBeenCalledWith({ stockQuantity: 8 });
-  });
-});
-
 // ─── cloneProduct ───────────────────────────────────────────────────────────
 
 describe('cloneProduct', () => {

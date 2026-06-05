@@ -142,7 +142,7 @@ Base path: `/api/inventory`
 | POST   | `/products/:productId/restock` | authenticate + authorize('staff')         | Nhập kho cho product hoặc variant cụ thể (staff)                |
 | GET    | `/logs`                        | authenticate + authorize('admin','staff') | Danh sách inventory logs (admin xem-only + staff; max 100/page) |
 
-> Cũng có `POST /api/admin/products/:productId/restock` trong `admin/routes.js`. Đây là implementation RIÊNG BIỆT trong `admin-product-service.js` (hàm `restockProduct`) — **KHÔNG** gọi `inventoryService.restockProduct`. Logic tương tự (validate qty, find product/variant, sum variant stock, tạo `InventoryLog`) nhưng code khác và không đi qua DI (admin là singleton, `require('@models')` trực tiếp). Sửa logic ở một bên không tự động áp dụng cho bên kia.
+> **Restock dup ĐÃ GỠ (2026-06-05):** trước đây `admin` module có `restockProduct` RIÊNG (`POST /api/admin/products/:productId/restock`, impl độc lập không qua DI) — FE không gọi (FE dùng `/admin/products/:id/stock` = `updateProductStock`). Đã gỡ, **consolidate về inventory** (canonical, qua DI + đã test-strengthen). Giờ restock CHỈ qua `POST /api/inventory/products/:productId/restock`. (Admin vẫn còn `updateProductStock` = SET stock, KHÁC restock = ADD stock.)
 
 ---
 
@@ -165,7 +165,7 @@ Base path: `/api/inventory`
 
 **Direct dependency:**
 
-- `admin` — inventory management UI (nhập kho, xem logs) qua `/api/admin/products/:id/restock` và admin UI
+- `admin` — admin UI nhập kho qua `POST /api/inventory/products/:id/restock` (canonical) + cập nhật tồn qua `PATCH /api/admin/products/:id/stock` (updateProductStock); xem logs qua `GET /api/inventory/logs`
 - `catalog` — stock display trong product detail (đọc trực tiếp từ `ProductVariant.stockQuantity`, không qua inventory API)
 
 ---

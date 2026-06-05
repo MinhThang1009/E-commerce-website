@@ -1162,11 +1162,11 @@ describe('PUT /api/admin/orders/:id/status — delegation sang orders-service', 
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Hoàn kho khi hủy đã chuyển sang orders-service. Admin chỉ test: pre-check + delegate + propagate.
-describe('PUT /api/admin/orders/:id/cancel', () => {
+describe('POST /api/admin/orders/:id/cancel', () => {
   it('trả về 404 (pre-check) khi đơn hàng không tồn tại, không delegate', async () => {
     Order.findByPk.mockResolvedValueOnce(null);
 
-    const res = await request.put('/api/admin/orders/9999/cancel');
+    const res = await request.post('/api/admin/orders/9999/cancel');
     expect(res.status).toBe(404);
     expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
   });
@@ -1175,7 +1175,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
     const cancelledOrder = makeOrder({ id: 40, status: 'cancelled', items: [] });
     Order.findByPk.mockResolvedValueOnce(cancelledOrder);
 
-    const res = await request.put('/api/admin/orders/40/cancel');
+    const res = await request.post('/api/admin/orders/40/cancel');
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/hủy trước đó/i);
     expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
@@ -1188,7 +1188,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
       new AppError('Không thể hủy đơn hàng đã giao', 400),
     );
 
-    const res = await request.put('/api/admin/orders/41/cancel');
+    const res = await request.post('/api/admin/orders/41/cancel');
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/không thể hủy/i);
   });
@@ -1197,7 +1197,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
     const activeOrder = makeOrder({ id: 42, status: 'processing', items: [] });
     Order.findByPk.mockResolvedValueOnce(activeOrder);
 
-    const res = await request.put('/api/admin/orders/42/cancel');
+    const res = await request.post('/api/admin/orders/42/cancel');
 
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ orderId: 42, status: 'cancelled' });

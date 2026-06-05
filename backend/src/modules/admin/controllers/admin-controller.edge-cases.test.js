@@ -23,7 +23,6 @@
  *   Line 1802 — updateOrderStatus cancel: item has variantId
  *   Line 1808 — updateOrderStatus cancel: item has no variantId but has Product
  *   Line 1859 — adminCancelOrder: item.Product path
- *   Line 2117 — restockProduct: variant path
  *   Line 2228 — getOrderStatusAnalytics: unknown status → raw status as label
  *   Line 2239 — getTopProductsAnalytics: limit > 20 → capped
  *   Lines 2281-2282 — getTopProductsAnalytics: null Product
@@ -1082,51 +1081,6 @@ describe('PUT /api/admin/orders/:id/status — delegation sang orders-service', 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Line 2117: restockProduct — variant path (variantId present)
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('POST /api/admin/products/:productId/restock — line 2117: variant restock path', () => {
-  it('cập nhật tồn kho variant và tổng tồn kho product qua ProductVariant.sum', async () => {
-    const product = makeProduct({ id: 9600, stockQuantity: 20 });
-    const variant = { id: 7, stockQuantity: 5, update: jest.fn().mockResolvedValue(undefined) };
-
-    Product.findByPk.mockResolvedValueOnce(product);
-    ProductVariant.findOne.mockResolvedValueOnce(variant);
-    ProductVariant.sum.mockResolvedValueOnce(30); // total after restock
-    InventoryLog.create.mockResolvedValueOnce({ id: 1 });
-
-    const res = await request
-      .post('/api/admin/products/9600/restock')
-      .send({ quantity: 25, variantId: 7 });
-
-    expect(res.status).toBe(200);
-    // variant.update called with newStock = 5 + 25 = 30
-    expect(variant.update).toHaveBeenCalledWith({ stockQuantity: 30, isAvailable: true });
-    // product.update called with sum result (line 2117): total || 0 = 30
-    expect(product.update).toHaveBeenCalledWith({ stockQuantity: 30 });
-  });
-
-  it('dùng 0 khi ProductVariant.sum trả về null (line 2117: total || 0)', async () => {
-    const product = makeProduct({ id: 9601, stockQuantity: 10 });
-    const variant = { id: 8, stockQuantity: 0, update: jest.fn().mockResolvedValue(undefined) };
-
-    Product.findByPk.mockResolvedValueOnce(product);
-    ProductVariant.findOne.mockResolvedValueOnce(variant);
-    ProductVariant.sum.mockResolvedValueOnce(null); // null → || 0
-    InventoryLog.create.mockResolvedValueOnce({ id: 2 });
-
-    // quantity must be > 0 to pass validation (quantity=0 throws 400)
-    const res = await request
-      .post('/api/admin/products/9601/restock')
-      .send({ quantity: 1, variantId: 8 });
-
-    expect(res.status).toBe(200);
-    // ProductVariant.sum returns null → null || 0 = 0 (line 2117 right branch)
-    expect(product.update).toHaveBeenCalledWith({ stockQuantity: 0 });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Line 2228: getOrderStatusAnalytics — unknown status → row.status as label
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1596,11 +1550,11 @@ describe('GET /api/admin/orders — line 1732: order.items falsy → skip item t
 
 // Status-fallback + restock fall-through (item không variantId/Product, items null) đã chuyển
 // sang orders-service. Admin chỉ giữ pre-check cancelled + delegate cancel.
-describe('PUT /api/admin/orders/:id/cancel — pre-check + delegation', () => {
+describe('POST /api/admin/orders/:id/cancel — pre-check + delegation', () => {
   it('hủy thành công: pre-check pass → delegate { id, status: "cancelled" }', async () => {
     Order.findByPk.mockResolvedValueOnce({ id: 9500, status: 'processing' });
 
-    const res = await request.put('/api/admin/orders/9500/cancel');
+    const res = await request.post('/api/admin/orders/9500/cancel');
 
     expect(res.status).toBe(200);
     expect(res.body.data).toMatchObject({ orderId: 9500, status: 'cancelled' });
@@ -1613,37 +1567,10 @@ describe('PUT /api/admin/orders/:id/cancel — pre-check + delegation', () => {
   it('trả về 400 (pre-check) khi đơn đã hủy trước đó, không delegate', async () => {
     Order.findByPk.mockResolvedValueOnce({ id: 9501, status: 'cancelled' });
 
-    const res = await request.put('/api/admin/orders/9501/cancel');
+    const res = await request.post('/api/admin/orders/9501/cancel');
 
     expect(res.status).toBe(400);
     expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
-  });
-});
-
-// ─── restockProduct — vectorStore sync error (lines 2138-2142) ────────────────
-
-describe('POST /api/admin/products/:productId/restock — vectorStore sync error', () => {
-  it('trả về 200 và log error khi vectorStoreService.save throw trong sync', async () => {
-    const vs = require('@services/vector-store/vector-store');
-    vs.save.mockRejectedValueOnce(new Error('VectorStore IO error'));
-
-    const product = makeProduct({ id: 9700, stockQuantity: 10, status: 'active' });
-    Product.findByPk
-      .mockResolvedValueOnce(product) // findProductById trong sync
-      .mockResolvedValueOnce(product); // loadProductForIndex
-    ProductVariant.findOne.mockResolvedValueOnce(null);
-    InventoryLog.create.mockResolvedValueOnce({ id: 99 });
-
-    const logger = require('@utils/logger');
-
-    const res = await request.post('/api/admin/products/9700/restock').send({ quantity: 5 });
-
-    expect(res.status).toBe(200);
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi đồng bộ vector store sau khi nhập hàng:',
-      expect.any(String),
-    );
-    vs.save.mockResolvedValue(undefined);
   });
 });
 

@@ -7,7 +7,7 @@
  *  - GET /dashboard, GET /stats cơ bản
  *  - GET /users (basic + page), GET /users/:id (found + 404), PUT /users/:id, DELETE /users/:id
  *  - GET /products (search, status=draft/active, categoryId, page), GET /products/:id
- *  - POST/PUT/DELETE /products, clone, restock, stock, status toggle, import-template, export
+ *  - POST/PUT/DELETE /products, clone, stock, status toggle, import-template, export
  *  - GET /orders (status=pending, page), PUT /orders/:id/status, PUT /orders/:id/cancel
  *  - GET /reviews (page), DELETE /reviews/:id
  *  - GET/POST/PUT/DELETE /discount-codes (basic + auth)
@@ -463,47 +463,6 @@ describe('PATCH /api/admin/products/:id/status — các trạng thái', () => {
   });
 });
 
-describe('POST /api/admin/products/:id/restock — validation', () => {
-  test('restock với quantity âm → 400', async () => {
-    const res = await request(app)
-      .post(`/api/admin/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${staffToken}`)
-      .send({ variantId: variant.id, quantity: -5 });
-    expect([400, 422]).toContain(res.status);
-  });
-
-  test('restock hợp lệ không có note → 200 hoặc 400', async () => {
-    const res = await request(app)
-      .post(`/api/admin/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${staffToken}`)
-      .send({ variantId: variant.id, quantity: 5 });
-    expect([200, 400]).toContain(res.status);
-  });
-
-  test('sản phẩm không tồn tại → 400 hoặc 404', async () => {
-    const res = await request(app)
-      .post('/api/admin/products/999999999/restock')
-      .set('Authorization', `Bearer ${staffToken}`)
-      .send({ variantId: variant.id, quantity: 10 });
-    expect([400, 404]).toContain(res.status);
-  });
-
-  test('không token → 401', async () => {
-    const res = await request(app)
-      .post(`/api/admin/products/${prod.id}/restock`)
-      .send({ quantity: 10 });
-    expect(res.status).toBe(401);
-  });
-
-  test('customer token → 403', async () => {
-    const res = await request(app)
-      .post(`/api/admin/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${forbiddenToken}`)
-      .send({ quantity: 10 });
-    expect(res.status).toBe(403);
-  });
-});
-
 describe('PATCH /api/admin/products/:id/stock — validation', () => {
   test('quantity bằng 0 → 200 hoặc 400', async () => {
     const res = await request(app)
@@ -727,22 +686,22 @@ describe('PUT /api/admin/orders/:id/status — tất cả trạng thái hợp l�
   });
 });
 
-describe('PUT /api/admin/orders/:id/cancel', () => {
+describe('POST /api/admin/orders/:id/cancel', () => {
   test('hủy đơn không tồn tại → 400 hoặc 404', async () => {
     const res = await request(app)
-      .put('/api/admin/orders/999999999/cancel')
+      .post('/api/admin/orders/999999999/cancel')
       .set('Authorization', `Bearer ${staffToken}`);
     expect([400, 404]).toContain(res.status);
   });
 
   test('không token → 401', async () => {
-    const res = await request(app).put('/api/admin/orders/1/cancel');
+    const res = await request(app).post('/api/admin/orders/1/cancel');
     expect(res.status).toBe(401);
   });
 
   test('customer token → 403', async () => {
     const res = await request(app)
-      .put('/api/admin/orders/1/cancel')
+      .post('/api/admin/orders/1/cancel')
       .set('Authorization', `Bearer ${forbiddenToken}`);
     expect(res.status).toBe(403);
   });

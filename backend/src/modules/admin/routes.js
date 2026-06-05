@@ -245,18 +245,6 @@ router.get('/products/export', backoffice, adminImportController.exportProducts)
  *         required: true
  *         schema:
  *           type: integer
- * /api/admin/products/{productId}/restock:
- *   post:
- *     summary: Nhập thêm hàng cho sản phẩm
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: productId
- *         required: true
- *         schema:
- *           type: integer
  */
 router.get('/products/:id', backoffice, adminController.getProductById);
 router.post(
@@ -274,7 +262,6 @@ router.put(
 router.delete('/products/:id', staffOnly, adminController.deleteProduct);
 router.post('/products/:id/clone', staffOnly, adminController.cloneProduct);
 router.patch('/products/:id/status', staffOnly, adminController.toggleProductStatus);
-router.post('/products/:productId/restock', staffOnly, adminController.restockProduct);
 router.patch('/products/:id/stock', staffOnly, adminController.updateProductStock);
 
 // Reviews
@@ -329,7 +316,7 @@ router.delete('/reviews/:id', staffOnly, adminController.deleteReview);
  *         schema:
  *           type: integer
  * /api/admin/orders/{id}/cancel:
- *   put:
+ *   post:
  *     summary: Hủy đơn hàng (admin)
  *     tags: [Admin]
  *     security:
@@ -353,7 +340,7 @@ router.put(
   validateRequest(updateOrderStatusSchema),
   adminController.updateOrderStatus,
 );
-router.put('/orders/:id/cancel', staffOnly, adminController.adminCancelOrder);
+router.post('/orders/:id/cancel', staffOnly, adminController.adminCancelOrder);
 
 // Discount Codes
 /**

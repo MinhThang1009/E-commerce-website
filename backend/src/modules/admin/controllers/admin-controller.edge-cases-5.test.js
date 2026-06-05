@@ -13,7 +13,7 @@
  * - Line 1788,1790: updateOrderStatus — note='' → null, status=delivered+cod
  * - Lines 1802,1808: updateOrderStatus cancel — variant và product restock paths
  * - Line 1859: cancelOrder — item.Product path (no variantId)
- * - Lines 2072,2117: toggleProductStatus + restockProduct với variant
+ * - Line 2072: toggleProductStatus
  * - Lines 2276-2282: getTopProductsAnalytics — item.Product is null
  * - Lines 2322-2323: getRevenueByCategoryAnalytics — map results
  * - Lines 2391: getPaymentMethodsAnalytics — paymentMethod null → 'unknown'
@@ -695,49 +695,6 @@ describe('PATCH /api/admin/products/:id/status — line 2072: auto toggle', () =
 
     expect(res.status).toBe(200);
     expect(activeProduct.update).toHaveBeenCalledWith({ status: 'inactive' });
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// restockProduct — line 2117: restock có variantId → cập nhật total stock
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('POST /api/admin/products/:productId/restock — line 2117: variant restock', () => {
-  it('cập nhật stockQuantity của variant và tổng stock của product', async () => {
-    const product = makeProduct({ id: 900, stockQuantity: 20 });
-    const variant = {
-      id: 10,
-      stockQuantity: 5,
-      update: jest.fn().mockResolvedValue(undefined),
-    };
-
-    Product.findByPk.mockResolvedValueOnce(product);
-    ProductVariant.findOne.mockResolvedValueOnce(variant);
-    ProductVariant.sum.mockResolvedValueOnce(20);
-    InventoryLog.create.mockResolvedValueOnce({ id: 1 });
-
-    const res = await request
-      .post('/api/admin/products/900/restock')
-      .send({ quantity: 10, variantId: 10, note: 'Nhập kho tháng 5' });
-
-    expect(res.status).toBe(200);
-    expect(variant.update).toHaveBeenCalledWith(
-      { stockQuantity: 15, isAvailable: true }, // 5 + 10
-    );
-    expect(product.update).toHaveBeenCalledWith({ stockQuantity: 20 }); // từ sum
-  });
-
-  it('cập nhật stockQuantity trực tiếp của product khi không có variantId', async () => {
-    const product = makeProduct({ id: 901, stockQuantity: 30 });
-    product.update = jest.fn().mockResolvedValue(undefined);
-
-    Product.findByPk.mockResolvedValueOnce(product);
-    InventoryLog.create.mockResolvedValueOnce({ id: 2 });
-
-    const res = await request.post('/api/admin/products/901/restock').send({ quantity: 5 });
-
-    expect(res.status).toBe(200);
-    expect(product.update).toHaveBeenCalledWith({ stockQuantity: 35 }); // 30 + 5
   });
 });
 

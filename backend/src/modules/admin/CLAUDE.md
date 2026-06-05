@@ -55,11 +55,11 @@ router.use(adminAuthenticate);
 
 **Phân quyền chi tiết per-route** (sau `adminAuthenticate`) bằng `requireRole`:
 
-| Guard                                         | Role   | Áp cho                                                                           |
-| --------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
-| `requireSuperAdmin` (`adminOnly`)             | admin  | users CRUD, `analytics/user-growth`                                              |
-| `requireRole('staff')` (`staffOnly`)          | staff  | CRUD products/orders-status/reviews/discount/restock (admin → **403**, xem-only) |
-| `requireRole('admin','staff')` (`backoffice`) | cả hai | dashboard/stats/list/analytics/reports/chatbot-stats (admin xem-only)            |
+| Guard                                         | Role   | Áp cho                                                                         |
+| --------------------------------------------- | ------ | ------------------------------------------------------------------------------ |
+| `requireSuperAdmin` (`adminOnly`)             | admin  | users CRUD, `analytics/user-growth`                                            |
+| `requireRole('staff')` (`staffOnly`)          | staff  | CRUD products/orders-status/reviews/discount/stock (admin → **403**, xem-only) |
+| `requireRole('admin','staff')` (`backoffice`) | cả hai | dashboard/stats/list/analytics/reports/chatbot-stats (admin xem-only)          |
 
 ---
 
@@ -79,7 +79,7 @@ modules/admin/
     admin-stats-service.js                        — Dashboard stats, detailed stats (259 lines)
     admin-user-service.js                         — User CRUD: list, detail, update, delete (160 lines)
     admin-order-service.js                        — Order management: list, status, cancel, reviews (299 lines)
-    admin-product-service.js                      — Product CRUD, clone, stock, restock, vector sync (1202 lines)
+    admin-product-service.js                      — Product CRUD, clone, stock, vector sync
     admin-analytics-service.js                    — Analytics: order status, top products, revenue, growth, chatbot (420 lines)
     product-import-service.js                     — Parse, validate, bulk insert CSV/JSON
   repositories/
@@ -126,7 +126,6 @@ Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAna
 - `cloneProduct(id)` — nhân bản sản phẩm (deep clone kèm variants, specs, images)
 - `toggleProductStatus(id)` — bật/tắt hiển thị
 - `updateProductStock(id, { variantId, stockQuantity })` — cập nhật tồn kho
-- `restockProduct(productId, { variantId, quantity, note })` — nhập hàng, tạo InventoryLog
 
 ## 3.3 Product import/export pipeline
 
@@ -173,12 +172,11 @@ Base path: `/api/admin`. Tất cả require `adminAuthenticate`.
 | POST   | `/admin/products/:id/clone`            | —          | Clone sản phẩm                                                  |
 | PATCH  | `/admin/products/:id/status`           | —          | Toggle hiển thị                                                 |
 | PATCH  | `/admin/products/:id/stock`            | —          | Cập nhật stock                                                  |
-| POST   | `/admin/products/:productId/restock`   | —          | Nhập thêm hàng                                                  |
 | GET    | `/admin/reviews`                       | —          | Danh sách tất cả reviews (phân trang)                           |
 | DELETE | `/admin/reviews/:id`                   | —          | Xóa review                                                      |
 | GET    | `/admin/orders`                        | —          | Danh sách đơn hàng (phân trang)                                 |
 | PUT    | `/admin/orders/:id/status`             | —          | Cập nhật trạng thái đơn hàng                                    |
-| PUT    | `/admin/orders/:id/cancel`             | —          | Hủy đơn hàng (admin)                                            |
+| POST   | `/admin/orders/:id/cancel`             | —          | Hủy đơn hàng (admin)                                            |
 | GET    | `/admin/discount-codes`                | —          | Danh sách mã giảm giá                                           |
 | GET    | `/admin/discount-codes/:id`            | —          | Chi tiết mã giảm giá                                            |
 | POST   | `/admin/discount-codes`                | —          | Tạo mã giảm giá mới                                             |

@@ -19,12 +19,11 @@
  *    DELETE /api/admin/products/:id       → deleteProduct
  *    PATCH  /api/admin/products/:id/status → toggleProductStatus
  *    PATCH  /api/admin/products/:id/stock  → updateProductStock
- *    POST   /api/admin/products/:id/restock → restockProduct
  *
  *  Order management:
  *    GET /api/admin/orders                → getAllOrders
  *    PUT /api/admin/orders/:id/status     → updateOrderStatus
- *    PUT /api/admin/orders/:id/cancel     → adminCancelOrder
+ *    POST /api/admin/orders/:id/cancel    → adminCancelOrder
  *
  *  Analytics:
  *    GET /api/admin/analytics/order-status     → getOrderStatusAnalytics
@@ -949,80 +948,6 @@ describe('PATCH /api/admin/products/:id/stock', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/admin/products/:productId/restock
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('POST /api/admin/products/:productId/restock', () => {
-  it('trả về 200 khi restock sản phẩm không có variant thành công', async () => {
-    // makeProduct với stockQuantity=10 — product.update cập nhật giá trị mới
-    const fakeProduct = {
-      id: 8,
-      stockQuantity: 10,
-      status: 'active',
-      toJSON: () => ({ id: 8, stockQuantity: 30, status: 'active' }),
-      update: jest.fn().mockResolvedValue({ id: 8, stockQuantity: 30 }),
-    };
-    Product.findByPk
-      .mockResolvedValueOnce(fakeProduct) // lần 1: load product để restock
-      .mockResolvedValueOnce(makeProduct({ id: 8, status: 'active' })); // lần 2: productForIndex để sync vector
-    InventoryLog.create.mockResolvedValueOnce({ id: 1, changeType: 'restock' });
-
-    const res = await request.post('/api/admin/products/8/restock').send({ quantity: 20 });
-    expect(res.status).toBe(200);
-    expect(res.body.data.quantity).toBe(20);
-    expect(res.body.data.previousStock).toBe(10);
-    expect(res.body.data.newStock).toBe(30);
-  });
-
-  it('trả về 200 khi restock cho biến thể cụ thể', async () => {
-    const fakeProduct = makeProduct({ id: 9, stockQuantity: 5 });
-    const fakeVariant = {
-      id: 'v1',
-      stockQuantity: 8,
-      update: jest.fn().mockResolvedValue({ stockQuantity: 18 }),
-    };
-    Product.findByPk.mockResolvedValueOnce(fakeProduct);
-    ProductVariant.findOne.mockResolvedValueOnce(fakeVariant);
-    ProductVariant.sum.mockResolvedValueOnce(18);
-    InventoryLog.create.mockResolvedValueOnce({ id: 2, changeType: 'restock' });
-
-    const res = await request
-      .post('/api/admin/products/9/restock')
-      .send({ quantity: 10, variantId: 'v1' });
-    expect(res.status).toBe(200);
-    expect(res.body.data.variantId).toBe('v1');
-  });
-
-  it('trả về 400 khi quantity <= 0', async () => {
-    const res = await request.post('/api/admin/products/8/restock').send({ quantity: 0 });
-    expect(res.status).toBe(400);
-  });
-
-  it('trả về 400 khi quantity âm', async () => {
-    const res = await request.post('/api/admin/products/8/restock').send({ quantity: -5 });
-    expect(res.status).toBe(400);
-  });
-
-  it('trả về 404 khi product không tồn tại', async () => {
-    Product.findByPk.mockResolvedValueOnce(null);
-
-    const res = await request.post('/api/admin/products/9999/restock').send({ quantity: 10 });
-    expect(res.status).toBe(404);
-  });
-
-  it('trả về 404 khi variantId không tìm thấy trong product', async () => {
-    const fakeProduct = makeProduct({ id: 11 });
-    Product.findByPk.mockResolvedValueOnce(fakeProduct);
-    ProductVariant.findOne.mockResolvedValueOnce(null);
-
-    const res = await request
-      .post('/api/admin/products/11/restock')
-      .send({ quantity: 5, variantId: 'nonexistent' });
-    expect(res.status).toBe(404);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GET /api/admin/orders
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1108,17 +1033,17 @@ describe('PUT /api/admin/orders/:id/status', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PUT /api/admin/orders/:id/cancel
+// POST /api/admin/orders/:id/cancel
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('PUT /api/admin/orders/:id/cancel', () => {
+describe('POST /api/admin/orders/:id/cancel', () => {
   const { AppError } = require('@shared/errors');
 
   it('delegate cancel sang orders-service với { id, status: "cancelled" } và trả về 200', async () => {
     const fakeOrder = makeOrder({ id: 10, status: 'processing' });
     Order.findByPk.mockResolvedValueOnce(fakeOrder); // pre-check findOrderById
 
-    const res = await request.put('/api/admin/orders/10/cancel');
+    const res = await request.post('/api/admin/orders/10/cancel');
     expect(res.status).toBe(200);
     expect(res.body.message).toMatch(/hủy/i);
     expect(res.body.data).toMatchObject({ orderId: 10, status: 'cancelled' });
@@ -1131,7 +1056,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
   it('trả về 404 (pre-check) khi đơn hàng không tồn tại, không delegate', async () => {
     Order.findByPk.mockResolvedValueOnce(null);
 
-    const res = await request.put('/api/admin/orders/9999/cancel');
+    const res = await request.post('/api/admin/orders/9999/cancel');
     expect(res.status).toBe(404);
     expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
   });
@@ -1140,7 +1065,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
     const fakeOrder = makeOrder({ id: 11, status: 'cancelled', items: [] });
     Order.findByPk.mockResolvedValueOnce(fakeOrder);
 
-    const res = await request.put('/api/admin/orders/11/cancel');
+    const res = await request.post('/api/admin/orders/11/cancel');
     expect(res.status).toBe(400);
     expect(mockOrdersService.updateOrderStatus).not.toHaveBeenCalled();
   });
@@ -1152,7 +1077,7 @@ describe('PUT /api/admin/orders/:id/cancel', () => {
       new AppError('Không thể hủy đơn hàng đã giao', 400),
     );
 
-    const res = await request.put('/api/admin/orders/12/cancel');
+    const res = await request.post('/api/admin/orders/12/cancel');
     expect(res.status).toBe(400);
     expect(mockOrdersService.updateOrderStatus).toHaveBeenCalledWith({
       id: '12',

@@ -436,7 +436,7 @@ flowchart TB
         AO2["PATCH /api/orders/admin/:id/status<br/>Cập nhật trạng thái (authorize)"]
         AO3["GET /api/admin/orders<br/>Danh sách (adminAuthenticate)"]
         AO4["PUT /api/admin/orders/:id/status<br/>Cập nhật trạng thái (adminAuth)"]
-        AO5["PUT /api/admin/orders/:id/cancel<br/>Hủy đơn hàng (adminAuth)"]
+        AO5["POST /api/admin/orders/:id/cancel<br/>Hủy đơn hàng (adminAuth)"]
     end
 
     Admin --> AO1
@@ -1023,7 +1023,7 @@ sequenceDiagram
     API-->>FE: 201 product message Tạo thành công
 
     Admin->>FE: Nhập số lượng nhập kho
-    FE->>API: POST /api/admin/products/:productId/restock<br/>adminAuthenticate
+    FE->>API: POST /api/inventory/products/:productId/restock<br/>authenticate + staff
     API->>DB: UPDATE product_variants stock + quantity
     API->>DB: INSERT inventory_logs change_type=restock
     API-->>FE: Đã cập nhật tồn kho

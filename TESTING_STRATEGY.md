@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 319 suites, ~7.129 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
+> 5 tầng test, 319 suites, ~7.103 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
 
 ## Mục lục
 
@@ -38,14 +38,14 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | **5.369** | ~12s | `jest.config.js` |
+| BE Unit Tests | 215 | **5.349** | ~12s | `jest.config.js` |
 | BE Integration Tests | 38 | **210** | ~57s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | **681** | ~140s | `jest.api.config.js` |
+| BE API HTTP Tests | 39 | **675** | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 22 | **769** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **319** | **7.129** | | |
+| **Tổng** | **319** | **7.103** | | |
 
-> Đo lại 2026-06-05 (full run mọi tầng), sau dọn API thừa §C (gỡ chatbot recommendations/analytics/session-latest/history + catalog product-write). Unit gồm ~1.600 test mutation-kill + property.
+> Đo lại 2026-06-05 (full run mọi tầng), sau dọn API thừa §C (gỡ chatbot recommendations/analytics/session-latest/history + catalog product-write + admin restock dup + verb cancel PUT→POST). Unit gồm ~1.600 test mutation-kill + property.
 
 ---
 
@@ -55,11 +55,11 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                     ┌──────────────────┐
                     │  E2E Tests (100) │   ← Full user flows (HTTP + real DB)
                   ┌─┴──────────────────┴─┐
-                  │  API HTTP Tests (681) │  ← Endpoint tests (Supertest + real DB)
+                  │  API HTTP Tests (675) │  ← Endpoint tests (Supertest + real DB)
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (210)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (5.369 + 769)      │  ← Isolated logic + React components
+              │  Unit Tests (5.349 + 769)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -79,7 +79,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 215 test suites, 5.369 test cases.
+**Phạm vi**: 215 test suites, 5.349 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -167,7 +167,7 @@ backend/src/__integration__/
 
 **Mục đích**: Kiểm tra toàn bộ HTTP layer — từ routes đến middleware chain đến DB. Dùng Supertest để gửi real HTTP requests đến Express app.
 
-**Phạm vi**: 39 test suites, 681 test cases.
+**Phạm vi**: 39 test suites, 675 test cases.
 - Authentication (JWT verify, token refresh, token reuse detection)
 - Authorization (role check — user vs admin endpoints)
 - Input validation (Zod schemas — valid/invalid payloads)
@@ -429,12 +429,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 215 | 5.369 | ~12s |
+| BE Unit Tests | 215 | 5.349 | ~12s |
 | BE Integration Tests | 38 | 210 | ~57s |
-| BE API HTTP Tests | 39 | 681 | ~140s |
+| BE API HTTP Tests | 39 | 675 | ~160s |
 | BE E2E Tests | 5 | 100 | ~22s |
 | FE Component Tests | 22 | 769 | ~12s |
-| **Tổng** | **319** | **7.129** | |
+| **Tổng** | **319** | **7.103** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)

@@ -10,7 +10,7 @@
  *  - PUT /api/admin/users/:id, DELETE /api/admin/users/:id
  *  - GET/POST/PUT/DELETE /api/admin/products (basic)
  *  - PATCH /api/admin/products/:id/status (basic toggle)
- *  - GET /api/admin/orders → 200, PUT /api/admin/orders/:id/status, PUT /api/admin/orders/:id/cancel
+ *  - GET /api/admin/orders → 200, PUT /api/admin/orders/:id/status, POST /api/admin/orders/:id/cancel
  *  - GET/POST/PUT/DELETE /api/admin/discount-codes (basic)
  *  - GET /api/admin/analytics/* (tất cả 6 endpoint — basic)
  *  - GET /api/admin/reviews → 200, DELETE /api/admin/reviews/:id

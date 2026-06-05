@@ -296,16 +296,6 @@ describe('POST /api/admin/products/:id/clone', () => {
   });
 });
 
-describe('POST /api/admin/products/:id/restock', () => {
-  test('restock → 200', async () => {
-    const res = await request(app)
-      .post(`/api/admin/products/${prod.id}/restock`)
-      .set('Authorization', `Bearer ${staffToken}`)
-      .send({ variantId: variant.id, quantity: 10, note: 'Test restock' });
-    expect([200, 400]).toContain(res.status);
-  });
-});
-
 describe('PATCH /api/admin/products/:id/stock', () => {
   test('update stock → 200', async () => {
     const res = await request(app)
@@ -358,9 +348,9 @@ describe('PUT /api/admin/orders/:id/status', () => {
   });
 });
 
-describe('PUT /api/admin/orders/:id/cancel', () => {
+describe('POST /api/admin/orders/:id/cancel', () => {
   test('không auth → 401', async () => {
-    const res = await request(app).put('/api/admin/orders/1/cancel');
+    const res = await request(app).post('/api/admin/orders/1/cancel');
     expect(res.status).toBe(401);
   });
 });

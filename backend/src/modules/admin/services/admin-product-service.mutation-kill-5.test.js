@@ -408,23 +408,3 @@ describe('cloneProduct b5', () => {
     });
   });
 });
-
-// ─── restockProduct logs ────────────────────────────────────────────────────
-
-describe('restockProduct b5', () => {
-  test('vector sync lỗi → logger.error', async () => {
-    const p = { stockQuantity: 1, status: 'draft', update: jest.fn() };
-    repo.findProductById.mockResolvedValueOnce(p);
-    repo.createInventoryLog.mockResolvedValueOnce({ id: 1 });
-    repo.findProductById.mockRejectedValueOnce(new Error('index fail')); // lần 2 (index) lỗi
-    await invoke(service.restockProduct, {
-      params: { productId: '5' },
-      body: { quantity: '3' },
-      user: { id: 1 },
-    });
-    expect(logger.error).toHaveBeenCalledWith(
-      'Lỗi đồng bộ vector store sau khi nhập hàng:',
-      'index fail',
-    );
-  });
-});

@@ -80,9 +80,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     if (historyData?.data) {
       const serverSearches = historyData.data.map((item: { keyword: string }) => item.keyword);
       // Kết hợp với tìm kiếm cục bộ, loại bỏ trùng lặp
-      const localSearches = JSON.parse(
-        /* istanbul ignore next */ localStorage.getItem('recentSearches') || '[]',
-      );
+      const localSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
       const combined = Array.from(new Set([...serverSearches, ...localSearches])).slice(0, 5);
       setRecentSearches(combined);
     }

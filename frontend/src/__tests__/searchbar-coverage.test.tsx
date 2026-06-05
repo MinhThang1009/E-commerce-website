@@ -125,6 +125,14 @@ describe('SearchBar — nhánh phụ', () => {
     expect(screen.getByText('search.error')).toBeInTheDocument();
   });
 
+  // ── historyData truthy + recentSearches null → || '[]' branch (line 84) ──
+  it("historyData có data + recentSearches null → fallback '[]' được dùng, không crash", () => {
+    searchState.historyData = { data: [{ keyword: 'laptop', id: '1' }] };
+    // localStorage.getItem trả null (beforeEach default) → null || '[]' fires
+    render(<SearchBar isExpanded />);
+    expect(screen.getByPlaceholderText('header.actions.searchPlaceholder')).toBeInTheDocument();
+  });
+
   // ── saveSearchTerm catch: saveSearch mutation throw → catch console.error ──
   it('saveSearch throw → catch block chạy, console.error được gọi, không crash', async () => {
     mockSaveSearch.mockRejectedValueOnce(new Error('network error'));

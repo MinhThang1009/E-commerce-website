@@ -477,6 +477,22 @@ describe('BrandsPage: render với brands data', () => {
     expect(screen.queryByText('brands.noResults')).not.toBeInTheDocument();
   });
 
+  it('img onError → callback phòng thủ xóa img, thay bằng initial chữ đầu tên thương hiệu', () => {
+    // Apple có trong SIMPLE_ICONS_SLUGS → getBrandLogoUrl trả URL → img render → có thể fire onError
+    mockGetBrandsQuery = {
+      data: { data: [{ id: '1', name: 'Apple', slug: 'apple', logoUrl: null }] },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    const { container } = render(<BrandsPage />);
+    const img = container.querySelector('img');
+    expect(img).toBeInTheDocument();
+    fireEvent.error(img!);
+    // onError thay thế img bằng div initial → img không còn trong parent đó
+    expect(container.querySelectorAll('img').length).toBe(0);
+  });
+
   it('brand name không có trong SIMPLE_ICONS_SLUGS → getBrandLogoUrl trả null → render initial', () => {
     // "TêN Thương Hiệu Lạ" chắc chắn không có trong SIMPLE_ICONS_SLUGS → logoSrc=null → nhánh false của ternary
     mockGetBrandsQuery = {

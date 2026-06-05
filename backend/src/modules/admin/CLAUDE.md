@@ -114,14 +114,14 @@ Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAna
 - `getPaymentMethodsAnalytics()` — phân bổ phương thức thanh toán
 - `getLowStockAnalytics()` — sản phẩm sắp hết hàng
 - `getChatbotStats()` — analytics chatbot AI (từ `ChatMessage` model)
-- `exportReport()` — export CSV theo `?type=orders|products` (default `orders`; type sai → `AppError` 400; giới hạn 5000 records)
+- `exportReport()` — export CSV theo `?type=orders|products` (default `orders`; type sai → `AppError` 400; giới hạn 5000 records); orders CSV escape `"` trong customer name và order number bằng RFC 4180 double-quote
 
 ## 3.2 Product CRUD
 
 - `getAllProducts({ page, limit, sortBy, sortOrder })` — danh sách có phân trang
 - `getProductById(id)` — chi tiết kèm categories, variants, specs, attributes
 - `createProduct(data)` — tạo mới, sync vector store async sau khi tạo
-- `updateProduct(id, data)` — cập nhật, sync vector store async
+- `updateProduct(id, data)` — cập nhật, sync vector store async; nếu product không tồn tại → 404 (catch block rollback duy nhất, không early-rollback)
 - `deleteProduct(id)` — xóa, remove khỏi vector store
 - `cloneProduct(id)` — nhân bản sản phẩm (deep clone kèm variants, specs, images)
 - `toggleProductStatus(id)` — bật/tắt hiển thị
@@ -135,9 +135,12 @@ Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAna
 2. Validate từng row — required fields: `name`, `base_price`, `category_slug`
 3. Nếu toàn bộ rows fail → trả về `{ allFailed: true, errors }`, không insert gì
 4. Bulk insert từng row trong transaction riêng (Product + ProductVariant + ProductImage + ProductCategory + ProductSpecification)
+   - `createProductSpecification` truyền `{ name, value }` — đúng với ProductSpecification model (NOT `specKey`/`specValue`)
+   - `findProductsForExport` include `as: 'productSpecifications'` — đúng với association trong `models/index.js`
 5. Sync vector store sau khi insert thành công (async `setImmediate`, fire-and-forget)
 
 **Export**: Hỗ trợ CSV (default) và JSON (`?format=json`).
+- CSV spec columns (storage/display/battery) lookup trực tiếp `specMap['bộ nhớ']`, `specMap['màn hình']`, `specMap['pin']` — KHÔNG qua `specKeyMap` trung gian (đã xóa).
 
 **CSV template**: Gồm 16 columns: `name, slug, short_description, base_price, category_slug, brand, status, stock_quantity, sku, weight_kg, image_urls, spec_cpu, spec_ram, spec_storage, spec_display, spec_battery`.
 
@@ -218,6 +221,9 @@ Không module nào depend vào admin (leaf node trong dependency graph).
 - **Vector store sync — 2 cơ chế khác nhau**: Create/update product dùng direct `await` với try/catch — response chờ sync xong, lỗi chỉ log không ảnh hưởng status code. Import dùng `setImmediate` fire-and-forget — response trả về trước khi sync xong.
 - **Multer memoryStorage**: File upload lưu trong RAM (không lưu disk). Giới hạn 5MB. Chỉ nhận `.csv` hoặc `.json`.
 - **Discount code trong admin routes**: `routes.js` import trực tiếp `discountCodeController` từ `@modules/discount-code/controllers/...` — là cross-module import nhưng cho phép ở routes layer.
+- **`countChatMessages` nhận full options**: `countChatMessages(options)` → `ChatMessage.count(options)` — truyền toàn bộ options object (bao gồm `distinct`, `col`, `where`), KHÔNG chỉ where clause. Gọi sai pattern (ví dụ `countChatMessages({ where })` nested) sẽ query sai column.
+- **`ProductSpecification` fields**: import service dùng `{ name, value }` — đúng với model. **KHÔNG** dùng `specKey`/`specValue` (không tồn tại trong model, sẽ bị Sequelize bỏ qua → NOT NULL constraint fail).
+- **`findProductsForExport` alias**: include với `as: 'productSpecifications'` (không phải `'specifications'`). Dùng sai alias → Sequelize throw EagerLoadingError.
 
 ---
 

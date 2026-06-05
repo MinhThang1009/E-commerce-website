@@ -491,7 +491,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     const safeIds = ids.map((id) => parseInt(id, 10)).filter((id) => !isNaN(id));
     if (safeIds.length === 0) return [];
     return this.Product.findAll({
-      where: { id: { [Op.in]: safeIds } },
+      where: { id: { [Op.in]: safeIds }, status: 'active' },
       include: [
         { association: 'category' },
         { association: 'productImages' },

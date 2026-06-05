@@ -47,7 +47,7 @@ Constructor deps: `{ aiRepository, chatbotService, logger }`.
 | `getSessionMessages` | `(sessionId) → Promise<...>`                                                              | Delegate `chatbotService.getSessionMessages()`                               |
 | `registerSession`    | `(sessionId) → ...`                                                                       | Delegate `chatbotService.registerSession()`                                  |
 
-**Business logic trong `addToCart`:** tổng stock = `reduce(variants[].stockQuantity)`. Throw `AppError 404` nếu product không tồn tại; `AppError 400` nếu `status !== 'active'` HOẶC (tổng stock ≤ 0 VÀ `product.stockQuantity` ≤ 0) — tức chỉ chặn khi cả variants và product-level stock đều cạn.
+**Business logic trong `addToCart`:** (1) tổng stock = `reduce(variants[].stockQuantity)` — throw `AppError 404` nếu product không tồn tại; `AppError 400` nếu `status !== 'active'` HOẶC (tổng stock ≤ 0 VÀ `product.stockQuantity` ≤ 0). (2) Nếu `variantId` cụ thể được truyền vào → kiểm thêm `variant.stockQuantity` của đúng variant đó, throw `AppError 400` nếu hết hàng. Repository `addToCart` bọc trong transaction để tránh race condition.
 
 `limit` từ query string là string → `parseInt(limit, 10)` trước khi gọi repo.
 

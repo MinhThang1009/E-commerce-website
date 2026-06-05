@@ -90,8 +90,6 @@ modules/ai/
       CLAUDE.md                                  — services/translate/CLAUDE.md
   validators/
     ai-validator.js
-  dtos/
-    ai-dto.js
   CLAUDE.md
 ```
 
@@ -106,7 +104,7 @@ modules/ai/
 **`services/core/ai-service.js`** chỉ orchestrate, không chứa logic phức tạp:
 
 - `handleMessage({ message, userId, sessionId })` — delegate hoàn toàn cho `chatbotService.handleMessage()`, trả về `{ response, products, suggestions, intent }`
-- `addToCart({ productId, variantId, quantity, sessionId, userId })` — verify product active + stock không bằng 0, insert CartItem qua repo, ghi analytics event `product_added_to_cart` (qua `repo.createAnalyticsEvent()`)
+- `addToCart({ productId, variantId, quantity, sessionId, userId })` — (1) verify product active + tổng stock > 0; (2) nếu `variantId` cụ thể → kiểm thêm stock của đúng variant đó; (3) insert CartItem qua repo (có transaction); ghi analytics event `product_added_to_cart`
 - Session delegators: `clearSession`, `registerSession`, `getSessionMessages` (wired tại `routes.js`)
 
 ## 3.2 ChatbotService — Full RAG flow + LLM gateway + session
@@ -190,6 +188,9 @@ Base path: `/api/chatbot`
 
 - **`chatbotService` bắt buộc** — `module.js` throw Error nếu thiếu. `Product` cũng bắt buộc.
 - **`vectorStoreService` optional** — lazy require trong chatbot-service.js, có thể là `null`. `handleMessage` bỏ qua bước retrieval khi `vectorStoreService = null`.
+- **`handleMessage` dùng `req.user?.id` làm userId** — controller ưu tiên userId từ JWT token (đã verify), fallback về `req.body.userId` cho anonymous user. Tránh analytics spoofing khi user authenticated.
+- **`addToCart` kiểm tra variant-specific stock** — tổng stock > 0 không đủ; nếu `variantId` cụ thể được chỉ định, kiểm tra `variant.stockQuantity` của đúng variant đó trước khi cho phép thêm giỏ hàng.
+- **`addToCart` trong repository dùng transaction** — Cart find/create + CartItem find/update/create được bọc trong `sequelize.transaction()` để tránh race condition (nhất quán với main cart module).
 - **Off-topic check dùng regex thuần** — intentional, không gọi LLM để tránh tốn quota. Không thay bằng LLM call.
 - **Không có `GET /chatbot/history` / `/recommendations` / `/analytics` / `/session/latest`** — đã gỡ (FE không gọi; chỉ còn message/cart-add/session-clear/register/messages).
 - **Conversation history reset khi restart** — Map không persist. Đủ cho demo/KLTN.

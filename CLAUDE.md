@@ -268,12 +268,12 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | 5.349 | ~12s | `jest.config.js` |
+| BE Unit Tests | 215 | 5.346 | ~12s | `jest.config.js` |
 | BE Integration Tests | 38 | 210 | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **~7.271** | | |
+| **Tổng** | **325** | **~7.268** | | |
 
 > Đo lại 2026-06-06 (§A FE coverage: xóa 25 false-positive istanbul-ignore, thêm 22 test cases).
 

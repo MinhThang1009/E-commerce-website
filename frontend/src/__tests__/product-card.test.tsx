@@ -245,4 +245,17 @@ describe('ProductCard', () => {
     render(<ProductCard {...baseProps} ratings={undefined} />);
     expect(screen.queryByText(/4\.5/)).not.toBeInTheDocument();
   });
+
+  it('sessionStorage.setItem throw → handleBuyNow catch chạy → addNotification lỗi', async () => {
+    // Spy trên Storage.prototype.setItem để bắt sessionStorage.setItem throw
+    const spy = jest.spyOn(Storage.prototype, 'setItem').mockImplementationOnce(() => {
+      throw new Error('QuotaExceededError');
+    });
+    render(<ProductCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('product.buyNow'));
+    });
+    expect(mockAddNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    spy.mockRestore();
+  });
 });

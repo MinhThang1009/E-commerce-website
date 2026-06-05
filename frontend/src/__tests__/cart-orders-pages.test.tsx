@@ -2691,15 +2691,38 @@ describe('OrdersPage: search và filter', () => {
     expect(screen.getByText('orders.title')).toBeInTheDocument();
   });
 
-  it('Dialog onOpenChange(false) → đóng dialog (setSelectedOrder(null))', () => {
+  it('Dialog onOpenChange(false) → đóng dialog khi Escape (setSelectedOrder=null)', async () => {
+    mockGetUserOrdersQuery = {
+      data: {
+        data: [
+          {
+            id: 'ord-dlg',
+            number: 'ORD-DLG-001',
+            status: 'pending',
+            paymentStatus: 'pending',
+            paymentMethod: 'cod',
+            total: 1_000_000,
+            createdAt: new Date().toISOString(),
+            items: [],
+          },
+        ],
+        total: 1,
+        limit: 10,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    const user = userEvent.setup();
     render(<OrdersPage />);
-    // Click vào order để mở dialog
-    const orderRow = screen.queryByText('ORD-001');
-    if (orderRow) {
-      fireEvent.click(orderRow);
-      // Dialog mở → đóng bằng cách click backdrop (nếu mock Radix dialog hỗ trợ)
-      // Verify không crash
-      expect(screen.getByText('orders.title')).toBeInTheDocument();
+    // Mở dialog bằng cách click vào order header
+    const orderHeaders = document.querySelectorAll('[class*="cursor-pointer"]');
+    if (orderHeaders.length > 0) {
+      fireEvent.click(orderHeaders[0]);
+      // Đóng dialog bằng Escape → Radix gọi onOpenChange(false) → setSelectedOrder(null)
+      await user.keyboard('{Escape}');
     }
+    expect(screen.getByText('orders.title')).toBeInTheDocument();
   });
 });

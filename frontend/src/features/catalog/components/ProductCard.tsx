@@ -126,8 +126,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
       sessionStorage.setItem('buyNowAction', 'true');
       navigate('/checkout?buyNow=true');
-    } catch /* istanbul ignore next */ {
-      /* istanbul ignore next */
+    } catch {
       addNotification({ type: 'error', message: t('product.buyNowFailed') });
     } finally {
       setIsBuying(false);

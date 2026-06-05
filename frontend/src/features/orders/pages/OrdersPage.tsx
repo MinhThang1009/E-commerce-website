@@ -255,7 +255,7 @@ const OrdersPage: React.FC = () => {
             variant="primary"
             size="large"
             iconType="arrow-right"
-            onClick={/* istanbul ignore next */ () => (window.location.href = '/login')}
+            onClick={() => (window.location.href = '/login')}
             className="w-full"
           >
             {t('auth.register.signInLink')}
@@ -728,10 +728,7 @@ const OrdersPage: React.FC = () => {
             </div>
 
             {/* Order Detail Dialog */}
-            <Dialog
-              open={!!selectedOrder}
-              onOpenChange={/* istanbul ignore next */ (open) => !open && setSelectedOrder(null)}
-            >
+            <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
               <DialogContent className="max-w-[800px] max-h-[85vh] overflow-y-auto p-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-200">
                 {selectedOrder && (
                   <OrderDetails orderId={selectedOrder} onOpenReview={handleOpenReview} />

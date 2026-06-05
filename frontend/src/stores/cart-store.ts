@@ -19,9 +19,7 @@ const getSavedCartItems = (): CartItem[] => {
   try {
     return JSON.parse(localStorage.getItem('cartItems') || '[]');
   } catch {
-    /* istanbul ignore next */
     localStorage.removeItem('cartItems');
-    /* istanbul ignore next */
     return [];
   }
 };

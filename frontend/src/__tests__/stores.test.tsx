@@ -681,3 +681,20 @@ describe('uiStore — INITIAL_THEME module init', () => {
     (window as any).matchMedia = origMatchMedia;
   });
 });
+
+// ── Cart Store — getSavedCartItems catch (corrupt localStorage) ───────────────
+describe('cartStore — getSavedCartItems module init', () => {
+  test('localStorage cartItems corrupt JSON → catch → removeItem + trả []', () => {
+    const spy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => (key === 'cartItems' ? '{invalid' : null));
+    const removeSpy = jest.spyOn(localStorage, 'removeItem');
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/cart-store') as any).useCartStore;
+      expect(freshStore.getState().items).toEqual([]);
+    });
+    expect(removeSpy).toHaveBeenCalledWith('cartItems');
+    spy.mockRestore();
+    removeSpy.mockRestore();
+  });
+});

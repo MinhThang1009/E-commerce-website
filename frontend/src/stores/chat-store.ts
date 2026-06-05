@@ -21,7 +21,6 @@ export const createSessionId = () =>
 const loadMessagesFromStorage = (): Message[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_MESSAGES);
-    /* istanbul ignore next — nhánh JSON.parse chỉ chạy khi localStorage có dữ liệu */
     return raw ? (JSON.parse(raw) as Message[]) : [];
   } catch {
     /* istanbul ignore next — chỉ xảy ra khi localStorage bị hỏng hoặc chứa JSON không hợp lệ */
@@ -33,7 +32,6 @@ const loadMessagesFromStorage = (): Message[] => {
 const loadSessionId = (): string => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_SESSION);
-    /* istanbul ignore next — nhánh return chỉ chạy khi sessionId đã tồn tại */
     if (saved) return saved;
   } catch {
     /* istanbul ignore next — chỉ xảy ra khi localStorage bị chặn */

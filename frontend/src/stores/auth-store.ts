@@ -20,7 +20,6 @@ const getSessionToken = (): string | null => {
   }
 };
 
-/* istanbul ignore next — chỉ chạy khi module khởi động với token trong sessionStorage */
 const isSessionTokenValid = (token: string): boolean => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -32,7 +31,6 @@ const isSessionTokenValid = (token: string): boolean => {
 
 const initToken = (() => {
   const t = getSessionToken();
-  /* istanbul ignore next — nhánh truthy chỉ chạy khi sessionStorage có token hợp lệ */
   return t && isSessionTokenValid(t) ? t : null;
 })();
 
@@ -59,7 +57,6 @@ interface AuthActions {
 const getStoredUser = (): User | null => {
   try {
     const userStr = localStorage.getItem('user');
-    /* istanbul ignore next — nhánh JSON.parse chỉ chạy khi localStorage có user data */
     return userStr ? JSON.parse(userStr) : null;
   } catch {
     /* istanbul ignore next — chỉ xảy ra khi localStorage bị chặn hoặc dữ liệu bị hỏng */

@@ -531,3 +531,39 @@ describe('chatStore — localStorage persistence (saveMessagesToStorage)', () =>
     expect(localStorage.setItem).toHaveBeenCalledWith('chat_session_id', 'session-xyz');
   });
 });
+
+// ── Module init: storage restoration ────────────────────────────────────────
+// Dùng jest.isolateModules để load module tươi sau khi pre-populate localStorage
+
+describe('chatStore — module init state restoration', () => {
+  afterEach(() => {
+    localStorage.removeItem('chat_messages');
+    localStorage.removeItem('chat_session_id');
+  });
+
+  test('chat_messages trong localStorage → loadMessagesFromStorage JSON.parse → messages restored', () => {
+    const messages = [{ id: 'm1', role: 'user', content: 'Xin chào', timestamp: 0 }];
+    const spy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) =>
+        key === 'chat_messages' ? JSON.stringify(messages) : null,
+      );
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/chat-store') as any).useChatStore;
+      expect(freshStore.getState().messages).toEqual(messages);
+    });
+    spy.mockRestore();
+  });
+
+  test('chat_session_id trong localStorage → loadSessionId return saved → sessionId restored', () => {
+    const existingId = 'existing-session-abc123';
+    const spy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => (key === 'chat_session_id' ? existingId : null));
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/chat-store') as any).useChatStore;
+      expect(freshStore.getState().sessionId).toBe(existingId);
+    });
+    spy.mockRestore();
+  });
+});

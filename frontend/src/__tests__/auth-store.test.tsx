@@ -285,3 +285,55 @@ describe('authStore — clearJustLoggedIn', () => {
     expect(result.current.justLoggedIn).toBe(false);
   });
 });
+
+// ── Module init: startup state restoration ────────────────────────────────────
+// Dùng jest.isolateModules để load module tươi sau khi đã pre-populate storage
+
+describe('authStore — module init state restoration', () => {
+  afterEach(() => {
+    localStorage.removeItem('user');
+    // Đảm bảo sessionStorageMock store sạch cho test kế
+    sessionStorageMock.clear();
+  });
+
+  test('token hợp lệ trong sessionStorage → isSessionTokenValid + initToken → isAuthenticated=true', () => {
+    // Pre-populate sessionStorage TRƯỚC khi module load
+    sessionStorageMock.setItem('access_token', makeToken(3600));
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/auth-store') as any).useAuthStore;
+      expect(freshStore.getState().isAuthenticated).toBe(true);
+      expect(freshStore.getState().token).toBeTruthy();
+    });
+  });
+
+  test('token malformed → isSessionTokenValid catch → initToken=null', () => {
+    // middle segment rỗng → atob('')='' → JSON.parse('') throw → catch → return false
+    sessionStorageMock.setItem('access_token', 'header..signature');
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/auth-store') as any).useAuthStore;
+      expect(freshStore.getState().isAuthenticated).toBe(false);
+      expect(freshStore.getState().token).toBeNull();
+    });
+  });
+
+  test('token hết hạn → isSessionTokenValid → false → initToken=null', () => {
+    sessionStorageMock.setItem('access_token', makeToken(-60)); // hết hạn 60s trước
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/auth-store') as any).useAuthStore;
+      expect(freshStore.getState().isAuthenticated).toBe(false);
+    });
+  });
+
+  test('user trong localStorage → getStoredUser JSON.parse → user được restore', () => {
+    const user = { id: '1', email: 'a@a.com', firstName: 'A', lastName: 'B', role: 'customer' };
+    // Spy localStorage.getItem (mock thật sự trả dữ liệu — setItem là mock không lưu thật)
+    const getItemSpy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => (key === 'user' ? JSON.stringify(user) : null));
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/auth-store') as any).useAuthStore;
+      expect(freshStore.getState().user).toEqual(user);
+    });
+    getItemSpy.mockRestore();
+  });
+});

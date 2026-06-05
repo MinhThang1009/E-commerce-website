@@ -68,7 +68,7 @@ const CheckoutShippingForm: React.FC<CheckoutShippingFormProps> = ({
               const addr = savedAddresses.find((a: Address) => a.id === addrId);
               // Options của <select> sinh từ chính savedAddresses → addrId được chọn luôn tồn tại
               // → find không bao giờ undefined. Guard này chỉ phòng thủ (jsdom select cũng chặn value lạ).
-              /* istanbul ignore next -- addrId luôn khớp 1 phần tử savedAddresses (options sinh từ list đó) */
+
               if (!addr) return;
               onInputChange('firstName', addr.firstName || formData.firstName);
               onInputChange('lastName', addr.lastName || formData.lastName);

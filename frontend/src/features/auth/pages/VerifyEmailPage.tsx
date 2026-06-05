@@ -78,7 +78,7 @@ const VerifyEmailPage: React.FC = () => {
 
   const handleResend = async () => {
     // Nút resend đã disabled khi !email hoặc cooldown > 0 — guard chỉ phòng thủ
-    /* istanbul ignore next */
+
     if (!email || resendCooldown > 0) return;
     try {
       await resendVerification({ email });

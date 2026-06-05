@@ -10,7 +10,6 @@ import { UIState, AddNotificationPayload } from '@/types/ui.types';
 
 // Lấy theme từ localStorage; nếu chưa có → detect theo tuỳ chọn hệ thống (OS)
 const INITIAL_THEME: 'light' | 'dark' = (() => {
-  /* istanbul ignore next -- SSR guard: window luôn tồn tại trong jsdom test env */
   if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem('theme');
   if (stored === 'dark' || stored === 'light') return stored as 'dark' | 'light';

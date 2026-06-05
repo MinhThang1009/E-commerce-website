@@ -242,7 +242,6 @@ export const formatErrorForLogging = (error: unknown): string => {
 export function getErrorMsg(error: unknown, fallback?: string): string {
   // Wrapper của getErrorMessage với fallback param tùy chọn
   const msg = getErrorMessage(error);
-  const isGeneric =
-    msg.includes('không xác định') || /* istanbul ignore next */ msg === 'Unknown error';
+  const isGeneric = msg.includes('không xác định') || msg === 'Unknown error';
   return fallback && isGeneric ? fallback : msg;
 }

@@ -44,7 +44,7 @@ const FALLBACK_GRADIENTS = [
 ];
 
 // `index` luôn được CategoryCard truyền → default `= 0` chỉ phòng thủ, không reachable qua unit test
-/* istanbul ignore next -- default arg index=0 luôn được caller truyền */
+
 const getCategoryConfig = (slug?: string, name?: string, index = 0) => {
   if (slug && CATEGORY_CONFIG[slug]) return CATEGORY_CONFIG[slug];
   const n = name?.toLowerCase() || '';

@@ -153,7 +153,6 @@ const CartPage: React.FC = () => {
 
   // Tính lại nếu tổng đơn hàng thay đổi và voucher đang được áp dụng
   const handleVoucherRevalidate = async () => {
-    /* istanbul ignore next */
     if (!appliedVoucher) return;
     try {
       const result = await applyDiscount({

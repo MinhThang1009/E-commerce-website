@@ -30,7 +30,7 @@ const ForgotPasswordPage: React.FC = () => {
     const result = forgotPasswordSchema.safeParse({ email });
     if (!result.success) {
       // ?? '' chỉ phòng thủ: validation fail luôn kèm lỗi email nên nhánh fallback không reach được
-      /* istanbul ignore next */
+
       setEmailError(result.error.flatten().fieldErrors.email?.[0] ?? '');
       return;
     }

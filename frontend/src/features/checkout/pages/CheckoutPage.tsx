@@ -213,7 +213,7 @@ const CheckoutPage: React.FC = () => {
   ];
 
   // enter/exit là framer-motion variant fn; framer bị mock toàn suite test nên không được gọi (animation config, không phải logic)
-  /* istanbul ignore next */
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stepSlide: any = {
     enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
@@ -235,7 +235,7 @@ const CheckoutPage: React.FC = () => {
         return;
       }
     }
-    /* istanbul ignore next -- paymentMethod luôn default 'cod'; radio UI chỉ cho chọn cod/vnpay/momo/installment, không có path set rỗng */
+
     if (currentStep === 1 && !formData.paymentMethod) {
       addNotification({ type: 'warning', message: t('checkout.validation.paymentRequired') });
       return;
@@ -465,7 +465,7 @@ const CheckoutPage: React.FC = () => {
   const handleCreateOrder = async () => {
     if (!validateForm()) {
       const firstError = document.querySelector('[aria-invalid="true"]');
-      /* istanbul ignore next -- nhánh cần Input thật render aria-invalid; Input bị mock suite-wide nên querySelector luôn null */
+
       if (firstError) {
         firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }

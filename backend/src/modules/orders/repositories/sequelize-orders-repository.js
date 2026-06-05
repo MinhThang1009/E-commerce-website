@@ -272,12 +272,12 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     return cart.save(options);
   }
 
-  async findActiveCartsByUser(userId) {
-    return this.Cart.findAll({ where: { userId, status: 'active' } });
+  async findActiveCartsByUser(userId, options = {}) {
+    return this.Cart.findAll({ where: { userId, status: 'active' }, ...options });
   }
 
-  async clearCartItems(cartId) {
-    return this.CartItem.destroy({ where: { cartId } });
+  async clearCartItems(cartId, options = {}) {
+    return this.CartItem.destroy({ where: { cartId }, ...options });
   }
 
   // -------- Product / Variant --------

@@ -231,6 +231,19 @@ describe('SequelizeOrdersRepository — Cart', () => {
     expect(deps.CartItem.destroy).toHaveBeenCalledWith({ where: { cartId: 3 } });
   });
 
+  test('clearCartItems — chuyển transaction vào CartItem.destroy khi options có transaction', async () => {
+    // Regression: trước fix, second arg bị ignored → CartItem.destroy chạy ngoài transaction
+    // Sau fix: transaction được pass → rollback được nếu outer transaction fail
+    const { repo, deps } = makeRepo();
+    const mockTx = { id: 'tx-mock' };
+
+    await repo.clearCartItems(3, { transaction: mockTx });
+
+    expect(deps.CartItem.destroy).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { cartId: 3 }, transaction: mockTx }),
+    );
+  });
+
   test('saveCartItem — gọi item.save()', async () => {
     const { repo } = makeRepo();
     const item = makeInstance();

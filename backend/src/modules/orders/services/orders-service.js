@@ -417,7 +417,7 @@ class OrdersService {
   async _clearUserCartInTransaction(userId, transaction) {
     if (!userId) return;
     try {
-      const carts = await this.repo.findActiveCartsByUser(userId);
+      const carts = await this.repo.findActiveCartsByUser(userId, { transaction });
       for (const cart of carts) {
         cart.status = 'converted';
         await this.repo.saveCart(cart, { transaction });

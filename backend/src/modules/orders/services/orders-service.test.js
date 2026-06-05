@@ -713,6 +713,11 @@ describe('OrdersService › createOrder', () => {
     });
 
     expect(cart.status).toBe('converted');
+    // findActiveCartsByUser phải được gọi VỚI transaction để read consistent với cart save/delete
+    expect(repo.findActiveCartsByUser).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.objectContaining({ transaction: expect.anything() }),
+    );
     expect(repo.clearCartItems).toHaveBeenCalledWith(
       7,
       expect.objectContaining({ transaction: expect.anything() }),

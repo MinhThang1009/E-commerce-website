@@ -68,10 +68,10 @@ class IOrdersRepository {
   async saveCart(_cart, _options) {
     throw new Error('not implemented');
   }
-  async findActiveCartsByUser(_userId) {
+  async findActiveCartsByUser(_userId, _options) {
     throw new Error('not implemented');
   }
-  async clearCartItems(_cartId) {
+  async clearCartItems(_cartId, _options) {
     throw new Error('not implemented');
   }
 

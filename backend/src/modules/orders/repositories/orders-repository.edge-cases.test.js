@@ -230,6 +230,19 @@ describe('SequelizeOrdersRepository — findActiveCartsByUser', () => {
 
     expect(result).toEqual([]);
   });
+
+  test('chuyển transaction vào Cart.findAll khi options có transaction', async () => {
+    // Regression: trước fix, options bị ignored → Cart.findAll chạy ngoài transaction
+    // Sau fix: transaction được pass → atomic với saveCart + clearCartItems
+    const { repo, deps } = makeRepo({ Cart: makeModel({ findAll: [] }) });
+    const mockTx = { id: 'tx-mock' };
+
+    await repo.findActiveCartsByUser(5, { transaction: mockTx });
+
+    expect(deps.Cart.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ transaction: mockTx }),
+    );
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════

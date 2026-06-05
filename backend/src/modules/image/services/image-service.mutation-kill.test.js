@@ -339,11 +339,12 @@ describe('convertBase64ToFile', () => {
     });
   });
 
-  test('hợp lệ → ext từ mime, fileName uuid.ext, writeFile buffer, create record', async () => {
+  test('hợp lệ → ext từ mime, fileName uuid.ext, sharp.toFile (strip EXIF), create record', async () => {
     mockImageCreate.mockResolvedValue({ id: 3 });
     const result = await imageService.convertBase64ToFile(validB64, { category: 'product' });
 
-    expect(mockFsPromises.writeFile).toHaveBeenCalled();
+    // IMG-3 fix: sharp.toFile thay writeFile để strip EXIF metadata
+    expect(mockSharp.toFile).toHaveBeenCalled();
     expect(mockImageCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         fileName: 'fixed-uuid-1234.png',
@@ -363,8 +364,8 @@ describe('convertBase64ToFile', () => {
     });
   });
 
-  test('lỗi I/O (writeFile) → AppError "Failed to convert base64 to file" 500', async () => {
-    mockFsPromises.writeFile.mockRejectedValueOnce(new Error('disk full'));
+  test('lỗi I/O (sharp.toFile) → AppError "Failed to convert base64 to file" 500', async () => {
+    mockSharp.toFile.mockRejectedValueOnce(new Error('disk full'));
     await expect(imageService.convertBase64ToFile(validB64, {})).rejects.toMatchObject({
       message: 'Failed to convert base64 to file',
       statusCode: 500,

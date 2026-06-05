@@ -469,12 +469,13 @@ describe('getImagesByProductId', () => {
 describe('convertBase64ToFile', () => {
   const validBase64 = 'data:image/jpeg;base64,' + Buffer.from('fake-jpeg-data').toString('base64');
 
-  it('parse base64 đúng → lưu file + tạo DB record', async () => {
+  it('parse base64 đúng → sharp.toFile (strip EXIF) + tạo DB record', async () => {
     mockImageCreate.mockResolvedValue({ id: 20, ...makeImageRecord() });
 
     const result = await imageService.convertBase64ToFile(validBase64, { category: 'product' });
 
-    expect(mockFsPromises.writeFile).toHaveBeenCalled();
+    // IMG-3 fix: dùng sharp.toFile thay writeFile để strip EXIF (tránh lộ GPS location)
+    expect(mockSharp.toFile).toHaveBeenCalled();
     expect(mockImageCreate).toHaveBeenCalledWith(
       expect.objectContaining({ mimeType: 'image/jpeg', category: 'product' }),
     );
@@ -716,12 +717,12 @@ describe('convertBase64ToFile — default options parameter branch', () => {
 
 describe('convertBase64ToFile — non-AppError → 500', () => {
   it('throw AppError 500 khi có lỗi hệ thống (không phải AppError)', async () => {
-    // Mock writeFile để throw system error (không phải AppError)
-    mockFsPromises.writeFile.mockRejectedValueOnce(new Error('ENOSPC: no space left'));
+    // IMG-3 fix: sharp.toFile thay writeFile — mock sharp.toFile để throw system error
+    mockSharp.toFile.mockRejectedValueOnce(new Error('ENOSPC: no space left'));
     const validBase64 = 'data:image/jpeg;base64,/9j/4AAQSkZJRg==';
     await expect(
       imageService.convertBase64ToFile(validBase64, { category: 'product' }),
     ).rejects.toMatchObject({ statusCode: 500 });
-    mockFsPromises.writeFile.mockResolvedValue(undefined);
+    mockSharp.toFile.mockResolvedValue({});
   });
 });

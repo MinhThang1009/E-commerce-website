@@ -303,14 +303,25 @@ class ImageService {
 
       // Xóa thumbnail nếu tồn tại
       if (image.category === 'product') {
+        // Thumbnails lưu tại images/thumbnails/{year}/{month}/ — lấy year/month từ createdAt
+        const createdAt = new Date(image.createdAt);
+        const year = createdAt.getFullYear().toString();
+        const month = String(createdAt.getMonth() + 1).padStart(2, '0');
         const thumbSizes = ['small', 'medium', 'large'];
         for (const size of thumbSizes) {
           try {
             const thumbFileName = `${path.parse(image.fileName).name}_${size}${path.extname(image.fileName)}`;
-            const thumbPath = path.join(this.uploadDir, 'images/thumbnails', thumbFileName);
+            const thumbPath = path.join(
+              this.uploadDir,
+              'images',
+              'thumbnails',
+              year,
+              month,
+              thumbFileName,
+            );
             await fs.unlink(thumbPath);
           } catch (error) {
-            // Bỏ qua lỗi khi xóa thumbnail
+            logger.error(`Lỗi khi xóa thumbnail ${size}:`, error);
           }
         }
       }
@@ -360,9 +371,9 @@ class ImageService {
       // Đảm bảo thư mục tồn tại
       await fs.mkdir(path.dirname(fullPath), { recursive: true });
 
-      // Chuyển đổi và lưu file
+      // Chuyển đổi, strip EXIF (tránh lộ GPS location), và lưu file
       const buffer = Buffer.from(base64, 'base64');
-      await fs.writeFile(fullPath, buffer);
+      await sharp(buffer).rotate().withMetadata(false).toFile(fullPath);
 
       // Lấy kích thước ảnh
       const dimensions = await this.getImageDimensions(fullPath);
@@ -414,7 +425,11 @@ class ImageService {
 
       // Tìm các file không còn được tham chiếu
       const orphanedFiles = allFiles.filter((filePath) => {
-        const relativePath = path.relative(this.uploadDir, filePath);
+        const relativePath = path.relative(this.uploadDir, filePath).replace(/\\/g, '/');
+        // Thumbnails không có DB record riêng — derivative files, quản lý bằng deleteImage
+        if (relativePath.startsWith('images/thumbnails')) return false;
+        // Temp files đang upload hoặc rò rỉ từ upload thất bại — không xóa tự động
+        if (relativePath.startsWith('temp')) return false;
         return !activeFilePaths.has(relativePath);
       });
 

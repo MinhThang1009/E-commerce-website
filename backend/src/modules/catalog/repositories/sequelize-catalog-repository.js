@@ -397,6 +397,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     const lower = q.toLowerCase();
     return this.Product.findAndCountAll({
       where: {
+        status: 'active',
         [Op.or]: [
           this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('Product.name_vi')), {
             [Op.like]: `%${lower}%`,

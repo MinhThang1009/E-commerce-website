@@ -9,16 +9,13 @@ import { immer } from 'zustand/middleware/immer';
 import { UIState, AddNotificationPayload } from '@/types/ui.types';
 
 // Lấy theme từ localStorage; nếu chưa có → detect theo tuỳ chọn hệ thống (OS)
-const INITIAL_THEME: 'light' | 'dark' = /* istanbul ignore next */ (() => {
-  /* istanbul ignore next */
+const INITIAL_THEME: 'light' | 'dark' = (() => {
+  /* istanbul ignore next -- SSR guard: window luôn tồn tại trong jsdom test env */
   if (typeof window === 'undefined') return 'light';
   const stored = localStorage.getItem('theme');
-  /* istanbul ignore next */
   if (stored === 'dark' || stored === 'light') return stored as 'dark' | 'light';
   // Chưa có preference được lưu → dùng OS preference
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? /* istanbul ignore next */ 'dark'
-    : 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 })();
 
 interface UiActions {

@@ -654,3 +654,30 @@ describe('uiStore — additional', () => {
     expect(localStorage.setItem).toHaveBeenCalledWith('theme', 'dark');
   });
 });
+
+// ── UI Store — INITIAL_THEME module init ───────────────────────────────────────
+// Các nhánh trong IIFE INITIAL_THEME chỉ có thể test qua jest.isolateModules
+
+describe('uiStore — INITIAL_THEME module init', () => {
+  test('localStorage có theme=dark → INITIAL_THEME = dark (stored branch)', () => {
+    const spy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => (key === 'theme' ? 'dark' : null));
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/ui-store') as any).useUiStore;
+      expect(freshStore.getState().theme).toBe('dark');
+    });
+    spy.mockRestore();
+  });
+
+  test('matchMedia prefers dark và không có stored theme → INITIAL_THEME = dark (OS dark branch)', () => {
+    // jsdom: matchMedia có thể non-configurable → dùng direct assignment
+    const origMatchMedia = (window as any).matchMedia;
+    (window as any).matchMedia = jest.fn().mockReturnValue({ matches: true });
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/ui-store') as any).useUiStore;
+      expect(freshStore.getState().theme).toBe('dark');
+    });
+    (window as any).matchMedia = origMatchMedia;
+  });
+});

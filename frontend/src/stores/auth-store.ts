@@ -15,7 +15,6 @@ const getSessionToken = (): string | null => {
   try {
     return sessionStorage.getItem(SESSION_TOKEN_KEY);
   } catch {
-    /* istanbul ignore next — chỉ xảy ra khi trình duyệt chặn sessionStorage (private mode cũ) */
     return null;
   }
 };
@@ -59,7 +58,6 @@ const getStoredUser = (): User | null => {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;
   } catch {
-    /* istanbul ignore next — chỉ xảy ra khi localStorage bị chặn hoặc dữ liệu bị hỏng */
     return null;
   }
 };

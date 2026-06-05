@@ -23,7 +23,6 @@ const loadMessagesFromStorage = (): Message[] => {
     const raw = localStorage.getItem(STORAGE_KEY_MESSAGES);
     return raw ? (JSON.parse(raw) as Message[]) : [];
   } catch {
-    /* istanbul ignore next — chỉ xảy ra khi localStorage bị hỏng hoặc chứa JSON không hợp lệ */
     return [];
   }
 };
@@ -34,13 +33,13 @@ const loadSessionId = (): string => {
     const saved = localStorage.getItem(STORAGE_KEY_SESSION);
     if (saved) return saved;
   } catch {
-    /* istanbul ignore next — chỉ xảy ra khi localStorage bị chặn */
+    // bị chặn → tạo ID mới
   }
   const newId = createSessionId();
   try {
     localStorage.setItem(STORAGE_KEY_SESSION, newId);
   } catch {
-    /* istanbul ignore next — chỉ xảy ra khi localStorage đầy hoặc bị chặn */
+    // bị đầy → vẫn trả ID đã tạo
   }
   return newId;
 };

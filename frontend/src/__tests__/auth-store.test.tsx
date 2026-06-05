@@ -324,6 +324,29 @@ describe('authStore — module init state restoration', () => {
     });
   });
 
+  test('sessionStorage.getItem throw → getSessionToken catch → token=null, isAuthenticated=false', () => {
+    // Làm cho sessionStorage.getItem throw 1 lần → getSessionToken catch → initToken=null
+    sessionStorageMock.getItem.mockImplementationOnce(() => {
+      throw new Error('storage blocked');
+    });
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/auth-store') as any).useAuthStore;
+      expect(freshStore.getState().isAuthenticated).toBe(false);
+      expect(freshStore.getState().token).toBeNull();
+    });
+  });
+
+  test('localStorage.getItem trả JSON hỏng → getStoredUser catch → user=null', () => {
+    const spy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => (key === 'user' ? '{invalid json}' : null));
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/auth-store') as any).useAuthStore;
+      expect(freshStore.getState().user).toBeNull();
+    });
+    spy.mockRestore();
+  });
+
   test('user trong localStorage → getStoredUser JSON.parse → user được restore', () => {
     const user = { id: '1', email: 'a@a.com', firstName: 'A', lastName: 'B', role: 'customer' };
     // Spy localStorage.getItem (mock thật sự trả dữ liệu — setItem là mock không lưu thật)

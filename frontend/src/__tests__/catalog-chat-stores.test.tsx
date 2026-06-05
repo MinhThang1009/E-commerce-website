@@ -541,6 +541,40 @@ describe('chatStore — module init state restoration', () => {
     localStorage.removeItem('chat_session_id');
   });
 
+  test('chat_messages corrupt JSON → loadMessagesFromStorage catch → messages=[]', () => {
+    const spy = jest
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => (key === 'chat_messages' ? '{invalid' : null));
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/chat-store') as any).useChatStore;
+      expect(freshStore.getState().messages).toEqual([]);
+    });
+    spy.mockRestore();
+  });
+
+  test('localStorage.getItem throw cho chat_session_id → loadSessionId catch → sessionId mới', () => {
+    const spy = jest.spyOn(localStorage, 'getItem').mockImplementation((key: string) => {
+      if (key === 'chat_session_id') throw new Error('storage blocked');
+      return null;
+    });
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/chat-store') as any).useChatStore;
+      expect(freshStore.getState().sessionId).toBeTruthy();
+    });
+    spy.mockRestore();
+  });
+
+  test('localStorage.setItem throw trong loadSessionId → catch → sessionId vẫn được tạo', () => {
+    const spy = jest.spyOn(localStorage, 'setItem').mockImplementationOnce(() => {
+      throw new Error('QuotaExceededError');
+    });
+    jest.isolateModules(() => {
+      const freshStore = (require('@stores/chat-store') as any).useChatStore;
+      expect(freshStore.getState().sessionId).toBeTruthy();
+    });
+    spy.mockRestore();
+  });
+
   test('chat_messages trong localStorage → loadMessagesFromStorage JSON.parse → messages restored', () => {
     const messages = [{ id: 'm1', role: 'user', content: 'Xin chào', timestamp: 0 }];
     const spy = jest

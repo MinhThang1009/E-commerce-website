@@ -12,6 +12,14 @@
 
 // ---------- Mocks (Jest hoist lên trước require) ----------
 
+// sequelize.transaction cần mock để tránh kết nối DB thật trong unit test
+jest.mock('@config/sequelize', () => ({
+  transaction: jest.fn((cb) => cb(null)),
+  fn: jest.fn(),
+  col: jest.fn(),
+  literal: jest.fn((s) => s),
+}));
+
 jest.mock('@models', () => ({
   Product: { findByPk: jest.fn(), findOne: jest.fn() },
   ProductVariant: {
@@ -201,6 +209,7 @@ describe('POST /api/chatbot/cart/add', () => {
     expect(res.body.status).toBe('success');
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ productId: 1, quantity: 2 }),
+      expect.objectContaining({ transaction: null }),
     );
   });
 
@@ -214,7 +223,10 @@ describe('POST /api/chatbot/cart/add', () => {
       .send({ productId: 1, quantity: 1 });
 
     expect(res.status).toBe(200);
-    expect(Cart.create).toHaveBeenCalledWith({ userId: 1, status: 'active' });
+    expect(Cart.create).toHaveBeenCalledWith(
+      { userId: 1, status: 'active' },
+      expect.objectContaining({ transaction: null }),
+    );
   });
 });
 

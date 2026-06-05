@@ -45,38 +45,42 @@ class SequelizeAIRepository extends IAIRepository {
 
   async addToCart({ userId, productId, variantId, quantity }) {
     const { Cart, CartItem } = require('@models');
-    // Resolve variantId nếu không được truyền vào — ưu tiên isDefault=true, fallback về variant đầu tiên
-    let resolvedVariantId = variantId;
-    if (!resolvedVariantId) {
-      const defaultVariant = await this.ProductVariant.findOne({
-        where: { productId },
-        order: [
-          ['isDefault', 'DESC'],
-          ['id', 'ASC'],
-        ],
-        attributes: ['id', 'price'],
+    return this.sequelize.transaction(async (transaction) => {
+      // Resolve variantId nếu không được truyền vào — ưu tiên isDefault=true, fallback về variant đầu tiên
+      let resolvedVariantId = variantId;
+      if (!resolvedVariantId) {
+        const defaultVariant = await this.ProductVariant.findOne({
+          where: { productId },
+          order: [
+            ['isDefault', 'DESC'],
+            ['id', 'ASC'],
+          ],
+          attributes: ['id', 'price'],
+          transaction,
+        });
+        if (defaultVariant) resolvedVariantId = defaultVariant.id;
+      }
+      const variant = resolvedVariantId
+        ? await this.ProductVariant.findByPk(resolvedVariantId, {
+            attributes: ['price'],
+            transaction,
+          })
+        : null;
+      const unitPrice = variant ? variant.price : 0;
+      let cart = await Cart.findOne({ where: { userId, status: 'active' }, transaction });
+      if (!cart) cart = await Cart.create({ userId, status: 'active' }, { transaction });
+      // Nếu đã có item cùng product+variant → tăng quantity thay vì tạo mới
+      const existing = await CartItem.findOne({
+        where: { cartId: cart.id, productId, variantId: resolvedVariantId },
+        transaction,
       });
-      if (defaultVariant) resolvedVariantId = defaultVariant.id;
-    }
-    const variant = resolvedVariantId
-      ? await this.ProductVariant.findByPk(resolvedVariantId, { attributes: ['price'] })
-      : null;
-    const unitPrice = variant ? variant.price : 0;
-    let cart = await Cart.findOne({ where: { userId, status: 'active' } });
-    if (!cart) cart = await Cart.create({ userId, status: 'active' });
-    // Nếu đã có item cùng product+variant → tăng quantity thay vì tạo mới
-    const existing = await CartItem.findOne({
-      where: { cartId: cart.id, productId, variantId: resolvedVariantId },
-    });
-    if (existing) {
-      return existing.update({ quantity: existing.quantity + quantity });
-    }
-    return CartItem.create({
-      cartId: cart.id,
-      productId,
-      variantId: resolvedVariantId,
-      quantity,
-      unitPrice,
+      if (existing) {
+        return existing.update({ quantity: existing.quantity + quantity }, { transaction });
+      }
+      return CartItem.create(
+        { cartId: cart.id, productId, variantId: resolvedVariantId, quantity, unitPrice },
+        { transaction },
+      );
     });
   }
 }

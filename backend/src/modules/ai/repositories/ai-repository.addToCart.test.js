@@ -30,7 +30,12 @@ function makeRepo(pvOverrides = {}) {
     Product: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn() },
     ProductVariant: makeProductVariant(pvOverrides),
     Category: { findAll: jest.fn(), findByPk: jest.fn() },
-    sequelize: { fn: jest.fn(), col: jest.fn(), literal: jest.fn((s) => s) },
+    sequelize: {
+      fn: jest.fn(),
+      col: jest.fn(),
+      literal: jest.fn((s) => s),
+      transaction: jest.fn((cb) => cb(null)),
+    },
   };
   return { repo: new SequelizeAiRepository(deps), deps };
 }
@@ -51,9 +56,13 @@ describe('SequelizeAiRepository.addToCart', () => {
 
     await repo.addToCart({ userId: 1, productId: 10, variantId: 5, quantity: 2 });
 
-    expect(deps.ProductVariant.findByPk).toHaveBeenCalledWith(5, { attributes: ['price'] });
+    expect(deps.ProductVariant.findByPk).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ attributes: ['price'] }),
+    );
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ unitPrice: '299000', quantity: 2 }),
+      expect.objectContaining({ transaction: null }),
     );
   });
 
@@ -64,8 +73,14 @@ describe('SequelizeAiRepository.addToCart', () => {
 
     await repo.addToCart({ userId: 1, productId: 10, variantId: 999, quantity: 1 });
 
-    expect(deps.ProductVariant.findByPk).toHaveBeenCalledWith(999, { attributes: ['price'] });
-    expect(CartItem.create).toHaveBeenCalledWith(expect.objectContaining({ unitPrice: 0 }));
+    expect(deps.ProductVariant.findByPk).toHaveBeenCalledWith(
+      999,
+      expect.objectContaining({ attributes: ['price'] }),
+    );
+    expect(CartItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({ unitPrice: 0 }),
+      expect.objectContaining({ transaction: null }),
+    );
   });
 
   test('chưa có cart → Cart.create được gọi', async () => {
@@ -76,8 +91,14 @@ describe('SequelizeAiRepository.addToCart', () => {
 
     await repo.addToCart({ userId: 2, productId: 5, variantId: 1, quantity: 1 });
 
-    expect(Cart.create).toHaveBeenCalledWith({ userId: 2, status: 'active' });
-    expect(CartItem.create).toHaveBeenCalledWith(expect.objectContaining({ cartId: 'new-cart' }));
+    expect(Cart.create).toHaveBeenCalledWith(
+      { userId: 2, status: 'active' },
+      expect.objectContaining({ transaction: null }),
+    );
+    expect(CartItem.create).toHaveBeenCalledWith(
+      expect.objectContaining({ cartId: 'new-cart' }),
+      expect.objectContaining({ transaction: null }),
+    );
   });
 
   test('đã có item cùng product+variant → cập nhật quantity thay vì tạo mới (line 114)', async () => {
@@ -94,7 +115,10 @@ describe('SequelizeAiRepository.addToCart', () => {
     const result = await repo.addToCart({ userId: 1, productId: 10, variantId: 5, quantity: 2 });
 
     // Phải gọi update thay vì create
-    expect(existingItem.update).toHaveBeenCalledWith({ quantity: 5 }); // 3 + 2 = 5
+    expect(existingItem.update).toHaveBeenCalledWith(
+      { quantity: 5 },
+      expect.objectContaining({ transaction: null }),
+    ); // 3 + 2 = 5
     expect(CartItem.create).not.toHaveBeenCalled();
     expect(result.quantity).toBe(5);
   });

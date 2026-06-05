@@ -18,7 +18,13 @@ function makeRepo(overrides = {}) {
     Product: makeModel(),
     ProductVariant: makeModel(),
     Category: makeModel(),
-    sequelize: { fn: jest.fn(), col: jest.fn(), literal: jest.fn((s) => s) },
+    sequelize: {
+      fn: jest.fn(),
+      col: jest.fn(),
+      literal: jest.fn((s) => s),
+      // transaction: thực thi callback trực tiếp với null transaction (unit test, không cần DB)
+      transaction: jest.fn((cb) => cb(null)),
+    },
     ...overrides,
   };
   return { repo: new SequelizeAiRepository(deps), deps };
@@ -121,9 +127,10 @@ describe('SequelizeAiRepository.addToCart', () => {
 
     // resolvedVariantId vẫn null → ProductVariant.findByPk KHÔNG được gọi (variant = null)
     expect(mockVariantFindByPk).not.toHaveBeenCalled();
-    // CartItem.create được gọi với variantId=null (unitPrice=0)
+    // CartItem.create được gọi với variantId=null (unitPrice=0) + transaction option
     expect(mockCartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ productId: 10, variantId: null }),
+      expect.objectContaining({ transaction: null }),
     );
   });
 });

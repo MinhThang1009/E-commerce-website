@@ -428,9 +428,12 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async findProductSuggestions(prefix, limit = 10) {
     const lower = prefix.toLowerCase();
     return this.Product.findAll({
-      where: this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('name_vi')), {
-        [Op.like]: `${lower}%`,
-      }),
+      where: {
+        status: 'active',
+        [Op.and]: this.sequelize.where(this.sequelize.fn('LOWER', this.sequelize.col('name_vi')), {
+          [Op.like]: `${lower}%`,
+        }),
+      },
       attributes: ['id', 'nameVi', 'nameEn', 'slug'],
       include: [
         {
@@ -471,6 +474,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       JOIN order_items oi ON p.id = oi.product_id
       JOIN orders o ON oi.order_id = o.id
       WHERE o.status != 'cancelled'
+      AND p.status = 'active'
       AND o.created_at >= :startDate
       GROUP BY p.id
       ORDER BY units_sold DESC

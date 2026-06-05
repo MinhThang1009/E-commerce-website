@@ -140,6 +140,7 @@ Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAna
 5. Sync vector store sau khi insert thành công (async `setImmediate`, fire-and-forget)
 
 **Export**: Hỗ trợ CSV (default) và JSON (`?format=json`).
+
 - CSV spec columns (storage/display/battery) lookup trực tiếp `specMap['bộ nhớ']`, `specMap['màn hình']`, `specMap['pin']` — KHÔNG qua `specKeyMap` trung gian (đã xóa).
 
 **CSV template**: Gồm 16 columns: `name, slug, short_description, base_price, category_slug, brand, status, stock_quantity, sku, weight_kg, image_urls, spec_cpu, spec_ram, spec_storage, spec_display, spec_battery`.

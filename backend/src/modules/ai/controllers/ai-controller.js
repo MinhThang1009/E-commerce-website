@@ -14,7 +14,10 @@ class AIController {
 
   handleMessage = async (req, res) => {
     try {
-      const { message, userId, sessionId } = req.body;
+      const { message, sessionId, userId: bodyUserId } = req.body;
+      // Ưu tiên userId từ JWT token (đã xác thực bởi server) để tránh analytics spoofing;
+      // fallback về body cho anonymous user không có token
+      const userId = req.user?.id ?? bodyUserId ?? null;
       if (!message || typeof message !== 'string') {
         return res
           .status(400)

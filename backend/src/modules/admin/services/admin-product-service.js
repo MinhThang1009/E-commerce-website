@@ -398,7 +398,6 @@ const updateProduct = catchAsync(async (req, res) => {
   try {
     const product = await adminRepository.findProductById(id, { transaction });
     if (!product) {
-      await transaction.rollback();
       throw new AppError('Không tìm thấy sản phẩm', 404);
     }
 

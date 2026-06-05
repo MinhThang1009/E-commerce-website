@@ -731,7 +731,7 @@ describe('adminRepository — Inventory, Analytics, Chatbot', () => {
   test('countChatMessages không có args → default (line 240 default branch)', async () => {
     ChatMessage.count.mockResolvedValue(0);
     await repo.countChatMessages();
-    expect(ChatMessage.count).toHaveBeenCalledWith({ where: {} });
+    expect(ChatMessage.count).toHaveBeenCalledWith({});
   });
 
   test('findOneChatMessage gọi ChatMessage.findOne', async () => {

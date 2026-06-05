@@ -186,7 +186,7 @@ const aggregateOrderItems2 = ({
 
 // ─── Chatbot stats ────────────────────────────────────────────────────────────
 
-const countChatMessages = (where = {}) => ChatMessage.count({ where });
+const countChatMessages = (options = {}) => ChatMessage.count(options);
 
 const findOneChatMessage = (options = {}) => ChatMessage.findOne(options);
 

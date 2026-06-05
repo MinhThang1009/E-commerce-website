@@ -342,45 +342,6 @@ describe('CatalogService._buildProductDetailResponse — branch coverage', () =>
   });
 });
 
-describe('CatalogService.createProduct — branch coverage', () => {
-  // Line 896 [binary-expr] counts=[8,0]: v.name || v.variantName || v.displayName → v.name truthy never
-  test('line 896 v.name truthy: variant.name = "Large" → uses name directly', async () => {
-    const { svc, repo } = makeCatalogService();
-    const product = { id: 1, slug: 'test', status: 'active', setCategories: jest.fn() };
-    repo.runInTransaction = jest.fn((cb) =>
-      cb({
-        findOrCreate: jest.fn().mockResolvedValue([product, true]),
-      }),
-    );
-    const catalogRepo = svc.catalogRepository;
-    catalogRepo.findCategoryBySlug = jest.fn().mockResolvedValue({ id: 1 });
-    catalogRepo.createProductVariants = jest.fn().mockResolvedValue([{ id: 5 }]);
-    catalogRepo.createProductImages = jest.fn().mockResolvedValue([]);
-    catalogRepo.createProductSpecifications = jest.fn().mockResolvedValue([]);
-    catalogRepo.createProductAttributes = jest.fn().mockResolvedValue([]);
-    catalogRepo.setProductCategories = jest.fn().mockResolvedValue();
-    catalogRepo.createProduct = jest.fn().mockResolvedValue(product);
-    catalogRepo.findProductById = jest.fn().mockResolvedValue({ toJSON: () => ({ ...product }) });
-
-    try {
-      await svc.createProduct({
-        name: 'Test Product',
-        slug: 'test',
-        status: 'active',
-        variants: [{ name: 'Large', price: 100000, sku: 'SKU-L' }], // ← v.name truthy
-        categories: [],
-      });
-    } catch (e) {
-      // May throw due to incomplete mock — we just need the branch to be hit
-    }
-    // If createProductVariants was called with name='Large', branch covered
-    const calls = catalogRepo.createProductVariants.mock.calls;
-    if (calls.length > 0) {
-      expect(calls[0][0][0]).toMatchObject({ name: 'Large' });
-    }
-  });
-});
-
 // ────────────────────────────────────────────────────────────────────────────
 // OrdersService — branch coverage
 // ────────────────────────────────────────────────────────────────────────────

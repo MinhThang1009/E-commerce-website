@@ -1,7 +1,6 @@
 /**
  * Test HTTP endpoints của chatbot:
  *  - POST /api/chatbot/cart/add  → 401 không có token, 404 sản phẩm không tồn tại, 400 hết hàng, 200 thành công
- *  - POST /api/chatbot/analytics → 401 không có token, 200 thành công
  *  - chatbotLimiter              → 429 sau khi vượt 20 requests/phút
  *
  * Chiến lược mock:
@@ -216,33 +215,6 @@ describe('POST /api/chatbot/cart/add', () => {
 
     expect(res.status).toBe(200);
     expect(Cart.create).toHaveBeenCalledWith({ userId: 1, status: 'active' });
-  });
-});
-
-// ============================================================
-// POST /api/chatbot/analytics
-// ============================================================
-
-describe('POST /api/chatbot/analytics', () => {
-  test('401 khi không có Authorization header', async () => {
-    const res = await request
-      .post('/api/chatbot/analytics')
-      .send({ event: 'product_clicked', productId: 1 });
-
-    expect(res.status).toBe(401);
-    expect(res.body.status).toBe('error');
-  });
-
-  test('200 khi ghi nhận analytics thành công', async () => {
-    const res = await request
-      .post('/api/chatbot/analytics')
-      .set('Authorization', 'Bearer test-token')
-      .send({ event: 'product_clicked', productId: 1, sessionId: 'sess_1' });
-
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe('success');
-    // Analytics giờ lưu qua aiRepository.createAnalyticsEvent (chat_messages)
-    // không còn gọi chatbotService.trackAnalytics trực tiếp
   });
 });
 

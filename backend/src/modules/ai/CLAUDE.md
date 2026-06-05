@@ -27,7 +27,7 @@
 
 ## 1.1 Purpose
 
-Cung cấp AI chatbot tư vấn sản phẩm công nghệ qua RAG (Retrieval-Augmented Generation) pipeline, recommendations sản phẩm (deals/featured), add-to-cart qua chatbot, và analytics tracking. Module cũng expose `product-name-generator` để `attribute` module inject qua setter.
+Cung cấp AI chatbot tư vấn sản phẩm công nghệ qua RAG (Retrieval-Augmented Generation) pipeline và add-to-cart qua chatbot. Module cũng expose `product-name-generator` để `attribute` module inject qua setter.
 
 ## 1.2 DI Pattern
 
@@ -57,11 +57,11 @@ modules/ai/
   module.js                                      — DI wiring
   routes.js                                      — HTTP endpoints (basePath '/chatbot')
   controllers/
-    ai-controller.js                             — 4 handlers: handleMessage, getRecommendations,
-                                                   trackAnalytics, addToCart
+    ai-controller.js                             — handlers: handleMessage, addToCart,
+                                                   clearSession/registerSession/getSessionMessages
   repositories/
     i-ai-repository.js                           — Interface
-    sequelize-ai-repository.js                   — Product search, deals, addToCart, analytics event
+    sequelize-ai-repository.js                   — findProductForCart, addToCart, analytics event (cho addToCart)
   services/
     core/
       ai-service.js                              — Orchestration layer (~65 lines, 4 methods)
@@ -101,14 +101,13 @@ modules/ai/
 
 # 3. Business Logic Chính
 
-## 3.1 AIService — 4 methods chính
+## 3.1 AIService — methods chính
 
-**`services/core/ai-service.js`** (~65 lines) chỉ orchestrate, không chứa logic phức tạp:
+**`services/core/ai-service.js`** chỉ orchestrate, không chứa logic phức tạp:
 
 - `handleMessage({ message, userId, sessionId })` — delegate hoàn toàn cho `chatbotService.handleMessage()`, trả về `{ response, products, suggestions, intent }`
-- `getRecommendations({ type, limit })` — `type='deals'` → `repo.findActiveDeals(limit)`; mọi type khác → `repo.findFeaturedProducts(limit)`
-- `trackAnalytics({ event, userId, sessionId, productId, value, metadata, timestamp })` — ghi event vào `ChatMessage`-like analytics table qua `repo.createAnalyticsEvent()`
-- `addToCart({ productId, variantId, quantity, sessionId, userId })` — verify product active + stock không bằng 0, insert CartItem qua repo, ghi analytics event `product_added_to_cart`
+- `addToCart({ productId, variantId, quantity, sessionId, userId })` — verify product active + stock không bằng 0, insert CartItem qua repo, ghi analytics event `product_added_to_cart` (qua `repo.createAnalyticsEvent()`)
+- Session delegators: `clearSession`, `registerSession`, `getSessionMessages` (wired tại `routes.js`)
 
 ## 3.2 ChatbotService — Full RAG flow + LLM gateway + session
 
@@ -158,13 +157,13 @@ modules/ai/
 
 Base path: `/api/chatbot`
 
-| Method | Path                       | Auth                 | Rate Limit                                        | Mô tả                                                                                  |
-| ------ | -------------------------- | -------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| POST   | `/chatbot/message`         | optionalAuthenticate | chatbotLimiter (20 req/60s, prod và dev như nhau) | Gửi message nhận RAG response                                                          |
-| GET    | `/chatbot/recommendations` | optionalAuthenticate | —                                                 | Gợi ý sản phẩm (`?type=deals` hoặc featured)                                           |
-| POST   | `/chatbot/analytics`       | authenticate         | —                                                 | Track analytics event (yêu cầu login)                                                  |
-| POST   | `/chatbot/cart/add`        | authenticate         | —                                                 | Thêm sản phẩm vào giỏ qua chatbot                                                      |
-| POST   | `/chatbot/session/clear`   | —                    | —                                                 | Xóa session history theo `sessionId` (hoặc toàn bộ nếu không có). Dùng cho demo/debug. |
+| Method | Path                                   | Auth                 | Rate Limit                                        | Mô tả                                                                                  |
+| ------ | -------------------------------------- | -------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| POST   | `/chatbot/message`                     | optionalAuthenticate | chatbotLimiter (20 req/60s, prod và dev như nhau) | Gửi message nhận RAG response                                                          |
+| POST   | `/chatbot/cart/add`                    | authenticate         | —                                                 | Thêm sản phẩm vào giỏ qua chatbot                                                      |
+| POST   | `/chatbot/session/clear`               | —                    | —                                                 | Xóa session history theo `sessionId` (hoặc toàn bộ nếu không có). Dùng cho demo/debug. |
+| POST   | `/chatbot/session/register`            | —                    | —                                                 | FE đăng ký session đang active (ChatWidget)                                            |
+| GET    | `/chatbot/session/:sessionId/messages` | —                    | —                                                 | Load lịch sử messages từ DB (FE auto-poll + load history)                              |
 
 ---
 
@@ -192,8 +191,7 @@ Base path: `/api/chatbot`
 - **`chatbotService` bắt buộc** — `module.js` throw Error nếu thiếu. `Product` cũng bắt buộc.
 - **`vectorStoreService` optional** — lazy require trong chatbot-service.js, có thể là `null`. `handleMessage` bỏ qua bước retrieval khi `vectorStoreService = null`.
 - **Off-topic check dùng regex thuần** — intentional, không gọi LLM để tránh tốn quota. Không thay bằng LLM call.
-- **`POST /chatbot/analytics` yêu cầu `authenticate`** — không phải public endpoint.
-- **Không có `GET /chatbot/history`** — endpoint này không tồn tại trong routes.js.
+- **Không có `GET /chatbot/history` / `/recommendations` / `/analytics` / `/session/latest`** — đã gỡ (FE không gọi; chỉ còn message/cart-add/session-clear/register/messages).
 - **Conversation history reset khi restart** — Map không persist. Đủ cho demo/KLTN.
 - **Cross-module import bị hook block** — không được `require('@modules/ai/services/...')` trực tiếp từ module khác ngoài `module.js`. Inject qua DI hoặc setter.
 - **`product-name-generator.js` định nghĩa associations inline** — tự define `AttributeValue.belongsTo(AttributeGroup)` nếu chưa có, để tránh phụ thuộc thứ tự load.

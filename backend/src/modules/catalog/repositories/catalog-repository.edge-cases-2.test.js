@@ -242,44 +242,6 @@ describe('findRecentlyViewedByUser — line 680: thiếu RecentlyViewed model', 
   });
 });
 
-// ─── createProductSpecifications — line 747: ProductSpecification thiếu → throw
-
-describe('createProductSpecifications — line 747: thiếu ProductSpecification model', () => {
-  it('throw khi ProductSpecification không được inject vào constructor', async () => {
-    const { repo } = makeRepo({ ProductSpecification: undefined });
-
-    await expect(repo.createProductSpecifications([{ name: 'CPU', value: 'i7' }])).rejects.toThrow(
-      'ProductSpecification model bắt buộc trong constructor',
-    );
-  });
-});
-
-// ─── createProductAttributes — line 759: ProductAttribute thiếu → throw ────────
-
-describe('createProductAttributes — line 759: thiếu ProductAttribute model', () => {
-  it('throw khi ProductAttribute không được inject vào constructor', async () => {
-    const { repo } = makeRepo({ ProductAttribute: undefined });
-
-    await expect(
-      repo.createProductAttributes([{ productId: 1, name: 'Color', values: ['red'] }]),
-    ).rejects.toThrow('ProductAttribute model bắt buộc trong constructor');
-  });
-});
-
-// ─── createProductVariants — line 771: ProductVariant thiếu → throw ────────────
-
-describe('createProductVariants — line 771: thiếu ProductVariant model', () => {
-  it('throw khi ProductVariant không được inject vào constructor', async () => {
-    const { repo } = makeRepo({ ProductVariant: undefined });
-
-    await expect(repo.createProductVariants([{ sku: 'VAR-001', price: 100 }])).rejects.toThrow(
-      'ProductVariant model bắt buộc trong constructor',
-    );
-  });
-});
-
-// ─── clearProductAttributes — guard: ProductAttribute null → return early ───────
-
 // ─── upsertRecentlyViewed — guard: RecentlyViewed null → return early (line 697) ──
 
 describe('upsertRecentlyViewed — guard: RecentlyViewed null → return sớm (line 697)', () => {
@@ -300,27 +262,6 @@ describe('pruneRecentlyViewed — guard: RecentlyViewed null → return sớm (l
 
     // Không throw, không gọi findAll — trả về undefined
     const result = await repo.pruneRecentlyViewed(1, 5);
-    expect(result).toBeUndefined();
-  });
-});
-
-describe('clearProductAttributes — guard: ProductAttribute null → return', () => {
-  it('không throw và return sớm khi ProductAttribute là undefined', async () => {
-    const { repo } = makeRepo({ ProductAttribute: undefined });
-
-    // clearProductAttributes dùng `if (!this.ProductAttribute) return;` → không throw
-    const result = await repo.clearProductAttributes(1);
-    expect(result).toBeUndefined();
-  });
-});
-
-// ─── clearProductVariants — guard: ProductVariant null → return early ────────────
-
-describe('clearProductVariants — guard: ProductVariant null → return', () => {
-  it('không throw và return sớm khi ProductVariant là undefined', async () => {
-    const { repo } = makeRepo({ ProductVariant: undefined });
-
-    const result = await repo.clearProductVariants(1);
     expect(result).toBeUndefined();
   });
 });
@@ -355,87 +296,5 @@ describe('findProductByIdWithFullDetails', () => {
     const result = await repo.findProductByIdWithFullDetails(999);
 
     expect(result).toBeNull();
-  });
-});
-
-// ─── clearProductImages — lines 733-741 ──────────────────────────────────────
-
-describe('clearProductImages', () => {
-  it('return sớm khi ProductImage là null', async () => {
-    const { repo } = makeRepo({ ProductImage: null });
-
-    const result = await repo.clearProductImages(1, null);
-
-    expect(result).toBeUndefined();
-  });
-
-  it('xóa product-level images khi variantIdFilter = null', async () => {
-    const ProductImage = makeModel();
-    const { repo } = makeRepo({ ProductImage });
-
-    await repo.clearProductImages(10, null);
-
-    expect(ProductImage.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: 10, variantId: null } }),
-    );
-  });
-
-  it('xóa tất cả images (product + variant) khi variantIdFilter = "all"', async () => {
-    const ProductImage = makeModel();
-    const { repo } = makeRepo({ ProductImage });
-
-    await repo.clearProductImages(10, 'all');
-
-    // variantIdFilter = 'all' → where chỉ có productId
-    expect(ProductImage.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { productId: 10 } }),
-    );
-  });
-
-  it('xóa variant images (variantId != null) khi variantIdFilter là giá trị khác', async () => {
-    const ProductImage = makeModel();
-    const { repo } = makeRepo({ ProductImage });
-
-    await repo.clearProductImages(10, 'variant-only');
-
-    expect(ProductImage.destroy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ productId: 10 }),
-      }),
-    );
-  });
-});
-
-// ─── createProductImages — lines 743-745 ─────────────────────────────────────
-
-describe('createProductImages', () => {
-  it('return sớm khi ProductImage là null', async () => {
-    const { repo } = makeRepo({ ProductImage: null });
-
-    const result = await repo.createProductImages([{ imageUrl: 'a.jpg' }]);
-
-    expect(result).toBeUndefined();
-  });
-
-  it('return sớm khi rows rỗng', async () => {
-    const ProductImage = makeModel();
-    const { repo } = makeRepo({ ProductImage });
-
-    const result = await repo.createProductImages([]);
-
-    expect(result).toBeUndefined();
-    expect(ProductImage.bulkCreate).not.toHaveBeenCalled();
-  });
-
-  it('gọi ProductImage.bulkCreate khi có rows hợp lệ', async () => {
-    const ProductImage = makeModel();
-    const rows = [{ productId: 1, imageUrl: 'img.jpg', isThumbnail: true }];
-    ProductImage.bulkCreate.mockResolvedValue(rows);
-    const { repo } = makeRepo({ ProductImage });
-
-    const result = await repo.createProductImages(rows);
-
-    expect(ProductImage.bulkCreate).toHaveBeenCalledWith(rows, {});
-    expect(result).toBe(rows);
   });
 });

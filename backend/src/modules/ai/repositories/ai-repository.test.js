@@ -1,6 +1,5 @@
 // Unit tests cho SequelizeAiRepository (src/modules/ai/repositories/SequelizeAiRepository.js)
 // Mock toàn bộ Sequelize models — không chạm DB
-const { Op, literal } = require('sequelize');
 const SequelizeAiRepository = require('./sequelize-ai-repository');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,59 +23,6 @@ function makeRepo(overrides = {}) {
   };
   return { repo: new SequelizeAiRepository(deps), deps };
 }
-
-// ════════════════════════════════════════════════════════════════════════════
-// findActiveDeals
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('SequelizeAiRepository.findActiveDeals', () => {
-  test('gọi Product.findAll với status=active và compareAtPrice > basePrice', async () => {
-    const { repo, deps } = makeRepo();
-    await repo.findActiveDeals(5);
-
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          status: 'active',
-          compareAtPrice: expect.objectContaining({ [Op.gt]: literal('`Product`.`base_price`') }),
-        }),
-        limit: 5,
-      }),
-    );
-  });
-
-  test('dùng default limit=10 khi không truyền', async () => {
-    const { repo, deps } = makeRepo();
-    await repo.findActiveDeals();
-
-    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// findFeaturedProducts
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('SequelizeAiRepository.findFeaturedProducts', () => {
-  test('gọi Product.findAll với status=active và isFeatured=true', async () => {
-    const { repo, deps } = makeRepo();
-    await repo.findFeaturedProducts(8);
-
-    expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { status: 'active', isFeatured: true },
-        limit: 8,
-      }),
-    );
-  });
-
-  test('dùng default limit=10 khi không truyền', async () => {
-    const { repo, deps } = makeRepo();
-    await repo.findFeaturedProducts();
-
-    expect(deps.Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
-  });
-});
 
 // ════════════════════════════════════════════════════════════════════════════
 // findProductForCart

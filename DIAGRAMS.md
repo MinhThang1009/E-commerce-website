@@ -288,7 +288,7 @@ flowchart TB
 
     subgraph ADMIN_CAT["Admin — Catalog CRUD"]
         direction TB
-        E1["POST/PUT/DELETE /api/products<br/>CRUD (admin) → sync vector store"]
+        E1["POST/PUT/DELETE /api/admin/products<br/>CRUD (admin) → sync vector store"]
         E2["POST/PUT/DELETE /api/categories<br/>CRUD danh mục đa cấp"]
         E3["POST/PUT/DELETE /api/brands<br/>CRUD thương hiệu"]
     end
@@ -506,9 +506,7 @@ flowchart TB
     subgraph AI_CHAT["AI Chatbot — RAG Pipeline"]
         direction TB
         AI1["POST /api/chatbot/message<br/>20 req/60s, RAG pipeline"]
-        AI2["GET /api/chatbot/recommendations<br/>Gợi ý type=deals/featured"]
         AI3["POST /api/chatbot/cart/add<br/>Thêm giỏ (authenticate)"]
-        AI4["POST /api/chatbot/analytics<br/>Ghi analytics (authenticate)"]
     end
 
     subgraph SEARCH_H["Search History"]
@@ -520,12 +518,9 @@ flowchart TB
     end
 
     Guest --> AI1
-    Guest --> AI2
     Guest --> SH1
     Customer --> AI1
-    Customer --> AI2
     Customer --> AI3
-    Customer --> AI4
     Customer --> SH2
     Customer --> SH3
     Customer --> SH4
@@ -1805,7 +1800,6 @@ stateDiagram-v2
 
     note right of inactive
         archived: enum hợp lệ, set được qua
-        POST/PUT /api/products (catalog) và
         PUT /admin/products/:id (updateProduct);
         KHÔNG có node/transition trong diagram,
         không có toggle UI chuyên dụng

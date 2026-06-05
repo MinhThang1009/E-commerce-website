@@ -4,7 +4,7 @@
  * Bổ sung cho chatbot-service.test.js (baseline mutation 53%). Tập trung các method
  * PURE-LOGIC dễ kill (không cần mock LLM HTTP):
  *   - _sanitizeMessage: replace " → ', gộp \n, trim, cắt 500
- *   - session: clearSession, getSessionHistory, registerSession, getLatestSession, getSessionMessages
+ *   - session: clearSession, registerSession, getSessionMessages
  *   - _persistMessages: skip / bulkCreate args / metadata / DB error warn
  *   - _evictStaleSessions: TTL + LRU
  */
@@ -102,41 +102,10 @@ describe('clearSession', () => {
   });
 });
 
-describe('getSessionHistory', () => {
-  it('session tồn tại → trả messages', () => {
-    const msgs = [{ role: 'user', content: 'hi' }];
-    svc.conversationHistory.set('s1', { messages: msgs, lastAccess: 1 });
-    expect(svc.getSessionHistory('s1')).toBe(msgs);
-  });
-
-  it('session không tồn tại → trả mảng rỗng', () => {
-    expect(svc.getSessionHistory('nope')).toEqual([]);
-  });
-});
-
-describe('registerSession + getLatestSession', () => {
-  it('registerSession lưu _registeredSession', async () => {
+describe('registerSession', () => {
+  it('registerSession lưu _registeredSession', () => {
     svc.registerSession('sess-ui');
     expect(svc._registeredSession).toBe('sess-ui');
-    expect(await svc.getLatestSession()).toBe('sess-ui');
-  });
-
-  it('chưa register → query ChatMessage.findOne, trả sessionId', async () => {
-    mockFindOne.mockResolvedValue({ sessionId: 'from-db' });
-    expect(await svc.getLatestSession()).toBe('from-db');
-    expect(mockFindOne).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { messageType: 'ai_chatbot', role: 'user' },
-        order: [['createdAt', 'DESC']],
-        attributes: ['sessionId'],
-        raw: true,
-      }),
-    );
-  });
-
-  it('findOne trả null → getLatestSession trả null', async () => {
-    mockFindOne.mockResolvedValue(null);
-    expect(await svc.getLatestSession()).toBeNull();
   });
 });
 

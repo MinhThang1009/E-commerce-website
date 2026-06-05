@@ -197,4 +197,4 @@ interface SendChatbotMessageRequest {
 Không có test file riêng trong `features/ai/`. Chatbot được test ở backend:
 
 - `backend/src/modules/ai/services/`, `controllers/`, `repositories/` (co-located `*.test.js`) — unit tests AI service, chatbot, vector search
-- `backend/src/modules/ai/controllers/ai-controller.chatbot.test.js` — test `/chatbot/message`, `/chatbot/analytics`; `backend/src/__api__/ai-chatbot.http.test.js` — API HTTP tests
+- `backend/src/modules/ai/controllers/ai-controller.chatbot.test.js` — test `/chatbot/message`; `backend/src/__api__/ai-chatbot.http.test.js` — API HTTP tests

@@ -301,33 +301,6 @@ class CatalogController {
       next(err);
     }
   };
-
-  createProduct = async (req, res, next) => {
-    try {
-      const data = await this.catalogService.createProduct({ payload: req.body });
-      res.status(201).json({ status: 'success', data });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  updateProduct = async (req, res, next) => {
-    try {
-      const data = await this.catalogService.updateProduct({ id: req.params.id, patch: req.body });
-      res.status(200).json({ status: 'success', data });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  deleteProduct = async (req, res, next) => {
-    try {
-      const result = await this.catalogService.deleteProduct({ id: req.params.id });
-      res.status(200).json({ status: 'success', message: result.message });
-    } catch (err) {
-      next(err);
-    }
-  };
 }
 
 module.exports = CatalogController;

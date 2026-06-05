@@ -50,20 +50,6 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       findRecentlyViewedByUser: jest.fn(),
       upsertRecentlyViewed: jest.fn().mockResolvedValue(),
       pruneRecentlyViewed: jest.fn().mockResolvedValue(),
-      findProductByName: jest.fn().mockResolvedValue(null),
-      createProduct: jest.fn(),
-      saveProduct: jest.fn(async (p) => p),
-      deleteProduct: jest.fn().mockResolvedValue(),
-      findCategoriesByIds: jest.fn(),
-      setProductCategories: jest.fn().mockResolvedValue(),
-      createProductSpecifications: jest.fn().mockResolvedValue(),
-      clearProductAttributes: jest.fn().mockResolvedValue(),
-      createProductAttributes: jest.fn().mockResolvedValue(),
-      clearProductVariants: jest.fn().mockResolvedValue(),
-      createProductVariants: jest.fn().mockResolvedValue([]),
-      clearProductImages: jest.fn().mockResolvedValue(),
-      createProductImages: jest.fn().mockResolvedValue(),
-      runInTransaction: jest.fn(async (work) => work({})),
     };
     service = new CatalogService({
       catalogRepository,
@@ -409,99 +395,6 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       const result = await service.getProductFilters({});
       expect(result.brands).toEqual(expect.arrayContaining(['Apple', 'Samsung', 'Xiaomi']));
       expect(result.brands).toHaveLength(3);
-    });
-  });
-
-  describe('createProduct', () => {
-    test('isVariantProduct=true → basePrice=0', async () => {
-      catalogRepository.createProduct.mockResolvedValue({ id: 1 });
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue({ id: 1 });
-      await service.createProduct({
-        payload: {
-          name: 'P',
-          price: 100,
-          variants: [{ name: 'V1', price: 90, attributes: {} }],
-        },
-      });
-      expect(catalogRepository.createProduct).toHaveBeenCalledWith(
-        expect.objectContaining({ basePrice: 0, isVariantProduct: true }),
-        expect.any(Object),
-      );
-    });
-
-    test('không có variants → basePrice=price', async () => {
-      catalogRepository.createProduct.mockResolvedValue({ id: 1 });
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue({ id: 1 });
-      await service.createProduct({ payload: { name: 'P', price: 200 } });
-      expect(catalogRepository.createProduct).toHaveBeenCalledWith(
-        expect.objectContaining({ basePrice: 200, isVariantProduct: false }),
-        expect.any(Object),
-      );
-    });
-
-    test('categoryIds không match → 400', async () => {
-      catalogRepository.createProduct.mockResolvedValue({ id: 1 });
-      catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }]); // 1 found
-      await expect(
-        service.createProduct({ payload: { name: 'P', price: 100, categoryIds: [1, 99] } }),
-      ).rejects.toMatchObject({ statusCode: 400, message: 'catalog.categoriesNotExist' });
-    });
-
-    test('tên sản phẩm đã tồn tại → 409, không tạo', async () => {
-      catalogRepository.findProductByName.mockResolvedValue({ id: 99, nameVi: 'P' });
-      await expect(
-        service.createProduct({ payload: { name: 'P', price: 100 } }),
-      ).rejects.toMatchObject({ statusCode: 409, message: 'catalog.productNameExists' });
-      expect(catalogRepository.createProduct).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('updateProduct', () => {
-    test('không tồn tại → 404', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(service.updateProduct({ id: 99, patch: {} })).rejects.toMatchObject({
-        statusCode: 404,
-      });
-    });
-
-    test('chỉ cập nhật field cung cấp (Object.hasOwnProperty)', async () => {
-      const product = { id: 1, name: 'Old', price: 50, slug: 'old', save: jest.fn() };
-      catalogRepository.findProductByPk.mockResolvedValue(product);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);
-
-      await service.updateProduct({ id: 1, patch: { name: 'New' } });
-
-      expect(product.name).toBe('New');
-      expect(product.price).toBe(50); // không touch
-    });
-
-    test('variants=[...] → clearProductVariants + createProductVariants', async () => {
-      const product = { id: 1, slug: 'x', save: jest.fn() };
-      catalogRepository.findProductByPk.mockResolvedValue(product);
-      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);
-
-      await service.updateProduct({
-        id: 1,
-        patch: { variants: [{ name: 'V', price: 100, attributes: {} }] },
-      });
-
-      expect(catalogRepository.clearProductVariants).toHaveBeenCalled();
-      expect(catalogRepository.createProductVariants).toHaveBeenCalled();
-    });
-  });
-
-  describe('deleteProduct', () => {
-    test('không tồn tại → 404', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue(null);
-      await expect(service.deleteProduct({ id: 99 })).rejects.toMatchObject({ statusCode: 404 });
-    });
-
-    test('xóa thành công', async () => {
-      const product = { id: 1, slug: 'x' };
-      catalogRepository.findProductByPk.mockResolvedValue(product);
-      const result = await service.deleteProduct({ id: 1 });
-      expect(result.message).toBe('catalog.productDeleted');
-      expect(catalogRepository.deleteProduct).toHaveBeenCalledWith(product);
     });
   });
 });

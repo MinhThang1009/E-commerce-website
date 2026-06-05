@@ -32,18 +32,3 @@ describe('POST /api/chatbot/message', () => {
     expect(res.status).toBe(400);
   });
 });
-
-describe('GET /api/chatbot/recommendations', () => {
-  test('→ 200 hoặc 5xx', async () => {
-    const res = await request(app).get('/api/chatbot/recommendations');
-    expect([200, 500, 503]).toContain(res.status);
-    if (res.status === 200) expect(res.body.status).toBe('success');
-  });
-});
-
-describe('POST /api/chatbot/analytics', () => {
-  test('không auth → 401', async () => {
-    const res = await request(app).post('/api/chatbot/analytics').send({ event: 'test' });
-    expect(res.status).toBe(401);
-  });
-});

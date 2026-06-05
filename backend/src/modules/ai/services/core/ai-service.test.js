@@ -7,8 +7,6 @@ describe('AIService', () => {
 
   beforeEach(() => {
     repo = {
-      findActiveDeals: jest.fn(),
-      findFeaturedProducts: jest.fn(),
       createAnalyticsEvent: jest.fn().mockResolvedValue({ id: 1 }),
       findProductForCart: jest.fn(),
       addToCart: jest.fn(),
@@ -32,56 +30,6 @@ describe('AIService', () => {
       });
       expect(service.chatbotService.handleMessage).toHaveBeenCalledWith('hello', 1, 'sess');
       expect(result.response).toBe('hi');
-    });
-  });
-
-  describe('getRecommendations', () => {
-    test('type=deals → findActiveDeals', async () => {
-      repo.findActiveDeals.mockResolvedValue([]);
-      await service.getRecommendations({ type: 'deals', limit: 10 });
-      expect(repo.findActiveDeals).toHaveBeenCalledWith(10);
-    });
-
-    test('type=personal/default → findFeaturedProducts', async () => {
-      repo.findFeaturedProducts.mockResolvedValue([]);
-      await service.getRecommendations({ type: 'personal', limit: 5 });
-      expect(repo.findFeaturedProducts).toHaveBeenCalledWith(5);
-    });
-
-    test('không truyền type → dùng default personal (branch line 25)', async () => {
-      repo.findFeaturedProducts.mockResolvedValue([]);
-      await service.getRecommendations({});
-      expect(repo.findFeaturedProducts).toHaveBeenCalledWith(5);
-    });
-  });
-
-  // ─── trackAnalytics (line 43) ─────────────────────────────────────────────
-
-  describe('trackAnalytics', () => {
-    test('delegate sang repo.createAnalyticsEvent với đúng tham số', async () => {
-      const eventData = {
-        event: 'product_view',
-        userId: 1,
-        sessionId: 'sess-abc',
-        productId: 42,
-        value: null,
-        metadata: { source: 'chatbot' },
-        timestamp: new Date(),
-      };
-      repo.createAnalyticsEvent.mockResolvedValue({ id: 99 });
-
-      const result = await service.trackAnalytics(eventData);
-
-      expect(repo.createAnalyticsEvent).toHaveBeenCalledWith(eventData);
-      expect(result).toMatchObject({ id: 99 });
-    });
-
-    test('trả về kết quả từ repo', async () => {
-      repo.createAnalyticsEvent.mockResolvedValue({ id: 7, event: 'click' });
-
-      const result = await service.trackAnalytics({ event: 'click' });
-
-      expect(result.id).toBe(7);
     });
   });
 
@@ -175,10 +123,8 @@ describe('AIService', () => {
       service.chatbotService = {
         handleMessage: jest.fn(),
         clearSession: jest.fn().mockReturnValue(true),
-        getSessionHistory: jest.fn().mockReturnValue([]),
         getSessionMessages: jest.fn().mockResolvedValue([]),
         registerSession: jest.fn().mockReturnValue('sess-1'),
-        getLatestSession: jest.fn().mockResolvedValue('sess-1'),
       };
     });
 
@@ -186,12 +132,6 @@ describe('AIService', () => {
       const result = service.clearSession('sess-1');
       expect(service.chatbotService.clearSession).toHaveBeenCalledWith('sess-1');
       expect(result).toBe(true);
-    });
-
-    test('getSessionHistory delegate sang chatbotService', () => {
-      const result = service.getSessionHistory('sess-1');
-      expect(service.chatbotService.getSessionHistory).toHaveBeenCalledWith('sess-1');
-      expect(result).toEqual([]);
     });
 
     test('getSessionMessages delegate sang chatbotService', async () => {
@@ -203,12 +143,6 @@ describe('AIService', () => {
     test('registerSession delegate sang chatbotService', () => {
       const result = service.registerSession('sess-1');
       expect(service.chatbotService.registerSession).toHaveBeenCalledWith('sess-1');
-      expect(result).toBe('sess-1');
-    });
-
-    test('getLatestSession delegate sang chatbotService', async () => {
-      const result = await service.getLatestSession();
-      expect(service.chatbotService.getLatestSession).toHaveBeenCalled();
       expect(result).toBe('sess-1');
     });
   });

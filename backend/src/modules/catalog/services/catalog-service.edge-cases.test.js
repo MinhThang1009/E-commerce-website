@@ -51,7 +51,6 @@ function makeService(repoOverrides = {}) {
     findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
     findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
     findProductByPk: jest.fn().mockResolvedValue(null),
-    findProductByName: jest.fn().mockResolvedValue(null),
     findFeaturedProducts: jest.fn().mockResolvedValue([]),
     findRelatedProducts: jest.fn().mockResolvedValue([]),
     findRelatedProductsFallback: jest.fn().mockResolvedValue([]),
@@ -69,19 +68,6 @@ function makeService(repoOverrides = {}) {
     findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
     upsertRecentlyViewed: jest.fn().mockResolvedValue(),
     pruneRecentlyViewed: jest.fn().mockResolvedValue(),
-    createProduct: jest.fn().mockResolvedValue({ id: 1 }),
-    saveProduct: jest.fn().mockResolvedValue(),
-    deleteProduct: jest.fn().mockResolvedValue(),
-    findCategoriesByIds: jest.fn().mockResolvedValue([]),
-    setProductCategories: jest.fn().mockResolvedValue(),
-    createProductSpecifications: jest.fn().mockResolvedValue(),
-    createProductAttributes: jest.fn().mockResolvedValue(),
-    clearProductAttributes: jest.fn().mockResolvedValue(),
-    createProductVariants: jest.fn().mockResolvedValue([]),
-    clearProductVariants: jest.fn().mockResolvedValue(),
-    createProductImages: jest.fn().mockResolvedValue([]),
-    clearProductImages: jest.fn().mockResolvedValue(),
-    runInTransaction: jest.fn((fn) => fn({})),
     ...repoOverrides,
   };
 
@@ -965,49 +951,6 @@ describe('getProductFilters — collectValues với values không phải array',
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// createProduct — line 896-897: payload.attributes (không phải parentAttributes)
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('createProduct — với attributes (không phải parentAttributes)', () => {
-  it('payload.attributes → gọi createProductAttributes với đúng rows', async () => {
-    const { service, catalogRepository } = makeService();
-    catalogRepository.createProduct.mockResolvedValue({ id: 50 });
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 50 }));
-
-    await service.createProduct({
-      payload: {
-        name: 'Test Attrs',
-        price: 5000,
-        attributes: [{ name: 'color', values: ['red'], type: 'select' }],
-      },
-    });
-
-    expect(catalogRepository.createProductAttributes).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ productId: 50, name: 'color' })]),
-      expect.any(Object),
-    );
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// updateProduct — patch.attributes = [] → clearProductAttributes, không createProductAttributes
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('updateProduct — patch.attributes rỗng', () => {
-  it('patch.attributes = [] → clear nhưng không create mới', async () => {
-    const { service, catalogRepository } = makeService();
-    const product = makeProductRow({ id: 3, slug: 'prod-3' });
-    catalogRepository.findProductByPk.mockResolvedValue(product);
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 3 }));
-
-    await service.updateProduct({ id: 3, patch: { attributes: [] } });
-
-    expect(catalogRepository.clearProductAttributes).toHaveBeenCalled();
-    expect(catalogRepository.createProductAttributes).not.toHaveBeenCalled();
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
 // getBestSellers — period = 'week' vs default
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -1297,134 +1240,6 @@ describe('_buildProductDetailResponse — variant selection fallback (lines 545-
     const result = service._buildProductDetailResponse(product, { queryColor: 'đen' });
 
     expect(result.sku).toBe('SKU-TUI-DEN');
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// createProduct — line 896-897: v.sku falsy → fallback sku; v.compareAtPrice falsy → null
-// Nhánh: v.sku = undefined → `${product.id}-VAR-${i + 1}` (FALSE branch của `||`)
-//        v.compareAtPrice = 0/null → null (FALSE branch của ternary)
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('createProduct — variant sku fallback và compareAtPrice null (lines 894, 897)', () => {
-  it('v.sku falsy → sku = fallback format (line 894 FALSE branch)', async () => {
-    // Line 894: v.sku || `${product.id}-VAR-${i + 1}`
-    // Khi v.sku = undefined → fallback sku được dùng
-    const { service, catalogRepository } = makeService();
-    catalogRepository.createProduct.mockResolvedValue({ id: 70 });
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 70 }));
-
-    await service.createProduct({
-      payload: {
-        name: 'Sản phẩm với SKU fallback',
-        price: 5000,
-        variants: [
-          { price: 5000, stockQuantity: 3 }, // sku = undefined → fallback
-        ],
-      },
-    });
-
-    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ sku: '70-VAR-1' }), // fallback sku
-      ]),
-      expect.any(Object),
-    );
-  });
-
-  it('v.compareAtPrice = null → compareAtPrice = null trong row (line 897 FALSE branch)', async () => {
-    // Line 897: v.compareAtPrice ? parseFloat(v.compareAtPrice) : null
-    // Khi v.compareAtPrice = null → : null
-    const { service, catalogRepository } = makeService();
-    catalogRepository.createProduct.mockResolvedValue({ id: 71 });
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 71 }));
-
-    await service.createProduct({
-      payload: {
-        name: 'Variant không có compareAtPrice',
-        price: 7000,
-        variants: [{ sku: 'SKU-V71', price: 7000, compareAtPrice: null, stockQuantity: 5 }],
-      },
-    });
-
-    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ compareAtPrice: null })]),
-      expect.any(Object),
-    );
-  });
-
-  it('v.compareAtPrice có giá trị → parseFloat(compareAtPrice) (line 897 TRUE branch)', async () => {
-    // Line 897: v.compareAtPrice = '15000' → parseFloat('15000') = 15000
-    const { service, catalogRepository } = makeService();
-    catalogRepository.createProduct.mockResolvedValue({ id: 72 });
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 72 }));
-
-    await service.createProduct({
-      payload: {
-        name: 'Variant có compareAtPrice',
-        price: 10000,
-        variants: [{ sku: 'SKU-V72', price: 10000, compareAtPrice: '15000', stockQuantity: 2 }],
-      },
-    });
-
-    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ compareAtPrice: 15000 })]),
-      expect.any(Object),
-    );
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// updateProduct — line 936: patch chứa 'featured' → key được đổi thành 'isFeatured'
-// Nhánh: key === 'featured' → true → updateData['isFeatured'] = value
-// ════════════════════════════════════════════════════════════════════════════
-
-describe("updateProduct — patch.featured → updateData['isFeatured'] (line 936 TRUE branch)", () => {
-  it("patch.featured = true → updateData.isFeatured = true (setIfPresent với key 'featured')", async () => {
-    // Line 936: key === 'featured' (true) → updateData['isFeatured'] = value
-    const { service, catalogRepository } = makeService();
-    const product = makeProductRow({ id: 80, slug: 'prod-80', isFeatured: false });
-    catalogRepository.findProductByPk.mockResolvedValue(product);
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 80 }));
-
-    await service.updateProduct({ id: 80, patch: { featured: true } });
-
-    // saveProduct được gọi với product.isFeatured = true
-    expect(catalogRepository.saveProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ isFeatured: true }),
-      expect.any(Object),
-    );
-  });
-
-  it('patch.featured = false → updateData.isFeatured = false', async () => {
-    // Line 936: key === 'featured' (true) → updateData['isFeatured'] = false
-    const { service, catalogRepository } = makeService();
-    const product = makeProductRow({ id: 81, slug: 'prod-81', isFeatured: true });
-    catalogRepository.findProductByPk.mockResolvedValue(product);
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 81 }));
-
-    await service.updateProduct({ id: 81, patch: { featured: false } });
-
-    expect(catalogRepository.saveProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ isFeatured: false }),
-      expect.any(Object),
-    );
-  });
-
-  it("patch không chứa 'featured' → isFeatured không thay đổi (setIfPresent false branch)", async () => {
-    // Line 936: hasOwnProperty(patch, 'featured') = false → bỏ qua, updateData không thay đổi
-    const { service, catalogRepository } = makeService();
-    const product = makeProductRow({ id: 82, slug: 'prod-82', isFeatured: true });
-    catalogRepository.findProductByPk.mockResolvedValue(product);
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 82 }));
-
-    await service.updateProduct({ id: 82, patch: { name: 'Tên mới' } }); // không có 'featured'
-
-    // isFeatured không bị set trong updateData → product.isFeatured vẫn giữ nguyên (true)
-    // saveProduct vẫn được gọi nhưng không kèm isFeatured change
-    expect(catalogRepository.saveProduct).toHaveBeenCalled();
-    // Verify product.isFeatured không bị override
-    expect(product.isFeatured).toBe(true);
   });
 });
 
@@ -1761,83 +1576,5 @@ describe('getProductBySlug — sản phẩm không active → 404', () => {
     await expect(service.getProductBySlug({ slug: 'my-product' })).rejects.toMatchObject({
       statusCode: 404,
     });
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// createProduct — line 1366: variantId truthy → đẩy variant images vào rows
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('createProduct — tạo ảnh cho từng variant khi variantId có giá trị', () => {
-  it('gọi createProductImages với variantImageRows khi variant có images và ID', async () => {
-    const { service, catalogRepository } = makeService();
-
-    const createdProduct = { id: 100 };
-    const createdVariants = [{ id: 501 }, { id: 502 }];
-
-    catalogRepository.runInTransaction.mockImplementation(async (fn) => fn({}));
-    catalogRepository.createProduct.mockResolvedValue(createdProduct);
-    catalogRepository.createProductVariants.mockResolvedValue(createdVariants);
-    catalogRepository.createProductImages.mockResolvedValue([]);
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
-      makeProductRow({ id: 100, status: 'active', variants: createdVariants }),
-    );
-    catalogRepository.setProductCategories.mockResolvedValue();
-    catalogRepository.findCategoriesByIds.mockResolvedValue([{ id: 1 }]);
-
-    await service.createProduct({
-      payload: {
-        name: 'Test Product',
-        basePrice: 10000,
-        categoryIds: [1],
-        variants: [
-          { sku: 'V1', price: 10000, images: ['https://img1.jpg', 'https://img2.jpg'] },
-          { sku: 'V2', price: 20000, images: ['https://img3.jpg'] },
-        ],
-      },
-    });
-
-    // createProductImages phải được gọi với variant images (có variantId)
-    const imageCalls = catalogRepository.createProductImages.mock.calls;
-    const variantImageCall = imageCalls.find(
-      (call) =>
-        call[0] && call[0].some((row) => row.variantId !== undefined && row.variantId !== null),
-    );
-    expect(variantImageCall).toBeDefined();
-    expect(variantImageCall[0][0].variantId).toBe(501);
-    expect(variantImageCall[0][0].imageUrl).toBe('https://img1.jpg');
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// updateProduct — line 1487: variantId truthy → đẩy variant images trong patch
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('updateProduct — tạo ảnh cho variant mới trong patch', () => {
-  it('gọi createProductImages với variantId khi patch.variants có images', async () => {
-    const { service, catalogRepository } = makeService();
-
-    const existingProduct = { id: 200, name: 'Existing', status: 'active' };
-    const newVariant = { id: 601 };
-
-    catalogRepository.findProductByPk.mockResolvedValue(existingProduct);
-    catalogRepository.createProductVariants.mockResolvedValue([newVariant]);
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(
-      makeProductRow({ id: 200, status: 'active' }),
-    );
-
-    await service.updateProduct({
-      id: 200,
-      patch: {
-        variants: [{ sku: 'NEW-V1', price: 15000, images: ['https://variant-img.jpg'] }],
-      },
-    });
-
-    const imageCalls = catalogRepository.createProductImages.mock.calls;
-    const variantImageCall = imageCalls.find(
-      (call) => call[0] && call[0].some((row) => row.variantId === 601),
-    );
-    expect(variantImageCall).toBeDefined();
-    expect(variantImageCall[0][0].imageUrl).toBe('https://variant-img.jpg');
   });
 });

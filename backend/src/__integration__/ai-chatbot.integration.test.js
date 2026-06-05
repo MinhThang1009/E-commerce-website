@@ -3,7 +3,7 @@
  *
  * Scope: DB operations của chatbot module
  *   - ChatMessage: lưu/đọc/filter lịch sử chat
- *   - AIRepository: searchProducts, findActiveDeals, findFeaturedProducts, createAnalyticsEvent
+ *   - AIRepository: createAnalyticsEvent, findProductForCart, addToCart
  *   - Chatbot flow: session history persistence
  *
  * KHÔNG test LLM generation (cần API key).
@@ -201,47 +201,6 @@ describe('ChatMessage Integration — Lưu & đọc lịch sử', () => {
 });
 
 // searchProducts đã bị xóa khỏi SequelizeAIRepository (dead code — AI module dùng vector search, không dùng SQL keyword search).
-
-// ─────────────────────────────────────────────────────────────
-describe('AI Repository Integration — Deals & Featured', () => {
-  test('findActiveDeals trả về sản phẩm có compareAtPrice', async () => {
-    // testProduct có compareAtPrice=18M > basePrice=15M
-    const deals = await aiRepo.findActiveDeals(20);
-    expect(deals.length).toBeGreaterThan(0);
-    for (const p of deals) {
-      expect(Number(p.compareAtPrice)).toBeGreaterThan(0);
-      expect(p.status).toBe('active');
-    }
-  });
-
-  test('findActiveDeals sắp xếp theo % giảm giá DESC', async () => {
-    const deals = await aiRepo.findActiveDeals(50);
-    if (deals.length >= 2) {
-      const pct = (p) =>
-        (Number(p.compareAtPrice) - Number(p.basePrice)) / Number(p.compareAtPrice);
-      for (let i = 0; i < deals.length - 1; i++) {
-        expect(pct(deals[i])).toBeGreaterThanOrEqual(pct(deals[i + 1]) - 0.001); // tolerance
-      }
-    }
-  });
-
-  test('findFeaturedProducts trả về sản phẩm isFeatured=true', async () => {
-    const featured = await aiRepo.findFeaturedProducts(20);
-    expect(featured.length).toBeGreaterThan(0);
-    for (const p of featured) {
-      expect(p.isFeatured).toBe(true);
-      expect(p.status).toBe('active');
-    }
-    // testProduct (isFeatured=true) phải có trong kết quả
-    const found = featured.find((p) => p.id === testProduct.id);
-    expect(found).toBeDefined();
-  });
-
-  test('findFeaturedProducts với limit', async () => {
-    const limited = await aiRepo.findFeaturedProducts(2);
-    expect(limited.length).toBeLessThanOrEqual(2);
-  });
-});
 
 // ─────────────────────────────────────────────────────────────
 describe('AI Repository Integration — Analytics Event', () => {

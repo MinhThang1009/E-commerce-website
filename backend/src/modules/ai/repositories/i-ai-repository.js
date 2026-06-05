@@ -5,15 +5,7 @@
  * @description Data access layer cho ai
  */
 // IAIRepository — interface AI data access (Product searches qua catalog,
-// minimal cho thesis scope). Phase 5 cleanup có thể tách analytics events
-// table riêng cho AI tracking.
-class IAIRepository {
-  async findActiveDeals(_limit) {
-    throw new Error('not implemented');
-  }
-  async findFeaturedProducts(_limit) {
-    throw new Error('not implemented');
-  }
-}
+// minimal cho thesis scope). Impl: createAnalyticsEvent, findProductForCart, addToCart.
+class IAIRepository {}
 
 module.exports = IAIRepository;

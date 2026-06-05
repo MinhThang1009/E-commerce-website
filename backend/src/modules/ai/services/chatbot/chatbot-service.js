@@ -930,32 +930,14 @@ QUY TẮC BẮT BUỘC:
     return this.conversationHistory.delete(sessionId);
   }
 
-  getSessionHistory(sessionId) {
-    const entry = this.conversationHistory.get(sessionId);
-    return entry ? entry.messages : [];
-  }
-
-  // Session đang active trên UI — được cập nhật khi UI gọi registerSession()
-  // Tại sao cần? getLatestSession() từ DB không biết session mới nếu chưa có message.
-  // registerSession() cho phép terminal --watch theo đúng session UI ngay lập tức.
+  // Session đang active trên UI — set khi FE gọi POST /chatbot/session/register.
+  // Giữ cho FE contract (registerSession vẫn được FE gọi); không còn reader nội bộ
+  // sau khi getLatestSession (endpoint /session/latest) bị gỡ.
   _registeredSession = null;
 
   registerSession(sessionId) {
     this._registeredSession = sessionId;
     logger.debug(`[Session] UI registered session: ${sessionId}`);
-  }
-
-  async getLatestSession() {
-    // Ưu tiên session được UI đăng ký (biết ngay khi UI tạo session mới)
-    if (this._registeredSession) return this._registeredSession;
-    if (!this.ChatMessage) return null;
-    const latest = await this.ChatMessage.findOne({
-      where: { messageType: 'ai_chatbot', role: 'user' },
-      order: [['createdAt', 'DESC']],
-      attributes: ['sessionId'],
-      raw: true,
-    });
-    return latest?.sessionId || null;
   }
 
   async getSessionMessages(sessionId, limit = 50) {

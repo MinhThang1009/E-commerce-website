@@ -14,8 +14,6 @@ const AIService = require('./ai-service');
 
 function makeRepo() {
   return {
-    findActiveDeals: jest.fn(),
-    findFeaturedProducts: jest.fn(),
     createAnalyticsEvent: jest.fn().mockResolvedValue({ id: 1 }),
     findProductForCart: jest.fn(),
     addToCart: jest.fn().mockResolvedValue({ id: 20 }),

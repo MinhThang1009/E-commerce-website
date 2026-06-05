@@ -13,7 +13,6 @@
  *  - GET /api/products (basic, sort, search=laptop, featured, new-arrivals,
  *    best-sellers, deals, filters, search?q=, suggestions, recently-viewed)
  *  - GET /api/products/:id (tồn tại, 404), :id/related, :id/variants, :id/reviews-summary
- *  - POST/PUT/DELETE /api/products (admin + auth guard)
  */
 require('module-alias/register');
 const { app, request, createTestUser, createTestProduct } = require('./http-setup');

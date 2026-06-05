@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 320 suites, ~7.343 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
+> 5 tầng test, 319 suites, ~7.129 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
 
 ## Mục lục
 
@@ -38,14 +38,14 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 216 | **5.560** | ~12s | `jest.config.js` |
-| BE Integration Tests | 38 | **214** | ~57s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | **700** | ~140s | `jest.api.config.js` |
+| BE Unit Tests | 215 | **5.369** | ~12s | `jest.config.js` |
+| BE Integration Tests | 38 | **210** | ~57s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | **681** | ~140s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 22 | **769** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **320** | **7.343** | | |
+| **Tổng** | **319** | **7.129** | | |
 
-> Đo lại 2026-06-05 (full run mọi tầng). Unit gồm ~1.800 test mutation-kill + property (đo độ mạnh assert).
+> Đo lại 2026-06-05 (full run mọi tầng), sau dọn API thừa §C (gỡ chatbot recommendations/analytics/session-latest/history + catalog product-write). Unit gồm ~1.600 test mutation-kill + property.
 
 ---
 
@@ -55,11 +55,11 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                     ┌──────────────────┐
                     │  E2E Tests (100) │   ← Full user flows (HTTP + real DB)
                   ┌─┴──────────────────┴─┐
-                  │  API HTTP Tests (700) │  ← Endpoint tests (Supertest + real DB)
+                  │  API HTTP Tests (681) │  ← Endpoint tests (Supertest + real DB)
                 ┌─┴──────────────────────┴─┐
-                │ Integration Tests (214)   │  ← Service/repo layer (real DB)
+                │ Integration Tests (210)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (5.560 + 769)      │  ← Isolated logic + React components
+              │  Unit Tests (5.369 + 769)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -79,7 +79,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 216 test suites, 5.560 test cases.
+**Phạm vi**: 215 test suites, 5.369 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -138,7 +138,7 @@ frontend/src/__tests__/
 
 **Mục đích**: Kiểm tra Service và Repository layer với database MySQL thật. Xác nhận logic nghiệp vụ hoạt động đúng với SQL queries thực tế, transactions, và constraints.
 
-**Phạm vi**: 38 test suites, 214 test cases.
+**Phạm vi**: 38 test suites, 210 test cases.
 - Service methods với real DB queries (thay vì mock)
 - Repository queries (Sequelize findAll, create, update, destroy với real schema)
 - Transactions và `runInTransaction` / `lockRow`
@@ -167,7 +167,7 @@ backend/src/__integration__/
 
 **Mục đích**: Kiểm tra toàn bộ HTTP layer — từ routes đến middleware chain đến DB. Dùng Supertest để gửi real HTTP requests đến Express app.
 
-**Phạm vi**: 39 test suites, 700 test cases.
+**Phạm vi**: 39 test suites, 681 test cases.
 - Authentication (JWT verify, token refresh, token reuse detection)
 - Authorization (role check — user vs admin endpoints)
 - Input validation (Zod schemas — valid/invalid payloads)
@@ -429,12 +429,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 216 | 5.560 | ~12s |
-| BE Integration Tests | 38 | 214 | ~57s |
-| BE API HTTP Tests | 39 | 700 | ~140s |
+| BE Unit Tests | 215 | 5.369 | ~12s |
+| BE Integration Tests | 38 | 210 | ~57s |
+| BE API HTTP Tests | 39 | 681 | ~140s |
 | BE E2E Tests | 5 | 100 | ~22s |
 | FE Component Tests | 22 | 769 | ~12s |
-| **Tổng** | **320** | **7.343** | |
+| **Tổng** | **319** | **7.129** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)

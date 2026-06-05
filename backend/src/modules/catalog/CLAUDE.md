@@ -31,7 +31,7 @@
 
 ## 1.1 Purpose
 
-Module lớn nhất codebase. Cung cấp toàn bộ catalog API: danh sách/lọc/tìm kiếm sản phẩm, cây danh mục, thương hiệu, sản phẩm đã xem gần đây (recently-viewed), CRUD admin. Gộp 3 sub-domain: Category, Brand, Product thành 1 module duy nhất.
+Module lớn nhất codebase. Cung cấp toàn bộ catalog API: danh sách/lọc/tìm kiếm sản phẩm (READ), cây danh mục, thương hiệu, sản phẩm đã xem gần đây (recently-viewed), CRUD Category/Brand. Gộp 3 sub-domain: Category, Brand, Product thành 1 module duy nhất. (Product WRITE đã gỡ — qua `admin` module `/api/admin/products`.)
 
 ## 1.2 DI Pattern (Multi-Mount)
 
@@ -67,7 +67,7 @@ modules/catalog/
     catalog-service.js                   — Orchestrator (26 lines): class CatalogService + mixin pattern
     catalog-category-methods.js          — Category methods: list, tree, CRUD, slug lookup (142 lines)
     catalog-brand-methods.js             — Brand methods: list, CRUD, slug lookup (84 lines)
-    catalog-product-methods.js           — Product methods: list, detail, filter, search, CRUD (767 lines)
+    catalog-product-methods.js           — Product methods: list, detail, filter, search (READ-only; write đã gỡ)
   repositories/
     sequelize-catalog-repository.js      — ~750 lines: complex joins + aggregation queries
     i-catalog-repository.js              — interface (abstract base)
@@ -141,29 +141,28 @@ Nếu có `userId` → gọi `_trackRecentlyViewed` (fire-and-forget, max 20 ent
 
 # 4. API Endpoints
 
-## 4.1 Products (`/api/products`)
+## 4.1 Products (`/api/products`) — READ-only
 
 Route order quan trọng — named paths phải đứng trước `/:id` để tránh bị catch nhầm.
 
-| Method | Path                   | Auth                              | HTTP Headers | Mô tả                                                                            |
-| ------ | ---------------------- | --------------------------------- | ------------ | -------------------------------------------------------------------------------- |
-| GET    | `/`                    | —                                 | 60s          | Danh sách sản phẩm (filter, sort, pagination)                                    |
-| GET    | `/recently-viewed`     | authenticate                      | —            | Sản phẩm đã xem gần đây (tối đa 20)                                              |
-| GET    | `/featured`            | —                                 | 600s         | Sản phẩm nổi bật                                                                 |
-| GET    | `/new-arrivals`        | —                                 | 300s         | Sản phẩm mới nhất                                                                |
-| GET    | `/best-sellers`        | —                                 | —            | Sản phẩm bán chạy (tham số: period=week/month/year)                              |
-| GET    | `/deals`               | —                                 | —            | Sản phẩm đang giảm giá                                                           |
-| GET    | `/filters`             | —                                 | —            | Filter options (priceRange, brands, colors, sizes, attributes)                   |
-| GET    | `/search`              | —                                 | —            | Tìm kiếm full-text (tham số: q, page, limit)                                     |
-| GET    | `/suggestions`         | —                                 | —            | Autocomplete gợi ý tên sản phẩm (tham số: q)                                     |
-| GET    | `/slug/:slug`          | optionalAuthenticate              | 300s         | Chi tiết theo slug (hỗ trợ ?skuId, ?color)                                       |
-| GET    | `/:id/related`         | —                                 | —            | Sản phẩm liên quan                                                               |
-| GET    | `/:id/variants`        | —                                 | —            | Danh sách biến thể                                                               |
-| GET    | `/:id/reviews-summary` | —                                 | —            | Tổng hợp rating (average, count, distribution)                                   |
-| GET    | `/:id`                 | optionalAuthenticate              | 300s         | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                                         |
-| POST   | `/`                    | authenticate + authorize('staff') | —            | Tạo sản phẩm (transaction: product + categories + variants + attributes + specs) |
-| PUT    | `/:id`                 | authenticate + authorize('staff') | —            | Cập nhật sản phẩm (transaction)                                                  |
-| DELETE | `/:id`                 | authenticate + authorize('staff') | —            | Xóa sản phẩm                                                                     |
+> **Product WRITE đã gỡ khỏi catalog** (POST/PUT/DELETE `/api/products`) — dup với admin; CRUD sản phẩm đi qua `/api/admin/products` (`admin` module). Catalog chỉ còn READ. Category/Brand WRITE vẫn ở catalog (§4.2/§4.3).
+
+| Method | Path                   | Auth                 | HTTP Headers | Mô tả                                                          |
+| ------ | ---------------------- | -------------------- | ------------ | -------------------------------------------------------------- |
+| GET    | `/`                    | —                    | 60s          | Danh sách sản phẩm (filter, sort, pagination)                  |
+| GET    | `/recently-viewed`     | authenticate         | —            | Sản phẩm đã xem gần đây (tối đa 20)                            |
+| GET    | `/featured`            | —                    | 600s         | Sản phẩm nổi bật                                               |
+| GET    | `/new-arrivals`        | —                    | 300s         | Sản phẩm mới nhất                                              |
+| GET    | `/best-sellers`        | —                    | —            | Sản phẩm bán chạy (tham số: period=week/month/year)            |
+| GET    | `/deals`               | —                    | —            | Sản phẩm đang giảm giá                                         |
+| GET    | `/filters`             | —                    | —            | Filter options (priceRange, brands, colors, sizes, attributes) |
+| GET    | `/search`              | —                    | —            | Tìm kiếm full-text (tham số: q, page, limit)                   |
+| GET    | `/suggestions`         | —                    | —            | Autocomplete gợi ý tên sản phẩm (tham số: q)                   |
+| GET    | `/slug/:slug`          | optionalAuthenticate | 300s         | Chi tiết theo slug (hỗ trợ ?skuId, ?color)                     |
+| GET    | `/:id/related`         | —                    | —            | Sản phẩm liên quan                                             |
+| GET    | `/:id/variants`        | —                    | —            | Danh sách biến thể                                             |
+| GET    | `/:id/reviews-summary` | —                    | —            | Tổng hợp rating (average, count, distribution)                 |
+| GET    | `/:id`                 | optionalAuthenticate | 300s         | Chi tiết theo ID (hỗ trợ ?skuId, ?color)                       |
 
 ## 4.2 Categories (`/api/categories`)
 

@@ -12,7 +12,6 @@ const {
   categorySchema,
   createBrandSchema,
   updateBrandSchema,
-  productSchema,
 } = require('@modules/catalog/validators/catalog-validator');
 
 // Catalog module routes — 3 sub-router (categories, brands, products).
@@ -196,11 +195,6 @@ module.exports = ({ catalogController }) => {
    *   get:
    *     summary: Lấy danh sách sản phẩm
    *     tags: [Products]
-   *   post:
-   *     summary: Tạo sản phẩm mới (admin)
-   *     tags: [Products]
-   *     security:
-   *       - bearerAuth: []
    * /api/products/recently-viewed:
    *   get:
    *     summary: Lấy sản phẩm đã xem gần đây
@@ -255,28 +249,6 @@ module.exports = ({ catalogController }) => {
    *         required: true
    *         schema:
    *           type: integer
-   *   put:
-   *     summary: Cập nhật sản phẩm (admin)
-   *     tags: [Products]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
-   *   delete:
-   *     summary: Xóa sản phẩm (admin)
-   *     tags: [Products]
-   *     security:
-   *       - bearerAuth: []
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: integer
    * /api/products/{id}/related:
    *   get:
    *     summary: Lấy sản phẩm liên quan
@@ -323,21 +295,6 @@ module.exports = ({ catalogController }) => {
   products.get('/:id/variants', catalogController.getProductVariants);
   products.get('/:id/reviews-summary', catalogController.getProductReviewsSummary);
   products.get('/:id', optionalAuthenticate, catalogController.getProductById);
-  products.post(
-    '/',
-    authenticate,
-    authorize('staff'),
-    validateRequest(productSchema),
-    catalogController.createProduct,
-  );
-  products.put(
-    '/:id',
-    authenticate,
-    authorize('staff'),
-    validateRequest(productSchema),
-    catalogController.updateProduct,
-  );
-  products.delete('/:id', authenticate, authorize('staff'), catalogController.deleteProduct);
 
   return { categories, brands, products };
 };

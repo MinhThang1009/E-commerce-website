@@ -475,17 +475,6 @@ describe('Product fetching methods', () => {
     expect(result).toBe(product);
   });
 
-  test('TC-38b findProductByName — findOne với where nameVi', async () => {
-    const { repo, deps } = makeRepo();
-    const product = { id: 7, nameVi: 'iPhone 16' };
-    deps.Product.findOne.mockResolvedValue(product);
-
-    const result = await repo.findProductByName('iPhone 16');
-
-    expect(deps.Product.findOne).toHaveBeenCalledWith({ where: { nameVi: 'iPhone 16' } });
-    expect(result).toBe(product);
-  });
-
   test('TC-39 findFeaturedProducts — where isFeatured:true + limit', async () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([{ id: 1, isFeatured: true }]);
@@ -643,110 +632,6 @@ describe('Search methods', () => {
 
     expect(result).toEqual([]);
     expect(deps.Product.findAll).not.toHaveBeenCalled();
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// 8. PRODUCT CRUD + EDGE CASES
-// ════════════════════════════════════════════════════════════════════════════
-
-describe('Product CRUD', () => {
-  test('TC-49 createProduct — Product.create với payload và options', async () => {
-    const { repo, deps } = makeRepo();
-    const payload = { name: 'New Product', slug: 'new-product', basePrice: 99 };
-    const created = { id: 20, ...payload };
-    deps.Product.create.mockResolvedValue(created);
-
-    const result = await repo.createProduct(payload, { transaction: 'tx' });
-
-    expect(deps.Product.create).toHaveBeenCalledWith(payload, { transaction: 'tx' });
-    expect(result).toBe(created);
-  });
-
-  test('TC-50 saveProduct / deleteProduct — delegate tới instance method', async () => {
-    const { repo } = makeRepo();
-    const product = {
-      save: jest.fn().mockResolvedValue('saved-product'),
-      destroy: jest.fn().mockResolvedValue('deleted'),
-    };
-
-    const saved = await repo.saveProduct(product, { transaction: 'tx' });
-    const deleted = await repo.deleteProduct(product);
-
-    expect(product.save).toHaveBeenCalledWith({ transaction: 'tx' });
-    expect(product.destroy).toHaveBeenCalled();
-    expect(saved).toBe('saved-product');
-    expect(deleted).toBe('deleted');
-  });
-
-  test('TC-51 findCategoriesByIds — Category.findAll với Op.in', async () => {
-    const { repo, deps } = makeRepo();
-    const cats = [{ id: 1 }, { id: 2 }];
-    deps.Category.findAll.mockResolvedValue(cats);
-
-    const result = await repo.findCategoriesByIds([1, 2]);
-
-    expect(deps.Category.findAll).toHaveBeenCalledWith({ where: { id: { [Op.in]: [1, 2] } } });
-    expect(result).toBe(cats);
-  });
-
-  test('TC-53 setProductCategories — product.setCategories với options', async () => {
-    const { repo } = makeRepo();
-    const product = { setCategories: jest.fn().mockResolvedValue() };
-    const cats = [{ id: 1 }];
-
-    await repo.setProductCategories(product, cats, { transaction: 'tx' });
-
-    expect(product.setCategories).toHaveBeenCalledWith(cats, { transaction: 'tx' });
-  });
-
-  test('TC-54 createProductSpecifications — ProductSpecification.bulkCreate', async () => {
-    const { repo, deps } = makeRepo();
-    const rows = [{ productId: 1, name: 'RAM', value: '8GB' }];
-    deps.ProductSpecification.bulkCreate.mockResolvedValue(rows);
-
-    const result = await repo.createProductSpecifications(rows, { transaction: 'tx' });
-
-    expect(deps.ProductSpecification.bulkCreate).toHaveBeenCalledWith(rows, { transaction: 'tx' });
-    expect(result).toBe(rows);
-  });
-
-  test('TC-55 clearProductAttributes / createProductAttributes — thứ tự đúng', async () => {
-    const { repo, deps } = makeRepo();
-    const attrs = [{ productId: 1, name: 'color', values: ['red'] }];
-
-    await repo.clearProductAttributes(1, { transaction: 'tx' });
-    await repo.createProductAttributes(attrs, { transaction: 'tx' });
-
-    expect(deps.ProductAttribute.destroy).toHaveBeenCalledWith({
-      where: { productId: 1 },
-      transaction: 'tx',
-    });
-    expect(deps.ProductAttribute.bulkCreate).toHaveBeenCalledWith(attrs, { transaction: 'tx' });
-  });
-
-  test('TC-56 clearProductVariants / createProductVariants', async () => {
-    const { repo, deps } = makeRepo();
-    const variants = [{ productId: 1, sku: 'SKU-RED', stockQuantity: 5 }];
-
-    await repo.clearProductVariants(1, { transaction: 'tx' });
-    await repo.createProductVariants(variants, { transaction: 'tx' });
-
-    expect(deps.ProductVariant.destroy).toHaveBeenCalledWith({
-      where: { productId: 1 },
-      transaction: 'tx',
-    });
-    expect(deps.ProductVariant.bulkCreate).toHaveBeenCalledWith(variants, { transaction: 'tx' });
-  });
-
-  test('TC-57 runInTransaction — gọi work với transaction object', async () => {
-    const { repo, sequelize } = makeRepo();
-    const work = jest.fn().mockResolvedValue('done');
-
-    const result = await repo.runInTransaction(work);
-
-    expect(sequelize.transaction).toHaveBeenCalledWith(work);
-    expect(result).toBe('done');
   });
 });
 

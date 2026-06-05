@@ -82,9 +82,6 @@ class ICatalogRepository {
   async findProductByPk(_id) {
     throw new Error('not implemented');
   }
-  async findProductByName(_name) {
-    throw new Error('not implemented');
-  }
   async findFeaturedProducts(_limit) {
     throw new Error('not implemented');
   }
@@ -131,41 +128,6 @@ class ICatalogRepository {
     throw new Error('not implemented');
   }
   async pruneRecentlyViewed(_userId, _maxKeep) {
-    throw new Error('not implemented');
-  }
-  async createProduct(_payload, _options) {
-    throw new Error('not implemented');
-  }
-  async saveProduct(_product, _options) {
-    throw new Error('not implemented');
-  }
-  async deleteProduct(_product) {
-    throw new Error('not implemented');
-  }
-  async findCategoriesByIds(_ids) {
-    throw new Error('not implemented');
-  }
-
-  async setProductCategories(_product, _categories, _options) {
-    throw new Error('not implemented');
-  }
-
-  async createProductSpecifications(_rows, _options) {
-    throw new Error('not implemented');
-  }
-  async clearProductAttributes(_productId, _options) {
-    throw new Error('not implemented');
-  }
-  async createProductAttributes(_rows, _options) {
-    throw new Error('not implemented');
-  }
-  async clearProductVariants(_productId, _options) {
-    throw new Error('not implemented');
-  }
-  async createProductVariants(_rows, _options) {
-    throw new Error('not implemented');
-  }
-  async runInTransaction(_work) {
     throw new Error('not implemented');
   }
 }

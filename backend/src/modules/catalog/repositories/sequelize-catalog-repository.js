@@ -18,9 +18,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     Brand,
     Product,
     ProductAttribute,
-    ProductImage,
     ProductVariant,
-    ProductSpecification,
     Review,
     RecentlyViewed,
     sequelize,
@@ -30,9 +28,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     this.Brand = Brand;
     this.Product = Product;
     this.ProductAttribute = ProductAttribute;
-    this.ProductImage = ProductImage;
     this.ProductVariant = ProductVariant;
-    this.ProductSpecification = ProductSpecification;
     this.Review = Review;
     this.RecentlyViewed = RecentlyViewed;
     this.sequelize = sequelize;
@@ -352,12 +348,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
 
   async findProductByPk(id) {
     return this.Product.findByPk(id);
-  }
-
-  // Tìm sản phẩm theo tên tiếng Việt (canonical). Product là paranoid nên
-  // sản phẩm đã xóa mềm tự động bị loại — cho phép tạo lại tên đã xóa.
-  async findProductByName(name) {
-    return this.Product.findOne({ where: { nameVi: name } });
   }
 
   async findFeaturedProducts(limit = 8) {
@@ -683,76 +673,6 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (stale.length > 0) {
       await this.RecentlyViewed.destroy({ where: { id: stale.map((r) => r.id) } });
     }
-  }
-
-  async createProduct(payload, options = {}) {
-    return this.Product.create(payload, options);
-  }
-
-  async saveProduct(product, options = {}) {
-    return product.save(options);
-  }
-
-  async deleteProduct(product) {
-    return product.destroy();
-  }
-
-  async findCategoriesByIds(ids) {
-    return this.Category.findAll({ where: { id: { [Op.in]: ids } } });
-  }
-
-  async setProductCategories(product, categories, options = {}) {
-    return product.setCategories(categories, options);
-  }
-
-  async createProductSpecifications(rows, options = {}) {
-    if (!this.ProductSpecification) {
-      throw new Error('ProductSpecification model bắt buộc trong constructor');
-    }
-    return this.ProductSpecification.bulkCreate(rows, options);
-  }
-
-  async clearProductAttributes(productId, options = {}) {
-    if (!this.ProductAttribute) return;
-    return this.ProductAttribute.destroy({ where: { productId }, ...options });
-  }
-
-  async createProductAttributes(rows, options = {}) {
-    if (!this.ProductAttribute) {
-      throw new Error('ProductAttribute model bắt buộc trong constructor');
-    }
-    return this.ProductAttribute.bulkCreate(rows, options);
-  }
-
-  async clearProductVariants(productId, options = {}) {
-    if (!this.ProductVariant) return;
-    return this.ProductVariant.destroy({ where: { productId }, ...options });
-  }
-
-  async createProductVariants(rows, options = {}) {
-    if (!this.ProductVariant) {
-      throw new Error('ProductVariant model bắt buộc trong constructor');
-    }
-    return this.ProductVariant.bulkCreate(rows, options);
-  }
-
-  async clearProductImages(productId, variantIdFilter, options = {}) {
-    if (!this.ProductImage) return;
-    const where = { productId };
-    if (variantIdFilter === null) where.variantId = null;
-    else if (variantIdFilter === 'all') {
-      /* xóa hết cả product-level lẫn variant-level */
-    } else where.variantId = { [Op.ne]: null };
-    return this.ProductImage.destroy({ where, ...options });
-  }
-
-  async createProductImages(rows, options = {}) {
-    if (!this.ProductImage || !rows || rows.length === 0) return;
-    return this.ProductImage.bulkCreate(rows, options);
-  }
-
-  async runInTransaction(work) {
-    return this.sequelize.transaction(work);
   }
 }
 

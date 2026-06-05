@@ -30,24 +30,6 @@ module.exports = ({ aiController }) => {
   );
   /**
    * @swagger
-   * /api/chatbot/recommendations:
-   *   get:
-   *     summary: Lấy gợi ý sản phẩm từ AI
-   *     tags: [AI Chatbot]
-   */
-  router.get('/recommendations', optionalAuthenticate, aiController.getRecommendations);
-  /**
-   * @swagger
-   * /api/chatbot/analytics:
-   *   post:
-   *     summary: Ghi nhận sự kiện analytics chatbot
-   *     tags: [AI Chatbot]
-   *     security:
-   *       - bearerAuth: []
-   */
-  router.post('/analytics', authenticate, aiController.trackAnalytics);
-  /**
-   * @swagger
    * /api/chatbot/cart/add:
    *   post:
    *     summary: Thêm sản phẩm vào giỏ hàng qua chatbot
@@ -66,8 +48,6 @@ module.exports = ({ aiController }) => {
    */
   router.post('/session/clear', aiController.clearSession);
   router.post('/session/register', aiController.registerSession);
-  router.get('/session/latest', aiController.getLatestSession);
-  router.get('/session/:sessionId/history', aiController.getSessionHistory);
   router.get('/session/:sessionId/messages', aiController.getSessionMessages);
 
   return router;

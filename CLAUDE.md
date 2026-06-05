@@ -268,14 +268,14 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 216 | 5.560 | ~12s | `jest.config.js` |
-| BE Integration Tests | 38 | 214 | ~57s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | 700 | ~140s | `jest.api.config.js` |
+| BE Unit Tests | 215 | 5.369 | ~12s | `jest.config.js` |
+| BE Integration Tests | 38 | 210 | ~57s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | 681 | ~140s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 22 | 769 | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **320** | **~7.343** | | |
+| **Tổng** | **319** | **~7.129** | | |
 
-> Đo lại 2026-06-05 (full run). Unit gồm ~1.800 test mutation-kill + property (đo độ mạnh assert).
+> Đo lại 2026-06-05 (full run), sau dọn API thừa §C (gỡ chatbot recommendations/analytics/session-latest/history + catalog product-write dup).
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
@@ -294,7 +294,7 @@ STRUCTURE.md                                 ← Architecture, tech stack, data 
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
 RAG_CHATBOT_PIPELINE.md                      ← RAG pipeline 7 bước + 53 edge case (chatbot)
 PIPELINE_TRACE_EXAMPLES.md                   ← Trace 22 path + Node Reference 43 node (chatbot)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng (~7.343 tests) + mutation/property (§13)
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng (~7.129 tests) + mutation/property (§13)
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace

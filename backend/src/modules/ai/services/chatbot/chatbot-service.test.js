@@ -3262,49 +3262,10 @@ describe('ChatbotService.clearSession', () => {
   });
 });
 
-describe('ChatbotService.getSessionHistory', () => {
-  test('trả messages nếu session tồn tại', () => {
-    const msgs = [{ role: 'user', content: 'Hi' }];
-    chatbotService.conversationHistory.set('sess-h', { messages: msgs, lastAccess: Date.now() });
-    expect(chatbotService.getSessionHistory('sess-h')).toEqual(msgs);
-  });
-
-  test('trả [] nếu session không tồn tại', () => {
-    expect(chatbotService.getSessionHistory('nope')).toEqual([]);
-  });
-});
-
 describe('ChatbotService.registerSession', () => {
   test('lưu sessionId vào _registeredSession', () => {
     chatbotService.registerSession('sess-ui');
     expect(chatbotService._registeredSession).toBe('sess-ui');
-  });
-});
-
-describe('ChatbotService.getLatestSession', () => {
-  test('trả _registeredSession nếu có', async () => {
-    chatbotService._registeredSession = 'from-ui';
-    const result = await chatbotService.getLatestSession();
-    expect(result).toBe('from-ui');
-    chatbotService._registeredSession = null;
-  });
-
-  test('trả null nếu ChatMessage không available', async () => {
-    chatbotService._registeredSession = null;
-    const original = chatbotService.ChatMessage;
-    chatbotService.ChatMessage = null;
-    const result = await chatbotService.getLatestSession();
-    expect(result).toBeNull();
-    chatbotService.ChatMessage = original;
-  });
-
-  test('query DB nếu không có _registeredSession', async () => {
-    chatbotService._registeredSession = null;
-    if (chatbotService.ChatMessage) {
-      chatbotService.ChatMessage.findOne = jest.fn().mockResolvedValue({ sessionId: 'from-db' });
-      const result = await chatbotService.getLatestSession();
-      expect(result).toBe('from-db');
-    }
   });
 });
 
@@ -3877,63 +3838,6 @@ describe('ChatbotService._getCatalogData — line 768: Brand/Category null', () 
 
     chatbotService.Brand = originalBrand;
     chatbotService.Category = originalCategory;
-  });
-});
-
-// ============================================================
-// Line 915: latest?.sessionId || null — binary-expr branch[1]
-// latest = null → ?. returns undefined → || null
-// ============================================================
-
-describe('ChatbotService.getLatestSession — line 915: latest = null → trả về null', () => {
-  it('trả về null khi không có ChatMessage nào trong DB', async () => {
-    const originalRegistered = chatbotService._registeredSession;
-    chatbotService._registeredSession = null; // không dùng registered session
-
-    // ChatMessage.findOne trả về null → latest = null → latest?.sessionId = undefined → || null
-    const mockFindOne = jest.fn().mockResolvedValue(null);
-    const originalChatMessage = chatbotService.ChatMessage;
-    chatbotService.ChatMessage = { findOne: mockFindOne };
-
-    const result = await chatbotService.getLatestSession();
-
-    expect(result).toBeNull();
-    expect(mockFindOne).toHaveBeenCalledTimes(1);
-
-    chatbotService._registeredSession = originalRegistered;
-    chatbotService.ChatMessage = originalChatMessage;
-  });
-
-  it('trả về sessionId khi latest có giá trị (trái của ||)', async () => {
-    const originalRegistered = chatbotService._registeredSession;
-    chatbotService._registeredSession = null;
-
-    const mockFindOne = jest.fn().mockResolvedValue({ sessionId: 'sess-xyz' });
-    const originalChatMessage = chatbotService.ChatMessage;
-    chatbotService.ChatMessage = { findOne: mockFindOne };
-
-    const result = await chatbotService.getLatestSession();
-
-    expect(result).toBe('sess-xyz');
-
-    chatbotService._registeredSession = originalRegistered;
-    chatbotService.ChatMessage = originalChatMessage;
-  });
-
-  it('trả về _registeredSession khi đã được đăng ký (không truy vấn DB)', async () => {
-    chatbotService._registeredSession = 'registered-sess-001';
-
-    const mockFindOne = jest.fn();
-    const originalChatMessage = chatbotService.ChatMessage;
-    chatbotService.ChatMessage = { findOne: mockFindOne };
-
-    const result = await chatbotService.getLatestSession();
-
-    expect(result).toBe('registered-sess-001');
-    expect(mockFindOne).not.toHaveBeenCalled();
-
-    chatbotService._registeredSession = null;
-    chatbotService.ChatMessage = originalChatMessage;
   });
 });
 

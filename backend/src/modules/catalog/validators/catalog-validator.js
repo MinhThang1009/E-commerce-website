@@ -16,42 +16,4 @@ const createBrandSchema = z.object({
   isActive: z.boolean().default(true),
 });
 const updateBrandSchema = createBrandSchema.partial();
-const productSchema = z.object({
-  name: z.string().min(1, 'Tên sản phẩm không được để trống'),
-  description: z.string().min(1, 'Mô tả không được để trống'),
-  shortDescription: z.string().min(1, 'Mô tả ngắn không được để trống'),
-  price: z.number().min(0, 'Giá không được nhỏ hơn 0'),
-  compareAtPrice: z.number().min(0).nullable().optional(),
-  images: z.array(z.string()).default([]),
-  categoryIds: z.array(z.union([z.number().int(), z.string()])).optional(),
-  stockQuantity: z.number().int().min(0).default(0),
-  featured: z.boolean().default(false),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
-  seoKeywords: z.array(z.string()).default([]),
-  status: z.enum(['active', 'inactive', 'draft', 'archived']).optional(),
-  baseName: z.string().optional(),
-  faqs: z.array(z.object({ question: z.string(), answer: z.string() })).optional(),
-  brand: z.string().optional(),
-  model: z.string().optional(),
-  condition: z.enum(['new', 'like-new', 'used', 'refurbished']).default('new'),
-  specifications: z.union([z.record(z.string(), z.unknown()), z.array(z.unknown())]).default({}),
-  attributes: z.array(z.object({ name: z.string(), values: z.array(z.string()) })).optional(),
-  variants: z
-    .array(
-      z.object({
-        name: z.string(),
-        sku: z.string().optional(),
-        attributes: z.record(z.string(), z.string()),
-        price: z.number().min(0),
-        stockQuantity: z.number().int().min(0).default(0),
-        images: z.array(z.string()).default([]),
-        displayName: z.string().optional(),
-        sortOrder: z.number().int().min(0).default(0),
-        isDefault: z.boolean().default(false),
-        isAvailable: z.boolean().default(true),
-      }),
-    )
-    .optional(),
-});
-module.exports = { categorySchema, createBrandSchema, updateBrandSchema, productSchema };
+module.exports = { categorySchema, createBrandSchema, updateBrandSchema };

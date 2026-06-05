@@ -74,9 +74,6 @@ beforeEach(() => {
     getProductVariants: jest.fn(),
     getProductReviewsSummary: jest.fn(),
     getProductFilters: jest.fn(),
-    createProduct: jest.fn(),
-    updateProduct: jest.fn(),
-    deleteProduct: jest.fn(),
   };
   controller = new CatalogController({ catalogService });
 });
@@ -722,86 +719,6 @@ describe('CatalogController — Product', () => {
 
       expect(catalogService.getProductFilters).toHaveBeenCalledWith({ categoryId: '3' });
       expect(res._body).toEqual({ status: 'success', data: filtersData });
-    });
-  });
-
-  describe('createProduct', () => {
-    it('trả về 201 khi tạo sản phẩm thành công', async () => {
-      const newProduct = { id: 200, name: 'Samsung Galaxy S25' };
-      catalogService.createProduct.mockResolvedValue(newProduct);
-
-      const req = makeReq({ body: { name: 'Samsung Galaxy S25', price: 20000000 } });
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.createProduct(req, res, next);
-
-      expect(catalogService.createProduct).toHaveBeenCalledWith({ payload: req.body });
-      expect(res._status).toBe(201);
-      expect(res._body).toEqual({ status: 'success', data: newProduct });
-      expect(next).not.toHaveBeenCalled();
-    });
-
-    it('gọi next(err) khi service ném lỗi', async () => {
-      catalogService.createProduct.mockRejectedValue(new Error('validation fail'));
-
-      const next = jest.fn();
-      await controller.createProduct(makeReq({ body: {} }), makeRes(), next);
-
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  describe('updateProduct', () => {
-    it('truyền id và patch vào service, trả 200', async () => {
-      const updatedProduct = { id: '50', price: 25000000 };
-      catalogService.updateProduct.mockResolvedValue(updatedProduct);
-
-      const req = makeReq({ params: { id: '50' }, body: { price: 25000000 } });
-      const res = makeRes();
-
-      await controller.updateProduct(req, res, jest.fn());
-
-      expect(catalogService.updateProduct).toHaveBeenCalledWith({
-        id: '50',
-        patch: { price: 25000000 },
-      });
-      expect(res._status).toBe(200);
-      expect(res._body).toEqual({ status: 'success', data: updatedProduct });
-    });
-
-    it('gọi next(err) khi service ném lỗi 404', async () => {
-      const notFound = Object.assign(new Error('Sản phẩm không tồn tại'), { statusCode: 404 });
-      catalogService.updateProduct.mockRejectedValue(notFound);
-
-      const next = jest.fn();
-      await controller.updateProduct(makeReq({ params: { id: '999' } }), makeRes(), next);
-
-      expect(next).toHaveBeenCalledWith(notFound);
-    });
-  });
-
-  describe('deleteProduct', () => {
-    it('trích message từ service result và trả 200', async () => {
-      catalogService.deleteProduct.mockResolvedValue({ message: 'Xóa sản phẩm thành công' });
-
-      const req = makeReq({ params: { id: '30' } });
-      const res = makeRes();
-
-      await controller.deleteProduct(req, res, jest.fn());
-
-      expect(catalogService.deleteProduct).toHaveBeenCalledWith({ id: '30' });
-      expect(res._status).toBe(200);
-      expect(res._body).toEqual({ status: 'success', message: 'Xóa sản phẩm thành công' });
-    });
-
-    it('gọi next(err) khi service ném lỗi', async () => {
-      catalogService.deleteProduct.mockRejectedValue(new Error('xóa thất bại'));
-
-      const next = jest.fn();
-      await controller.deleteProduct(makeReq({ params: { id: '1' } }), makeRes(), next);
-
-      expect(next).toHaveBeenCalled();
     });
   });
 });

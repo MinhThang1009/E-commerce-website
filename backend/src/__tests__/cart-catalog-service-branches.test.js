@@ -267,15 +267,10 @@ function makeCatalogService(repoOverrides = {}) {
     upsertRecentlyViewed: jest.fn().mockResolvedValue(),
     pruneRecentlyViewed: jest.fn().mockResolvedValue(),
     findProductByName: jest.fn().mockResolvedValue(null),
-    createProduct: jest.fn().mockResolvedValue({ id: 1 }),
     saveProduct: jest.fn().mockResolvedValue(),
-    deleteProduct: jest.fn().mockResolvedValue(),
     findCategoriesByIds: jest.fn().mockResolvedValue([]),
     setProductCategories: jest.fn().mockResolvedValue(),
-    createProductSpecifications: jest.fn().mockResolvedValue(),
-    createProductAttributes: jest.fn().mockResolvedValue(),
     clearProductAttributes: jest.fn().mockResolvedValue(),
-    createProductVariants: jest.fn().mockResolvedValue(),
     clearProductVariants: jest.fn().mockResolvedValue(),
     runInTransaction: jest.fn((fn) => fn({})),
     ...repoOverrides,
@@ -544,68 +539,6 @@ describe('CatalogService._buildProductDetailResponse — line 553: selectedVaria
     expect(result.isVariantProduct).toBe(true);
     expect(result.sku).toBe('SKU-M-DEN');
     expect(result.currentVariant).toBeDefined();
-  });
-});
-
-// ─── Line 896: `v.name || v.variantName || v.displayName` — full fallback chain
-// Condition: v.name = null, v.variantName = null → uses v.displayName
-
-describe('CatalogService.createProduct — line 896: variant name fallback → v.displayName', () => {
-  it('dùng v.displayName khi v.name và v.variantName đều null/undefined', async () => {
-    // Line 895: name: v.name || v.variantName || v.displayName
-    // v.name = null, v.variantName = null → || v.displayName = 'Bản mặc định'
-    const { service, catalogRepository } = makeCatalogService();
-    catalogRepository.createProduct.mockResolvedValue({ id: 500 });
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 500 }));
-
-    await service.createProduct({
-      payload: {
-        name: 'Sản phẩm test displayName',
-        price: 10000,
-        variants: [
-          {
-            price: 10000,
-            stockQuantity: 5,
-            name: null, // null → fallback
-            variantName: null, // null → fallback
-            displayName: 'Bản mặc định', // final fallback
-          },
-        ],
-      },
-    });
-
-    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ name: 'Bản mặc định' })]),
-      expect.any(Object),
-    );
-  });
-
-  it('dùng v.variantName khi v.name = null nhưng v.variantName có giá trị', async () => {
-    // Line 895: v.name = null → || v.variantName = 'Đỏ L'
-    const { service, catalogRepository } = makeCatalogService();
-    catalogRepository.createProduct.mockResolvedValue({ id: 501 });
-    catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(makeProductRow({ id: 501 }));
-
-    await service.createProduct({
-      payload: {
-        name: 'Sản phẩm test variantName',
-        price: 8000,
-        variants: [
-          {
-            price: 8000,
-            stockQuantity: 3,
-            name: null,
-            variantName: 'Đỏ L', // second in chain
-            displayName: 'Fallback không dùng',
-          },
-        ],
-      },
-    });
-
-    expect(catalogRepository.createProductVariants).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ name: 'Đỏ L' })]),
-      expect.any(Object),
-    );
   });
 });
 

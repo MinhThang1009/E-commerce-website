@@ -7,7 +7,6 @@
  *   - logger.info / logger.warn / logger.error nội dung + meta
  *   - Arg truyền cho aiService.handleMessage
  *   - 500 fallback body đầy đủ (message + response + 3 suggestions)
- *   - trackAnalytics success message
  *
  * Dùng `t()` thật (không mock) → assert giá trị dịch vi chính xác.
  */
@@ -28,8 +27,6 @@ function makeLogger() {
 function makeService() {
   return {
     handleMessage: jest.fn(),
-    getRecommendations: jest.fn(),
-    trackAnalytics: jest.fn(),
     addToCart: jest.fn(),
   };
 }
@@ -143,24 +140,6 @@ describe('AIController — mutation kill', () => {
           response: 'Xin lỗi, tôi đang gặp một chút vấn đề. Vui lòng thử lại sau ít phút nhé!',
           suggestions: ['Xem sản phẩm hot', 'Tìm khuyến mãi', 'Liên hệ hỗ trợ'],
         },
-      });
-    });
-  });
-
-  // ──────────────────────────────────────────────────────────────
-  // trackAnalytics — success message dịch chuẩn
-  // ──────────────────────────────────────────────────────────────
-
-  describe('trackAnalytics success message', () => {
-    it('trả message "Ghi nhận dữ liệu phân tích thành công"', async () => {
-      aiService.trackAnalytics.mockResolvedValue();
-      const req = { body: { event: 'view', userId: 1, sessionId: 's' } };
-      const res = makeRes();
-      await controller.trackAnalytics(req, res, jest.fn());
-
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Ghi nhận dữ liệu phân tích thành công',
       });
     });
   });

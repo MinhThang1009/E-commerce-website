@@ -70,9 +70,6 @@ beforeEach(() => {
     getProductVariants: jest.fn(),
     getProductReviewsSummary: jest.fn(),
     getProductFilters: jest.fn(),
-    createProduct: jest.fn(),
-    updateProduct: jest.fn(),
-    deleteProduct: jest.fn(),
   };
   controller = new CatalogController({ catalogService });
 });

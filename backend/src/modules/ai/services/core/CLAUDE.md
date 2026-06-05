@@ -23,7 +23,7 @@ Hai file nền tảng của AI module: `ai-service.js` là orchestration layer g
 
 ```
 core/
-  ai-service.js     — Orchestration layer; 9 methods (4 core + 5 session delegators); nhận DI từ module.js
+  ai-service.js     — Orchestration layer; 5 methods (2 core + 3 session delegators); nhận DI từ module.js
   ai-policy.js      — Pure functions: validate, normalize, classify intent, detect injection
 ```
 
@@ -37,19 +37,15 @@ core/
 
 Constructor deps: `{ aiRepository, chatbotService, logger }`.
 
-**9 methods** (4 core + 5 session delegators wired tại `routes.js`):
+**5 methods** (2 core + 3 session delegators wired tại `routes.js`):
 
-| Method               | Signature                                                                                 | Mô tả                                                                                              |
-| -------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `handleMessage`      | `({ message, userId, sessionId }) → Promise<{ response, products, suggestions, intent }>` | Delegate hoàn toàn cho `chatbotService.handleMessage()`                                            |
-| `getRecommendations` | `({ type='personal', limit=5 }) → Promise<Array>`                                         | `type='deals'` → `repo.findActiveDeals(limit)`; mọi type khác → `repo.findFeaturedProducts(limit)` |
-| `trackAnalytics`     | `({ event, userId, sessionId, productId, value, metadata, timestamp }) → Promise<Object>` | Ghi analytics event vào DB qua `repo.createAnalyticsEvent()`                                       |
-| `addToCart`          | `({ productId, variantId, quantity, sessionId, userId }) → Promise<Object>`               | Verify stock + insert CartItem + ghi analytics event `product_added_to_cart`                       |
-| `clearSession`       | `(sessionId) → ...`                                                                       | Delegate `chatbotService.clearSession()`                                                           |
-| `getSessionHistory`  | `(sessionId) → ...`                                                                       | Delegate `chatbotService.getSessionHistory()`                                                      |
-| `getSessionMessages` | `(sessionId) → Promise<...>`                                                              | Delegate `chatbotService.getSessionMessages()`                                                     |
-| `registerSession`    | `(sessionId) → ...`                                                                       | Delegate `chatbotService.registerSession()`                                                        |
-| `getLatestSession`   | `() → Promise<...>`                                                                       | Delegate `chatbotService.getLatestSession()`                                                       |
+| Method               | Signature                                                                                 | Mô tả                                                                        |
+| -------------------- | ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `handleMessage`      | `({ message, userId, sessionId }) → Promise<{ response, products, suggestions, intent }>` | Delegate hoàn toàn cho `chatbotService.handleMessage()`                      |
+| `addToCart`          | `({ productId, variantId, quantity, sessionId, userId }) → Promise<Object>`               | Verify stock + insert CartItem + ghi analytics event `product_added_to_cart` |
+| `clearSession`       | `(sessionId) → ...`                                                                       | Delegate `chatbotService.clearSession()`                                     |
+| `getSessionMessages` | `(sessionId) → Promise<...>`                                                              | Delegate `chatbotService.getSessionMessages()`                               |
+| `registerSession`    | `(sessionId) → ...`                                                                       | Delegate `chatbotService.registerSession()`                                  |
 
 **Business logic trong `addToCart`:** tổng stock = `reduce(variants[].stockQuantity)`. Throw `AppError 404` nếu product không tồn tại; `AppError 400` nếu `status !== 'active'` HOẶC (tổng stock ≤ 0 VÀ `product.stockQuantity` ≤ 0) — tức chỉ chặn khi cả variants và product-level stock đều cạn.
 

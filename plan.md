@@ -70,10 +70,11 @@
 - **[CÒN] Wire thêm**: `backend/scripts/check-docs.js` + `scripts/verify-doc-nodes.js`/`verify-doc-evidence.py` + `check-i18n.js` vào CI/pre-push; cân nhắc nightly `check:routes`+`check:unused`, auto-CHANGELOG.
 
 ### C. Dọn API thừa (đã có `npm run check:routes` liệt kê — review trước khi xóa)
-- [ ] Gỡ catalog product-write dup (`POST/PUT/DELETE /api/products`) — FE chỉ dùng `/admin/products`. (Đụng catalog routes + controller methods + test catalog.)
-- [ ] Hợp nhất restock dup (`/admin/products/:id/restock` vs `/inventory/.../restock`).
-- [ ] Gỡ unused: `GET /chatbot/recommendations`, `POST /chatbot/analytics`, `/chatbot/session/latest` + `/session/:id/history`. Chuẩn hóa verb hủy đơn (POST).
-- Lưu ý: chạy `check:routes` lại sau role để không gỡ nhầm endpoint staff dùng.
+- [x] **Gỡ catalog product-write dup** (`POST/PUT/DELETE /api/products`) — FE chỉ dùng `/admin/products`. **XONG 2026-06-05** (Target 1): gỡ route+controller+service+repo + 8 repo helper dead (saveProduct/setProductCategories/clearProduct*/findProductByName/runInTransaction) + DI param ProductImage/ProductSpecification + dọn test (unit+api) + doc. Verified.
+- [x] **Gỡ unused chatbot** (`GET /chatbot/recommendations`, `POST /chatbot/analytics`, `/session/latest`, `/session/:id/history`) — **XONG 2026-06-05** (Target 3): route+controller+service+repo+chatbot-service + test (unit+api+integration) + doc. Verified. (Quy tắc: chỉ xóa khi def+test, không consumer thật — đã verify FE không gọi.)
+- [ ] **Hợp nhất restock dup** (`/admin/products/:id/restock` vs `/inventory/.../restock`) — **CHƯA** (Target 2, defer; user chốt commit §C Target 3+1 trước). Giữ inventory (canonical + test phiên này), gỡ admin dup. FE dùng `/admin/products/:id/stock` (updateProductStock), KHÔNG gọi `/restock`.
+- [ ] **Chuẩn hóa verb hủy đơn → POST** — CHƯA (cùng đợt Target 2).
+- Lưu ý: chạy `check:routes` lại sau role để không gỡ nhầm endpoint staff dùng. ⚠️ check:routes nhiều false-positive (refund/orders-admin/reviews-admin... admin DÙNG) — chỉ xóa sau khi grep verify def+test-only.
 
 ### D. Pha 1 — Sơ đồ + bố cục + phụ lục (docs)
 - [ ] **Sơ đồ → xem [§D.1] (kế hoạch chi tiết: **28 sơ đồ NHÓM A** sai ký pháp + **14 NHÓM B** = **42 tổng**, naming, output) + [§D.2] (audit-log per module + gate verify).** Item này thay cho mọi ước lượng cũ.

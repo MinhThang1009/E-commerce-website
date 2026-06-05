@@ -1,7 +1,5 @@
 // Unit tests cho AIController — phủ các nhánh còn thiếu:
 //   - productSearch: happy path + error path (next(err))
-//   - getRecommendations: happy path + error path
-//   - trackAnalytics: happy path + error path
 //   - addToCart: happy path + error path
 //   - handleMessage: 500 fallback (line 19) + 400 path
 
@@ -21,8 +19,6 @@ function makeLogger() {
 function makeService() {
   return {
     handleMessage: jest.fn(),
-    getRecommendations: jest.fn(),
-    trackAnalytics: jest.fn(),
     addToCart: jest.fn(),
   };
 }
@@ -111,90 +107,6 @@ describe('AIController', () => {
       await controller.handleMessage(req, res, next);
 
       expect(res.json).toHaveBeenCalledWith({ status: 'success', data });
-    });
-  });
-
-  // ────────────────────────────────────────────────────────────
-  // getRecommendations (lines 41-44)
-  // ────────────────────────────────────────────────────────────
-
-  describe('getRecommendations', () => {
-    test('gọi aiService.getRecommendations với req.query', async () => {
-      const data = [{ id: 2, name: 'Phone' }];
-      aiService.getRecommendations.mockResolvedValue(data);
-
-      const req = { query: { userId: '1', limit: '4' } };
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.getRecommendations(req, res, next);
-
-      expect(aiService.getRecommendations).toHaveBeenCalledWith(req.query);
-      expect(res.json).toHaveBeenCalledWith({ status: 'success', data });
-    });
-
-    test('service throw → gọi next(err)', async () => {
-      const err = new Error('Recommendation fail');
-      aiService.getRecommendations.mockRejectedValue(err);
-
-      const req = { query: {} };
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.getRecommendations(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(err);
-    });
-  });
-
-  // ────────────────────────────────────────────────────────────
-  // trackAnalytics (line 52 — error path)
-  // ────────────────────────────────────────────────────────────
-
-  describe('trackAnalytics', () => {
-    test('gọi aiService.trackAnalytics với đúng fields và trả về success', async () => {
-      aiService.trackAnalytics.mockResolvedValue();
-
-      const req = {
-        body: {
-          event: 'view_product',
-          userId: 1,
-          sessionId: 'sess-abc',
-          productId: 42,
-          value: 100000,
-          metadata: { source: 'home' },
-        },
-      };
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.trackAnalytics(req, res, next);
-
-      expect(aiService.trackAnalytics).toHaveBeenCalledWith(
-        expect.objectContaining({
-          event: 'view_product',
-          userId: 1,
-          sessionId: 'sess-abc',
-          productId: 42,
-          value: 100000,
-          metadata: { source: 'home' },
-          timestamp: expect.any(Date),
-        }),
-      );
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
-    });
-
-    test('service throw → gọi next(err)', async () => {
-      const err = new Error('Analytics DB fail');
-      aiService.trackAnalytics.mockRejectedValue(err);
-
-      const req = { body: { event: 'click', userId: 1, sessionId: 's' } };
-      const res = makeRes();
-      const next = jest.fn();
-
-      await controller.trackAnalytics(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(err);
     });
   });
 
@@ -305,66 +217,6 @@ describe('AIController', () => {
       await controller.registerSession(req, res);
       expect(aiService.registerSession).not.toHaveBeenCalled();
       expect(res.json).toHaveBeenCalledWith({ status: 'fail', message: 'sessionId required' });
-    });
-  });
-
-  // ────────────────────────────────────────────────────────────
-  // getLatestSession (lines 88-92)
-  // ────────────────────────────────────────────────────────────
-
-  describe('getLatestSession', () => {
-    test('trả về sessionId từ aiService', async () => {
-      aiService.getLatestSession = jest.fn().mockResolvedValue('sess-latest');
-      const req = {};
-      const res = makeRes();
-      const next = jest.fn();
-      await controller.getLatestSession(req, res, next);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'success',
-        data: { sessionId: 'sess-latest' },
-      });
-    });
-
-    test('service throw → gọi next(err)', async () => {
-      const err = new Error('DB fail');
-      aiService.getLatestSession = jest.fn().mockRejectedValue(err);
-      const req = {};
-      const res = makeRes();
-      const next = jest.fn();
-      await controller.getLatestSession(req, res, next);
-      expect(next).toHaveBeenCalledWith(err);
-    });
-  });
-
-  // ────────────────────────────────────────────────────────────
-  // getSessionHistory (lines 95-98)
-  // ────────────────────────────────────────────────────────────
-
-  describe('getSessionHistory', () => {
-    test('trả về messages + turns', async () => {
-      const messages = [
-        { role: 'user', content: 'Hi' },
-        { role: 'assistant', content: 'Hello' },
-      ];
-      aiService.getSessionHistory = jest.fn().mockReturnValue(messages);
-      const req = { params: { sessionId: 'sess-1' } };
-      const res = makeRes();
-      await controller.getSessionHistory(req, res);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'success',
-        data: { sessionId: 'sess-1', turns: 1, messages },
-      });
-    });
-
-    test('session rỗng → turns = 0', async () => {
-      aiService.getSessionHistory = jest.fn().mockReturnValue([]);
-      const req = { params: { sessionId: 'empty' } };
-      const res = makeRes();
-      await controller.getSessionHistory(req, res);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'success',
-        data: { sessionId: 'empty', turns: 0, messages: [] },
-      });
     });
   });
 

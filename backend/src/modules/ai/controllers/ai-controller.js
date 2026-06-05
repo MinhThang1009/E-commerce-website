@@ -45,33 +45,6 @@ class AIController {
     }
   };
 
-  getRecommendations = async (req, res, next) => {
-    try {
-      const data = await this.aiService.getRecommendations(req.query);
-      res.json({ status: 'success', data });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  trackAnalytics = async (req, res, next) => {
-    try {
-      const { event, userId, sessionId, productId, value, metadata } = req.body;
-      await this.aiService.trackAnalytics({
-        event,
-        userId,
-        sessionId,
-        productId,
-        value,
-        metadata,
-        timestamp: new Date(),
-      });
-      res.json({ status: 'success', message: t('ai.analyticsSaved', req.locale) });
-    } catch (err) {
-      next(err);
-    }
-  };
-
   clearSession = async (req, res) => {
     const { sessionId } = req.body;
     const cleared = this.aiService.clearSession(sessionId);
@@ -83,24 +56,6 @@ class AIController {
     if (!sessionId) return res.json({ status: 'fail', message: 'sessionId required' });
     this.aiService.registerSession(sessionId);
     res.json({ status: 'success' });
-  };
-
-  getLatestSession = async (req, res, next) => {
-    try {
-      const latest = await this.aiService.getLatestSession();
-      res.json({ status: 'success', data: { sessionId: latest } });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  getSessionHistory = async (req, res) => {
-    const { sessionId } = req.params;
-    const messages = this.aiService.getSessionHistory(sessionId);
-    res.json({
-      status: 'success',
-      data: { sessionId, turns: Math.floor(messages.length / 2), messages },
-    });
   };
 
   getSessionMessages = async (req, res, next) => {

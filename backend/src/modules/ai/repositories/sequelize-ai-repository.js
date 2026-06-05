@@ -4,11 +4,10 @@
  * @module ai
  * @description Data access layer cho ai
  */
-const { Op, literal } = require('sequelize');
 const IAIRepository = require('@modules/ai/repositories/i-ai-repository');
 
 // Sequelize impl của IAIRepository — wrap Product/Category access cho AI
-// product search + deals/trending. Repo build LIKE conditions internal.
+// product search + add-to-cart + analytics. Repo build LIKE conditions internal.
 class SequelizeAIRepository extends IAIRepository {
   constructor({ Product, ProductVariant, Category, sequelize }) {
     super();
@@ -16,47 +15,6 @@ class SequelizeAIRepository extends IAIRepository {
     this.ProductVariant = ProductVariant;
     this.Category = Category;
     this.sequelize = sequelize;
-  }
-
-  async findActiveDeals(limit = 10) {
-    return this.Product.findAll({
-      where: { status: 'active', compareAtPrice: { [Op.gt]: literal('`Product`.`base_price`') } },
-      include: [
-        {
-          model: this.ProductVariant,
-          as: 'variants',
-          attributes: ['stockQuantity'],
-          required: false,
-        },
-      ],
-      // subQuery: false — tránh Sequelize wrap subquery làm mất column trong ORDER BY
-      subQuery: false,
-      order: [
-        [
-          literal(
-            '((`Product`.`compare_at_price` - `Product`.`base_price`) / `Product`.`compare_at_price`)',
-          ),
-          'DESC',
-        ],
-      ],
-      limit,
-    });
-  }
-
-  async findFeaturedProducts(limit = 10) {
-    return this.Product.findAll({
-      where: { status: 'active', isFeatured: true },
-      include: [
-        {
-          model: this.ProductVariant,
-          as: 'variants',
-          attributes: ['stockQuantity'],
-          required: false,
-        },
-      ],
-      limit,
-      order: [['createdAt', 'DESC']],
-    });
   }
 
   async createAnalyticsEvent({ event, userId, sessionId, productId, value, metadata, timestamp }) {

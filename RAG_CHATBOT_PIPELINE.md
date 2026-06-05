@@ -688,8 +688,7 @@ Mọi pattern trong ABBREV_MAP đều được áp dụng với `new RegExp(patt
 | `fuzzyExpandQuery()` | query/fuzzy-expander.js | LLM DOWN path | ✅ typo + prefix expansion |
 | `clearSession()` | chatbot-service.js | — | `POST /chatbot/session/clear` |
 | `getSessionMessages()` | chatbot-service.js | — | `GET /chatbot/session/:id/messages` — fetch từ DB (kể cả sau server restart) |
-| `getLatestSession()` | chatbot-service.js | — | `GET /chatbot/session/latest` — trả session mới nhất (registered hoặc DB) |
-| `registerSession()` | chatbot-service.js | — | `POST /chatbot/session/register` — UI đăng ký session để terminal --watch follow ngay |
+| `registerSession()` | chatbot-service.js | — | `POST /chatbot/session/register` — UI đăng ký session đang active (ChatWidget) |
 
 ---
 

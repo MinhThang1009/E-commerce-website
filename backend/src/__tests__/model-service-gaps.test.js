@@ -922,58 +922,6 @@ describe('catalogService.js — _buildProductDetailResponse color image filterin
 });
 
 // ════════════════════════════════════════════════════════════════════════════════
-// catalogService.js line 822 — createProduct category not found → throw AppError 400
-// ════════════════════════════════════════════════════════════════════════════════
-
-describe('catalogService.js — createProduct category not found (line 822)', () => {
-  it('categoryIds không đủ trong DB → throw AppError 400 (line 822)', async () => {
-    const CatalogService = require('@modules/catalog/services/catalog-service');
-    const service = new CatalogService({
-      catalogRepository: {
-        findAllCategoriesSorted: jest.fn().mockResolvedValue([]),
-        getCategoryProductCounts: jest.fn().mockResolvedValue({}),
-        findCategoryById: jest.fn().mockResolvedValue(null),
-        findCategoryBySlug: jest.fn().mockResolvedValue(null),
-        findAllBrands: jest.fn().mockResolvedValue([]),
-        findBrandBySlug: jest.fn().mockResolvedValue(null),
-        findBrandById: jest.fn().mockResolvedValue(null),
-        findBrandIdsByCategoryId: jest.fn().mockResolvedValue([]),
-        findProductsWithFilters: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
-        findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
-        findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
-        findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
-        findProductFiltersData: jest
-          .fn()
-          .mockResolvedValue({ priceRange: {}, brands: [], colors: [], sizes: [], others: [] }),
-        findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
-        // Only 1 category found, but 2 requested
-        findCategoriesByIds: jest.fn().mockResolvedValue([{ id: 1, name: 'Electronics' }]),
-        findProductByName: jest.fn().mockResolvedValue(null),
-        createProduct: jest.fn().mockResolvedValue({ id: 'new-p', setCategories: jest.fn() }),
-        setProductCategories: jest.fn(),
-        runInTransaction: jest.fn(async (work) => work({})),
-      },
-
-      eventBus: { publish: jest.fn().mockResolvedValue() },
-      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
-    });
-
-    await expect(
-      service.createProduct({
-        payload: {
-          name: 'New Product',
-          price: 100000,
-          categoryIds: [1, 999], // 999 doesn't exist → only 1 returned
-        },
-      }),
-    ).rejects.toMatchObject({
-      statusCode: 400,
-      message: 'catalog.categoriesNotExist',
-    });
-  });
-});
-
-// ════════════════════════════════════════════════════════════════════════════════
 // deepParseJSON / deepParseJSONArray (admin.js lines 43-84) không được export ra ngoài.
 // Coverage cho các hàm này đến từ admin-controller tests qua HTTP endpoints.
 // Xem admin-controller.branches.test.js và admin-controller.statements.test.js.

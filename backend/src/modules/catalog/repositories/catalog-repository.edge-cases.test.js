@@ -95,7 +95,7 @@ describe('findProductsByBrandId — gọi không có options', () => {
     await repo.findProductsByBrandId(7);
 
     expect(deps.Product.findAndCountAll).toHaveBeenCalledWith({
-      where: { brandId: 7 },
+      where: { brandId: 7, status: 'active' },
       limit: undefined,
       offset: undefined,
       order: [['createdAt', 'DESC']],

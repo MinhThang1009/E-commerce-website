@@ -181,7 +181,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
 
   async findProductsByBrandId(brandId, { sort = 'createdAt', order = 'DESC', limit, offset } = {}) {
     return this.Product.findAndCountAll({
-      where: { brandId },
+      where: { brandId, status: 'active' },
       limit,
       offset,
       order: [[sort, order]],

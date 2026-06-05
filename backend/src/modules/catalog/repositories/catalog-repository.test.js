@@ -292,7 +292,7 @@ describe('Brand methods', () => {
     });
 
     expect(deps.Product.findAndCountAll).toHaveBeenCalledWith({
-      where: { brandId: 4 },
+      where: { brandId: 4, status: 'active' },
       limit: 10,
       offset: 0,
       order: [['basePrice', 'ASC']],

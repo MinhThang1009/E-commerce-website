@@ -125,6 +125,24 @@ describe('SearchBar — nhánh phụ', () => {
     expect(screen.getByText('search.error')).toBeInTheDocument();
   });
 
+  // ── saveSearchTerm catch: saveSearch mutation throw → catch console.error ──
+  it('saveSearch throw → catch block chạy, console.error được gọi, không crash', async () => {
+    mockSaveSearch.mockRejectedValueOnce(new Error('network error'));
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    (localStorage.getItem as jest.Mock).mockImplementation((key: string) => {
+      if (key === 'search_session_id') return 'sess-1';
+      return JSON.stringify([]);
+    });
+    render(<SearchBar isExpanded />);
+    const input = screen.getByPlaceholderText('header.actions.searchPlaceholder');
+    fireEvent.change(input, { target: { value: 'keyboard' } });
+    await act(async () => {
+      fireEvent.submit(input.closest('form')!);
+    });
+    expect(errorSpy).toHaveBeenCalledWith('Lỗi lưu từ khóa tìm kiếm:', expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
   // ── getRecentSearches: localStorage chứa JSON hỏng → JSON.parse throw → catch fallback [] ──
   it('recentSearches là JSON hỏng → submit → getRecentSearches catch chạy, fallback rỗng, không crash', async () => {
     // localStorage trả JSON hỏng cho 'recentSearches' → JSON.parse('{invalid json') throw

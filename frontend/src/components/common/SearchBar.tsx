@@ -225,8 +225,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
         resultsCount,
         sessionId: !isLoggedIn ? sessionId : undefined,
       });
-    } catch (error) /* istanbul ignore next — saveSearch mutation mock không thể throw trong tests */ {
-      /* istanbul ignore next */
+    } catch (error) {
       console.error('Lỗi lưu từ khóa tìm kiếm:', error);
     }
   };

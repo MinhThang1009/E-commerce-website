@@ -241,4 +241,15 @@ describe('CartItem', () => {
     render(<CartItem item={baseItem as any} />);
     expect(document.querySelectorAll('.animate-spin').length).toBeGreaterThan(0);
   });
+
+  it('quantity=99 + stockQuantity=0 → newQuantity=100 vượt guard >99, không gọi API', async () => {
+    // effectiveMaxStock=0 → nút tăng không bị disabled; click + gọi handleQuantityChange(100)
+    // Guard `if (newQuantity > 99) return` bắt trường hợp này
+    render(<CartItem item={{ ...baseItem, quantity: 99, stockQuantity: 0 } as any} />);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('cart.increaseQuantity'));
+    });
+    expect(mockUpdateCartItemFn).not.toHaveBeenCalled();
+    expect(mockUpdateQuantity).not.toHaveBeenCalled();
+  });
 });

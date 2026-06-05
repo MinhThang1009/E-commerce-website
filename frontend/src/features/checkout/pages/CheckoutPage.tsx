@@ -214,8 +214,8 @@ const CheckoutPage: React.FC = () => {
 
   // enter/exit là framer-motion variant fn; framer bị mock toàn suite test nên không được gọi (animation config, không phải logic)
   /* istanbul ignore next */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stepSlide: any = {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
     enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
     center: { x: 0, opacity: 1, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
     exit: (dir: number) => ({ x: dir > 0 ? -80 : 80, opacity: 0, transition: { duration: 0.2 } }),

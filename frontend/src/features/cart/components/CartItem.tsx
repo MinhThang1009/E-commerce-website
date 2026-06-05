@@ -39,7 +39,6 @@ const CartItem: React.FC<CartItemProps> = ({
   const { mutateAsync: removeCartItem, isPending: isRemoving } = useRemoveCartItemMutation();
 
   const handleQuantityChange = async (newQuantity: number) => {
-    /* istanbul ignore next — nút stepper đã disabled khi quantity <= 1 hoặc >= effectiveMaxStock */
     if (newQuantity <= 0 || newQuantity > 99) return;
 
     /* istanbul ignore next — guard phòng thủ: nút stepper đã disabled khi quantity >= effectiveMaxStock */

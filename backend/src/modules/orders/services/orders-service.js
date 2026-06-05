@@ -474,7 +474,6 @@ class OrdersService {
     // Map productImages → thumbnail + images (giống getUserOrders)
     const o = order.toJSON ? order.toJSON() : { ...order };
     if (o.items) {
-      /* istanbul ignore next */
       o.items = o.items.map((item) => {
         if (item.Product?.productImages) {
           item.Product.thumbnail =

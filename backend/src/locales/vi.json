@@ -245,5 +245,30 @@
       "content": "Nội dung:",
       "autoNotice": "Email này được gửi tự động khi có phản hồi mới từ khách hàng."
     }
+  },
+  "admin": {
+    "productNotFound": "Không tìm thấy sản phẩm",
+    "productAlreadyExists": "Đã tồn tại sản phẩm với tên này",
+    "categoryNotFound": "Danh mục không tồn tại",
+    "stockQuantityInvalid": "Số lượng tồn kho phải là số nguyên không âm",
+    "variantNotFound": "Không tìm thấy biến thể",
+    "productOriginalNotFound": "Không tìm thấy sản phẩm gốc",
+    "statusInvalid": "Trạng thái không hợp lệ",
+    "userNotFound": "Không tìm thấy người dùng",
+    "cannotChangeSelfRole": "Không thể thay đổi role của chính mình",
+    "cannotDeactivateSelf": "Không thể vô hiệu hóa tài khoản của chính mình",
+    "roleChangeAdminOnly": "Chỉ admin mới có quyền thay đổi role",
+    "cannotDeleteSelf": "Không thể xóa tài khoản của chính mình",
+    "reviewNotFound": "Không tìm thấy đánh giá",
+    "orderNotFound": "Không tìm thấy đơn hàng",
+    "orderAlreadyCancelled": "Đơn hàng đã bị hủy trước đó",
+    "startDateEndDateRequired": "Vui lòng cung cấp startDate và endDate",
+    "invalidReportType": "Loại báo cáo không hợp lệ. Dùng \"orders\" hoặc \"products\"",
+    "startEndDateRequired": "Vui lòng cung cấp ngày bắt đầu và ngày kết thúc",
+    "fileTypeInvalid": "Chỉ chấp nhận file CSV hoặc JSON",
+    "fileRequired": "Vui lòng upload file CSV hoặc JSON",
+    "jsonParseError": "File JSON không hợp lệ — không thể parse",
+    "jsonMustBeArray": "File JSON phải là mảng các object sản phẩm",
+    "csvEmpty": "File CSV rỗng hoặc không có dữ liệu"
   }
 }

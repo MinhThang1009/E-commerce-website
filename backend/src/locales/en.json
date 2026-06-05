@@ -244,5 +244,30 @@
       "content": "Content:",
       "autoNotice": "This email was sent automatically when new customer feedback was received."
     }
+  },
+  "admin": {
+    "productNotFound": "Product not found",
+    "productAlreadyExists": "A product with this name already exists",
+    "categoryNotFound": "Category not found",
+    "stockQuantityInvalid": "Stock quantity must be a non-negative integer",
+    "variantNotFound": "Variant not found",
+    "productOriginalNotFound": "Original product not found",
+    "statusInvalid": "Invalid status",
+    "userNotFound": "User not found",
+    "cannotChangeSelfRole": "Cannot change your own role",
+    "cannotDeactivateSelf": "Cannot deactivate your own account",
+    "roleChangeAdminOnly": "Only administrators can change roles",
+    "cannotDeleteSelf": "Cannot delete your own account",
+    "reviewNotFound": "Review not found",
+    "orderNotFound": "Order not found",
+    "orderAlreadyCancelled": "Order has already been cancelled",
+    "startDateEndDateRequired": "Please provide startDate and endDate",
+    "invalidReportType": "Invalid report type. Use \"orders\" or \"products\"",
+    "startEndDateRequired": "Please provide start date and end date",
+    "fileTypeInvalid": "Only CSV or JSON files are accepted",
+    "fileRequired": "Please upload a CSV or JSON file",
+    "jsonParseError": "Invalid JSON file — unable to parse",
+    "jsonMustBeArray": "JSON file must be an array of product objects",
+    "csvEmpty": "CSV file is empty or has no data"
   }
 }

@@ -8,6 +8,7 @@ const multer = require('multer');
 const path = require('path');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 const { CSV_HEADERS } = require('@modules/admin/utils/csv-parser');
 const importService = require('@modules/admin/services/product-import-service');
 
@@ -18,7 +19,7 @@ const importUpload = multer({
     if (['.csv', '.json'].includes(ext)) return cb(null, true);
     const allowedMimes = ['text/csv', 'application/json', 'text/plain', 'application/octet-stream'];
     if (allowedMimes.includes(file.mimetype)) return cb(null, true);
-    cb(new AppError('Chỉ chấp nhận file CSV hoặc JSON', 400), false);
+    cb(new AppError(t('admin.fileTypeInvalid', _req.locale), 400), false);
   },
   limits: { fileSize: 5 * 1024 * 1024 },
 });
@@ -51,9 +52,13 @@ const getImportTemplate = catchAsync(async (_req, res) => {
 });
 
 const importProducts = catchAsync(async (req, res, next) => {
-  if (!req.file) return next(new AppError('Vui lòng upload file CSV hoặc JSON', 400));
+  if (!req.file) return next(new AppError(t('admin.fileRequired', req.locale), 400));
 
-  const result = await importService.importProducts({ file: req.file, adminId: req.user.id });
+  const result = await importService.importProducts({
+    file: req.file,
+    adminId: req.user.id,
+    locale: req.locale,
+  });
 
   if (result.allFailed) {
     return res.status(422).json({

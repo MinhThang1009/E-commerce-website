@@ -12,6 +12,7 @@ const { Product, ProductImage } = adminRepository.getModels();
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 
 const getDashboardStats = catchAsync(async (req, res) => {
   logger.info('[CONTROLLER] getDashboardStats started');
@@ -183,7 +184,7 @@ const getDetailedStats = catchAsync(async (req, res) => {
   const { startDate, endDate, groupBy = 'day' } = req.query;
 
   if (!startDate || !endDate) {
-    throw new AppError('Vui lòng cung cấp ngày bắt đầu và ngày kết thúc', 400);
+    throw new AppError(t('admin.startEndDateRequired', req.locale), 400);
   }
 
   const start = new Date(startDate);

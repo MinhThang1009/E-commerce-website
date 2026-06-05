@@ -23,6 +23,7 @@ const {
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 const { calculateTotalStock, generateVariantSku } = require('@utils/product-helpers');
 const vectorStoreService = require('@services/vector-store/vector-store');
 
@@ -73,7 +74,7 @@ const getProductById = catchAsync(async (req, res) => {
   });
 
   if (!product) {
-    throw new AppError('Không tìm thấy sản phẩm', 404);
+    throw new AppError(t('admin.productNotFound', req.locale), 404);
   }
 
   const productJson = product.toJSON();
@@ -128,7 +129,7 @@ const createProduct = catchAsync(async (req, res) => {
   // Chặn trùng tên: không cho tạo 2 sản phẩm cùng tên (Product paranoid → loại sản phẩm đã xóa mềm)
   const duplicateProduct = await adminRepository.findProductOne({ nameVi: name });
   if (duplicateProduct) {
-    throw new AppError('Đã tồn tại sản phẩm với tên này', 409);
+    throw new AppError(t('admin.productAlreadyExists', req.locale), 409);
   }
 
   // Validate danh mục TRƯỚC khi tạo product để tránh tạo product mồ côi nếu categoryId sai.
@@ -137,7 +138,7 @@ const createProduct = catchAsync(async (req, res) => {
   if (categoryIds && categoryIds.length > 0) {
     selectedCategories = await adminRepository.findCategories({ where: { id: categoryIds } });
     if (selectedCategories.length === 0) {
-      throw new AppError('Danh mục không tồn tại', 400);
+      throw new AppError(t('admin.categoryNotFound', req.locale), 400);
     }
   }
 
@@ -393,7 +394,7 @@ const updateProduct = catchAsync(async (req, res) => {
   try {
     const product = await adminRepository.findProductById(id, { transaction });
     if (!product) {
-      throw new AppError('Không tìm thấy sản phẩm', 404);
+      throw new AppError(t('admin.productNotFound', req.locale), 404);
     }
 
     const changes = {};
@@ -764,7 +765,7 @@ const deleteProduct = catchAsync(async (req, res) => {
 
   const product = await adminRepository.findProductById(id);
   if (!product) {
-    throw new AppError('Không tìm thấy sản phẩm', 404);
+    throw new AppError(t('admin.productNotFound', req.locale), 404);
   }
 
   const transaction = await sequelize.transaction();
@@ -953,15 +954,15 @@ const updateProductStock = catchAsync(async (req, res) => {
 
   const qty = parseInt(stockQuantity, 10);
   if (isNaN(qty) || qty < 0) {
-    throw new AppError('Số lượng tồn kho phải là số nguyên không âm', 400);
+    throw new AppError(t('admin.stockQuantityInvalid', req.locale), 400);
   }
 
   const product = await adminRepository.findProductById(id);
-  if (!product) throw new AppError('Không tìm thấy sản phẩm', 404);
+  if (!product) throw new AppError(t('admin.productNotFound', req.locale), 404);
 
   if (variantId) {
     const variant = await adminRepository.findProductVariantById(variantId, id);
-    if (!variant) throw new AppError('Không tìm thấy biến thể', 404);
+    if (!variant) throw new AppError(t('admin.variantNotFound', req.locale), 404);
     await variant.update({ stockQuantity: qty });
     const total = (await adminRepository.sumProductVariantStock(id)) || 0;
     await product.update({ stockQuantity: total });
@@ -988,7 +989,7 @@ const cloneProduct = catchAsync(async (req, res) => {
   });
 
   if (!originalProduct) {
-    throw new AppError('Không tìm thấy sản phẩm gốc', 404);
+    throw new AppError(t('admin.productOriginalNotFound', req.locale), 404);
   }
 
   let newName = originalProduct.name;
@@ -1090,12 +1091,12 @@ const toggleProductStatus = catchAsync(async (req, res) => {
 
   const product = await adminRepository.findProductById(id);
   if (!product) {
-    throw new AppError('Không tìm thấy sản phẩm', 404);
+    throw new AppError(t('admin.productNotFound', req.locale), 404);
   }
 
   const validStatuses = ['active', 'inactive', 'draft'];
   if (status && !validStatuses.includes(status)) {
-    throw new AppError('Trạng thái không hợp lệ', 400);
+    throw new AppError(t('admin.statusInvalid', req.locale), 400);
   }
 
   const newStatus = status || (product.status === 'active' ? 'inactive' : 'active');

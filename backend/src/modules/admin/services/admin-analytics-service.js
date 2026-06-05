@@ -14,6 +14,7 @@ const { Product, ProductImage, ProductVariant, User, Order, ChatMessage } =
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 
 const getOrderStatusAnalytics = catchAsync(async (req, res) => {
   const { startDate } = req.query;
@@ -145,7 +146,7 @@ const getUserGrowthAnalytics = catchAsync(async (req, res) => {
   const { startDate, endDate, groupBy = 'day' } = req.query;
 
   if (!startDate || !endDate) {
-    throw new AppError('Vui lòng cung cấp startDate và endDate', 400);
+    throw new AppError(t('admin.startDateEndDateRequired', req.locale), 400);
   }
 
   let dateFormat;
@@ -335,7 +336,7 @@ const exportReport = catchAsync(async (req, res) => {
     );
     res.status(200).send('﻿' + csvHeader + csvRows);
   } else {
-    throw new AppError('Loại báo cáo không hợp lệ. Dùng "orders" hoặc "products"', 400);
+    throw new AppError(t('admin.invalidReportType', req.locale), 400);
   }
 });
 

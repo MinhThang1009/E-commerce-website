@@ -10,6 +10,7 @@ const { User, Order, Address, SearchHistory, RecentlyViewed } = adminRepository.
 
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 
 const getAllUsers = catchAsync(async (req, res) => {
   const {
@@ -72,21 +73,21 @@ const updateUser = catchAsync(async (req, res) => {
 
   const user = await adminRepository.findUserById(id);
   if (!user) {
-    throw new AppError('Không tìm thấy người dùng', 404);
+    throw new AppError(t('admin.userNotFound', req.locale), 404);
   }
 
   const numericId = Number(id);
 
   if (req.user.id === numericId && role && role !== user.role) {
-    throw new AppError('Không thể thay đổi role của chính mình', 403);
+    throw new AppError(t('admin.cannotChangeSelfRole', req.locale), 403);
   }
 
   if (req.user.id === numericId && isActive === false) {
-    throw new AppError('Không thể vô hiệu hóa tài khoản của chính mình', 403);
+    throw new AppError(t('admin.cannotDeactivateSelf', req.locale), 403);
   }
 
   if (role && role !== user.role && req.user.role !== 'admin') {
-    throw new AppError('Chỉ admin mới có quyền thay đổi role', 403);
+    throw new AppError(t('admin.roleChangeAdminOnly', req.locale), 403);
   }
 
   const updatePayload = {
@@ -114,12 +115,12 @@ const deleteUser = catchAsync(async (req, res) => {
   const { id } = req.params;
 
   if (String(req.user.id) === String(id)) {
-    throw new AppError('Không thể xóa tài khoản của chính mình', 403);
+    throw new AppError(t('admin.cannotDeleteSelf', req.locale), 403);
   }
 
   const user = await adminRepository.findUserById(id);
   if (!user) {
-    throw new AppError('Không tìm thấy người dùng', 404);
+    throw new AppError(t('admin.userNotFound', req.locale), 404);
   }
 
   await user.destroy();
@@ -148,7 +149,7 @@ const getUserById = catchAsync(async (req, res) => {
   });
 
   if (!user) {
-    throw new AppError('Không tìm thấy người dùng', 404);
+    throw new AppError(t('admin.userNotFound', req.locale), 404);
   }
 
   res.status(200).json({

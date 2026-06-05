@@ -23,6 +23,7 @@ const slugify = require('slugify');
 const repo = require('@modules/admin/repositories/sequelize-product-import-repository');
 const logger = require('@utils/logger');
 const { AppError } = require('@shared/errors');
+const { t: i18n } = require('@utils/i18n');
 const vectorStoreService = require('@services/vector-store/vector-store');
 const {
   parseCsv,
@@ -222,7 +223,7 @@ const _insertProductRow = async (row, categoryMap, brandMap) => {
  *       (gộp cả validation errors lẫn DB insert errors)
  * @throws {AppError} HTTP 400 nếu file JSON không thể parse hoặc file CSV rỗng
  */
-const importProducts = async ({ file, adminId }) => {
+const importProducts = async ({ file, adminId, locale = 'vi' }) => {
   const ext = path.extname(file.originalname).toLowerCase();
   const content = file.buffer.toString('utf8');
 
@@ -232,14 +233,13 @@ const importProducts = async ({ file, adminId }) => {
     try {
       parsed = JSON.parse(content);
     } catch {
-      throw new AppError('File JSON không hợp lệ — không thể parse', 400);
+      throw new AppError(i18n('admin.jsonParseError', locale), 400);
     }
-    if (!Array.isArray(parsed))
-      throw new AppError('File JSON phải là mảng các object sản phẩm', 400);
+    if (!Array.isArray(parsed)) throw new AppError(i18n('admin.jsonMustBeArray', locale), 400);
     rows = parsed.map((item, idx) => ({ ...item, _lineNumber: idx + 2 }));
   } else {
     const { rows: csvRows } = parseCsv(content);
-    if (csvRows.length === 0) throw new AppError('File CSV rỗng hoặc không có dữ liệu', 400);
+    if (csvRows.length === 0) throw new AppError(i18n('admin.csvEmpty', locale), 400);
     rows = csvRows;
   }
 

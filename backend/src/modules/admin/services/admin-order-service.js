@@ -11,6 +11,7 @@ const { Product, ProductImage, User, OrderItem } = adminRepository.getModels();
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 
 // ordersService được inject từ app.js (pattern setter — giống attribute.setNameGenerator).
 // Hủy/đổi-trạng-thái đơn DELEGATE sang orders-service để dùng CHUNG 1 path (guard delivered/
@@ -79,7 +80,7 @@ const deleteReview = catchAsync(async (req, res) => {
 
   const review = await adminRepository.findReviewById(id);
   if (!review) {
-    throw new AppError('Không tìm thấy đánh giá', 404);
+    throw new AppError(t('admin.reviewNotFound', req.locale), 404);
   }
 
   await review.destroy();
@@ -213,8 +214,9 @@ const adminCancelOrder = catchAsync(async (req, res) => {
 
   // Giữ contract cũ: đơn đã hủy → 400 (orders-service coi cancelled→cancelled là no-op 200).
   const existing = await adminRepository.findOrderById(id);
-  if (!existing) throw new AppError('Không tìm thấy đơn hàng', 404);
-  if (existing.status === 'cancelled') throw new AppError('Đơn hàng đã bị hủy trước đó', 400);
+  if (!existing) throw new AppError(t('admin.orderNotFound', req.locale), 404);
+  if (existing.status === 'cancelled')
+    throw new AppError(t('admin.orderAlreadyCancelled', req.locale), 400);
 
   // DELEGATE sang orders-service: guard delivered→400; hoàn kho atomic + lock CHỈ khi
   // pending/processing (shipped KHÔNG hoàn — INV-STK-6); publish order.cancelled (audit).

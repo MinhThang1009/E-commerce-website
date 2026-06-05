@@ -111,16 +111,16 @@ Nếu có `userId` → gọi `_trackRecentlyViewed` (fire-and-forget, max 20 ent
 
 ## 3.3 Specialized product queries
 
-| Method                                   | Logic                                                                              |
-| ---------------------------------------- | ---------------------------------------------------------------------------------- |
-| `getFeaturedProducts(limit)`             | WHERE `isFeatured = true`                                                          |
-| `getNewArrivals(limit)`                  | ORDER BY `createdAt DESC`                                                          |
+| Method                                   | Logic                                                                                                 |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `getFeaturedProducts(limit)`             | WHERE `isFeatured = true`                                                                             |
+| `getNewArrivals(limit)`                  | ORDER BY `createdAt DESC`                                                                             |
 | `getBestSellers({ limit, period })`      | Raw SQL: JOIN `order_items`, `orders` WHERE không cancelled **AND status='active'**, GROUP BY product |
-| `getDeals({ limit, minDiscount, sort })` | WHERE `compareAtPrice IS NOT NULL`, discount >= minDiscount (%), `subQuery: false` |
-| `getRelatedProducts(id)`                 | Same category (pass `categoryId`), status='active'; fallback → newest active nếu không có |
-| `searchProducts(q)`                      | LIKE trên name_vi, name_en, description_vi, short_description_vi, tags; filter status='active' |
-| `getProductSuggestions(q)`               | Prefix match trên name_vi, trả về id/name/slug/thumbnail; filter status='active'   |
-| `getProductFilters(categoryId)`          | priceRange + brands/colors/sizes từ `ProductAttribute`                             |
+| `getDeals({ limit, minDiscount, sort })` | WHERE `compareAtPrice IS NOT NULL`, discount >= minDiscount (%), `subQuery: false`                    |
+| `getRelatedProducts(id)`                 | Same category (pass `categoryId`), status='active'; fallback → newest active nếu không có             |
+| `searchProducts(q)`                      | LIKE trên name_vi, name_en, description_vi, short_description_vi, tags; filter status='active'        |
+| `getProductSuggestions(q)`               | Prefix match trên name_vi, trả về id/name/slug/thumbnail; filter status='active'                      |
+| `getProductFilters(categoryId)`          | priceRange + brands/colors/sizes từ `ProductAttribute`                                                |
 
 ## 3.4 Category và Brand
 

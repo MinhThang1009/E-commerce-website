@@ -497,6 +497,21 @@ describe('createSessionId', () => {
     // Rất khó trùng — nếu trùng thì có bug thực sự
     expect(id1).not.toBe(id2);
   });
+
+  test('nhánh fallback khi crypto.randomUUID không khả dụng', () => {
+    // Override globalThis.crypto tạm thời — randomUUID=undefined → condition falsy → nhánh fallback fires
+    const origCrypto = globalThis.crypto;
+    Object.defineProperty(globalThis, 'crypto', {
+      value: { ...origCrypto, randomUUID: undefined },
+      configurable: true,
+    });
+    try {
+      const id = createSessionId();
+      expect(id).toMatch(/^session_\d+_[a-z0-9]+$/);
+    } finally {
+      Object.defineProperty(globalThis, 'crypto', { value: origCrypto, configurable: true });
+    }
+  });
 });
 
 // ── localStorage persistence ──────────────────────────────────────────────────

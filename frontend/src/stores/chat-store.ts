@@ -13,7 +13,6 @@ const STORAGE_KEY_SESSION = 'chat_session_id';
 
 // Tạo sessionId mới cho phiên trò chuyện
 export const createSessionId = () =>
-  /* istanbul ignore next — nhánh fallback chỉ chạy trên môi trường không có crypto.randomUUID */
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;

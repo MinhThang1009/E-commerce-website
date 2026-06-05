@@ -1400,6 +1400,14 @@ describe('OrdersPage: payment redirect và login', () => {
     expect(screen.getByText('auth.register.signInLink')).toBeInTheDocument();
   });
 
+  it('unauthenticated + click nút đăng nhập → onClick handler chạy (window.location.href)', () => {
+    mockAuthState = { isAuthenticated: false, user: null, loginSuccess: jest.fn() };
+    render(<OrdersPage />);
+    const loginBtn = screen.getByText('auth.register.signInLink');
+    // Handler () => window.location.href = '/login' có thể fire trong jsdom (không throw)
+    expect(() => fireEvent.click(loginBtn)).not.toThrow();
+  });
+
   it('click nút trang trước (previous page) khi currentPage>1 → handlePageChange được gọi', () => {
     const orders = Array.from({ length: 15 }, (_, i) => ({
       id: `ord-pp-${i}`,

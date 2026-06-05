@@ -321,6 +321,12 @@ describe('LoadingSpinner fullScreen', () => {
     const { container } = render(<LoadingSpinner color="khong-ton-tai" />);
     expect(container.querySelector('svg.text-primary-500')).toBeInTheDocument();
   });
+
+  it("size không hợp lệ (as any) → fallback aliasMap ?? 'md' áp w-8", () => {
+    // aliasMap không có key 'invalid' → undefined → ?? 'md' fires → w-8
+    const { container } = render(<LoadingSpinner size={'invalid' as any} />);
+    expect(container.querySelector('svg.w-8')).toBeInTheDocument();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════

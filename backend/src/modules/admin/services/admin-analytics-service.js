@@ -301,7 +301,8 @@ const exportReport = catchAsync(async (req, res) => {
           : '';
         const email = oJson.User?.email || '';
         const date = new Date(oJson.createdAt).toISOString().split('T')[0];
-        return `${oJson.id},"${oJson.number}","${customer}","${email}",${oJson.status},${oJson.paymentStatus},${oJson.paymentMethod || ''},${oJson.total},${date}`;
+        const escapeCsv = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        return `${oJson.id},${escapeCsv(oJson.number)},${escapeCsv(customer)},${escapeCsv(email)},${oJson.status},${oJson.paymentStatus},${oJson.paymentMethod || ''},${oJson.total},${date}`;
       })
       .join('\n');
 

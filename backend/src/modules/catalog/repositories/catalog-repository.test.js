@@ -511,6 +511,28 @@ describe('Product fetching methods', () => {
     expect(result).toHaveLength(2);
   });
 
+  test('TC-41b findRelatedProducts — filter status active và categoryId khi truyền', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findAll.mockResolvedValue([]);
+
+    await repo.findRelatedProducts(5, 4, 10);
+
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.where.status).toBe('active');
+    expect(call.where.categoryId).toBe(10);
+  });
+
+  test('TC-41c findRelatedProducts — không truyền categoryId → không có categoryId trong where', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findAll.mockResolvedValue([]);
+
+    await repo.findRelatedProducts(5, 4);
+
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.where.status).toBe('active');
+    expect(call.where.categoryId).toBeUndefined();
+  });
+
   test('TC-42 findNewArrivals — order createdAt DESC, default limit 8', async () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([]);
@@ -531,6 +553,16 @@ describe('Product fetching methods', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('Search methods', () => {
+  test('TC-42b searchProducts — filter status active', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
+
+    await repo.searchProducts({ q: 'phone', limit: 10, offset: 0 });
+
+    const call = deps.Product.findAndCountAll.mock.calls[0][0];
+    expect(call.where.status).toBe('active');
+  });
+
   test('TC-43 searchProducts — Op.or 4 LOWER LIKE fields', async () => {
     const { repo, deps, sequelize } = makeRepo();
     deps.Product.findAndCountAll.mockResolvedValue({ count: 1, rows: [{ id: 1 }] });
@@ -576,6 +608,17 @@ describe('Search methods', () => {
       }),
     );
     expect(result).toBe(suggestions);
+  });
+
+  test('TC-44b findProductSuggestions — filter status active', async () => {
+    const { repo, deps, sequelize } = makeRepo();
+    deps.Product.findAll.mockResolvedValue([]);
+    sequelize.where.mockReturnValue({});
+
+    await repo.findProductSuggestions('sam', 5);
+
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.where.status).toBe('active');
   });
 
   test('TC-45b findProductSuggestions — default limit = 10', async () => {

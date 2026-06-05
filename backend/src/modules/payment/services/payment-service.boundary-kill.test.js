@@ -216,4 +216,26 @@ describe('PaymentService.handleVnPayIPN — amount boundary behavior', () => {
     expect(result.RspCode).toBe('00');
     expect(order.paymentStatus).toBe('paid');
   });
+
+  it('NaN amount (vnp_Amount không có) → bỏ qua check, xử lý bình thường (đồng nhất handleVnPayReturn)', async () => {
+    // parseInt(undefined, 10) / 100 = NaN → Number.isFinite(NaN) = false → skip check → mark paid
+    const order = buildOrder({ total: 500000, paymentStatus: 'pending' });
+    const repo = buildMockRepo({
+      findOrderByNumber: jest.fn().mockResolvedValue(order),
+      lockOrder: jest.fn().mockResolvedValue(order),
+    });
+    const svc = buildService({ paymentRepository: repo });
+
+    const result = await svc.handleVnPayIPN({
+      vnp_Params: {
+        vnp_TxnRef: order.number,
+        vnp_ResponseCode: '00',
+        // vnp_Amount không truyền → NaN → isFinite false → skip
+        vnp_TransactionNo: 'VNP-IPN-NAN',
+      },
+    });
+
+    expect(result.RspCode).toBe('00');
+    expect(order.paymentStatus).toBe('paid');
+  });
 });

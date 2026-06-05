@@ -328,7 +328,8 @@ class PaymentService {
       }
 
       // Stryker disable next-line EqualityOperator: floating point làm diff=0.01 thành 0.010000...>0.01 → cả > và >= cho cùng kết quả reject (true equivalent)
-      if (Math.abs(locked.total - amount) > 0.01) {
+      // Number.isFinite: bỏ qua khi gateway không gửi vnp_Amount (NaN) — đồng nhất handleVnPayReturn
+      if (Number.isFinite(amount) && Math.abs(locked.total - amount) > 0.01) {
         return { RspCode: '04', Message: 'Invalid amount' };
       }
       if (locked.paymentStatus === 'paid') {

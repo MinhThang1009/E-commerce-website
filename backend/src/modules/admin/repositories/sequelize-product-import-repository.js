@@ -65,7 +65,7 @@ const findProductsForExport = () =>
       { model: Category, as: 'category', attributes: ['slug'] },
       { model: Brand, as: 'brand', attributes: ['name'] },
       { model: ProductImage, as: 'productImages', attributes: ['imageUrl'], limit: 5 },
-      { model: ProductSpecification, as: 'specifications', attributes: ['specKey', 'specValue'] },
+      { model: ProductSpecification, as: 'productSpecifications', attributes: ['name', 'value'] },
     ],
     order: [['id', 'ASC']],
   });

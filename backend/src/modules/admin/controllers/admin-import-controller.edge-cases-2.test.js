@@ -404,9 +404,9 @@ describe('GET /api/admin/products/export?format=json — JSON export (lines 465-
         category: { slug: 'laptop' },
         brand: { name: 'Apple' },
         productImages: [{ imageUrl: '/img/macbook.jpg' }],
-        specifications: [
-          { specKey: 'CPU', specValue: 'M4 Pro' },
-          { specKey: 'RAM', specValue: '24GB' },
+        productSpecifications: [
+          { name: 'CPU', value: 'M4 Pro' },
+          { name: 'RAM', value: '24GB' },
         ],
       },
     ]);

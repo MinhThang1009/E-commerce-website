@@ -174,8 +174,8 @@ const _insertProductRow = async (row, categoryMap, brandMap) => {
         await repo.createProductSpecification(
           {
             productId: product.id,
-            specKey: spec.key,
-            specValue: String(spec.value).trim(),
+            name: spec.key,
+            value: String(spec.value).trim(),
             sortOrder: spec.order,
           },
           t,
@@ -334,18 +334,17 @@ const exportProducts = async (format) => {
     stock_quantity: p.stockQuantity || 0,
     image_urls: (p.productImages || []).map((img) => img.imageUrl).join('|'),
     ...Object.fromEntries(
-      (p.specifications || []).map((s) => [`spec_${s.specKey.toLowerCase()}`, s.specValue]),
+      (p.productSpecifications || []).map((s) => [`spec_${s.name.toLowerCase()}`, s.value]),
     ),
   });
 
   if (format === 'json') return products.map(mapProduct);
 
-  const specKeyMap = { 'bộ nhớ': 'storage', 'màn hình': 'display', pin: 'battery' };
   const csvRows = [CSV_HEADERS.join(',')];
   for (const p of products) {
     const specMap = {};
-    (p.specifications || []).forEach((s) => {
-      specMap[s.specKey.toLowerCase()] = s.specValue;
+    (p.productSpecifications || []).forEach((s) => {
+      specMap[s.name.toLowerCase()] = s.value;
     });
     const row = [
       escapeCsvField(p.name),
@@ -361,9 +360,9 @@ const exportProducts = async (format) => {
       escapeCsvField((p.productImages || []).map((img) => img.imageUrl).join('|')),
       escapeCsvField(specMap['cpu'] || ''),
       escapeCsvField(specMap['ram'] || ''),
-      escapeCsvField(specMap[specKeyMap['bộ nhớ']] || specMap['storage'] || ''),
-      escapeCsvField(specMap[specKeyMap['màn hình']] || specMap['display'] || ''),
-      escapeCsvField(specMap[specKeyMap['pin']] || specMap['battery'] || ''),
+      escapeCsvField(specMap['bộ nhớ'] || ''),
+      escapeCsvField(specMap['màn hình'] || ''),
+      escapeCsvField(specMap['pin'] || ''),
     ];
     csvRows.push(row.join(','));
   }

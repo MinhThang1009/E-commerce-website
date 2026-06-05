@@ -301,7 +301,7 @@ describe('POST /api/admin/products/import — CSV', () => {
 
     expect(res.status).toBe(200);
     expect(ProductSpecification.create).toHaveBeenCalledWith(
-      expect.objectContaining({ specKey: 'CPU', specValue: 'A17 Pro' }),
+      expect.objectContaining({ name: 'CPU', value: 'A17 Pro' }),
       expect.any(Object),
     );
   });
@@ -454,7 +454,7 @@ describe('GET /api/admin/products/export', () => {
       category: { slug: 'dien-thoai' },
       brand: { name: 'Apple' },
       productImages: [{ imageUrl: 'https://img/iphone.jpg' }],
-      specifications: [{ specKey: 'CPU', specValue: 'A17' }],
+      productSpecifications: [{ name: 'CPU', value: 'A17' }],
     },
   ];
 

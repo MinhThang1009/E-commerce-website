@@ -153,11 +153,11 @@ describe('importProducts — insert 1 row đầy đủ field', () => {
     expect(repo.createProductSpecification).toHaveBeenCalledTimes(5);
     const calls = repo.createProductSpecification.mock.calls.map((c) => c[0]);
     expect(calls).toEqual([
-      { productId: 100, specKey: 'CPU', specValue: 'A17', sortOrder: 1 },
-      { productId: 100, specKey: 'RAM', specValue: '8GB', sortOrder: 2 },
-      { productId: 100, specKey: 'Bộ nhớ', specValue: '256GB', sortOrder: 3 },
-      { productId: 100, specKey: 'Màn hình', specValue: '6.1"', sortOrder: 4 },
-      { productId: 100, specKey: 'Pin', specValue: '4000', sortOrder: 5 },
+      { productId: 100, name: 'CPU', value: 'A17', sortOrder: 1 },
+      { productId: 100, name: 'RAM', value: '8GB', sortOrder: 2 },
+      { productId: 100, name: 'Bộ nhớ', value: '256GB', sortOrder: 3 },
+      { productId: 100, name: 'Màn hình', value: '6.1"', sortOrder: 4 },
+      { productId: 100, name: 'Pin', value: '4000', sortOrder: 5 },
     ]);
     expect(repo.createProductSpecification).toHaveBeenCalledWith(expect.any(Object), TX);
   });
@@ -370,12 +370,12 @@ describe('exportProducts', () => {
     status: 'active',
     stockQuantity: 9,
     productImages: [{ imageUrl: 'a.jpg' }, { imageUrl: 'b.jpg' }],
-    specifications: [
-      { specKey: 'CPU', specValue: 'A17' },
-      { specKey: 'RAM', specValue: '8GB' },
-      { specKey: 'Bộ nhớ', specValue: '256GB' },
-      { specKey: 'Màn hình', specValue: '6.1' },
-      { specKey: 'Pin', specValue: '4000' },
+    productSpecifications: [
+      { name: 'CPU', value: 'A17' },
+      { name: 'RAM', value: '8GB' },
+      { name: 'Bộ nhớ', value: '256GB' },
+      { name: 'Màn hình', value: '6.1' },
+      { name: 'Pin', value: '4000' },
     ],
   };
 
@@ -422,10 +422,9 @@ describe('exportProducts', () => {
     const lines = csv.split('\n');
     expect(lines[0]).toBe(CSV_HEADERS.join(','));
     // cột: name,slug,short_desc,base_price,cat,brand,status,stock,sku(''),weight(''),images,cpu,ram,storage,display,battery
-    // storage/display/battery RỖNG: specMap key là specKey.toLowerCase() (tiếng Việt 'bộ nhớ'),
-    // nhưng cột tra theo specKeyMap['bộ nhớ']='storage' → specMap['storage'] undefined.
+    // lookup trực tiếp: specMap['bộ nhớ']='256GB', specMap['màn hình']='6.1', specMap['pin']='4000'
     expect(lines[1]).toBe(
-      'iPhone,iphone,Mô tả,1000,dien-thoai,Apple,active,9,,,a.jpg|b.jpg,A17,8GB,,,',
+      'iPhone,iphone,Mô tả,1000,dien-thoai,Apple,active,9,,,a.jpg|b.jpg,A17,8GB,256GB,6.1,4000',
     );
   });
 
@@ -442,16 +441,16 @@ describe('exportProducts', () => {
     expect(cols[12]).toBe(''); // spec_ram || ''
   });
 
-  test('format=csv — specKey tiếng Anh storage/display/battery → cột tương ứng có giá trị', async () => {
+  test('format=csv — specKey tiếng Việt bộ nhớ/màn hình/pin → cột storage/display/battery có giá trị', async () => {
     repo.findProductsForExport.mockResolvedValueOnce([
       {
         name: 'C',
         slug: 'c',
         basePrice: 5,
-        specifications: [
-          { specKey: 'storage', specValue: '512GB' },
-          { specKey: 'display', specValue: '7' },
-          { specKey: 'battery', specValue: '5000' },
+        productSpecifications: [
+          { name: 'Bộ nhớ', value: '512GB' },
+          { name: 'Màn hình', value: '7' },
+          { name: 'Pin', value: '5000' },
         ],
       },
     ]);

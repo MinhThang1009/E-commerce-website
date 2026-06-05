@@ -121,7 +121,7 @@ const CartPage: React.FC = () => {
 
   // Áp dụng voucher
   const handleApplyVoucher = async () => {
-    /* istanbul ignore next */
+    // Guard reachable qua onKeyDown Enter (không bị disabled như nút Apply): Enter khi input rỗng → return sớm
     if (!voucherCode.trim()) return;
     setVoucherError('');
 

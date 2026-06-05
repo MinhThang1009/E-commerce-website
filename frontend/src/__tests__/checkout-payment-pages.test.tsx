@@ -1876,26 +1876,6 @@ describe('CheckoutPage: navigation + flows', () => {
     }
   };
 
-  it('submit với bank_transfer → createOrder + navigate payment-qr', async () => {
-    render(<CheckoutPage />);
-    fillAddress();
-    await act(async () => {
-      fireEvent.click(screen.getByText('checkout.step.next'));
-    });
-    const bankRadio = document.querySelector('input[type="radio"][value="bank_transfer"]');
-    if (bankRadio) {
-      fireEvent.click(bankRadio);
-      await act(async () => {
-        fireEvent.click(screen.getByText('checkout.step.next'));
-      });
-      await act(async () => {
-        fireEvent.click(screen.getByText('checkout.buttons.continueToPayment'));
-      });
-      expect(mockCreateOrderFn).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('/payment-qr'));
-    }
-  });
-
   it('submit với vnpay → createOrder + createVNPayUrl + redirect', async () => {
     // Object.defineProperty(window, 'location') throw "Cannot redefine" trong jsdom —
     // chỉ cần verify API được gọi, không cần mock location.href

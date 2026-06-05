@@ -41,6 +41,8 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     gray: 'text-neutral-400',
   };
 
+  // aliasMap phủ hết mọi giá trị hợp lệ của size (union type) → nhánh `?? 'md'` chỉ phòng thủ, không reachable qua unit test
+  /* istanbul ignore next -- defensive fallback, size luôn có trong aliasMap */
   const spinnerSize = sizeClasses[aliasMap[size] ?? 'md'];
   const spinnerColor = colorClasses[color as keyof typeof colorClasses] || colorClasses.primary;
 

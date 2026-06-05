@@ -163,14 +163,14 @@ Không có feature nào import từ checkout.
 
 # 8. Gotchas & Edge Cases
 
-- **Form validation dùng Zod:** `validateForm()` (local arrow closure trong `CheckoutPage`, không phải class method) dùng `shippingSchema` từ `src/schemas/checkout.ts`. Phone VN regex: `(0|+84)[0-9]{9}`. Address cần >= 3 comma-separated parts. Billing fields validation vẫn manual (conditional, ngoài schema).
+- **Form validation dùng Zod:** `validateForm()` (local arrow closure trong `CheckoutPage`, không phải class method) dùng `shippingSchema` từ `src/schemas/checkout.ts`. Phone VN regex: `(0|+84)[0-9]{9}`. Address cần >= 3 comma-separated parts. **Billing = shipping** (`sameAsShipping` cố định `true`; checkbox toggle + validation billing riêng đã gỡ — dead code, xem §A 2026-06-05).
 - **Checkout là protected route** — guest click checkout → redirect `/login` → redirect back `/checkout`.
 - **Payment flow MoMo/VNPay:** `CheckoutPage` → `useCreateOrderMutation` → `useCreateMomoUrlMutation/VNPay` → `window.location.href = payUrl` (redirect toàn trang ra cổng thanh toán). Callback → backend → redirect về `/orders/:id`.
 - **Repay flow:** query param `?repayOrder=<id>&amount=<amount>` → skip form địa chỉ, set `currentOrder = { id, total, isRepay: true }`, trực tiếp tạo payment URL cho đơn đã có.
 - **Buy Now flow:** query param `?buyNow=true` + `sessionStorage['buyNowItem']` → dùng 1 item từ sessionStorage thay vì toàn bộ cart. `sessionStorage` cleanup sau khi dùng.
 - **Form state không persist:** refresh trang checkout → mất form data. Intentional.
 - **COD/installment flow:** tạo order → redirect `/orders`.
-- **Bank transfer flow:** tạo order → navigate `/payment-qr?orderId=&amount=&numberOrder=` → `PaymentQRPage` trong feature `payment`.
+- **VNPay/MoMo flow:** tạo order → `window.location.href = paymentUrl` (cổng thanh toán). (`bank_transfer` đã gỡ khỏi `CheckoutPage` — KHÔNG có trong `paymentMethods` UI: chỉ cod/vnpay/momo/installment; nhánh dead xóa §A 2026-06-05. `PaymentQRPage`/`/payment-qr` chỉ còn dùng qua repay/route trực tiếp.)
 - **Phí ship tính từ khoảng cách:** `AddressPicker` trả về lat/lon từ geocoding (LocationIQ) → tính Haversine distance từ kho hàng (21.0378, 105.7827) → 15k cho 3km đầu, +5k/km tiếp theo, max 100k.
 - **`shippingCost` không gửi lên backend** — backend tự tính theo Phase 7.3. FE chỉ hiển thị estimate.
 - **Validate cart trước submit:** validation xảy ra phía backend khi tạo đơn — không dùng `useValidateCartQuery` trên FE.

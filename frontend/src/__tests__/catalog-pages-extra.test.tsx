@@ -333,6 +333,17 @@ describe('DealsPage', () => {
     render(<DealsPage />);
     expect(screen.getByText('deals.heroTitle')).toBeInTheDocument();
   });
+
+  it('loaded với deal giá dạng số → dùng trực tiếp (nhánh else, lines 40-44)', () => {
+    // price/compareAtPrice là number → typeof !== 'string' → nhánh else giữ nguyên giá trị
+    mockGetDealsQuery = {
+      data: { data: [{ id: 'd-num', price: 150000, compareAtPrice: 300000 }] },
+      isLoading: false,
+      error: null,
+    };
+    render(<DealsPage />);
+    expect(screen.getByText('deals.heroTitle')).toBeInTheDocument();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1141,5 +1152,98 @@ describe('CategoriesPage: slug/name mapping', () => {
     };
     render(<CategoriesPage />);
     expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category với slug khớp CATEGORY_CONFIG → dùng config theo slug (line 46/47)', () => {
+    // slug 'laptop' nằm trong CATEGORY_CONFIG → nhánh `slug && CATEGORY_CONFIG[slug]` true
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('7', 'Laptop', 'laptop')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('Laptop')).toBeInTheDocument();
+  });
+
+  it('category có image → render <img> thay gradient (lines 134,141-149)', () => {
+    mockGetAllCategoriesQuery = {
+      data: {
+        data: [
+          {
+            id: '8',
+            name: 'Có ảnh',
+            nameVi: 'Có ảnh',
+            slug: 'co-anh',
+            image: 'https://cdn.example.com/cat.jpg',
+            productCount: 0,
+          },
+        ],
+      },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    const img = document.querySelector('img[src="https://cdn.example.com/cat.jpg"]');
+    expect(img).toBeInTheDocument();
+  });
+
+  it('category không có nameVi/name (name undefined) → nhánh `name?.toLowerCase() || ""` (line 48)', () => {
+    // nameVi và name đều undefined → getCategoryConfig nhận name=undefined → `name?...` undefined → `|| ''`
+    mockGetAllCategoriesQuery = {
+      data: {
+        data: [{ id: '9', name: '', nameVi: undefined, slug: 'slug-khong-trong-config' }],
+      },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    // Render không crash, fallback Package icon được dùng
+    expect(screen.getByText('categories.heroTitle')).toBeInTheDocument();
+  });
+
+  it('category productCount=0 → không render badge số sản phẩm', () => {
+    mockGetAllCategoriesQuery = {
+      data: { data: [mkCat('10', 'Trống', 'trong-rong')] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.queryByText('categories.productCount')).not.toBeInTheDocument();
+  });
+
+  it('category không có slug (slug undefined) → nhánh `slug &&` false (line 46)', () => {
+    // slug undefined → `slug && CATEGORY_CONFIG[slug]` short-circuit false → rơi xuống name matching
+    mockGetAllCategoriesQuery = {
+      data: { data: [{ id: '11', name: 'Điện thoại', nameVi: 'Điện thoại', slug: undefined }] },
+      isLoading: false,
+    };
+    render(<CategoriesPage />);
+    expect(screen.getByText('Điện thoại')).toBeInTheDocument();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// BestSellers/NewArrivals — nhánh `data?.length || 0` (line 88/84)
+// ═══════════════════════════════════════════════════════════════
+describe('BestSellers/NewArrivals — stats khi total>0 nhưng data rỗng', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('BestSellers: total>0, data=undefined → shown=0 (nhánh || 0, line 88)', () => {
+    mockGetProductsQuery = {
+      data: { data: undefined, total: 7, limit: 12 },
+      isLoading: false,
+      error: null,
+    };
+    render(<BestSellersPage />);
+    // total truthy → render stats; data?.length undefined → || 0
+    expect(screen.getByText('bestSellers.stats')).toBeInTheDocument();
+  });
+
+  it('NewArrivals: total>0, data=undefined → shown=0 (nhánh || 0, line 84)', () => {
+    mockGetProductsQuery = {
+      data: { data: undefined, total: 9, limit: 12 },
+      isLoading: false,
+      error: null,
+    };
+    render(<NewArrivalsPage />);
+    expect(screen.getByText('newArrivals.showing')).toBeInTheDocument();
   });
 });

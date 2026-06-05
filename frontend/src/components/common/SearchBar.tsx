@@ -204,10 +204,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
       const recentSearches = localStorage.getItem('recentSearches');
       const parsedSearches = recentSearches ? JSON.parse(recentSearches) : [];
       return parsedSearches;
-    } catch (error) /* istanbul ignore next */ {
-      /* istanbul ignore next */
+    } catch (error) {
       console.error('Lỗi lấy lịch sử tìm kiếm:', error);
-      /* istanbul ignore next */
       return [];
     }
   };

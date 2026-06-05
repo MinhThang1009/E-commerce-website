@@ -855,6 +855,113 @@ describe('OrdersPage: repay order', () => {
 
     expect(screen.queryByText('orders.repayOrder')).not.toBeInTheDocument();
   });
+
+  it('click repay nhưng confirm=false → repayOrder KHÔNG được gọi (line 152)', () => {
+    mockGetUserOrdersQuery = {
+      data: { data: [makeOnlinePendingOrder('ord-cancel')], total: 1, limit: 10 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    jest.spyOn(window, 'confirm').mockReturnValue(false);
+
+    render(<OrdersPage />);
+    fireEvent.click(screen.getByText('orders.repayOrder'));
+    expect(mockRepayOrderFn).not.toHaveBeenCalled();
+  });
+
+  it('repay đơn bank_transfer → navigate trang payment-qr (lines 159,164)', async () => {
+    mockRepayOrderFn.mockResolvedValueOnce({
+      data: {
+        order: { id: 'ord-bt', total: 500000, number: 'ORD-BT', paymentMethod: 'bank_transfer' },
+      },
+    });
+    mockGetUserOrdersQuery = {
+      data: {
+        data: [makeOnlinePendingOrder('ord-bt', { paymentMethod: 'bank_transfer' })],
+        total: 1,
+        limit: 10,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    jest.spyOn(window, 'confirm').mockReturnValue(true);
+
+    render(<OrdersPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('orders.repayOrder'));
+    });
+    expect(mockNavigate).toHaveBeenCalledWith(expect.stringContaining('payment-qr'));
+  });
+
+  it('repay đơn online trả về paymentUrl → nhánh window.location.href chạy (lines 171,173)', async () => {
+    // jsdom: window.location không configurable → không thể redefine để assert href.
+    // Gán href trong jsdom là no-op (log "navigation not implemented") nhưng statement vẫn execute.
+    // Stub assignment qua mock setter trên prototype property nếu có; nếu không, chỉ verify không crash + API gọi.
+    mockRepayOrderFn.mockResolvedValueOnce({
+      data: { paymentUrl: 'https://pay.example.com/repay' },
+    });
+    mockGetUserOrdersQuery = {
+      data: { data: [makeOnlinePendingOrder('ord-url')], total: 1, limit: 10 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    jest.spyOn(window, 'confirm').mockReturnValue(true);
+    // Bịt cảnh báo "Not implemented: navigation" của jsdom khi gán href
+    const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<OrdersPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('orders.repayOrder'));
+    });
+    // Nhánh paymentUrl chạy → repayOrder được gọi, không vào nhánh bank_transfer/else
+    expect(mockRepayOrderFn).toHaveBeenCalledWith('ord-url');
+    // KHÔNG navigate trang payment-qr (đó là nhánh bank_transfer) và KHÔNG showNotification success
+    expect(mockNavigate).not.toHaveBeenCalledWith(expect.stringContaining('payment-qr'));
+    errSpy.mockRestore();
+  });
+
+  it('repay thất bại (mutation throw) → showNotification error (lines 181-182)', async () => {
+    mockRepayOrderFn.mockRejectedValueOnce(new Error('repay failed'));
+    mockGetUserOrdersQuery = {
+      data: { data: [makeOnlinePendingOrder('ord-err')], total: 1, limit: 10 },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    jest.spyOn(window, 'confirm').mockReturnValue(true);
+    const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<OrdersPage />);
+    await act(async () => {
+      fireEvent.click(screen.getByText('orders.repayOrder'));
+    });
+    expect(mockShowNotification).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+    spy.mockRestore();
+  });
+
+  it('đơn cancelled → áp class opacity giảm + gradient fallback (lines 480,628)', () => {
+    mockGetUserOrdersQuery = {
+      data: {
+        data: [makeOnlinePendingOrder('ord-cxl', { status: 'cancelled', paymentStatus: 'failed' })],
+        total: 1,
+        limit: 10,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: jest.fn(),
+    };
+    const { container } = render(<OrdersPage />);
+    // Order card cancelled → class opacity-60 (line 480 ternary true)
+    expect(container.querySelector('.opacity-60')).toBeInTheDocument();
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -2077,6 +2184,29 @@ describe('CartPage — branch coverage bổ sung', () => {
     expect(mockApplyFn).not.toHaveBeenCalled();
   });
 
+  // ── handleApplyVoucher: Enter trên input rỗng → guard !voucherCode.trim() return (line 125) ──
+  // Nút Apply bị disabled khi input rỗng, nên guard này CHỈ reachable qua onKeyDown Enter.
+  it('nhấn Enter trên voucher input rỗng → guard return sớm, applyDiscount không gọi + không có voucherError', async () => {
+    const mockApplyFn = jest.fn();
+    ordersModuleMock.useApplyDiscountCodeMutation = () => ({
+      mutateAsync: mockApplyFn,
+      isPending: false,
+    });
+    mockCartState = { ...mockCartState, items: [cartItem], totalItems: 1, subtotal: 25_000_000 };
+    render(<CartPage />);
+
+    // Input voucher để TRỐNG (voucherCode mặc định '') → Enter → handleApplyVoucher chạy → guard return
+    const voucherInput = screen.getByPlaceholderText('cart.voucher.placeholder');
+    await act(async () => {
+      fireEvent.keyDown(voucherInput, { key: 'Enter' });
+    });
+
+    // OUTCOME: mutation apply discount KHÔNG được gọi (guard chặn trước khi tới applyDiscount)
+    expect(mockApplyFn).not.toHaveBeenCalled();
+    // Không có voucherError được set (getErrorMsg fallback = 'cart.voucher.invalid')
+    expect(screen.queryByText('cart.voucher.invalid')).not.toBeInTheDocument();
+  });
+
   // ── handleApplyVoucher: success path ──────────────────────────────────────
   it('handleApplyVoucher thành công → hiển thị appliedVoucher UI', async () => {
     const mockApplyFn = jest.fn().mockResolvedValue({
@@ -2156,11 +2286,29 @@ describe('CartPage — branch coverage bổ sung', () => {
 
     const voucherInput = screen.getByPlaceholderText('cart.voucher.placeholder');
     fireEvent.change(voucherInput, { target: { value: 'ENTER10' } });
+    // Nhấn Enter trên input → onKeyDown handler gọi handleApplyVoucher (line 400)
+    // Query lại input sau change để lấy node với closure mới nhất
     await act(async () => {
-      fireEvent.click(screen.getByText('cart.voucher.apply'));
+      fireEvent.keyDown(screen.getByPlaceholderText('cart.voucher.placeholder'), {
+        key: 'Enter',
+      });
     });
 
     await waitFor(() => expect(mockApplyFn).toHaveBeenCalled());
+  });
+
+  it('nhấn phím khác Enter trên voucher input → handleApplyVoucher KHÔNG được gọi', () => {
+    const mockApplyFn = jest.fn();
+    ordersModuleMock.useApplyDiscountCodeMutation = () => ({
+      mutateAsync: mockApplyFn,
+      isPending: false,
+    });
+    mockCartState = { ...mockCartState, items: [cartItem], totalItems: 1, subtotal: 25_000_000 };
+    render(<CartPage />);
+    const voucherInput = screen.getByPlaceholderText('cart.voucher.placeholder');
+    fireEvent.change(voucherInput, { target: { value: 'ABC' } });
+    fireEvent.keyDown(voucherInput, { key: 'a', code: 'KeyA' });
+    expect(mockApplyFn).not.toHaveBeenCalled();
   });
 
   // ── Voucher input: typing clears voucherError ──────────────────────────────
@@ -2519,19 +2667,20 @@ describe('OrdersPage: search và filter', () => {
     }
   });
 
-  it('click onAction filterAll → reset filter, không crash', () => {
+  it('click onAction "filterAll" trong EmptyState filtered → setStatusFilter("all") (line 453)', () => {
     render(<OrdersPage />);
-    const cancelledTabs = screen.queryAllByText('orders.status.cancelled');
-    if (cancelledTabs.length > 0) {
-      fireEvent.click(cancelledTabs[0]);
-      // Nút filterAll từ EmptyState (có thể nhiều phần tử — dùng [0])
-      const filterAllBtns = screen.queryAllByText('orders.filterAll');
-      if (filterAllBtns.length > 0) {
-        fireEvent.click(filterAllBtns[0]);
-        // Sau reset → hiển thị tiêu đề trang
-        expect(screen.getByText('orders.title')).toBeInTheDocument();
-      }
-    }
+    // Lọc theo 'cancelled' (không có đơn cancelled) → hiển thị filterEmpty EmptyState
+    fireEvent.click(screen.getAllByText('orders.status.cancelled')[0]);
+    expect(screen.getByText('orders.filterEmpty')).toBeInTheDocument();
+
+    // 'orders.filterAll' xuất hiện 2 lần: tab filter (đầu) + nút action EmptyState (cuối DOM).
+    // Click phần tử CUỐI = nút onAction của EmptyState (line 453).
+    const filterAllEls = screen.getAllByText('orders.filterAll');
+    fireEvent.click(filterAllEls[filterAllEls.length - 1]);
+
+    // Sau reset filter='all' → không còn filterEmpty (danh sách đơn hiển thị lại)
+    expect(screen.queryByText('orders.filterEmpty')).not.toBeInTheDocument();
+    expect(screen.getByText('orders.title')).toBeInTheDocument();
   });
 
   it('Dialog onOpenChange(false) → đóng dialog (setSelectedOrder(null))', () => {

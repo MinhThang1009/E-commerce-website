@@ -166,6 +166,7 @@ jest.mock('@/features/users', () => ({
     onSetDefault,
     onSaveAddress,
     onCancelForm,
+    onAddressFormChange,
     addressesData,
   }: any) => {
     const R = require('react');
@@ -177,6 +178,28 @@ jest.mock('@/features/users', () => ({
         'button',
         { onClick: onOpenAddAddress, 'data-testid': 'add-address-btn' },
         'add',
+      ),
+      // Cho phép test set addressForm hợp lệ (để cover nhánh add địa chỉ)
+      R.createElement(
+        'button',
+        {
+          'data-testid': 'fill-valid-form-btn',
+          onClick: () =>
+            onAddressFormChange &&
+            onAddressFormChange({
+              name: '',
+              firstName: 'An',
+              lastName: 'Nguyen',
+              phone: '',
+              address1: '123 St',
+              address2: '',
+              city: 'HN',
+              state: '',
+              zip: '',
+              country: '',
+            }),
+        },
+        'fill',
       ),
       R.createElement(
         'button',
@@ -1068,5 +1091,182 @@ describe('WishlistPage: full coverage', () => {
     const shopBtn = screen.getByText('wishlist.continueShopping');
     fireEvent.click(shopBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/shop');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ProfilePage: branch coverage bổ sung
+// ═══════════════════════════════════════════════════════════════
+describe('ProfilePage: branch coverage', () => {
+  const fullUser = {
+    id: '1',
+    firstName: 'Test',
+    lastName: 'User',
+    email: 'test@t.com',
+    role: 'customer',
+  };
+
+  const clickEdit = () => fireEvent.click(screen.getByText('profile.info.edit'));
+
+  it('user có avatar + isEmailVerified → render <img> avatar + badge verified (lines 416,447)', () => {
+    mockAuthState = {
+      user: { ...fullUser, avatar: 'https://cdn.example.com/avatar.jpg', isEmailVerified: true },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
+    render(<ProfilePage />);
+    const avatarImg = document.querySelector('img[src="https://cdn.example.com/avatar.jpg"]');
+    expect(avatarImg).toBeInTheDocument();
+    expect(screen.getByText('profile.emailVerified')).toBeInTheDocument();
+  });
+
+  it('user thiếu firstName/lastName/phone → fallback chuỗi rỗng + initials "U" + defaultName (lines 82-83,317,315)', () => {
+    mockAuthState = {
+      user: { id: '2', email: 'noname@t.com', role: 'customer' },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
+    render(<ProfilePage />);
+    // Không có tên → displayName fallback defaultName, initials fallback 'U'
+    expect(screen.getByText('profile.defaultName')).toBeInTheDocument();
+    expect(screen.getByText('U')).toBeInTheDocument();
+  });
+
+  it('currentUser effect với field undefined → fallback chuỗi rỗng (lines 95-98)', () => {
+    mockCurrentUserData = { email: 'cu@t.com' }; // thiếu firstName/lastName/phone
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    expect(screen.getByText('cu@t.com')).toBeInTheDocument();
+  });
+
+  it('edit + xóa firstName/lastName → submit → hiển thị error message (lines 555-557,573-575,114-115)', async () => {
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    clickEdit();
+    const firstNameInput = document.querySelector('input[name="firstName"]') as HTMLInputElement;
+    const lastNameInput = document.querySelector('input[name="lastName"]') as HTMLInputElement;
+    fireEvent.change(firstNameInput, { target: { name: 'firstName', value: '' } });
+    fireEvent.change(lastNameInput, { target: { name: 'lastName', value: '' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('profile.info.save'));
+    });
+    // validateInfoForm set errors → error <p> render, updateProfile không gọi
+    expect(mockUpdateProfileFn).not.toHaveBeenCalled();
+    expect(screen.getByText('profile.validation.firstNameRequired')).toBeInTheDocument();
+    expect(screen.getByText('profile.validation.lastNameRequired')).toBeInTheDocument();
+  });
+
+  it('handleChange xóa error sau khi gõ lại (line 109)', async () => {
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    clickEdit();
+    const firstNameInput = document.querySelector('input[name="firstName"]') as HTMLInputElement;
+    // Tạo lỗi trước
+    fireEvent.change(firstNameInput, { target: { name: 'firstName', value: '' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('profile.info.save'));
+    });
+    expect(screen.getByText('profile.validation.firstNameRequired')).toBeInTheDocument();
+    // Gõ lại → errors[name] truthy → clear error (line 109)
+    fireEvent.change(firstNameInput, { target: { name: 'firstName', value: 'An' } });
+    expect(screen.queryByText('profile.validation.firstNameRequired')).not.toBeInTheDocument();
+  });
+
+  it('click "Hủy" trong edit mode → reset formData + thoát edit (lines 620-635)', () => {
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    clickEdit();
+    fireEvent.click(screen.getByText('common.cancel'));
+    expect(screen.getByText('profile.info.edit')).toBeInTheDocument();
+  });
+
+  it('click "Hủy" với currentUser+user undefined fields → fallback chuỗi rỗng (lines 628-629)', () => {
+    mockCurrentUserData = { email: 'x@t.com' }; // thiếu firstName/lastName/phone
+    mockAuthState = {
+      user: { id: '3', email: 'x@t.com', role: 'customer' },
+      isAuthenticated: true,
+      updateUser: jest.fn(),
+    };
+    render(<ProfilePage />);
+    fireEvent.click(screen.getByText('profile.info.edit'));
+    fireEvent.click(screen.getByText('common.cancel'));
+    expect(screen.getByText('profile.info.edit')).toBeInTheDocument();
+  });
+
+  it('currentUser tất cả field undefined → fallback chuỗi rỗng email (line 97)', () => {
+    mockCurrentUserData = { id: 'cu' }; // không có email/firstName/lastName/phone
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    // Effect chạy với mọi field undefined → fallback '' → không crash, tab info hiển thị
+    expect(screen.getByText('profile.info.edit')).toBeInTheDocument();
+  });
+
+  it('add địa chỉ mới với form hợp lệ → gọi addAddress (nhánh else editingAddressId, line 247)', async () => {
+    mockAddressesData = { data: [] };
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    fireEvent.click(screen.getByText('profile.tabs.addresses'));
+    // Mở form add (editingAddressId vẫn null) + điền addressForm hợp lệ
+    fireEvent.click(screen.getByTestId('add-address-btn'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('fill-valid-form-btn'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-address-btn'));
+    });
+    // editingAddressId null → nhánh else → addAddress (KHÔNG phải updateAddress)
+    expect(mockAddAddressFn).toHaveBeenCalled();
+    expect(mockUpdateAddressFn).not.toHaveBeenCalled();
+  });
+
+  it('edit address có phone không hợp lệ → addrErrors.phone, không gọi updateAddress (lines 237-242)', async () => {
+    mockAddressesData = {
+      data: [
+        {
+          id: 'addr-bad',
+          firstName: 'An',
+          lastName: 'Nguyen',
+          phone: '123', // phone không hợp lệ
+          address1: '123 St',
+          city: 'HN',
+          isDefault: false,
+        },
+      ],
+    };
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    fireEvent.click(screen.getByText('profile.tabs.addresses'));
+    fireEvent.click(screen.getByTestId('edit-addr-bad'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-address-btn'));
+    });
+    // phone '123' không match regex → addrErrors.phone set → return sớm, không gọi updateAddress
+    expect(mockUpdateAddressFn).not.toHaveBeenCalled();
+  });
+
+  it('edit address (editingAddressId set) → save gọi updateAddress (line 248)', async () => {
+    mockAddressesData = {
+      data: [
+        {
+          id: 'addr-1',
+          firstName: 'An',
+          lastName: 'Nguyen',
+          phone: '0912345678',
+          address1: '123 St',
+          city: 'HN',
+          isDefault: false,
+        },
+      ],
+    };
+    mockAuthState = { user: fullUser, isAuthenticated: true, updateUser: jest.fn() };
+    render(<ProfilePage />);
+    fireEvent.click(screen.getByText('profile.tabs.addresses'));
+    // Mở edit address → set editingAddressId
+    fireEvent.click(screen.getByTestId('edit-addr-1'));
+    // Save → editingAddressId truthy → updateAddress
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('save-address-btn'));
+    });
+    expect(mockUpdateAddressFn).toHaveBeenCalledWith(expect.objectContaining({ id: 'addr-1' }));
   });
 });

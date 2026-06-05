@@ -410,6 +410,30 @@ describe('ContactPage: form interactions', () => {
     expect(screen.getByText('contact.form.success')).toBeInTheDocument();
   });
 
+  it('sau 5s submit thành công → setTimeout ẩn success banner (callback line 76)', async () => {
+    jest.useFakeTimers();
+    contactMockState.sendFeedback = jest.fn().mockResolvedValue(undefined);
+    render(<ContactPage />);
+    const nameInput = document.querySelector('input#name') as HTMLInputElement;
+    const emailInput = document.querySelector('input#email') as HTMLInputElement;
+    const subjectSelect = document.querySelector('select#subject') as HTMLSelectElement;
+    const messageTextarea = document.querySelector('textarea#message') as HTMLTextAreaElement;
+    fireEvent.change(nameInput, { target: { value: 'Trần Văn E' } });
+    fireEvent.change(emailInput, { target: { value: 'e@example.com' } });
+    fireEvent.change(subjectSelect, { target: { value: 'feedback' } });
+    fireEvent.change(messageTextarea, { target: { value: 'Nội dung phản hồi.' } });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('premium-btn'));
+    });
+    expect(screen.getByText('contact.form.success')).toBeInTheDocument();
+    // Tua 5s → callback setSubmitSuccess(false) chạy → banner ẩn
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(screen.queryByText('contact.form.success')).not.toBeInTheDocument();
+    jest.useRealTimers();
+  });
+
   it('submit form hợp lệ nhưng API thất bại → hiển thị thông báo lỗi contact.form.error', async () => {
     // Arrange — API ném lỗi
     contactMockState.sendFeedback = jest.fn().mockRejectedValue(new Error('Network error'));

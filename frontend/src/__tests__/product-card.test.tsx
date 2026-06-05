@@ -216,4 +216,33 @@ describe('ProductCard', () => {
     });
     expect(mockNavigate).toHaveBeenCalledWith('/checkout?buyNow=true');
   });
+
+  it('discountPercentage prop được truyền → dùng giá trị đó làm % giảm (line 61)', () => {
+    render(<ProductCard {...baseProps} compareAtPrice={30_000_000} discountPercentage={42} />);
+    expect(screen.getByText('-42%')).toBeInTheDocument();
+  });
+
+  it('compareAtPrice > basePrice → render giá gạch + dòng savings (lines 246,255-269)', () => {
+    render(<ProductCard {...baseProps} compareAtPrice={30_000_000} />);
+    // Dòng savings dùng key product.savings (t mock trả key)
+    expect(screen.getByText('product.savings')).toBeInTheDocument();
+    // Giá gạch hiển thị compareAtPrice format (30.000.000)
+    expect(screen.getByText(/30\.000\.000/)).toBeInTheDocument();
+  });
+
+  it('đã wishlist + remove lỗi → catch rollback gọi addToWishlistLocal (lines 88-92)', async () => {
+    mockWishlistItems = ['prod-1'];
+    mockRemoveFromWishlistFn.mockRejectedValueOnce(new Error('fail'));
+    render(<ProductCard {...baseProps} />);
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('product.toggleWishlist'));
+    });
+    // isWishlisted=true → catch nhánh addToWishlistLocal (rollback)
+    expect(mockAddToWishlistLocal).toHaveBeenCalledWith('prod-1');
+  });
+
+  it('không có ratings → không render block rating', () => {
+    render(<ProductCard {...baseProps} ratings={undefined} />);
+    expect(screen.queryByText(/4\.5/)).not.toBeInTheDocument();
+  });
 });

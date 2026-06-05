@@ -268,16 +268,19 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 158 | 3.764 | ~20s | `jest.config.js` |
-| BE Integration Tests | 37 | 199 | ~55s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | 700 | ~230s | `jest.api.config.js` |
-| BE E2E Tests | 5 | 100 | ~25s | `jest.e2e.config.js` |
-| FE Component Tests | 22 | 766 | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **261** | **~5.529** | | |
+| BE Unit Tests | 216 | 5.560 | ~12s | `jest.config.js` |
+| BE Integration Tests | 38 | 214 | ~57s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | 700 | ~140s | `jest.api.config.js` |
+| BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
+| FE Component Tests | 22 | 769 | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **320** | **~7.343** | | |
+
+> Đo lại 2026-06-05 (full run). Unit gồm ~1.800 test mutation-kill + property (đo độ mạnh assert).
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
 - **FE Coverage:** global 79%+, per-file 100% cho auth pages + schemas/auth.ts (thresholds trong `jest.config.cjs`)
+- **Test-quality (2 tầng bổ sung):** mutation (Stryker, gate=70) + property-based (fast-check, oracle = 25 invariant GATE-A). Bảng score per-module + quy trình: [`QUALITY_CHECKS.md`](QUALITY_CHECKS.md), [`TESTING_STRATEGY.md §13`](TESTING_STRATEGY.md).
 - **CI:** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) — chạy BE Unit Tests + **FE lint/typecheck/test/build** (Integration/API/E2E không chạy trong CI vì không có MySQL service)
 - **Full details:** [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md)
 
@@ -291,7 +294,7 @@ STRUCTURE.md                                 ← Architecture, tech stack, data 
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
 RAG_CHATBOT_PIPELINE.md                      ← RAG pipeline 7 bước + 53 edge case (chatbot)
 PIPELINE_TRACE_EXAMPLES.md                   ← Trace 22 path + Node Reference 43 node (chatbot)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng, ~5.529 tests
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng (~7.343 tests) + mutation/property (§13)
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace

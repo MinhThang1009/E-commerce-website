@@ -523,7 +523,7 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 
 ### G. Pha — CHẤT LƯỢNG TEST / MUTATION (NEW 2026-06-03 — chống "test pass nhưng có bug")
 
-**Bối cảnh:** coverage 99.7% nhưng KHÔNG đảm bảo đúng (F1/F2 lọt). Mục tiêu: dùng **mutation** (đo độ mạnh test) + **assert OUTCOME** + **integration MySQL thật** + **property-based/invariant** (oracle độc lập) + review người. Plan refactor mutation chi tiết: [`majestic-baking-yao.md`](../../.claude/plans/majestic-baking-yao.md). Stack 6 lớp đã có ~80% (27 invariant GATE-A, 6 integration edge-cases, mutation, fast-check ^4.8.0); gap chính = **property-based chỉ phủ discount-code**.
+**Bối cảnh:** coverage 99.7% nhưng KHÔNG đảm bảo đúng (F1/F2 lọt). Mục tiêu: dùng **mutation** (đo độ mạnh test) + **assert OUTCOME** + **integration MySQL thật** + **property-based/invariant** (oracle độc lập) + review người. Plan refactor mutation chi tiết: [`majestic-baking-yao.md`](../../.claude/plans/majestic-baking-yao.md). Stack 6 lớp đã có ~80% (25 invariant GATE-A, 6 integration edge-cases, mutation, fast-check ^4.8.0); gap chính = **property-based chỉ phủ discount-code**.
 
 **Trạng thái khi ghi:** Phase 0 DONE (baseline 84.11% — xem §D.2). 6 manual mock đã tạo. fuzzy:93 test đã thêm. **CHƯA commit** (stryker config + 6 mock + fuzzy test).
 
@@ -552,7 +552,7 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - [x] Verify: `npm test` → **4091 test xanh** (+7), global **statements/branch/lines 100%** (funcs 99.91% — file ngoài scope). Lint sạch. Threshold giữ 99.7% (KHÔNG bump lên 100 tránh brittle).
 
 #### G.5 — Mở rộng stack 6 lớp (lấp gap — làm SAU G.2/G.3)
-- [ ] **Property-based (fast-check)** mở rộng từ discount-code → orders/cart/inventory/payment, dùng **27 invariant GATE-A** làm oracle: `stock_sau = stock_trước − qty`, `cancel→hoàn kho`, `cart merge: total=Σ(item)`, `total = subtotal + ship − discount`. fast-check sinh qty/giá/seq ngẫu nhiên phá invariant. Mẫu: `discount-code-service.property.test.js`.
+- [ ] **Property-based (fast-check)** mở rộng từ discount-code → orders/cart/inventory/payment, dùng **25 invariant GATE-A** làm oracle: `stock_sau = stock_trước − qty`, `cancel→hoàn kho`, `cart merge: total=Σ(item)`, `total = subtotal + ship − discount`. fast-check sinh qty/giá/seq ngẫu nhiên phá invariant. Mẫu: `discount-code-service.property.test.js`.
 - [ ] **Thêm `inventory-edge-cases.integration.test.js`** (lớp 3 còn thiếu — 6 module khác đã có) gọi service thật + MySQL assert outcome restock/log.
 - [ ] (Tùy) **Testcontainers MySQL** (`@testcontainers/mysql`) → integration ephemeral reproducible trong CI (hiện phụ thuộc MySQL thủ công).
 - [ ] Document **công thức 6 bước** (invariant→unit OUTCOME→integration→property→mutation→review) vào `QUALITY_CHECKS.md` làm chuẩn dự án.
@@ -563,6 +563,38 @@ Quy trình (D.1 tầng 0): audit logic → fix code → VERIFY đúng cách (gat
 - [ ] `TESTING_STRATEGY.md`: thêm tầng mutation + property-based + bảng mutation score per-module.
 
 **Thứ tự đề xuất:** G.1 (commit) → G.3 (survivor critical — giá trị cao nhất, chống F1/F2) → G.4 (coverage, nhanh) → G.2 (refactor perTest — tối ưu tốc độ) → G.5 (property-based — lấp gap oracle) → G.6 (doc). KHÔNG mở >1 thread song song.
+
+#### G.7 — ✅ MUTATION SWEEP TOÀN DỰ ÁN DONE (2026-06-04/05) — vượt phạm vi G.3
+**Đã đo+strengthen mutation MỌI vùng code (kill THẬT assert OUTCOME, KHÔNG sửa production code, KHÔNG pad).** Test **4386→5555** (+1169 cả 2 phiên). Branch `refactor/admin-glass-redesign`. Chi tiết delta + learnings: `.claude/handoff.md`.
+
+**Score cuối per-vùng:**
+- **5 module critical** (G.3, 2026-06-03): discount-code **100**, payment-service **97**, orders **91**, cart **99**, inventory **100**, vnpay **94**, momo **92**.
+- **admin** (7 file, 2026-06-04): user-service 99 · import-controller 96 · order-service 100 · product-import 94 · stats 99 · analytics 99 · product-service 92.
+- **module ai** (11 file, 2026-06-05): ai-controller **100** · language-detector **100** · product-name-generator **99** · translate **97** · prompt-builder **96** · ai-service **96** · fuzzy-expander 77* · chatbot-service 69* · keyword-fallback 63* · response-parser 60* · ai-policy 55*.
+- **src/services**: email **75** · embedding **94** · vector-store **83**.
+- **src/shared** (errors+event-bus+uow) **95** · **src/utils** (i18n/localize/logger/image-url/product-helpers/catch-async) **86** · **src/middlewares**+**jobs/cleanup** **85**.
+
+`*` = **TRẦN TỰ NHIÊN — KHÔNG cố đẩy thêm** (user đã chấp nhận + document). Residual = equivalent mutant (regex-internal, defensive code nhiều lớp, cosmetic plumbing, LLM-flow). Coverage line/branch vẫn **100%**; hành vi đã verify đủ. Mutation% thấp ≠ test yếu.
+
+**LEARNINGS QUAN TRỌNG (đừng lặp sai lầm):**
+- 2 nhóm file: **logic thuần** → dễ 90-100%; **regex/thuật-toán/fuzzy/orchestration nặng** → trần cứng <90% do mật độ equivalent cao. Thước đo đúng cho nhóm 2 = "hành vi verify đủ", KHÔNG phải mutation%.
+- **Verify Stryker survivor**: offset **col-1 CRLF-aware** từ `reports/mutation/mutation.json` (`o = Σ(lines[i].length+1) + col − 1`), KHÔNG eyeball clean-sed (dễ test nhầm mutant). Stryker thực ra chính xác (~1/53 false-survival). Memory: `project-stryker-false-survival`.
+- Kỹ thuật kill (đã chứng minh): golden-string (pure fn output), `test.each` bảng input→output (regex/i18n/abbrev), assert request-shape (axios body/headers/timeout), `isolateModules`+env (module-const: provider/ASSET_BASE/NODE_ENV), capture-transport cho logger (KHÔNG spy process.stdout — flaky full-suite), fake-timers cho date threshold (cleanup/session TTL).
+- Stryker file lớn (vector-store 588d, chatbot-service 1004d) ~15-50 phút/run (có lúc 6h khi máy tải nặng) → GOM NHÓM `--mutate` nhiều file nhỏ 1 run; chạy SEQUENTIAL (KHÔNG 2 stryker song song).
+
+#### G.8 — CÒN LẠI (session sau) — ⭐ ƯU TIÊN
+- [x] **PROPERTY-BASED TESTING** (= G.5 mở rộng — `fast-check` ^4.8.0 ĐÃ có sẵn devDeps, KHÔNG cần thêm dep). Phủ **cart/orders/discount/inventory** (vùng money/stock — nơi bug F1/F2 lọt 246 test). Oracle = **25 invariant GATE-A** (`verify-workflow/invariants.ecommerce.md`): `stock_sau = stock_trước − qty`, `cancel→hoàn kho`, `cart merge total=Σ(item)`, `total = subtotal + ship − discount`. fast-check sinh qty/giá/seq phá invariant. **HOÀN TẤT 2026-06-05:** cart/discount/orders đã có (commit trước); thêm `inventory-service.property.test.js` (5 prop: restock cộng thuần + bảo toàn delta + parseInt + variant SUM-sync + phân trang). Lý do giá trị: mutation chỉ chứng minh test "có răng", property-based + invariant bắt "test pass nhưng code sai".
+- [x] **`inventory-edge-cases.integration.test.js`** (lớp 3 — 6 module khác đã có) — service THẬT + MySQL THẬT. **HOÀN TẤT 2026-06-05:** 7 test, exercise `InventoryService.restockProduct` thật (khác `inventory.integration.test.js` cũ thao tác model thô): variant restock → `Product.stockQuantity = SQL SUM(variant)` trong tx, conservation qua nhiều lần restock (đọc state persisted), validate fail → KHÔNG ghi log, 404 paths.
+- [ ] (Tùy) Testcontainers MySQL cho CI reproducible. **CHƯA làm** (optional — MySQL local đã đủ; chỉ cần khi muốn CI chạy integration/api/e2e reproducible).
+
+#### G.9 — DOC test-quality (= G.6, làm SAU G.8) — ✅ HOÀN TẤT 2026-06-05
+- [x] `TESTING_STRATEGY.md`: thêm §13 (tầng mutation + property + **bảng mutation score per-module**) + TOC + cập nhật count (§1/§2 pyramid/§11).
+- [x] `QUALITY_CHECKS.md`: đã có quy trình mutation (§5) + công thức 6 bước; THÊM bảng baseline per-module + bài học kill + dòng property có inventory + verify-teeth.
+- [x] `CLAUDE.md §8` test table: STALE (3764) → **count đo lại full 2026-06-05**: Unit 216/5560, Integration 38/214, API 39/700, E2E 5/100, FE 22/769 → **Tổng 320 suite / 7.343 test**. + note test-quality 2 tầng.
+- [x] Bonus: sửa bảng score stale ở `.claude/handoff.md` (line 193 cũ ghi "ai/src-services CHƯA đo").
+- [~] Memory "mutation recipe": **BỎ** — recipe giờ nằm trong `QUALITY_CHECKS.md` (repo, bền hơn) + 2 memory gotcha cũ ([[project-mutation-stryker-jestmock-blocker]], [[project-stryker-false-survival]]) đã cover; thêm = trùng.
+
+**TOÀN BỘ §G XONG:** mutation sweep (G.1-G.4, G.7) + property/integration (G.8) + doc (G.9). KHÔNG còn việc test-quality nào treo.
 
 ## 4. TOOLCHAIN & LỆNH
 ```

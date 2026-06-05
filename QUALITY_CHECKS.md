@@ -75,7 +75,9 @@ npx stryker run stryker.critical.conf.json --mutate "<ĐƯỜNG-DẪN-FILE-CHÍN
    assert outcome trong DB. Bắt lỗi tx/lock mà mock che mất. Vd: cancel → `stock += qty` thật.
 4. **Property-based (fast-check)** — sinh HÀNG NGÀN input random, assert invariant với oracle
    độc lập (công thức cộng dồn thuần). Bắt edge case người viết test không nghĩ tới.
-   Mẫu: `*-service.property.test.js` (cart `subtotal=Σ`, orders `total=Σ−discount+ship`, discount cap).
+   Mẫu: `*-service.property.test.js` (cart `subtotal=Σ`, orders `total=Σ−discount+ship`, discount cap,
+   inventory `restock cộng thuần` + `variant SUM-sync`). Verify "có răng": tạm mutate production
+   (vd `+`→`-`) → property phải FAIL ngay; nếu vẫn pass = property vacuous.
 5. **Mutation (Stryker)** — đột biến code rồi chạy test; survivor = test yếu. Đo ĐỘ MẠNH test.
    Xem §5 dưới + bảng baseline per-module.
 6. **Review người** — survivor critical (tiền/kho/status) phải có người phân xử *code-sai hay test-yếu*;
@@ -83,6 +85,47 @@ npx stryker run stryker.critical.conf.json --mutate "<ĐƯỜNG-DẪN-FILE-CHÍN
 
 **Thứ tự ưu tiên áp dụng:** module càng critical (tiền/kho) → càng cần đủ 6 bước. Module CRUD đơn giản
 (wishlist/content/search-history/upload/image) → unit + integration là đủ; property dễ thành tautological.
+
+## Bảng mutation score baseline per-module (đo 2026-06-04 → 2026-06-05)
+
+> Gate `stryker.critical.conf.json` break=70. Đo TỪNG FILE/nhóm nhỏ (`--mutate` exact path, `--coverageAnalysis off`).
+> Số là **mutation score %** (mutant bị giết / tổng mutant non-equivalent). Coverage line/branch ~100% toàn bộ.
+
+**Module nghiệp vụ (17) + admin — tất cả ≥90%:**
+
+| Module | Score | Module | Score | Module | Score |
+|---|---|---|---|---|---|
+| cart | 99.08 | auth | 98.71 | reviews | 99.43 |
+| orders | 91.30 | users | 92.68 | wishlist | 95.89 |
+| inventory | 100 | catalog | 94.75 | upload | 91.53 |
+| discount-code | 100 | content | 100 | image | 91.92 |
+| payment-service | 97.01 | attribute | 100 | momo | 92.06 |
+| search-history | 100 | | | vnpay | 93.55 |
+
+**Admin (7 file):** user-service 99.33 · order-service 100 · product-service 92.14 · product-import 93.59 · import-controller 96.34 · stats 99.58 · analytics 99.55.
+
+**Module ai (11 file) — 2 nhóm rõ rệt:**
+
+| File | Score | File | Score |
+|---|---|---|---|
+| language-detector | 100 | ai-service | 96 |
+| ai-controller | 100 | fuzzy-expander | 77 ⚠️ |
+| product-name-generator | 99 | chatbot-service | 69 ⚠️ |
+| translate | 97 | keyword-fallback | 63 ⚠️ |
+| prompt-builder | 96 | response-parser | 60 ⚠️ |
+| | | ai-policy | 55 ⚠️ |
+
+⚠️ = **trần cứng <90% do mật độ equivalent-mutant cao** (regex anchor/quantifier, fuzzy-match internal, string-variant) — KHÔNG phải test yếu: coverage 100%, hành vi verify đủ (abbrev/intent/injection OWASP). Giết tiếp = brittle-chase input bệnh lý. Thước đo đúng cho nhóm regex/thuật-toán = "hành vi verify đủ", không phải mutation %.
+
+**Cross-cutting / infra:**
+
+| Target | Score | Target | Score |
+|---|---|---|---|
+| src/services email | 75 | shared (errors+event-bus+uow) | 95 |
+| src/services embedding | 94 | utils | 86 |
+| src/services vector-store | 83 | middlewares + jobs | 85 |
+
+**Bài học kill THẬT (assert OUTCOME, không tautological):** golden-string (pure fn output), `test.each` (regex/i18n/abbrev), assert request-shape (axios body/headers/timeout), `jest.isolateModules`+env (module-level const), winston capture-transport (KHÔNG spy `process.stdout` — flaky), fake-timers (date threshold). Verify survivor bằng offset col-1 CRLF-aware từ `mutation.json` (KHÔNG eyeball clean-sed) — xem [[project-stryker-false-survival]].
 
 ## Lưu ý
 - Coverage threshold toàn cục (jest.config) vẫn còn — bắt tụt coverage tổng. Patch-coverage bổ sung cho code MỚI.

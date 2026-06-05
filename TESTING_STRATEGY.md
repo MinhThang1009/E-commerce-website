@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 261 suites, ~5.529 test cases, coverage 100% lines / 99,81% branches (unit).
+> 5 tầng test, 320 suites, ~7.343 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
 
 ## Mục lục
 
@@ -25,6 +25,10 @@
 - [12. Common Patterns](#12-common-patterns)
   - [12.1 Mock patterns](#121-mock-patterns)
   - [12.2 Database test setup](#122-database-test-setup)
+- [13. Mutation & Property-based Testing](#13-mutation--property-based-testing)
+  - [13.1 Mutation testing (Stryker)](#131-mutation-testing-stryker)
+  - [13.2 Property-based testing (fast-check)](#132-property-based-testing-fast-check)
+  - [13.3 Bảng mutation score per-module](#133-bảng-mutation-score-per-module)
 
 ---
 
@@ -34,12 +38,14 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 158 | **3.764** | ~20s | `jest.config.js` |
-| BE Integration Tests | 37 | **199** | ~55s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | **700** | ~230s | `jest.api.config.js` |
-| BE E2E Tests | 5 | **100** | ~25s | `jest.e2e.config.js` |
-| FE Component Tests | 22 | **766** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **261** | **5.529** | | |
+| BE Unit Tests | 216 | **5.560** | ~12s | `jest.config.js` |
+| BE Integration Tests | 38 | **214** | ~57s | `jest.integration.config.js` |
+| BE API HTTP Tests | 39 | **700** | ~140s | `jest.api.config.js` |
+| BE E2E Tests | 5 | **100** | ~22s | `jest.e2e.config.js` |
+| FE Component Tests | 22 | **769** | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **320** | **7.343** | | |
+
+> Đo lại 2026-06-05 (full run mọi tầng). Unit gồm ~1.800 test mutation-kill + property (đo độ mạnh assert).
 
 ---
 
@@ -51,9 +57,9 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                   ┌─┴──────────────────┴─┐
                   │  API HTTP Tests (700) │  ← Endpoint tests (Supertest + real DB)
                 ┌─┴──────────────────────┴─┐
-                │ Integration Tests (199)   │  ← Service/repo layer (real DB)
+                │ Integration Tests (214)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (3.764 + 766)      │  ← Isolated logic + React components
+              │  Unit Tests (5.560 + 769)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -73,7 +79,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 158 test suites, 3.764 test cases.
+**Phạm vi**: 216 test suites, 5.560 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -106,7 +112,7 @@ backend/src/
 
 **Mục đích**: Kiểm tra React components, Zustand stores, và utility functions trong môi trường jsdom.
 
-**Phạm vi**: 22 test suites, 766 test cases.
+**Phạm vi**: 22 test suites, 769 test cases.
 - Zustand stores (auth, cart, chat, catalog, wishlist, ui) — state transitions
 - Utility functions (formatters, validators, token-manager)
 - React components (render, user interactions, conditional rendering)
@@ -132,7 +138,7 @@ frontend/src/__tests__/
 
 **Mục đích**: Kiểm tra Service và Repository layer với database MySQL thật. Xác nhận logic nghiệp vụ hoạt động đúng với SQL queries thực tế, transactions, và constraints.
 
-**Phạm vi**: 37 test suites, 199 test cases.
+**Phạm vi**: 38 test suites, 214 test cases.
 - Service methods với real DB queries (thay vì mock)
 - Repository queries (Sequelize findAll, create, update, destroy với real schema)
 - Transactions và `runInTransaction` / `lockRow`
@@ -423,12 +429,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 158 | 3.764 | ~20s |
-| BE Integration Tests | 37 | 199 | ~55s |
-| BE API HTTP Tests | 39 | 700 | ~230s |
-| BE E2E Tests | 5 | 100 | ~25s |
-| FE Component Tests | 22 | 766 | ~12s |
-| **Tổng** | **261** | **5.529** | |
+| BE Unit Tests | 216 | 5.560 | ~12s |
+| BE Integration Tests | 38 | 214 | ~57s |
+| BE API HTTP Tests | 39 | 700 | ~140s |
+| BE E2E Tests | 5 | 100 | ~22s |
+| FE Component Tests | 22 | 769 | ~12s |
+| **Tổng** | **320** | **7.343** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)
@@ -542,3 +548,53 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 // createTestProduct(overrides) → { product, variant, cat, brand }  — prefix '__HTTP_Product_'
 // Tất cả data cleanup qua globalTeardown (prefix '__HTTP_')
 ```
+
+---
+
+# 13. Mutation & Property-based Testing
+
+> 5 tầng pyramid trên đo **độ phủ** (code nào được chạy). 2 tầng dưới đo **chất lượng assert**
+> (test có thật sự bắt được bug không) — bổ sung cho nhau. Coverage 99,7%+ KHÔNG đảm bảo code đúng:
+> bug class F1/F2 từng lọt qua hàng nghìn test vì assert "method được gọi" thay vì OUTCOME nghiệp vụ.
+> Quy trình đầy đủ + 6 bước verify: [`QUALITY_CHECKS.md`](QUALITY_CHECKS.md).
+
+## 13.1 Mutation testing (Stryker)
+
+Đột biến code (`>` → `>=`, xóa dòng, `+` → `-`…) rồi chạy test. Test **vẫn pass** trên mutant = test yếu (survivor).
+**Mutation score** = mutant bị giết / tổng mutant non-equivalent.
+
+```bash
+# Per-file/nhóm nhỏ (BẮT BUỘC đọc gotcha trong QUALITY_CHECKS.md §5)
+cd backend && npx stryker run stryker.critical.conf.json \
+  --mutate "src/modules/<m>/services/<m>-service.js" --coverageAnalysis off
+```
+
+- `--coverageAnalysis off` **bắt buộc** (test dùng `jest.mock` inline → perTest instrument làm sập dry-run).
+- `--mutate` phải dùng **path chính xác**, KHÔNG glob `**` (CLI override exclusion `!*.test.js` → nuốt cả test file).
+- Gate `stryker.critical.conf.json` break=70 (FAIL pipeline); `stryker.conf.json` break=null (báo cáo).
+
+## 13.2 Property-based testing (fast-check)
+
+Sinh HÀNG NGÀN input random, assert **invariant** với **oracle độc lập** (công thức nghiệp vụ, không echo code).
+Bắt edge case người viết test không nghĩ tới. Oracle = **25 invariant GATE-A** (`verify-workflow/invariants.ecommerce.md`).
+
+Phủ vùng money/stock (`*-service.property.test.js`):
+
+| File | Invariant chính |
+|---|---|
+| `cart-service.property.test.js` | `subtotal = Σ(price × qty)` |
+| `orders-service.property.test.js` | `total = Σ − discount + ship`; discount cap → `total ≥ 0` |
+| `discount-code-service.property.test.js` | fixed/percent cap; `min(value, subtotal)` |
+| `inventory-service.property.test.js` | restock `newStock = previous + qty` (cộng thuần); variant → `Product.stock = SUM(variant)` |
+
+**Verify "có răng":** tạm mutate production (`+`→`-`) → property phải FAIL ngay. Vẫn pass = property vacuous.
+
+## 13.3 Bảng mutation score per-module
+
+> Đo 2026-06-04 → 2026-06-05. KHÔNG sửa production code, chỉ thêm test. Bảng chi tiết + bài học: [`QUALITY_CHECKS.md`](QUALITY_CHECKS.md).
+
+**Nghiệp vụ (17) + admin — tất cả ≥90%:** cart 99 · orders 91 · inventory 100 · discount-code 100 · payment 97 · momo 92 · vnpay 94 · auth 99 · users 93 · catalog 95 · reviews 99 · wishlist 96 · upload 92 · image 92 · attribute 100 · content 100 · search-history 100 · admin (7 file) 92–100.
+
+**Module ai (11 file):** language-detector/ai-controller 100 · product-name-generator 99 · translate 97 · prompt-builder/ai-service 96 · fuzzy-expander 77 · chatbot-service 69 · keyword-fallback 63 · response-parser 60 · ai-policy 55. ⚠️ 5 file regex/fuzzy nặng <90% = **trần cứng do mật độ equivalent-mutant** (KHÔNG phải test yếu — coverage 100%, hành vi verify đủ).
+
+**Cross-cutting / infra:** email 75 · embedding 94 · vector-store 83 · shared 95 · utils 86 · middlewares+jobs 85.

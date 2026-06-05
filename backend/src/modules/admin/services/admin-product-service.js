@@ -23,12 +23,7 @@ const {
 const logger = require('@utils/logger');
 const { catchAsync } = require('@utils/catch-async');
 const { AppError } = require('@shared/errors');
-const {
-  calculateTotalStock,
-  updateProductTotalStock,
-  validateVariantAttributes,
-  generateVariantSku,
-} = require('@utils/product-helpers');
+const { calculateTotalStock, generateVariantSku } = require('@utils/product-helpers');
 const vectorStoreService = require('@services/vector-store/vector-store');
 
 function deepParseJSON(val) {

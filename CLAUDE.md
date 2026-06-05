@@ -272,10 +272,10 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 | BE Integration Tests | 38 | 210 | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
-| FE Component Tests | 28 | 917 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **~7.251** | | |
+| FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **325** | **~7.271** | | |
 
-> Đo lại 2026-06-05 (§C dọn API + §A FE coverage ~99.9% + thêm 148 FE test cases).
+> Đo lại 2026-06-06 (§A FE coverage: xóa 25 false-positive istanbul-ignore, thêm 22 test cases).
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%

@@ -1,6 +1,6 @@
 # TechStore — Chiến Lược Testing
 
-> 5 tầng test, 325 suites, ~7.251 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
+> 5 tầng test, 325 suites, ~7.271 test cases, coverage 100% lines / 99,81% branches (unit). +2 tầng test-quality: mutation (Stryker) + property-based (fast-check) — xem [§13](#13-mutation--property-based-testing).
 
 ## Mục lục
 
@@ -42,8 +42,8 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 | BE Integration Tests | 38 | **210** | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **675** | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~22s | `jest.e2e.config.js` |
-| FE Component Tests | 28 | **917** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **7.251** | | |
+| FE Component Tests | 28 | **937** | ~12s | `jest.config.cjs` (frontend/) |
+| **Tổng** | **325** | **7.271** | | |
 
 > Đo lại 2026-06-05 (§C dọn API + §A FE coverage ~99.9% + thêm 148 FE test cases). Unit gồm ~1.600 test mutation-kill + property.
 
@@ -59,7 +59,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (210)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (5.349 + 917)      │  ← Isolated logic + React components
+              │  Unit Tests (5.349 + 937)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -112,7 +112,7 @@ backend/src/
 
 **Mục đích**: Kiểm tra React components, Zustand stores, và utility functions trong môi trường jsdom.
 
-**Phạm vi**: 28 test suites, 917 test cases.
+**Phạm vi**: 28 test suites, 937 test cases.
 - Zustand stores (auth, cart, chat, catalog, wishlist, ui) — state transitions
 - Utility functions (formatters, validators, token-manager)
 - React components (render, user interactions, conditional rendering)
@@ -433,8 +433,8 @@ npm run build
 | BE Integration Tests | 38 | 210 | ~57s |
 | BE API HTTP Tests | 39 | 675 | ~160s |
 | BE E2E Tests | 5 | 100 | ~22s |
-| FE Component Tests | 28 | 917 | ~12s |
-| **Tổng** | **325** | **7.251** | |
+| FE Component Tests | 28 | 937 | ~12s |
+| **Tổng** | **325** | **7.271** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)

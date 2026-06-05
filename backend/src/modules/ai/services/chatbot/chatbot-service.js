@@ -904,24 +904,7 @@ QUY TẮC BẮT BUỘC:
     }
   }
 
-  /**
-   * Dọn dẹp session memory để tránh rò rỉ bộ nhớ (memory leak).
-   *
-   * **Memory leak là gì?**
-   * Nếu không xóa session cũ, Map sẽ tích lũy sessions mãi mãi trong RAM.
-   * Server chạy nhiều ngày → hàng nghìn sessions → RAM tăng vô hạn → server crash.
-   *
-   * **Evict là gì?**
-   * "Evict" là loại bỏ entry cũ/không dùng khỏi bộ nhớ.
-   * **Chiến lược LRU (Least Recently Used):**
-   * Khi vẫn còn quá nhiều session sau khi xóa hết hạn → xóa những session
-   * có lần truy cập CŨ NHẤT (ít dùng nhất) cho đến khi còn MAX_SESSIONS.
-   * LRU là chiến lược tốt vì giữ lại những session đang active nhất.
-   *
-   * **Được gọi khi nào?**
-   * Sau mỗi lần cập nhật conversationHistory (handleMessage bước 6).
-   * Không gọi theo timer vì eviction xảy ra đủ thường xuyên theo request.
-   */
+  /** Xóa session khỏi conversationHistory Map. sessionId=null → xóa tất cả. */
   clearSession(sessionId) {
     if (!sessionId) {
       this.conversationHistory.clear();
@@ -951,6 +934,24 @@ QUY TẮC BẮT BUỘC:
     });
   }
 
+  /**
+   * Dọn dẹp session memory để tránh rò rỉ bộ nhớ (memory leak).
+   *
+   * **Memory leak là gì?**
+   * Nếu không xóa session cũ, Map sẽ tích lũy sessions mãi mãi trong RAM.
+   * Server chạy nhiều ngày → hàng nghìn sessions → RAM tăng vô hạn → server crash.
+   *
+   * **Evict là gì?**
+   * "Evict" là loại bỏ entry cũ/không dùng khỏi bộ nhớ.
+   * **Chiến lược LRU (Least Recently Used):**
+   * Khi vẫn còn quá nhiều session sau khi xóa hết hạn → xóa những session
+   * có lần truy cập CŨ NHẤT (ít dùng nhất) cho đến khi còn MAX_SESSIONS.
+   * LRU là chiến lược tốt vì giữ lại những session đang active nhất.
+   *
+   * **Được gọi khi nào?**
+   * Sau mỗi lần cập nhật conversationHistory (handleMessage bước 6).
+   * Không gọi theo timer vì eviction xảy ra đủ thường xuyên theo request.
+   */
   _evictStaleSessions() {
     if (this.conversationHistory.size === 0) return; // Không có session nào → không cần làm gì
     const now = Date.now();

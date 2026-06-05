@@ -36,7 +36,7 @@ class SequelizeAIRepository extends IAIRepository {
         {
           model: this.ProductVariant,
           as: 'variants',
-          attributes: ['stockQuantity'],
+          attributes: ['id', 'stockQuantity'],
           required: false,
         },
       ],

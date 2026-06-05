@@ -98,6 +98,28 @@ describe('AIService', () => {
       expect(result).toMatchObject({ id: 20 });
     });
 
+    test('variantId cụ thể hết hàng dù total stock > 0 → AppError 400', async () => {
+      repo.findProductForCart.mockResolvedValue({
+        id: 4,
+        status: 'active',
+        stockQuantity: 10,
+        variants: [
+          { id: 10, stockQuantity: 0 }, // Xanh hết
+          { id: 11, stockQuantity: 5 }, // Đỏ còn
+        ],
+      });
+
+      await expect(
+        service.addToCart({
+          productId: 4,
+          variantId: 10, // Xanh hết hàng
+          quantity: 1,
+          sessionId: 'sess',
+          userId: 1,
+        }),
+      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
+    });
+
     test('sản phẩm active nhưng stock = 0 ở cả product và variants → AppError 400', async () => {
       repo.findProductForCart.mockResolvedValue({
         id: 3,

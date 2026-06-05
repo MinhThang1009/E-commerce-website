@@ -101,13 +101,22 @@ class AIService {
     if (!product) throw new AppError('Sản phẩm không tồn tại', 404);
 
     // Tính tổng tồn kho từ tất cả biến thể
-    // Array.reduce(callback, initialValue): duyệt mảng và tích lũy kết quả
-    // Ở đây: cộng dồn stockQuantity của từng variant, bắt đầu từ 0
     const totalStock = (product.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
 
     // Từ chối nếu sản phẩm không active HOẶC hết hàng hoàn toàn
     if (product.status !== 'active' || (totalStock <= 0 && product.stockQuantity <= 0)) {
       throw new AppError('Sản phẩm đã hết hàng hoặc ngừng kinh doanh', 400);
+    }
+
+    // Kiểm tra tồn kho của variant cụ thể nếu được chỉ định
+    // totalStock > 0 không đảm bảo variant được chọn còn hàng (VD: Xanh hết, Đỏ còn)
+    if (variantId) {
+      const targetVariant = (product.variants || []).find(
+        (v) => String(v.id) === String(variantId),
+      );
+      if (targetVariant && targetVariant.stockQuantity <= 0) {
+        throw new AppError('Biến thể sản phẩm đã hết hàng', 400);
+      }
     }
 
     // Thêm vào giỏ hàng

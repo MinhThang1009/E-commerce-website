@@ -468,3 +468,73 @@ describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
     expect(variant.stockQuantity).toBe(0);
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// Verifies MEDIUM-1 (fix commit 073b3c3): clearCartItems phải chạy TRONG
+// transaction của createOrder — nếu transaction rollback sau khi CartItems
+// bị delete, items phải được khôi phục (không mất vĩnh viễn).
+//
+// Trước fix: clearCartItems(cartId) bỏ qua { transaction } → CartItem.destroy
+// chạy ngoài transaction → rollback không khôi phục được items.
+// Sau fix: CartItem.destroy nhận { transaction } → atomic với toàn bộ createOrder.
+//
+// Cách test: stub InventoryLog.bulkCreate để throw SAU cart clearing → trigger
+// rollback → verify CartItems vẫn còn (FAIL nếu revert MEDIUM-1 fix).
+// ════════════════════════════════════════════════════════════════════════════
+describe('MEDIUM-1 — clearCartItems transaction atomicity (requires MySQL)', () => {
+  test.skip('MEDIUM-1: CartItems không bị xóa vĩnh viễn khi createOrder transaction rollback', async () => {
+    const { Cart, CartItem } = require('@models');
+
+    const user = await User.create({
+      firstName: '__INT_M1',
+      lastName: 'Atomicity',
+      email: `__int_m1_${Date.now()}@t.com`,
+      password: 'Test123!',
+      role: 'customer',
+    });
+    const cart = await Cart.create({ userId: user.id, status: 'active' });
+    await CartItem.create({
+      cartId: cart.id,
+      productId: product.id,
+      variantId: variant.id,
+      quantity: 1,
+      unitPrice: variant.price,
+    });
+
+    // Stub InventoryLog.bulkCreate để throw SAU khi cart clearing chạy xong,
+    // trigger rollback của toàn bộ createOrder transaction.
+    const InventoryLogModel = require('@models/inventory-log');
+    const orig = InventoryLogModel.bulkCreate.bind(InventoryLogModel);
+    InventoryLogModel.bulkCreate = jest.fn().mockRejectedValue(new Error('Simulated late failure'));
+
+    const service = makeService();
+    await expect(
+      service.createOrder({
+        user: { id: user.id, email: user.email },
+        body: {
+          shippingFirstName: 'Test',
+          shippingLastName: 'User',
+          shippingAddress1: '1 Test St',
+          shippingCity: 'HCM',
+          billingFirstName: 'Test',
+          billingLastName: 'User',
+          billingAddress1: '1 Test St',
+          billingCity: 'HCM',
+          paymentMethod: 'cod', // manual → triggers _clearUserCartInTransaction
+          items: [{ productId: product.id, variantId: variant.id, quantity: 1 }],
+        },
+        sessionIdCookie: null,
+      }),
+    ).rejects.toThrow('Simulated late failure');
+
+    InventoryLogModel.bulkCreate = orig;
+
+    // Assert: CartItems phải vẫn còn sau rollback (FAIL nếu revert fix MEDIUM-1)
+    const remaining = await CartItem.findAll({ where: { cartId: cart.id } });
+    expect(remaining).toHaveLength(1);
+
+    await CartItem.destroy({ where: { cartId: cart.id }, force: true });
+    await cart.destroy({ force: true });
+    await user.destroy({ force: true });
+  });
+});

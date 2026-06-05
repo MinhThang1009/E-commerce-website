@@ -8,6 +8,7 @@ const multer = require('multer');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -21,7 +22,7 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
   if (allowed.includes(file.mimetype)) return cb(null, true);
-  cb(new AppError('Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)', 400), false);
+  cb(new AppError(t('image.invalidFileType', req.locale), 400), false);
 };
 
 const upload = multer({

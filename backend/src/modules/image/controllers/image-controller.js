@@ -7,6 +7,7 @@
 const multer = require('multer');
 const imageService = require('@modules/image/services/image-service');
 const { AppError } = require('@shared/errors');
+const { t } = require('@utils/i18n');
 const upload = require('@modules/image/middlewares/upload-middleware');
 
 class ImageController {
@@ -18,12 +19,14 @@ class ImageController {
         if (err) {
           if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE')
-              return next(new AppError('File quá lớn. Kích thước tối đa là 10MB', 400));
-            return next(new AppError(`Lỗi upload: ${err.message}`, 400));
+              return next(new AppError(t('image.fileTooLarge', req.locale), 400));
+            return next(
+              new AppError(t('common.uploadError', req.locale, { details: err.message }), 400),
+            );
           }
           return next(err);
         }
-        if (!req.file) return next(new AppError('Không có file nào được upload', 400));
+        if (!req.file) return next(new AppError(t('image.noFileUploaded', req.locale), 400));
         try {
           const options = {
             category: req.body.category || 'product',
@@ -53,15 +56,17 @@ class ImageController {
         if (err) {
           if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE')
-              return next(new AppError('File quá lớn. Kích thước tối đa là 10MB', 400));
+              return next(new AppError(t('image.fileTooLarge', req.locale), 400));
             if (err.code === 'LIMIT_FILE_COUNT')
-              return next(new AppError('Quá nhiều file. Tối đa là 10 file', 400));
-            return next(new AppError(`Lỗi upload: ${err.message}`, 400));
+              return next(new AppError(t('image.tooManyFiles', req.locale), 400));
+            return next(
+              new AppError(t('common.uploadError', req.locale, { details: err.message }), 400),
+            );
           }
           return next(err);
         }
         if (!req.files || req.files.length === 0)
-          return next(new AppError('Không có file nào được upload', 400));
+          return next(new AppError(t('image.noFileUploaded', req.locale), 400));
         try {
           const options = {
             category: req.body.category || 'product',
@@ -131,7 +136,7 @@ class ImageController {
   async convertBase64(req, res, next) {
     try {
       const { base64Data, category, productId } = req.body;
-      if (!base64Data) return next(new AppError('base64Data là bắt buộc', 400));
+      if (!base64Data) return next(new AppError(t('image.base64Required', req.locale), 400));
       const options = {
         category: category || 'product',
         productId: productId || null,

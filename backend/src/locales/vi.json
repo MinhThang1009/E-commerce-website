@@ -246,6 +246,13 @@
       "autoNotice": "Email này được gửi tự động khi có phản hồi mới từ khách hàng."
     }
   },
+  "image": {
+    "fileTooLarge": "File quá lớn. Kích thước tối đa là 10MB",
+    "noFileUploaded": "Không có file nào được upload",
+    "tooManyFiles": "Quá nhiều file. Tối đa là 10 file",
+    "base64Required": "base64Data là bắt buộc",
+    "invalidFileType": "Chỉ chấp nhận file ảnh (JPEG, PNG, GIF, WebP)"
+  },
   "admin": {
     "productNotFound": "Không tìm thấy sản phẩm",
     "productAlreadyExists": "Đã tồn tại sản phẩm với tên này",

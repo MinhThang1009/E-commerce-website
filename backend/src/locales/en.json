@@ -245,6 +245,13 @@
       "autoNotice": "This email was sent automatically when new customer feedback was received."
     }
   },
+  "image": {
+    "fileTooLarge": "File too large. Maximum size is 10MB",
+    "noFileUploaded": "No file was uploaded",
+    "tooManyFiles": "Too many files. Maximum is 10 files",
+    "base64Required": "base64Data is required",
+    "invalidFileType": "Only image files are accepted (JPEG, PNG, GIF, WebP)"
+  },
   "admin": {
     "productNotFound": "Product not found",
     "productAlreadyExists": "A product with this name already exists",

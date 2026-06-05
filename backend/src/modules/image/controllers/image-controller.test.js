@@ -715,7 +715,10 @@ describe('mutation-kill: controller messages + options + url', () => {
     await ctrl.uploadSingle({ body: {}, headers: {} }, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('Lỗi upload:'), statusCode: 400 }),
+      expect.objectContaining({
+        message: expect.stringContaining('Lỗi upload file:'),
+        statusCode: 400,
+      }),
     );
   });
 
@@ -753,7 +756,7 @@ describe('mutation-kill: controller messages + options + url', () => {
     await ctrl.uploadMultiple({ body: {}, user: { id: 1 }, headers: {} }, res, next);
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.stringContaining('Lỗi upload:') }),
+      expect.objectContaining({ message: expect.stringContaining('Lỗi upload file:') }),
     );
   });
 

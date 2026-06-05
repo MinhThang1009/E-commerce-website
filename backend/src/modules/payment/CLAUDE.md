@@ -150,7 +150,7 @@ modules/payment/
 
 ```
 1. verifyReturnUrl(params)  ← cùng method với return URL
-2. Validate amount (vnp_Amount / 100, tolerance 0.01)
+2. Validate amount (vnp_Amount / 100, tolerance 0.01); bỏ qua khi NaN (Number.isFinite guard — đồng nhất return URL)
 3. Nếu paymentStatus === 'paid' → RspCode '02' (already confirmed)
 4. Nếu responseCode === '00' → update paid + post-processing
 5. Nếu failed → update paymentStatus = 'failed'
@@ -233,12 +233,13 @@ Payment module **không publish bất kỳ EventBus event nào**. Toàn bộ pos
 - **HMAC khác nhau giữa 2 gateway:** MoMo dùng HMAC-SHA256 (`momo-service.js`), VNPay dùng HMAC-SHA512 (`vnpay-service.js`). Không hoán đổi.
 - **Success code khác nhau:** MoMo check `resultCode == 0` (loose equality — là number). VNPay check `vnp_ResponseCode === '00'` (strict equality — là string). Đây là spec của từng gateway.
 - **MoMo return URL KHÔNG mutate state:** Chỉ redirect. State change xảy ra ở IPN handler (POST) có signature verification. VNPay return URL CÓ mutate state (theo VNPay spec).
-- **VNPay return verify số tiền (đồng nhất IPN):** `handleVnPayReturn` so `vnp_Amount/100` với `order.total` (tolerance 0.01) TRƯỚC khi mark paid; lệch → redirect `payment=failed&code=04`, không mark paid. Bỏ qua khi gateway không gửi `vnp_Amount` (NaN). Mirror RspCode 04 của IPN.
+- **VNPay return verify số tiền (đồng nhất IPN):** `handleVnPayReturn` so `vnp_Amount/100` với `order.total` (tolerance 0.01) TRƯỚC khi mark paid; lệch → redirect `payment=failed&code=04`, không mark paid. Bỏ qua khi gateway không gửi `vnp_Amount` (NaN) — cả return URL (`Number.isFinite` guard) lẫn IPN (`Number.isFinite` guard) đều skip check khi NaN. Mirror RspCode 04 của IPN.
 - **MoMo IPN failure mutate `paymentStatus='failed'`:** Nhánh `else if (orderId)` (resultCode != 0) lock order rồi set `paymentStatus='failed'` — mirror VNPay IPN failure. Skip nếu order đã `paid` (không downgrade trạng thái đã thanh toán).
 - **VNPay IPN là GET:** Route `GET /vnpay/ipn`. Tài liệu VNPay cũ ghi POST — đã deprecated.
 - **Idempotency bắt buộc:** `_canProcessPayment(order, transId)` check cả `paymentStatus !== 'paid'` và `transactionId chưa xử lý`. IPN có thể gửi nhiều lần — không bỏ check này.
 - **Discount `usedCount` tăng ở payment module:** Với online payments (momo/vnpay), `usedCount` tăng trong `payment-service.js` sau IPN/return success — không tăng trong `orders-service.js` khi tạo đơn.
 - **Hoàn tiền chỉ VNPay + chỉ staff:** `_canRefund()` check `paymentProvider === 'vnpay'`; route `authorize('staff')` (admin xem-only). MoMo refund chưa implement.
+- **VNPay refund HTTP call có timeout 30s:** `vnpay-service.js` gọi `axios.post(VNP_API, ..., { timeout: 30000 })` + try-catch với logger — đồng nhất với `momo-service.js`. Nếu VNPay API không phản hồi sau 30s → throw lỗi về controller (500).
 - **⚠️ Refund chưa có lock/transaction (known limitation):** `createRefund` đọc-kiểm-tra-ghi không trong transaction + không SELECT FOR UPDATE → 2 request refund đồng thời (admin/staff) có thể double-call gateway. Rủi ro thấp (thao tác hiếm, thủ công + VNPay idempotent theo `transRef`). Nếu siết: lock order + re-check `_canRefund` trong tx (đánh đổi: giữ lock qua HTTP gateway).
 - **⚠️ Discount over-redemption (cross-module):** Online payment kiểm `usageLimit` lúc tạo đơn (apply) nhưng `usedCount` chỉ tăng lúc thanh toán thành công → cửa sổ race có thể vượt `usageLimit`. Xử lý ở gate `discount-code`.
 - **MoMo sandbox env vars:** `DEV_PARTNER_CODE`, `DEV_ACCESS_KEY`, `DEV_SECRET_KEY`, `DEV_MOMO_ENDPOINT` cho test. Production dùng `MOMO_*`. Hai sets riêng biệt trong `momo-service.js`.
@@ -253,7 +254,7 @@ Payment module **không publish bất kỳ EventBus event nào**. Toàn bộ pos
 | ------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `services/payment-service.test.js`                           | Unit        | Orchestration, IPN handling, idempotency                                                                                        |
 | `services/momo-service.test.js`                              | Unit        | MoMo HMAC-SHA256, URL creation                                                                                                  |
-| `services/vnpay-service.unit.test.js`                        | Unit        | VNPay HMAC-SHA512, URL encoding                                                                                                 |
+| `services/vnpay-service.unit.test.js`                        | Unit        | VNPay HMAC-SHA512, URL encoding; refund timeout + error handling                                                                |
 | `controllers/payment-controller.unit.test.js`                | Unit        | HTTP layer                                                                                                                      |
 | `repositories/payment-repository.test.js`                    | Unit        | Repository queries                                                                                                              |
 | `src/__integration__/payment.integration.test.js`            | Integration | DB ops trực tiếp (Model) — ⚠️ tautological, dọn ở test-quality phase                                                            |

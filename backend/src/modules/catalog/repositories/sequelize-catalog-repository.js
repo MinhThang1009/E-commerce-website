@@ -365,7 +365,9 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     });
   }
 
-  async findRelatedProducts(excludeId, limit = 4) {
+  async findRelatedProducts(excludeId, limit = 4, categoryId = null) {
+    const where = { id: { [Op.ne]: excludeId }, status: 'active' };
+    if (categoryId) where.categoryId = categoryId;
     return this.Product.findAll({
       include: [
         { association: 'category' },
@@ -373,7 +375,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
         { association: 'productImages' },
         { association: 'variants' },
       ],
-      where: { id: { [Op.ne]: excludeId } },
+      where,
       limit,
       order: [['createdAt', 'DESC']],
     });

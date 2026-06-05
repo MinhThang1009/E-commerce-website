@@ -319,7 +319,7 @@ module.exports = {
     const lim = parseInt(limit, 10);
     let related = [];
     if (product.categoryId) {
-      related = await this.catalogRepository.findRelatedProducts(id, lim);
+      related = await this.catalogRepository.findRelatedProducts(id, lim, product.categoryId);
     }
     if (related.length === 0) {
       this.logger.info(

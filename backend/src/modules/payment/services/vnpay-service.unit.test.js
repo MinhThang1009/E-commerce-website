@@ -16,6 +16,13 @@ jest.mock('axios', () => ({
   post: jest.fn(),
 }));
 
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+}));
+
 const axios = require('axios');
 const crypto = require('crypto');
 const querystring = require('qs');
@@ -153,8 +160,9 @@ describe('VNPayService.refund', () => {
     });
 
     expect(axios.post).toHaveBeenCalledTimes(1);
-    const [calledUrl, calledBody] = axios.post.mock.calls[0];
+    const [calledUrl, calledBody, calledOptions] = axios.post.mock.calls[0];
     expect(calledUrl).toBe(process.env.VNP_API);
+    expect(calledOptions).toEqual({ timeout: 30000 });
     expect(calledBody).toMatchObject({
       vnp_Version: '2.1.0',
       vnp_Command: 'refund',
@@ -184,6 +192,26 @@ describe('VNPayService.refund', () => {
     const [, calledBody] = axios.post.mock.calls[0];
     expect(calledBody.vnp_TransactionType).toBe('03');
     expect(calledBody.vnp_CreateBy).toBe('CustomerService');
+  });
+
+  test('axios.post throw → log error + re-throw (bắt lỗi khi VNPay API không phản hồi)', async () => {
+    const networkError = new Error('ECONNREFUSED');
+    axios.post.mockRejectedValue(networkError);
+    const logger = require('@utils/logger');
+
+    await expect(
+      vnpayService.refund({
+        orderId: 'ORD-X',
+        amount: 100,
+        transDate: '20260101',
+        ipAddr: '1.1.1.1',
+      }),
+    ).rejects.toThrow();
+
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('Lỗi hoàn tiền VNPay'),
+      expect.anything(),
+    );
   });
 });
 

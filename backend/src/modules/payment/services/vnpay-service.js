@@ -7,6 +7,8 @@
 const moment = require('moment');
 const crypto = require('crypto');
 const querystring = require('qs');
+const axios = require('axios');
+const logger = require('@utils/logger');
 
 class VNPayService {
   constructor() {
@@ -124,9 +126,13 @@ class VNPayService {
       vnp_SecureHash,
     };
 
-    const axios = require('axios');
-    const response = await axios.post(vnp_Api, dataObj);
-    return response.data;
+    try {
+      const response = await axios.post(vnp_Api, dataObj, { timeout: 30000 });
+      return response.data;
+    } catch (error) {
+      logger.error('Lỗi hoàn tiền VNPay:', error.response?.data || error.message);
+      throw new Error(JSON.stringify(error.response?.data || error.message));
+    }
   }
 
   sortObject(obj) {

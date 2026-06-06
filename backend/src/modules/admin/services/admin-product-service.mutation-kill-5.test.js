@@ -305,6 +305,30 @@ describe('updateProduct b5', () => {
     expect(arg.basePrice).toBeUndefined();
   });
 
+  test('BUG-FIX: tất cả variants giá 0 → basePrice KHÔNG được set (không ghi Infinity vào DB)', async () => {
+    // Math.min(...[]) = Infinity khi filter loại hết giá 0 → basePrice = Infinity → MySQL error
+    // Fix: kiểm tra array rỗng trước Math.min → minVariantPrice = null → không set basePrice
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant
+      .mockResolvedValueOnce({ id: 11, price: 0 })
+      .mockResolvedValueOnce({ id: 12, price: 0 });
+    helpers.calculateTotalStock.mockReturnValue(0);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        variants: [
+          { price: '0', stock: '5' },
+          { price: '0', stock: '3' },
+        ],
+      },
+    });
+    const stockArg = repo.updateProductWhere.mock.calls[0][0];
+    expect(stockArg.basePrice).toBeUndefined();
+    expect(stockArg.stockQuantity).toBe(0);
+  });
+
   test('spec valueEn null mặc định + sortOrder index', async () => {
     const p = prod();
     repo.findProductById.mockResolvedValueOnce(p);

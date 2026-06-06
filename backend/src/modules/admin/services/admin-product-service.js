@@ -662,9 +662,12 @@ const updateProduct = catchAsync(async (req, res) => {
       }
 
       const totalStock = calculateTotalStock(finalVariants);
+      const positiveVariantPrices = finalVariants
+        .map((v) => parseFloat(v.price) || 0)
+        .filter((p) => p > 0);
       const minVariantPrice =
-        finalVariants.length > 0
-          ? Math.min(...finalVariants.map((v) => parseFloat(v.price) || 0).filter((p) => p > 0))
+        positiveVariantPrices.length > 0
+          ? positiveVariantPrices.reduce((min, p) => (p < min ? p : min), Infinity)
           : null;
       const stockUpdate = { stockQuantity: totalStock };
       if (minVariantPrice !== null && minVariantPrice > 0) stockUpdate.basePrice = minVariantPrice;

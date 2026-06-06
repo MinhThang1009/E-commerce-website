@@ -185,13 +185,13 @@ class CatalogController {
 
   getProductBySlug = async (req, res, next) => {
     try {
-      const data = await this.catalogService.getProductBySlug({
+      const { payload } = await this.catalogService.getProductBySlug({
         slug: req.params.slug,
         skuId: req.query.skuId,
         queryColor: req.query.color || req.query['Màu sắc'],
         userId: req.user?.id,
       });
-      res.status(200).json({ status: 'success', data });
+      res.status(200).json(payload);
     } catch (err) {
       next(err);
     }

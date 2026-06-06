@@ -528,7 +528,9 @@ describe('CatalogController — Product', () => {
   describe('getProductBySlug', () => {
     it('truyền slug, skuId, color và userId vào service', async () => {
       const productData = { id: 1, slug: 'iphone-15' };
-      catalogService.getProductBySlug.mockResolvedValue(productData);
+      catalogService.getProductBySlug.mockResolvedValue({
+        payload: { status: 'success', data: productData },
+      });
 
       const req = makeReq({
         params: { slug: 'iphone-15' },

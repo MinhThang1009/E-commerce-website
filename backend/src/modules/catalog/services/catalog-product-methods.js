@@ -313,7 +313,7 @@ module.exports = {
       });
     }
 
-    return responseData;
+    return { payload: { status: 'success', data: responseData } };
   },
 
   async getFeaturedProducts({ limit = DEFAULT_LIST_LIMIT }) {

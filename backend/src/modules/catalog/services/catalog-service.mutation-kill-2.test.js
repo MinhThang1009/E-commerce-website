@@ -1065,7 +1065,7 @@ describe('getProductBySlug — status active check (L297)', () => {
     catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(product);
 
     const result = await service.getProductBySlug({ slug: 'p' });
-    expect(result.id).toBe(1);
+    expect(result.payload.data.id).toBe(1);
   });
 });
 

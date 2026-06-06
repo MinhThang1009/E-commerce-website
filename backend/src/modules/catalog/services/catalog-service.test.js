@@ -446,7 +446,7 @@ describe('CatalogService', () => {
       catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(productRow);
 
       const result = await service.getProductBySlug({ slug: 'macbook-pro' });
-      expect(result).toHaveProperty('id', 3);
+      expect(result.payload.data).toHaveProperty('id', 3);
     });
   });
 

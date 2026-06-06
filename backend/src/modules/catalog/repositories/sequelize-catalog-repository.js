@@ -592,6 +592,39 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     return this.Review.findAll({ where: { productId, isVerified: true }, attributes: ['rating'] });
   }
 
+  // DB aggregate thay vì in-memory: COUNT/AVG + distribution per rating value (1-5).
+  async findProductRatingsSummary(productId) {
+    if (!this.Review) {
+      throw new Error('Review model bắt buộc trong constructor');
+    }
+    const row = await this.Review.findOne({
+      where: { productId, isVerified: true },
+      attributes: [
+        [this.sequelize.fn('COUNT', this.sequelize.col('id')), 'count'],
+        [this.sequelize.fn('AVG', this.sequelize.col('rating')), 'average'],
+        [this.sequelize.literal('SUM(CASE WHEN rating=1 THEN 1 ELSE 0 END)'), 'r1'],
+        [this.sequelize.literal('SUM(CASE WHEN rating=2 THEN 1 ELSE 0 END)'), 'r2'],
+        [this.sequelize.literal('SUM(CASE WHEN rating=3 THEN 1 ELSE 0 END)'), 'r3'],
+        [this.sequelize.literal('SUM(CASE WHEN rating=4 THEN 1 ELSE 0 END)'), 'r4'],
+        [this.sequelize.literal('SUM(CASE WHEN rating=5 THEN 1 ELSE 0 END)'), 'r5'],
+      ],
+      raw: true,
+    });
+    const count = parseInt(row?.count || 0, 10);
+    const average = count > 0 ? parseFloat(parseFloat(row.average).toFixed(1)) : 0;
+    return {
+      count,
+      average,
+      distribution: {
+        1: parseInt(row?.r1 || 0, 10),
+        2: parseInt(row?.r2 || 0, 10),
+        3: parseInt(row?.r3 || 0, 10),
+        4: parseInt(row?.r4 || 0, 10),
+        5: parseInt(row?.r5 || 0, 10),
+      },
+    };
+  }
+
   async getProductPriceRange({ categoryId } = {}) {
     // Filter bằng Product.categoryId trực tiếp — include với required:false là LEFT JOIN
     // không filter sản phẩm, trả range của toàn bộ products thay vì chỉ category.

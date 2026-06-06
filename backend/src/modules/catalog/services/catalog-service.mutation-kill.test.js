@@ -62,7 +62,7 @@ function makeService(repoOverrides = {}) {
     findProductsByIdsOrdered: jest.fn().mockResolvedValue([]),
     findDeals: jest.fn().mockResolvedValue([]),
     findProductVariantsByProductId: jest.fn().mockResolvedValue([]),
-    findProductRatingsRows: jest.fn().mockResolvedValue([]),
+    findProductRatingsSummary: jest.fn().mockResolvedValue([]),
     getProductPriceRange: jest.fn().mockResolvedValue({ min: 0, max: 0 }),
     findAttributeValuesByName: jest.fn().mockResolvedValue([]),
     findOtherAttributes: jest.fn().mockResolvedValue([]),
@@ -1191,12 +1191,11 @@ describe('getProductReviewsSummary — error key và distribution (L460, L468)',
   it('distribution chứa đúng key từ 1-5 và count đúng (L468)', async () => {
     const { service, catalogRepository } = makeService();
     catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
-    catalogRepository.findProductRatingsRows.mockResolvedValue([
-      { rating: 5 },
-      { rating: 5 },
-      { rating: 3 },
-      { rating: 1 },
-    ]);
+    catalogRepository.findProductRatingsSummary.mockResolvedValue({
+      count: 4,
+      average: 3.5,
+      distribution: { 1: 1, 2: 0, 3: 1, 4: 0, 5: 2 },
+    });
 
     const result = await service.getProductReviewsSummary({ id: 1 });
     expect(result.distribution[5]).toBe(2);

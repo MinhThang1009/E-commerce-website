@@ -43,7 +43,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
       findProductsByIdsOrdered: jest.fn(),
       findDeals: jest.fn(),
       findProductVariantsByProductId: jest.fn(),
-      findProductRatingsRows: jest.fn(),
+      findProductRatingsSummary: jest.fn(),
       getProductPriceRange: jest.fn(),
       findAttributeValuesByName: jest.fn().mockResolvedValue([]),
       findOtherAttributes: jest.fn().mockResolvedValue([]),
@@ -372,11 +372,11 @@ describe('CatalogService — Product (Sprint 6b)', () => {
 
     test('getProductReviewsSummary: distribution + average', async () => {
       catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
-      catalogRepository.findProductRatingsRows.mockResolvedValue([
-        { rating: 5 },
-        { rating: 4 },
-        { rating: 5 },
-      ]);
+      catalogRepository.findProductRatingsSummary.mockResolvedValue({
+        count: 3,
+        average: 4.7,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 1, 5: 2 },
+      });
       const result = await service.getProductReviewsSummary({ id: 1 });
       expect(result.count).toBe(3);
       expect(result.distribution[5]).toBe(2);

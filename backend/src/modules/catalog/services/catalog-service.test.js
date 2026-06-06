@@ -65,7 +65,7 @@ describe('CatalogService', () => {
       findProductsByIdsOrdered: jest.fn(),
       findDeals: jest.fn(),
       findProductVariantsByProductId: jest.fn(),
-      findProductRatingsRows: jest.fn(),
+      findProductRatingsSummary: jest.fn(),
       getProductPriceRange: jest.fn(),
       findAttributeValuesByName: jest.fn(),
       findOtherAttributes: jest.fn(),
@@ -697,7 +697,11 @@ describe('CatalogService', () => {
 
     test('trả về average = 0 khi không có reviews', async () => {
       catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
-      catalogRepository.findProductRatingsRows.mockResolvedValue([]);
+      catalogRepository.findProductRatingsSummary.mockResolvedValue({
+        count: 0,
+        average: 0,
+        distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      });
 
       const result = await service.getProductReviewsSummary({ id: 1 });
       expect(result.average).toBe(0);
@@ -706,16 +710,15 @@ describe('CatalogService', () => {
 
     test('tính đúng average và distribution', async () => {
       catalogRepository.findProductByPk.mockResolvedValue({ id: 2, status: 'active' });
-      catalogRepository.findProductRatingsRows.mockResolvedValue([
-        { rating: 5 },
-        { rating: 4 },
-        { rating: 5 },
-        { rating: 3 },
-      ]);
+      catalogRepository.findProductRatingsSummary.mockResolvedValue({
+        count: 4,
+        average: 4.3,
+        distribution: { 1: 0, 2: 0, 3: 1, 4: 1, 5: 2 },
+      });
 
       const result = await service.getProductReviewsSummary({ id: 2 });
       expect(result.count).toBe(4);
-      expect(result.average).toBeCloseTo(4.25, 2);
+      expect(result.average).toBe(4.3);
       expect(result.distribution[5]).toBe(2);
       expect(result.distribution[4]).toBe(1);
       expect(result.distribution[3]).toBe(1);

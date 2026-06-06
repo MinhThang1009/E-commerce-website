@@ -134,7 +134,7 @@ module.exports = {
           if (matchByColor.length > 0) variantImages = matchByColor;
         }
 
-        const variantName = selectedVariant.variantName || selectedVariant.displayName;
+        const variantName = selectedVariant.variantName || selectedVariant.displayName || '';
         const mainName = productJson.name;
         const modelName =
           productJson.model ||
@@ -142,11 +142,12 @@ module.exports = {
             /^(Laptop|Điện thoại|Máy tính bảng|Đồng hồ|Tai nghe|Loa|Phụ kiện)\s+/i,
             '',
           );
-        const fullName =
-          variantName.toLowerCase().includes(mainName.toLowerCase()) ||
-          variantName.toLowerCase().includes(modelName.toLowerCase())
+        const fullName = variantName
+          ? variantName.toLowerCase().includes(mainName.toLowerCase()) ||
+            variantName.toLowerCase().includes(modelName.toLowerCase())
             ? variantName
-            : `${mainName} - ${variantName}`;
+            : `${mainName} - ${variantName}`
+          : mainName;
 
         responseData = {
           ...productJson,
@@ -488,16 +489,8 @@ module.exports = {
     const product = await this.catalogRepository.findProductByPk(numId);
     if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
-    const reviews = await this.catalogRepository.findProductRatingsRows(numId);
-    const count = reviews.length;
-    const average = count > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
-
-    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-    reviews.forEach((r) => {
-      distribution[r.rating]++;
-    });
-
-    return { average, count, distribution };
+    const summary = await this.catalogRepository.findProductRatingsSummary(numId);
+    return { average: summary.average, count: summary.count, distribution: summary.distribution };
   },
 
   async getProductFilters({ categoryId }) {

@@ -17,37 +17,40 @@ class WishlistService {
 
   async getWishlist({ userId }) {
     const items = await this.wishlistRepository.findByUserIdWithProducts(userId);
-    const products = items.map((item) => {
-      const product = item.Product.toJSON();
-      const variantStock = (product.variants || []).reduce(
-        (sum, variant) => sum + (variant.stockQuantity || 0),
-        0,
-      );
-      product.stockQuantity =
-        variantStock || (product.defaultVariant ? product.defaultVariant.stockQuantity : 0);
-      product.inStock =
-        variantStock > 0 ||
-        (product.defaultVariant ? product.defaultVariant.stockQuantity > 0 : false);
+    // Bỏ qua items có product đã bị soft-delete (paranoid) — item.Product = null → tránh crash
+    const products = items
+      .filter((item) => item.Product !== null)
+      .map((item) => {
+        const product = item.Product.toJSON();
+        const variantStock = (product.variants || []).reduce(
+          (sum, variant) => sum + (variant.stockQuantity || 0),
+          0,
+        );
+        product.stockQuantity =
+          variantStock || (product.defaultVariant ? product.defaultVariant.stockQuantity : 0);
+        product.inStock =
+          variantStock > 0 ||
+          (product.defaultVariant ? product.defaultVariant.stockQuantity > 0 : false);
 
-      if (product.productImages && product.productImages.length > 0) {
-        product.images = product.productImages.map((img) => ({
-          id: img.id,
-          url: img.imageUrl,
-          alt: img.altText,
-          isPrimary: img.isPrimary,
-        }));
-        const primary =
-          product.productImages.find((img) => img.isPrimary) || product.productImages[0];
-        product.thumbnail = primary.imageUrl;
-      } else {
-        product.images = [];
-        product.thumbnail = null;
-      }
-      delete product.productImages;
-      delete product.defaultVariant;
-      delete product.variants;
-      return product;
-    });
+        if (product.productImages && product.productImages.length > 0) {
+          product.images = product.productImages.map((img) => ({
+            id: img.id,
+            url: img.imageUrl,
+            alt: img.altText,
+            isPrimary: img.isPrimary,
+          }));
+          const primary =
+            product.productImages.find((img) => img.isPrimary) || product.productImages[0];
+          product.thumbnail = primary.imageUrl;
+        } else {
+          product.images = [];
+          product.thumbnail = null;
+        }
+        delete product.productImages;
+        delete product.defaultVariant;
+        delete product.variants;
+        return product;
+      });
     return { products };
   }
 

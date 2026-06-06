@@ -36,6 +36,27 @@ describe('WishlistService', () => {
       expect(result.products).toEqual([]);
     });
 
+    test('item có product=null (đã bị soft-delete) → bỏ qua, không crash (REGRESSION: null.toJSON() → 500)', async () => {
+      // Trước fix: item.Product = null → null.toJSON() → TypeError 500.
+      // Sau fix: filter(item.Product !== null) → bỏ qua orphaned items.
+      const validProduct = {
+        id: 2,
+        variants: [],
+        defaultVariant: null,
+        productImages: [],
+        toJSON: () => ({ id: 2, variants: [], defaultVariant: null, productImages: [] }),
+      };
+      wishlistRepository.findByUserIdWithProducts.mockResolvedValue([
+        { Product: null }, // orphaned (soft-deleted product)
+        { Product: validProduct }, // valid item
+      ]);
+
+      const result = await service.getWishlist({ userId: 1 });
+
+      expect(result.products).toHaveLength(1);
+      expect(result.products[0].id).toBe(2);
+    });
+
     test('tính stockQuantity từ tổng variants.stockQuantity', async () => {
       const productJson = {
         id: 1,

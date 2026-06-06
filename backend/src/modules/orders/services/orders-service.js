@@ -178,6 +178,7 @@ class OrdersService {
       for (const item of itemsToProcess) {
         const product = item.Product;
 
+        // Pre-tx check (fast 404 path)
         if (product.status !== 'active') {
           throw new AppError('orders.productInactive', 400, { name: product.name });
         }
@@ -204,10 +205,15 @@ class OrdersService {
           });
         } else {
           lockedProduct = await this.repo.lockProduct(item.productId, transaction);
-          if (!lockedProduct || lockedProduct.stockQuantity < item.quantity) {
+          // Re-check status từ locked row (chống concurrent deactivation sau pre-tx read)
+          // lockedProduct.status ?? 'active': khi repo không select status column thì giữ pre-tx check
+          if (!lockedProduct || (lockedProduct.status ?? 'active') !== 'active') {
+            throw new AppError('orders.productInactive', 400, { name: product.name });
+          }
+          if (lockedProduct.stockQuantity < item.quantity) {
             throw new AppError('orders.stockInsufficient', 400, {
               name: product.name,
-              available: lockedProduct ? lockedProduct.stockQuantity : 0,
+              available: lockedProduct.stockQuantity,
             });
           }
           const prev = lockedProduct.stockQuantity;
@@ -724,6 +730,7 @@ class OrdersService {
   }
 
   async confirmReceived({ id, userId }) {
+    let confirmedId, confirmedNumber;
     await this.repo.runInTransaction(async (transaction) => {
       const order = await this.repo.findOrderByIdAndUserId(id, userId, {
         transaction,
@@ -737,17 +744,15 @@ class OrdersService {
       order.status = STATUS.DELIVERED;
       if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';
       await this.repo.saveOrder(order, { transaction });
+      confirmedId = order.id;
+      confirmedNumber = order.number;
     });
-
-    const order = await this.repo.findOrderByIdAndUserId(id, userId);
-    if (!order) throw new AppError('orders.notFound', 404);
-    await order.reload();
 
     return {
       message: 'orders.deliveryConfirmed',
       data: {
-        id: order.id,
-        number: order.number,
+        id: confirmedId,
+        number: confirmedNumber,
         status: STATUS.DELIVERED,
       },
     };

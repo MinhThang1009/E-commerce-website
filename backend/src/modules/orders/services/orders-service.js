@@ -424,7 +424,11 @@ class OrdersService {
         await this.repo.clearCartItems(cart.id, { transaction });
       }
     } catch (err) {
+      // Re-throw để transaction rollback: nếu swallow thì order commit nhưng cart không cleared
+      // → user thấy lại giỏ hàng cũ và có thể vô tình re-order (cancelPendingOrdersByUser
+      // sẽ xử lý được nhưng tạo confusion cho UX).
       this.logger.error(`Lỗi xóa giỏ hàng của user ${userId}:`, err.message);
+      throw err;
     }
   }
 

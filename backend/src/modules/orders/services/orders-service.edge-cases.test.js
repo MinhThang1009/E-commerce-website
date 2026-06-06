@@ -305,6 +305,47 @@ describe('createOrder — online payment → không clear cart ngay (line 317-32
   });
 });
 
+// ─── BUG-MEDIUM-1: _clearUserCartInTransaction phải re-throw khi lỗi ────────────
+
+describe('createOrder — clearCart error phải rollback transaction (MEDIUM-1)', () => {
+  it('BUG-MEDIUM-1: clearCartItems throw → createOrder fail (không swallow)', async () => {
+    const { service, repo } = buildService();
+
+    const product = mkProduct();
+    repo.findProductWithDefaultVariant.mockResolvedValue(product);
+    repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 10 });
+    repo.createOrder.mockResolvedValue({
+      id: 1,
+      number: 'ORD-TEST',
+      status: 'pending',
+      total: 100000,
+      userId: 1,
+      createdAt: new Date(),
+    });
+    repo.createOrderItem.mockResolvedValue({
+      id: 1,
+      orderId: 1,
+      productId: 1,
+      variantId: null,
+      name: 'SP',
+      quantity: 1,
+      unitPrice: 100000,
+      subtotal: 100000,
+    });
+    repo.findActiveCartsByUser.mockResolvedValue([{ id: 10, status: 'active', save: jest.fn() }]);
+    repo.saveCart.mockResolvedValue();
+    // clearCartItems throw → phải propagate ra ngoài (không swallow)
+    repo.clearCartItems.mockRejectedValue(new Error('DB_ERROR'));
+
+    const user = { id: 1, email: 'u@test.com' };
+    const body = mkOrderBody({ items: [{ productId: 1, quantity: 1 }], paymentMethod: 'cod' });
+
+    await expect(service.createOrder({ user, body, sessionIdCookie: null })).rejects.toThrow(
+      'DB_ERROR',
+    );
+  });
+});
+
 // ─── F3: server enforce shippingCost (ngưỡng free + clamp âm) ─────────────────
 
 describe('createOrder — shippingCost enforce (F3)', () => {

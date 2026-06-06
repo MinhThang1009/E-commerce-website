@@ -602,10 +602,12 @@ describe('OrdersService › _clearUserCartInTransaction', () => {
     );
   });
 
-  it('không throw khi repo.findActiveCartsByUser ném lỗi — chỉ log error', async () => {
+  it('BUG-MEDIUM-1 fix: re-throw khi repo.findActiveCartsByUser ném lỗi — để transaction rollback', async () => {
+    // Hành vi cũ (sai): swallow error → order commit nhưng cart không cleared.
+    // Hành vi đúng: re-throw → transaction rollback → order không bị commit khi cart clear fail.
     repo.findActiveCartsByUser.mockRejectedValue(new Error('DB down'));
 
-    await expect(service._clearUserCartInTransaction(1, 'tx')).resolves.toBeUndefined();
+    await expect(service._clearUserCartInTransaction(1, 'tx')).rejects.toThrow('DB down');
 
     expect(logger.error).toHaveBeenCalled();
   });

@@ -272,7 +272,7 @@ describe('POST /api/cart — thêm sản phẩm vào giỏ hàng', () => {
     expect([200, 201]).toContain(res.status);
   });
 
-  test('Sản phẩm không tồn tại → 404', async () => {
+  test('cart.productNotFound → 404', async () => {
     mockProductFindByPkImpl.mockResolvedValue(null);
 
     const res = await request

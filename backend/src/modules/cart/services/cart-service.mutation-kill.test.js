@@ -617,17 +617,17 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       expect(repo.createCartItem).not.toHaveBeenCalled();
     });
 
-    test('sản phẩm không tồn tại → AppError 404 "Sản phẩm không tồn tại"', async () => {
+    test('sản phẩm không tồn tại → AppError 404 "cart.productNotFound"', async () => {
       const repo = makeRepo();
       repo.findProductById.mockResolvedValue(null);
       const service = makeService(repo);
 
       await expect(
         service.addToCart({ user: { id: 1 }, cookieSessionId: null, body: { productId: 99 } }),
-      ).rejects.toThrow('Sản phẩm không tồn tại');
+      ).rejects.toThrow('cart.productNotFound');
     });
 
-    test('hết hàng (defaultVariant stock 0, không variant) → AppError "Sản phẩm đã hết hàng"', async () => {
+    test('hết hàng (defaultVariant stock 0, không variant) → AppError "cart.productOutOfStock"', async () => {
       const repo = makeRepo();
       repo.findProductById.mockResolvedValue({
         id: 1,
@@ -638,10 +638,10 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       await expect(
         service.addToCart({ user: { id: 1 }, cookieSessionId: null, body: { productId: 1 } }),
-      ).rejects.toThrow('Sản phẩm đã hết hàng');
+      ).rejects.toThrow('cart.productOutOfStock');
     });
 
-    test('variantId không tồn tại → AppError "Biến thể sản phẩm không tồn tại" (L205)', async () => {
+    test('variantId không tồn tại → AppError "cart.variantNotFound" (L205)', async () => {
       const repo = makeRepo();
       repo.findProductById.mockResolvedValue(product);
       repo.findVariantByIdAndProductId.mockResolvedValue(null);
@@ -653,7 +653,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
           cookieSessionId: null,
           body: { productId: 1, variantId: 5, quantity: 1 },
         }),
-      ).rejects.toThrow('Biến thể sản phẩm không tồn tại');
+      ).rejects.toThrow('cart.variantNotFound');
     });
 
     test('guest không sessionId → tạo sessionId mới qua findOrCreateActiveCartBySessionId trong transaction', async () => {
@@ -732,13 +732,13 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
   // syncCart — auth guard + criteria + cap stock + transaction + skip
   // ──────────────────────────────────────────────────────────────
   describe('syncCart', () => {
-    test('không login → AppError 401 "Bạn cần đăng nhập để đồng bộ giỏ hàng" (L321)', async () => {
+    test('không login → AppError 401 "cart.syncRequiresLogin" (L321)', async () => {
       const repo = makeRepo();
       const service = makeService(repo);
 
       await expect(
         service.syncCart({ user: null, cookieSessionId: null, items: [] }),
-      ).rejects.toThrow('Bạn cần đăng nhập để đồng bộ giỏ hàng');
+      ).rejects.toThrow('cart.syncRequiresLogin');
     });
 
     test('clear cart cũ + createCartItem variant với qty cap theo stock, trong transaction', async () => {
@@ -851,12 +851,12 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
   // mergeCart — auth + early returns + price refresh + cap + transaction
   // ──────────────────────────────────────────────────────────────
   describe('mergeCart', () => {
-    test('không login → AppError 401 "Bạn cần đăng nhập để thực hiện chức năng này" (L381)', async () => {
+    test('không login → AppError 401 "cart.loginRequired" (L381)', async () => {
       const repo = makeRepo();
       const service = makeService(repo);
 
       await expect(service.mergeCart({ user: null, cookieSessionId: 'x' })).rejects.toThrow(
-        'Bạn cần đăng nhập để thực hiện chức năng này',
+        'cart.loginRequired',
       );
     });
 
@@ -1110,7 +1110,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
   // _assertOwnership — 403 + message (L513/516/517)
   // ──────────────────────────────────────────────────────────────
   describe('updateCartItem / removeCartItem — ownership 403', () => {
-    test('user khác chủ cart → 403 "Bạn không có quyền truy cập giỏ hàng này" (L513)', async () => {
+    test('user khác chủ cart → 403 "cart.accessDenied" (L513)', async () => {
       const repo = makeRepo();
       repo.findCartItemByIdWithCartAndStock.mockResolvedValue({
         id: 1,
@@ -1121,7 +1121,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       await expect(
         service.updateCartItem({ user: { id: 1 }, cookieSessionId: null, itemId: 1, quantity: 1 }),
-      ).rejects.toThrow('Bạn không có quyền truy cập giỏ hàng này');
+      ).rejects.toThrow('cart.accessDenied');
     });
 
     test('guest sessionId KHỚP → cho phép (L516 logic OR đúng)', async () => {
@@ -1148,7 +1148,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       await expect(
         service.removeCartItem({ user: null, cookieSessionId: 'sess-INTRUDER', itemId: 1 }),
-      ).rejects.toThrow('Bạn không có quyền truy cập giỏ hàng này');
+      ).rejects.toThrow('cart.accessDenied');
     });
 
     test('guest KHÔNG cookieSessionId → 403 (nhánh !cookieSessionId)', async () => {
@@ -1161,17 +1161,17 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       await expect(
         service.removeCartItem({ user: null, cookieSessionId: null, itemId: 1 }),
-      ).rejects.toThrow('Bạn không có quyền truy cập giỏ hàng này');
+      ).rejects.toThrow('cart.accessDenied');
     });
 
-    test('item không tồn tại → 404 "Không tìm thấy sản phẩm trong giỏ hàng"', async () => {
+    test('item không tồn tại → 404 "cart.itemNotFound"', async () => {
       const repo = makeRepo();
       repo.findCartItemByIdWithCartAndStock.mockResolvedValue(null);
       const service = makeService(repo);
 
       await expect(
         service.removeCartItem({ user: { id: 1 }, cookieSessionId: null, itemId: 999 }),
-      ).rejects.toThrow('Không tìm thấy sản phẩm trong giỏ hàng');
+      ).rejects.toThrow('cart.itemNotFound');
     });
   });
 

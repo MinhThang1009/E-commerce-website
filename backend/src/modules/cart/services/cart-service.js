@@ -109,10 +109,10 @@ class CartService {
     const baseStockQuantity = product.defaultVariant ? product.defaultVariant.stockQuantity : 0;
     if (variant) {
       if (variant.stockQuantity < quantity) {
-        throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
+        throw new AppError('cart.quantityExceedsStock', 400);
       }
     } else if (baseStockQuantity < quantity) {
-      throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
+      throw new AppError('cart.quantityExceedsStock', 400);
     }
   }
 
@@ -193,21 +193,21 @@ class CartService {
 
     const product = await this.cartRepository.findProductById(productId);
     if (!product) {
-      throw new AppError('Sản phẩm không tồn tại', 404);
+      throw new AppError('cart.productNotFound', 404);
     }
 
     const baseStockQuantity = product.defaultVariant ? product.defaultVariant.stockQuantity : 0;
     const baseInStock = baseStockQuantity > 0;
 
     if (!baseInStock && !variantId) {
-      throw new AppError('Sản phẩm đã hết hàng', 400);
+      throw new AppError('cart.productOutOfStock', 400);
     }
 
     let variant = null;
     if (variantId) {
       variant = await this.cartRepository.findVariantByIdAndProductId(variantId, productId);
       if (!variant) {
-        throw new AppError('Biến thể sản phẩm không tồn tại', 404);
+        throw new AppError('cart.variantNotFound', 404);
       }
     }
     this._assertStock({ product, variant, quantity });
@@ -265,7 +265,7 @@ class CartService {
   async updateCartItem({ user, cookieSessionId, itemId, quantity }) {
     const cartItem = await this.cartRepository.findCartItemByIdWithCartAndStock(itemId);
     if (!cartItem) {
-      throw new AppError('Không tìm thấy sản phẩm trong giỏ hàng', 404);
+      throw new AppError('cart.itemNotFound', 404);
     }
 
     this._assertOwnership(cartItem, user, cookieSessionId);
@@ -275,10 +275,10 @@ class CartService {
       : 0;
     if (cartItem.ProductVariant) {
       if (cartItem.ProductVariant.stockQuantity < quantity) {
-        throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
+        throw new AppError('cart.quantityExceedsStock', 400);
       }
     } else if (baseStockQuantity < quantity) {
-      throw new AppError('Số lượng vượt quá số lượng tồn kho', 400);
+      throw new AppError('cart.quantityExceedsStock', 400);
     }
 
     cartItem.quantity = quantity;
@@ -290,7 +290,7 @@ class CartService {
   async removeCartItem({ user, cookieSessionId, itemId }) {
     const cartItem = await this.cartRepository.findCartItemByIdWithCartAndStock(itemId);
     if (!cartItem) {
-      throw new AppError('Không tìm thấy sản phẩm trong giỏ hàng', 404);
+      throw new AppError('cart.itemNotFound', 404);
     }
 
     this._assertOwnership(cartItem, user, cookieSessionId);
@@ -323,7 +323,7 @@ class CartService {
   // Đồng bộ cart từ local storage (FE → BE). Chỉ user đã login.
   async syncCart({ user, cookieSessionId, items }) {
     if (!user) {
-      throw new AppError('Bạn cần đăng nhập để đồng bộ giỏ hàng', 401);
+      throw new AppError('cart.syncRequiresLogin', 401);
     }
 
     await this.cartRepository.runInTransaction(async (transaction) => {
@@ -383,7 +383,7 @@ class CartService {
   // Gộp guest cart vào user cart sau khi login. Refresh giá để tránh stale.
   async mergeCart({ user, cookieSessionId, clearSessionCookie }) {
     if (!user) {
-      throw new AppError('Bạn cần đăng nhập để thực hiện chức năng này', 401);
+      throw new AppError('cart.loginRequired', 401);
     }
 
     if (!cookieSessionId) {
@@ -518,11 +518,11 @@ class CartService {
   _assertOwnership(cartItem, user, cookieSessionId) {
     if (user) {
       if (cartItem.Cart.userId !== user.id) {
-        throw new AppError('Bạn không có quyền truy cập giỏ hàng này', 403);
+        throw new AppError('cart.accessDenied', 403);
       }
     } else {
       if (!cookieSessionId || cartItem.Cart.sessionId !== cookieSessionId) {
-        throw new AppError('Bạn không có quyền truy cập giỏ hàng này', 403);
+        throw new AppError('cart.accessDenied', 403);
       }
     }
   }

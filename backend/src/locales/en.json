@@ -74,7 +74,15 @@
   },
   "cart": {
     "alreadyEmpty": "Cart is already empty",
-    "cleared": "All items removed from cart"
+    "cleared": "All items removed from cart",
+    "quantityExceedsStock": "Quantity exceeds available stock",
+    "productNotFound": "Product not found",
+    "productOutOfStock": "Product is out of stock",
+    "variantNotFound": "Product variant not found",
+    "itemNotFound": "Item not found in cart",
+    "syncRequiresLogin": "You must be logged in to sync cart",
+    "loginRequired": "You must be logged in to perform this action",
+    "accessDenied": "You do not have access to this cart"
   },
   "wishlist": {
     "alreadyExists": "Product is already in your wishlist",

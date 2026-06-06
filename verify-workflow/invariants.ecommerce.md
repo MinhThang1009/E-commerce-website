@@ -85,5 +85,24 @@
 
 ---
 
+## VII. Cart (giỏ hàng — guest + user)
+
+> ✅ **DUYỆT 2026-06-06 (human):** 10 invariant INV-CART-1..10 đã `[x]`.
+
+| ID | WHEN | THEN (outcome PHẢI) | Nguồn | Duyệt |
+|---|---|---|---|---|
+| INV-CART-1 | Guest addToCart không có sessionId cookie | Tạo UUID mới, set cookie sessionId qua setSessionCookie callback | cart-service addToCart | [x] |
+| INV-CART-2 | addToCart khi quantity vượt stock | TỪ CHỐI 400 (stock check 2 lần: trước add và sau cộng dồn) | _assertStock | [x] |
+| INV-CART-3 | 2 request đồng thời addToCart cùng product+variant | Không tạo duplicate CartItem (SELECT FOR UPDATE trong transaction) | addToCart transaction | [x] |
+| INV-CART-4 | updateCartItem/removeCartItem không phải owner | TỪ CHỐI 403 (_assertOwnership: userId hoặc sessionId phải match) | _assertOwnership | [x] |
+| INV-CART-5 | syncCart hoặc mergeCart khi guest (không có user) | TỪ CHỐI 401 | service guard | [x] |
+| INV-CART-6 | mergeCart items trùng productId+variantId | Cộng dồn quantity, cap theo maxStock khi maxStock > 0 | mergeCart logic | [x] |
+| INV-CART-7 | mergeCart khi maxStock = 0 (hết hàng) | Giữ nguyên newQty (KHÔNG zero-out item hợp lệ của user) | mergeCart maxStock guard | [x] |
+| INV-CART-8 | mergeCart refresh price | unitPrice được refresh về giá hiện tại variant/product (tránh stale) | mergeCart unitPrice | [x] |
+| INV-CART-9 | getCart khi user login có cookie sessionId guest | Auto-merge guest cart inline, không cần gọi /merge riêng | getCart inline merge | [x] |
+| INV-CART-10 | validateCart | Trả { hasIssues, items } với per-item flags (priceChanged/outOfStock/quantityExceedsStock). KHÔNG lock stock. | validateCart | [x] |
+
+---
+
 > **Khi duyệt xong:** đánh dấu `[x]` từng dòng. Tầng 0 (GATE-B) sẽ kiểm: integration test có assert **đúng cột THEN này** không (assert OUTCOME, không phải "method được gọi"). RAW lệch THEN đã duyệt → human phân xử *code-sai hay invariant-sai*.
 > **Residual risk (FRAMEWORK §10.1):** nếu cột THEN bạn duyệt SAI nghiệp vụ thật → cả pipeline verify-đúng theo tiêu chí sai. Không lớp nào dưới human bắt được.

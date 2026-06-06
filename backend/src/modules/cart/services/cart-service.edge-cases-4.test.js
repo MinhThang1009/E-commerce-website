@@ -97,7 +97,7 @@ describe('CartService — branch coverage bổ sung', () => {
           variant: null,
           quantity: 1,
         }),
-      ).toThrow('Số lượng vượt quá số lượng tồn kho');
+      ).toThrow('cart.quantityExceedsStock');
     });
 
     test('không có variant, defaultVariant undefined → baseStock = 0 → throw', () => {
@@ -107,7 +107,7 @@ describe('CartService — branch coverage bổ sung', () => {
           variant: null,
           quantity: 1,
         }),
-      ).toThrow('Số lượng vượt quá số lượng tồn kho');
+      ).toThrow('cart.quantityExceedsStock');
     });
   });
 
@@ -133,7 +133,7 @@ describe('CartService — branch coverage bổ sung', () => {
 
       await expect(
         service.updateCartItem({ user: { id: 1 }, cookieSessionId: null, itemId: 1, quantity: 5 }),
-      ).rejects.toThrow('Số lượng vượt quá số lượng tồn kho');
+      ).rejects.toThrow('cart.quantityExceedsStock');
     });
   });
 

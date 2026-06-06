@@ -181,14 +181,14 @@ describe('CartService', () => {
       cartRepository.findProductById.mockResolvedValue(mkProduct(100, 0));
       await expect(
         service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 1 } }),
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
+      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('OutOfStock') });
     });
 
     test('quantity vượt stock → 400', async () => {
       cartRepository.findProductById.mockResolvedValue(mkProduct(100, 5));
       await expect(
         service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 10 } }),
-      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('tồn kho') });
+      ).rejects.toMatchObject({ statusCode: 400, message: 'cart.quantityExceedsStock' });
     });
 
     test('variant không tồn tại → 404', async () => {

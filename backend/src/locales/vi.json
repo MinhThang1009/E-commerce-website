@@ -75,7 +75,15 @@
   },
   "cart": {
     "alreadyEmpty": "Giỏ hàng đã trống",
-    "cleared": "Đã xóa tất cả sản phẩm trong giỏ hàng"
+    "cleared": "Đã xóa tất cả sản phẩm trong giỏ hàng",
+    "quantityExceedsStock": "Số lượng vượt quá số lượng tồn kho",
+    "productNotFound": "Sản phẩm không tồn tại",
+    "productOutOfStock": "Sản phẩm đã hết hàng",
+    "variantNotFound": "Biến thể sản phẩm không tồn tại",
+    "itemNotFound": "Không tìm thấy sản phẩm trong giỏ hàng",
+    "syncRequiresLogin": "Bạn cần đăng nhập để đồng bộ giỏ hàng",
+    "loginRequired": "Bạn cần đăng nhập để thực hiện chức năng này",
+    "accessDenied": "Bạn không có quyền truy cập giỏ hàng này"
   },
   "wishlist": {
     "alreadyExists": "Sản phẩm đã có trong danh sách yêu thích",

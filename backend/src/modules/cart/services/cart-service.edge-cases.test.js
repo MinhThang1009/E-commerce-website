@@ -450,7 +450,7 @@ describe('addToCart — product không có defaultVariant', () => {
 
     await expect(
       service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 1 } }),
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
+    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('OutOfStock') });
   });
 });
 
@@ -517,7 +517,10 @@ describe('addToCart — cộng dồn quantity vượt stock → throw 400', () =
 
     await expect(
       service.addToCart({ user: { id: 1 }, body: { productId: 1, quantity: 3 } }),
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('tồn kho') });
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: expect.stringContaining('quantityExceeds'),
+    });
   });
 });
 
@@ -1015,7 +1018,10 @@ describe('_assertStock — variant stock không đủ trong addToCart (line 107)
         cookieSessionId: null,
         body: { productId: 1, variantId: 5, quantity: 5 },
       }),
-    ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('tồn kho') });
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: expect.stringContaining('quantityExceeds'),
+    });
   });
 });
 

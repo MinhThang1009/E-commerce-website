@@ -33,7 +33,7 @@ function buildService() {
     findCartItemByIdWithCartAndStock: jest.fn(),
     findCartItemsForValidation: jest.fn().mockResolvedValue([]),
     findCartItemsForMerge: jest.fn().mockResolvedValue([]),
-    runInTransaction: jest.fn((work) => work({})),
+    runInTransaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
   };
   const eventBus = { publish: jest.fn().mockResolvedValue() };
   const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };

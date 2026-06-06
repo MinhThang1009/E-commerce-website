@@ -38,7 +38,7 @@ describe('CartService', () => {
       findCartItemByIdWithCartAndStock: jest.fn(),
       findCartItemsForValidation: jest.fn().mockResolvedValue([]),
       findCartItemsForMerge: jest.fn().mockResolvedValue([]),
-      runInTransaction: jest.fn((work) => work({})),
+      runInTransaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     };
     eventBus = { publish: jest.fn().mockResolvedValue() };
     logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
@@ -164,6 +164,30 @@ describe('CartService', () => {
       await expect(
         service.addToCart({ user: { id: 1 }, body: { productId: 1, variantId: 5, quantity: 1 } }),
       ).rejects.toMatchObject({ statusCode: 404 });
+    });
+
+    test('findCartItemMatching được gọi với SELECT FOR UPDATE lock (REGRESSION: concurrent addToCart tạo duplicate CartItems)', async () => {
+      // Trước fix: findCartItemMatching không có lock → 2 concurrent requests đều thấy
+      // existing=null và đều tạo CartItem riêng → duplicate rows.
+      // Sau fix: lock: transaction.LOCK.UPDATE → SELECT FOR UPDATE → serializes concurrent
+      // inserts qua gap lock, request thứ 2 chờ request thứ 1 commit rồi mới đọc.
+      cartRepository.findProductById.mockResolvedValue(mkProduct(100, 10));
+      cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 5 });
+      cartRepository.findCartItemMatching.mockResolvedValue(null);
+      cartRepository.createCartItem.mockResolvedValue({ id: 1 });
+      cartRepository.findCartItemsWithDetails.mockResolvedValue([]);
+
+      await service.addToCart({
+        user: { id: 1 },
+        body: { productId: 1, quantity: 1 },
+        setSessionCookie: jest.fn(),
+      });
+
+      // Assert: findCartItemMatching gọi với lock=UPDATE (prevents concurrent duplicate inserts)
+      expect(cartRepository.findCartItemMatching).toHaveBeenCalledWith(
+        expect.objectContaining({ cartId: 5, productId: 1 }),
+        expect.objectContaining({ lock: 'UPDATE' }),
+      );
     });
   });
 });

@@ -38,7 +38,7 @@ describe('CartService — branch coverage bổ sung', () => {
       findCartItemsForMerge: jest.fn().mockResolvedValue([]),
       findCartItemMatching: jest.fn().mockResolvedValue(null),
       saveCart: jest.fn().mockResolvedValue(),
-      runInTransaction: jest.fn(async (work) => work({})),
+      runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     };
     service = new CartService({
       cartRepository,

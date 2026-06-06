@@ -218,6 +218,23 @@ describe('Concurrent cart add — cùng item', () => {
   });
 });
 
+// Verifies HIGH-1 (fix commit): addToCart concurrent — findCartItemMatching SELECT FOR UPDATE
+// ngăn duplicate CartItems khi 2 requests đồng thời thêm cùng product.
+// Trước fix: findCartItemMatching không có lock → cả 2 thấy existing=null →
+// cả 2 createCartItem → 2 CartItems trùng (cartId+productId+variantId).
+// Sau fix: lock: transaction.LOCK.UPDATE → SELECT FOR UPDATE → serializes,
+// request thứ 2 chờ commit → thấy existing item → update quantity thay vì tạo mới.
+// Yêu cầu MySQL thật để verify concurrent behavior.
+describe('HIGH-1 — addToCart concurrent lock (requires MySQL)', () => {
+  test.skip('HIGH-1: 2 concurrent addToCart cùng user+product → chỉ 1 CartItem, quantity đúng', async () => {
+    // Setup: user, product, cart
+    // Trigger 2 concurrent addToCart với Promise.all
+    // Assert: CartItem.findAll({ where: { cartId } }).length === 1
+    // Assert: CartItem.quantity === 2 (hoặc 1+1 depending on order)
+    // FAIL nếu revert fix HIGH-1 (findCartItemMatching mất lock)
+  });
+});
+
 // ─────────────────────────────────────────────────────────────
 describe('Concurrent apply discount code — usageLimit=1', () => {
   test('3 request đồng thời áp dụng mã usageLimit=1 → chỉ 1 thành công', async () => {

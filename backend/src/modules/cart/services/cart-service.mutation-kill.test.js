@@ -10,7 +10,7 @@ const CartService = require('./cart-service');
 
 // Sentinel nhận diện transaction object do runInTransaction cấp — nếu mutant
 // đổi { transaction } → {} thì arg sẽ KHÁC TX → assertion fail → mutant chết.
-const TX = { __isTransaction: true };
+const TX = { __isTransaction: true, LOCK: { UPDATE: 'UPDATE' } };
 
 function makeRepo(overrides = {}) {
   return {
@@ -567,7 +567,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       expect(repo.findCartItemMatching).toHaveBeenCalledWith(
         expect.objectContaining({ cartId: 10, productId: 1, variantId: 5 }),
-        { transaction: TX },
+        expect.objectContaining({ transaction: TX, lock: TX.LOCK.UPDATE }),
       );
       expect(repo.createCartItem).toHaveBeenCalledWith(
         expect.objectContaining({ variantId: 5, unitPrice: 250 }),

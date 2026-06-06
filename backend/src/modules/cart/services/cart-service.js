@@ -231,7 +231,7 @@ class CartService {
           productId,
           variantId: variantId || null,
         },
-        { transaction },
+        { transaction, lock: transaction.LOCK.UPDATE },
       );
 
       if (existing) {

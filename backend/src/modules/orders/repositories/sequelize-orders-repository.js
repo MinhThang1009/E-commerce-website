@@ -246,7 +246,14 @@ class SequelizeOrdersRepository extends IOrdersRepository {
             {
               model: this.Product,
               attributes: ['id', 'nameVi', 'slug', 'basePrice', 'status'],
-              include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
+              include: [
+                { association: 'defaultVariant', attributes: ['id', 'stockQuantity'] },
+                {
+                  association: 'productImages',
+                  attributes: ['imageUrl', 'isThumbnail'],
+                  required: false,
+                },
+              ],
             },
             {
               model: this.ProductVariant,

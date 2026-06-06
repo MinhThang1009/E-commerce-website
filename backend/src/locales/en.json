@@ -54,6 +54,7 @@
   },
   "orders": {
     "notFound": "Order not found",
+    "missingOriginUrl": "Unable to determine website URL",
     "accessDenied": "You do not have permission to access this order",
     "productNotFound": "Product ID: {{id}} not found",
     "variantNotFound": "Variant ID: {{id}} not found",

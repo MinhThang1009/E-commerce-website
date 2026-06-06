@@ -54,6 +54,7 @@
   },
   "orders": {
     "notFound": "Không tìm thấy đơn hàng",
+    "missingOriginUrl": "Không xác định được địa chỉ website",
     "accessDenied": "Bạn không có quyền truy cập đơn hàng này",
     "productNotFound": "Không tìm thấy sản phẩm ID: {{id}}",
     "variantNotFound": "Không tìm thấy biến thể ID: {{id}}",

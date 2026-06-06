@@ -704,6 +704,7 @@ class OrdersService {
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
 
+    if (!originUrl) throw new AppError('orders.missingOriginUrl', 500);
     const paymentUrl = `${originUrl}/checkout?repayOrder=${order.id}&amount=${order.total}`;
     return {
       id: order.id,

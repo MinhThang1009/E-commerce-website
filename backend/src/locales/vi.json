@@ -91,6 +91,7 @@
     "collectionNotFound": "Không tìm thấy bộ sưu tập",
     "productNotFound": "Không tìm thấy sản phẩm",
     "cannotDeleteCategoryWithProducts": "Không thể xóa danh mục có sản phẩm",
+    "categoryCannotBeOwnParent": "Danh mục không thể là danh mục cha của chính nó",
     "categoryDeleted": "Xóa danh mục thành công",
     "cannotDeleteBrandWithProducts": "Không thể xóa thương hiệu đang có sản phẩm",
     "brandDeleted": "Xóa thương hiệu thành công",

@@ -7,8 +7,10 @@
 const { AppError } = require('@shared/errors');
 
 module.exports = {
-  async getAllBrands({ categoryId, hasProducts = true }) {
-    const filter = { hasProducts };
+  async getAllBrands({ categoryId, hasProducts } = {}) {
+    // Parse string 'false' từ query param thành boolean false
+    const hasProductsBool = String(hasProducts) !== 'false';
+    const filter = { hasProducts: hasProductsBool };
     if (categoryId) {
       const isNumericId = !isNaN(categoryId) && String(categoryId).trim() !== '';
       let resolvedCategoryId = categoryId;

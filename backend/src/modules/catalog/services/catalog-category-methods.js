@@ -56,7 +56,12 @@ module.exports = {
     if (patch.name !== undefined) category.name = patch.name;
     if (patch.description !== undefined) category.description = patch.description;
     if (patch.image !== undefined) category.image = patch.image;
-    if (patch.parentId !== undefined) category.parentId = patch.parentId;
+    if (patch.parentId !== undefined) {
+      if (patch.parentId !== null && patch.parentId === Number(category.id)) {
+        throw new AppError('catalog.categoryCannotBeOwnParent', 400);
+      }
+      category.parentId = patch.parentId;
+    }
     if (patch.isActive !== undefined) category.isActive = patch.isActive;
     if (patch.sortOrder !== undefined) category.sortOrder = patch.sortOrder;
     await this.catalogRepository.saveCategory(category);

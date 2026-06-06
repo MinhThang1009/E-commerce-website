@@ -93,17 +93,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   }
 
   async countProductsByCategoryId(categoryId) {
-    // Kiểm tra cả direct FK lẫn junction table product_categories
-    const directCount = await this.Product.count({ where: { categoryId } });
-    if (directCount > 0) return directCount;
-    const rows = await this.sequelize.query(
-      `SELECT COUNT(DISTINCT pc.product_id) as product_count
-       FROM product_categories pc
-       JOIN products p ON p.id = pc.product_id AND p.deleted_at IS NULL
-       WHERE pc.category_id = :categoryId`,
-      { replacements: { categoryId }, type: QueryTypes.SELECT },
-    );
-    return parseInt(rows[0]?.product_count || 0, 10);
+    return this.Product.count({ where: { categoryId } });
   }
 
   async findProductsByCategoryId(

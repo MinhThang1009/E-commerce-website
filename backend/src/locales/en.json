@@ -90,6 +90,7 @@
     "collectionNotFound": "Collection not found",
     "productNotFound": "Product not found",
     "cannotDeleteCategoryWithProducts": "Cannot delete category that has products",
+    "categoryCannotBeOwnParent": "A category cannot be its own parent",
     "categoryDeleted": "Category deleted successfully",
     "cannotDeleteBrandWithProducts": "Cannot delete brand that has products",
     "brandDeleted": "Brand deleted successfully",

@@ -291,6 +291,19 @@ describe('ReviewsService', () => {
       expect(result.currentPage).toBe(2);
     });
 
+    test('page=0 → offset không âm (REGRESSION: page=0 gây offset âm → 500)', async () => {
+      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
+      reviewsRepository.findProductReviews.mockResolvedValue({ count: 0, rows: [] });
+
+      const result = await service.getProductReviews({ productId: 1, page: 0, limit: 10 });
+
+      expect(reviewsRepository.findProductReviews).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ offset: 0 }),
+      );
+      expect(result.currentPage).toBe(1);
+    });
+
     test('sort "highest_rating" → sortColumn=rating, sortOrder=DESC', async () => {
       reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
       reviewsRepository.findProductReviews.mockResolvedValue({ count: 0, rows: [] });

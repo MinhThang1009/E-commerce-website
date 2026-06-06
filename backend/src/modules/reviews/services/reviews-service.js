@@ -126,54 +126,60 @@ class ReviewsService {
       throw new AppError('reviews.productNotFound', 404);
     }
 
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const lim = Math.max(parseInt(limit, 10) || 10, 1);
     const whereClause = {};
     if (rating) whereClause.rating = parseInt(rating, 10);
     if (verified !== undefined) whereClause.isVerified = verified === 'true';
 
     const { count, rows } = await this.reviewsRepository.findProductReviews(productId, {
       whereClause,
-      limit: parseInt(limit, 10),
-      offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+      limit: lim,
+      offset: (p - 1) * lim,
       sortColumn,
       sortOrder,
     });
 
     return {
       total: count,
-      pages: Math.ceil(count / limit),
-      currentPage: parseInt(page, 10),
+      pages: Math.ceil(count / lim),
+      currentPage: p,
       reviews: rows,
     };
   }
 
   async getUserReviews({ userId, page = 1, limit = 10 }) {
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const lim = Math.max(parseInt(limit, 10) || 10, 1);
     const { count, rows } = await this.reviewsRepository.findUserReviews(userId, {
-      limit: parseInt(limit, 10),
-      offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+      limit: lim,
+      offset: (p - 1) * lim,
     });
 
     return {
       total: count,
-      pages: Math.ceil(count / limit),
-      currentPage: parseInt(page, 10),
+      pages: Math.ceil(count / lim),
+      currentPage: p,
       reviews: rows,
     };
   }
 
   async getAllReviews({ page = 1, limit = 10, verified }) {
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const lim = Math.max(parseInt(limit, 10) || 10, 1);
     const whereConditions = {};
     if (verified !== undefined) whereConditions.isVerified = verified === 'true';
 
     const { count, rows } = await this.reviewsRepository.findAllReviews({
       whereConditions,
-      limit: parseInt(limit, 10),
-      offset: (parseInt(page, 10) - 1) * parseInt(limit, 10),
+      limit: lim,
+      offset: (p - 1) * lim,
     });
 
     return {
       total: count,
-      pages: Math.ceil(count / limit),
-      currentPage: parseInt(page, 10),
+      pages: Math.ceil(count / lim),
+      currentPage: p,
       reviews: rows,
     };
   }

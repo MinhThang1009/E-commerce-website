@@ -3,7 +3,7 @@ const categorySchema = z.object({
   name: z.string().min(1, 'Tên danh mục không được để trống'),
   description: z.string().nullish(),
   image: z.string().nullish(),
-  parentId: z.string().uuid().nullable().optional(),
+  parentId: z.number().int().positive().nullable().optional(),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
 });

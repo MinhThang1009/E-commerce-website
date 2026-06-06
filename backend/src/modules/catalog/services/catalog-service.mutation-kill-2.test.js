@@ -1284,7 +1284,7 @@ describe('_buildProductDetailResponse — regex modelName (L142 Regex survivors)
 describe('getRelatedProducts — content của kết quả (L331, L336)', () => {
   it('mỗi sản phẩm liên quan có id, ratings, images (L331 BlockStatement)', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5 });
+    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5, status: 'active' });
     catalogRepository.findRelatedProducts.mockResolvedValue([
       makeProductRow({ id: 2, basePrice: '10000', reviews: [{ rating: 4 }] }),
     ]);

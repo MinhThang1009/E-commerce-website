@@ -211,14 +211,14 @@ describe('findDeals — branch sort mặc định (discount_desc)', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('getProductPriceRange — gọi không tham số', () => {
-  it('gọi không tham số → where rỗng, không crash', async () => {
+  it('gọi không tham số → where chỉ có status=active, không crash', async () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([{ min: '0', max: '0' }]);
 
     const result = await repo.getProductPriceRange();
 
     const call = deps.Product.findAll.mock.calls[0][0];
-    expect(call.where).toEqual({});
+    expect(call.where).toEqual({ status: 'active' });
     expect(result).toEqual({ min: 0, max: 0 });
   });
 

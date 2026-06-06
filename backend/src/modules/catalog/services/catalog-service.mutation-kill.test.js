@@ -1166,7 +1166,11 @@ describe('getRelatedProducts — error key và logic (L317)', () => {
 
   it('không gọi findRelatedProducts khi product không có categoryId (L331)', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: null });
+    catalogRepository.findProductByPk.mockResolvedValue({
+      id: 1,
+      categoryId: null,
+      status: 'active',
+    });
     catalogRepository.findRelatedProductsFallback.mockResolvedValue([]);
 
     await service.getRelatedProducts({ id: 1 });
@@ -1186,7 +1190,7 @@ describe('getProductReviewsSummary — error key và distribution (L460, L468)',
 
   it('distribution chứa đúng key từ 1-5 và count đúng (L468)', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 1 });
+    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
     catalogRepository.findProductRatingsRows.mockResolvedValue([
       { rating: 5 },
       { rating: 5 },
@@ -1213,7 +1217,7 @@ describe('getProductVariants — error key đúng (L460)', () => {
 
   it('trả về variants object (L468)', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 1 });
+    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
     catalogRepository.findProductVariantsByProductId.mockResolvedValue([{ id: 10 }, { id: 11 }]);
 
     const result = await service.getProductVariants({ id: 1 });
@@ -1528,7 +1532,7 @@ describe('createCategory — ?? operators (L45-L47)', () => {
 describe('getRelatedProducts — fallback với log (L331)', () => {
   it('khi related rỗng → gọi fallback VÀ log thông báo (L331 block nên không empty)', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5 });
+    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5, status: 'active' });
     catalogRepository.findRelatedProducts.mockResolvedValue([]);
     catalogRepository.findRelatedProductsFallback.mockResolvedValue([makeProductRow({ id: 2 })]);
 

@@ -237,7 +237,11 @@ describe('CatalogService — Product (Sprint 6b)', () => {
     });
 
     test('có category → query findRelatedProducts trước', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5 });
+      catalogRepository.findProductByPk.mockResolvedValue({
+        id: 1,
+        categoryId: 5,
+        status: 'active',
+      });
       catalogRepository.findRelatedProducts.mockResolvedValue([mkProduct({ id: 2 })]);
       await service.getRelatedProducts({ id: 1 });
       expect(catalogRepository.findRelatedProducts).toHaveBeenCalled();
@@ -245,14 +249,22 @@ describe('CatalogService — Product (Sprint 6b)', () => {
     });
 
     test('không có category → fallback về newest', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: null });
+      catalogRepository.findProductByPk.mockResolvedValue({
+        id: 1,
+        categoryId: null,
+        status: 'active',
+      });
       catalogRepository.findRelatedProductsFallback.mockResolvedValue([mkProduct({ id: 2 })]);
       await service.getRelatedProducts({ id: 1 });
       expect(catalogRepository.findRelatedProductsFallback).toHaveBeenCalled();
     });
 
     test('related rỗng + category → fallback', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5 });
+      catalogRepository.findProductByPk.mockResolvedValue({
+        id: 1,
+        categoryId: 5,
+        status: 'active',
+      });
       catalogRepository.findRelatedProducts.mockResolvedValue([]);
       catalogRepository.findRelatedProductsFallback.mockResolvedValue([mkProduct({ id: 2 })]);
       await service.getRelatedProducts({ id: 1 });
@@ -359,7 +371,7 @@ describe('CatalogService — Product (Sprint 6b)', () => {
     });
 
     test('getProductReviewsSummary: distribution + average', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1 });
+      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
       catalogRepository.findProductRatingsRows.mockResolvedValue([
         { rating: 5 },
         { rating: 4 },

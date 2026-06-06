@@ -487,7 +487,11 @@ describe('CatalogService', () => {
     });
 
     test('trả về sản phẩm liên quan khi có categoryId', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5 });
+      catalogRepository.findProductByPk.mockResolvedValue({
+        id: 1,
+        categoryId: 5,
+        status: 'active',
+      });
       catalogRepository.findRelatedProducts.mockResolvedValue([makeProductRow({ id: 2 })]);
 
       const result = await service.getRelatedProducts({ id: 1, limit: 4 });
@@ -495,7 +499,11 @@ describe('CatalogService', () => {
     });
 
     test('fallback sang findRelatedProductsFallback khi không có sản phẩm liên quan', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: 5 });
+      catalogRepository.findProductByPk.mockResolvedValue({
+        id: 1,
+        categoryId: 5,
+        status: 'active',
+      });
       catalogRepository.findRelatedProducts.mockResolvedValue([]);
       catalogRepository.findRelatedProductsFallback.mockResolvedValue([makeProductRow({ id: 3 })]);
 
@@ -667,7 +675,7 @@ describe('CatalogService', () => {
     });
 
     test('trả về danh sách variants', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1 });
+      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
       catalogRepository.findProductVariantsByProductId.mockResolvedValue([{ id: 10 }, { id: 11 }]);
 
       const result = await service.getProductVariants({ id: 1 });
@@ -688,7 +696,7 @@ describe('CatalogService', () => {
     });
 
     test('trả về average = 0 khi không có reviews', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 1 });
+      catalogRepository.findProductByPk.mockResolvedValue({ id: 1, status: 'active' });
       catalogRepository.findProductRatingsRows.mockResolvedValue([]);
 
       const result = await service.getProductReviewsSummary({ id: 1 });
@@ -697,7 +705,7 @@ describe('CatalogService', () => {
     });
 
     test('tính đúng average và distribution', async () => {
-      catalogRepository.findProductByPk.mockResolvedValue({ id: 2 });
+      catalogRepository.findProductByPk.mockResolvedValue({ id: 2, status: 'active' });
       catalogRepository.findProductRatingsRows.mockResolvedValue([
         { rating: 5 },
         { rating: 4 },

@@ -779,7 +779,7 @@ describe('Edge cases', () => {
 
     // Phải truyền where.categoryId = 5, không phải include category
     expect(deps.Product.findAll).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { categoryId: 5 } }),
+      expect.objectContaining({ where: { status: 'active', categoryId: 5 } }),
     );
     // Không được dùng include để filter (LEFT JOIN không filter parent records)
     const call = deps.Product.findAll.mock.calls[0][0];

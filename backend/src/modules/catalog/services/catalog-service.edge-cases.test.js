@@ -872,7 +872,11 @@ describe('_buildProductDetailResponse — variantName fallback displayName', () 
 describe('getRelatedProducts — không có categoryId', () => {
   it('product.categoryId = null → không gọi findRelatedProducts, fallback ngay', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 1, categoryId: null });
+    catalogRepository.findProductByPk.mockResolvedValue({
+      id: 1,
+      categoryId: null,
+      status: 'active',
+    });
     catalogRepository.findRelatedProductsFallback.mockResolvedValue([makeProductRow({ id: 2 })]);
 
     const result = await service.getRelatedProducts({ id: 1, limit: 4 });
@@ -884,7 +888,7 @@ describe('getRelatedProducts — không có categoryId', () => {
 
   it('product.categoryId = undefined → không gọi findRelatedProducts', async () => {
     const { service, catalogRepository } = makeService();
-    catalogRepository.findProductByPk.mockResolvedValue({ id: 2 });
+    catalogRepository.findProductByPk.mockResolvedValue({ id: 2, status: 'active' });
     catalogRepository.findRelatedProductsFallback.mockResolvedValue([]);
 
     await service.getRelatedProducts({ id: 2 });

@@ -108,19 +108,19 @@ describe('getProductPriceRange — khi có categoryId', () => {
     const result = await repo.getProductPriceRange({ categoryId: 3 });
 
     const call = deps.Product.findAll.mock.calls[0][0];
-    expect(call.where).toEqual({ categoryId: 3 });
+    expect(call.where).toEqual({ status: 'active', categoryId: 3 });
     expect(call.include).toBeUndefined(); // không dùng include để filter
     expect(result).toEqual({ min: 50, max: 200 });
   });
 
-  it('không có categoryId → where rỗng (tất cả products)', async () => {
+  it('không có categoryId → where chỉ có status=active (tất cả active products)', async () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([{ min: '10.00', max: '100.00' }]);
 
     await repo.getProductPriceRange({});
 
     const call = deps.Product.findAll.mock.calls[0][0];
-    expect(call.where).toEqual({});
+    expect(call.where).toEqual({ status: 'active' });
     expect(call.include).toBeUndefined();
   });
 });

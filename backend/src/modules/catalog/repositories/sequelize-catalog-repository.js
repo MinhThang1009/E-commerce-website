@@ -267,7 +267,13 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     }
     if (sort === 'newest') return [['createdAt', 'DESC']];
     if (sort === 'bestselling' || sort === 'popular') return [['soldCount', 'DESC']];
-    return [[sort, order]];
+    const SAFE_ORDERS = ['ASC', 'DESC'];
+    const SAFE_SORTS = ['createdAt', 'updatedAt', 'basePrice', 'name', 'soldCount'];
+    const safeOrder = SAFE_ORDERS.includes((order || '').toUpperCase())
+      ? order.toUpperCase()
+      : 'DESC';
+    const safeSort = SAFE_SORTS.includes(sort) ? sort : 'createdAt';
+    return [[safeSort, safeOrder]];
   }
 
   // Filter: { search, minPrice, maxPrice, featured, status, categoryId, categoryIdMissingSentinel, brandIdsIn, brandSlugsIn }
@@ -584,7 +590,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   async getProductPriceRange({ categoryId } = {}) {
     // Filter bằng Product.categoryId trực tiếp — include với required:false là LEFT JOIN
     // không filter sản phẩm, trả range của toàn bộ products thay vì chỉ category.
-    const where = {};
+    const where = { status: 'active' };
     if (categoryId) where.categoryId = categoryId;
 
     const rows = await this.Product.findAll({

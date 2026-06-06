@@ -205,7 +205,8 @@ module.exports = {
     limit,
   }) {
     const lim = Math.min(parseInt(limit, 10) || DEFAULT_PAGE_SIZE, MAX_QUERY_LIMIT);
-    const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const off = (pageNum - 1) * lim;
 
     let categoryId;
     let categoryIdMissingSentinel = false;
@@ -220,7 +221,8 @@ module.exports = {
       }
     }
 
-    const filter = { search, minPrice, maxPrice, inStock, featured, status };
+    // Public endpoint — luôn filter status='active', không để user truyền status tuỳ ý
+    const filter = { search, minPrice, maxPrice, inStock, featured, status: 'active' };
     if (categoryId !== undefined) filter.categoryId = categoryId;
     if (categoryIdMissingSentinel) filter.categoryIdMissingSentinel = true;
 
@@ -264,7 +266,7 @@ module.exports = {
       status: 'success',
       data: products,
       total: count,
-      page: parseInt(page, 10),
+      page: pageNum,
       limit: lim,
     };
 
@@ -314,7 +316,7 @@ module.exports = {
 
   async getRelatedProducts({ id, limit = 4 }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('catalog.productNotFound', 404);
+    if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const lim = parseInt(limit, 10);
     let related = [];
@@ -341,7 +343,8 @@ module.exports = {
     if (!q) throw new AppError('catalog.searchKeywordRequired', 400);
 
     const lim = parseInt(limit, 10);
-    const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const off = (pageNum - 1) * lim;
 
     const { count, rows: productsRaw } = await this.catalogRepository.searchProducts({
       q,
@@ -360,7 +363,7 @@ module.exports = {
     return {
       data: products,
       total: count,
-      page: parseInt(page, 10),
+      page: pageNum,
       limit: lim,
     };
   },
@@ -419,13 +422,7 @@ module.exports = {
     const ids = bestSellers.map((p) => p.id);
     const productsRaw = await this.catalogRepository.findProductsByIdsOrdered(ids);
 
-    return productsRaw.map((product) => {
-      const json = product.toJSON();
-      json.price = json.basePrice;
-      this._mapProductImages(json);
-      delete json.productImages;
-      return json;
-    });
+    return productsRaw.map((product) => this._mapProductForList(product));
   },
 
   async getDeals({ limit, minDiscount, sort = 'discount_desc' }) {
@@ -457,7 +454,7 @@ module.exports = {
 
   async getProductVariants({ id }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('catalog.productNotFound', 404);
+    if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const variants = await this.catalogRepository.findProductVariantsByProductId(id);
     return { variants };
@@ -465,7 +462,7 @@ module.exports = {
 
   async getProductReviewsSummary({ id }) {
     const product = await this.catalogRepository.findProductByPk(id);
-    if (!product) throw new AppError('catalog.productNotFound', 404);
+    if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const reviews = await this.catalogRepository.findProductRatingsRows(id);
     const count = reviews.length;

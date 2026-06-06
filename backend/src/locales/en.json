@@ -259,6 +259,7 @@
     "stockQuantityInvalid": "Stock quantity must be a non-negative integer",
     "variantNotFound": "Variant not found",
     "productOriginalNotFound": "Original product not found",
+    "cloneProductTooManyClones": "Cannot clone: too many copies with the same name already exist",
     "statusInvalid": "Invalid status",
     "userNotFound": "User not found",
     "cannotChangeSelfRole": "Cannot change your own role",

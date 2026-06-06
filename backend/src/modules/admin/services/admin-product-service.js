@@ -1027,7 +1027,8 @@ const cloneProduct = catchAsync(async (req, res) => {
   let newName = originalProduct.name;
   let count = 1;
   let exists = true;
-  while (exists) {
+  const MAX_CLONE_ATTEMPTS = 50;
+  while (exists && count <= MAX_CLONE_ATTEMPTS) {
     const testName = `${originalProduct.name} (${count})`;
     const existing = await adminRepository.findProductOne({ nameVi: testName });
     if (!existing) {
@@ -1036,6 +1037,9 @@ const cloneProduct = catchAsync(async (req, res) => {
     } else {
       count++;
     }
+  }
+  if (exists) {
+    throw new AppError(t('admin.cloneProductTooManyClones', req.locale), 409);
   }
 
   const newSku = `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;

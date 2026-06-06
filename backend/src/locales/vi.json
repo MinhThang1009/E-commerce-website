@@ -260,6 +260,7 @@
     "stockQuantityInvalid": "Số lượng tồn kho phải là số nguyên không âm",
     "variantNotFound": "Không tìm thấy biến thể",
     "productOriginalNotFound": "Không tìm thấy sản phẩm gốc",
+    "cloneProductTooManyClones": "Không thể clone: đã có quá nhiều bản sao cùng tên",
     "statusInvalid": "Trạng thái không hợp lệ",
     "userNotFound": "Không tìm thấy người dùng",
     "cannotChangeSelfRole": "Không thể thay đổi role của chính mình",

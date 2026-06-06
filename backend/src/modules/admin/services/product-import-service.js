@@ -283,6 +283,7 @@ const importProducts = async ({ file, adminId, locale = 'vi' }) => {
     setImmediate(async () => {
       try {
         const { enrichProductData } = require('@utils/product-helpers');
+        await vectorStoreService.loadPromise;
         const newProducts = await repo.findProductsByIds(newProductIds);
         for (const p of newProducts) {
           await vectorStoreService.upsertProduct(enrichProductData(p.toJSON()));

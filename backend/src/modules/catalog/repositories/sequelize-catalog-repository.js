@@ -114,7 +114,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       distinct: true,
       limit,
       offset,
-      order: [[sort, order]],
+      order: this._buildProductOrderClause(sort, order),
     });
   }
 
@@ -184,7 +184,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
       where: { brandId, status: 'active' },
       limit,
       offset,
-      order: [[sort, order]],
+      order: this._buildProductOrderClause(sort, order),
     });
   }
 

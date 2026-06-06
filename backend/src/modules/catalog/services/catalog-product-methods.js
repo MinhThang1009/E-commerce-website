@@ -332,13 +332,13 @@ module.exports = {
     const lim = Math.min(parseInt(limit, 10) || 4, MAX_QUERY_LIMIT);
     let related = [];
     if (product.categoryId) {
-      related = await this.catalogRepository.findRelatedProducts(id, lim, product.categoryId);
+      related = await this.catalogRepository.findRelatedProducts(numId, lim, product.categoryId);
     }
     if (related.length === 0) {
       this.logger.info(
-        `Không tìm thấy sản phẩm liên quan cho sản phẩm ${id}. Trả về sản phẩm gần đây thay thế.`,
+        `Không tìm thấy sản phẩm liên quan cho sản phẩm ${numId}. Trả về sản phẩm gần đây thay thế.`,
       );
-      related = await this.catalogRepository.findRelatedProductsFallback(id, lim);
+      related = await this.catalogRepository.findRelatedProductsFallback(numId, lim);
     }
 
     return related.map((p) => {
@@ -474,7 +474,7 @@ module.exports = {
     const product = await this.catalogRepository.findProductByPk(numId);
     if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
-    const variants = await this.catalogRepository.findProductVariantsByProductId(id);
+    const variants = await this.catalogRepository.findProductVariantsByProductId(numId);
     return { variants };
   },
 

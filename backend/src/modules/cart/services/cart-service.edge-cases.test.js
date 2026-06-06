@@ -793,6 +793,39 @@ describe('mergeCart — merge items với existing user item (lines 410-423)', (
     expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(sessionItem, expect.any(Object));
   });
 
+  it('BUG-MEDIUM-1: không zero-out user item khi session item hết hàng (maxStock=0)', async () => {
+    // Scenario: user có Item A qty=2, guest có Item A qty=1, Item A hết hàng (stock=0)
+    // Trước fix: Math.min(3, 0) = 0 → user mất item
+    // Sau fix: maxStock=0 → giữ newQuantity=3 (nhất quán với getCart inline merge)
+    const { service, cartRepository } = buildService();
+
+    const sessionCart = { id: 30, status: 'active' };
+    const userCart = { id: 31 };
+    const existingUserItem = { id: 300, quantity: 2, price: 50000, save: jest.fn() };
+    const sessionItem = {
+      id: 301,
+      cartId: 30,
+      productId: 5,
+      variantId: 9,
+      quantity: 1,
+      Product: { id: 5, basePrice: 50000, defaultVariant: { stockQuantity: 0 } },
+      ProductVariant: { id: 9, price: '50000', stockQuantity: 0 }, // hết hàng
+    };
+
+    cartRepository.findActiveCartBySessionId.mockResolvedValue(sessionCart);
+    cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue(userCart);
+    cartRepository.findCartItemsForMerge.mockResolvedValue([sessionItem]);
+    cartRepository.findCartItemMatching.mockResolvedValue(existingUserItem);
+    cartRepository.findActiveCartByUserId.mockResolvedValue(userCart);
+    cartRepository.findCartItemsWithDetails.mockResolvedValue([]);
+
+    await service.mergeCart({ user: { id: 1 }, cookieSessionId: 'sess-outofstock' });
+
+    // KHÔNG được zero-out: quantity phải là 2+1=3 (không bị cap về 0)
+    expect(existingUserItem.quantity).toBe(3);
+    expect(existingUserItem.quantity).not.toBe(0);
+  });
+
   it('move session item vào user cart khi không có existingUserItem (else branch)', async () => {
     const { service, cartRepository } = buildService();
 

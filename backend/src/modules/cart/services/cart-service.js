@@ -425,7 +425,9 @@ class CartService {
           const maxStock = sessionItem.ProductVariant
             ? sessionItem.ProductVariant.stockQuantity
             : baseStockQuantity;
-          const finalQuantity = Math.min(newQuantity, maxStock);
+          // maxStock=0 khi item hết hàng — KHÔNG cap về 0 (sẽ zero-out item của user).
+          // Nhất quán với getCart inline merge: maxStock > 0 ? cap : giữ newQuantity.
+          const finalQuantity = maxStock > 0 ? Math.min(newQuantity, maxStock) : newQuantity;
 
           existingUserItem.quantity = finalQuantity;
           existingUserItem.unitPrice = currentPrice;

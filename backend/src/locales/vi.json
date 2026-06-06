@@ -55,6 +55,9 @@
   "orders": {
     "notFound": "Không tìm thấy đơn hàng",
     "missingOriginUrl": "Không xác định được địa chỉ website",
+    "cannotCancel": "Không thể hủy đơn hàng này",
+    "cannotRepay": "Đơn hàng này không thể thanh toán lại",
+    "cannotConfirmReceived": "Chỉ có thể xác nhận đơn hàng khi đang giao hoặc đang xử lý",
     "accessDenied": "Bạn không có quyền truy cập đơn hàng này",
     "productNotFound": "Không tìm thấy sản phẩm ID: {{id}}",
     "variantNotFound": "Không tìm thấy biến thể ID: {{id}}",

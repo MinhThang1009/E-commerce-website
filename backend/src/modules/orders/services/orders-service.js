@@ -101,13 +101,17 @@ class OrdersService {
       if (providedItems && providedItems.length > 0) {
         // Buy-now flow: load Product/Variant data
         for (const item of providedItems) {
-          const product = await this.repo.findProductWithDefaultVariant(item.productId);
+          const product = await this.repo.findProductWithDefaultVariant(item.productId, {
+            transaction,
+          });
           if (!product) {
             throw new AppError('orders.productNotFound', 404, { id: item.productId });
           }
           let variant = null;
           if (item.variantId) {
-            variant = await this.repo.findVariantBasic(item.variantId, item.productId);
+            variant = await this.repo.findVariantBasic(item.variantId, item.productId, {
+              transaction,
+            });
             if (!variant) {
               throw new AppError('orders.variantNotFound', 404, { id: item.variantId });
             }
@@ -526,7 +530,7 @@ class OrdersService {
       if (!order) throw new AppError('orders.notFound', 404);
 
       if (!_canCancel(order.status)) {
-        throw new AppError('Không thể hủy đơn hàng này', 422);
+        throw new AppError('orders.cannotCancel', 422);
       }
       order.status = STATUS.CANCELLED;
       await this.repo.saveOrder(order, { transaction });
@@ -706,7 +710,7 @@ class OrdersService {
       if (!order) throw new AppError('orders.notFound', 404);
 
       if (!_canRepay(order.status, order.paymentStatus, order.paymentMethod)) {
-        throw new AppError('Đơn hàng này không thể thanh toán lại', 422);
+        throw new AppError('orders.cannotRepay', 422);
       }
       // Repay KHÔNG đổi order.status (đã pending) — chỉ reset paymentStatus (failed → pending) để retry.
       order.paymentStatus = 'pending';
@@ -739,7 +743,7 @@ class OrdersService {
       if (!order) throw new AppError('orders.notFound', 404);
 
       if (!_canConfirmReceived(order.status)) {
-        throw new AppError('Chỉ có thể xác nhận đơn hàng khi đang giao hoặc đang xử lý', 422);
+        throw new AppError('orders.cannotConfirmReceived', 422);
       }
       order.status = STATUS.DELIVERED;
       if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';

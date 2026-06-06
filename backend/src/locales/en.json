@@ -55,6 +55,9 @@
   "orders": {
     "notFound": "Order not found",
     "missingOriginUrl": "Unable to determine website URL",
+    "cannotCancel": "This order cannot be cancelled",
+    "cannotRepay": "This order cannot be repaid",
+    "cannotConfirmReceived": "Order can only be confirmed when shipped or processing",
     "accessDenied": "You do not have permission to access this order",
     "productNotFound": "Product ID: {{id}} not found",
     "variantNotFound": "Variant ID: {{id}} not found",

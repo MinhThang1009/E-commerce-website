@@ -273,16 +273,16 @@ describe('pruneRecentlyViewed — guard: RecentlyViewed null → return sớm (l
 // ─── findProductByIdWithFullDetails — line 309 ────────────────────────────────
 
 describe('findProductByIdWithFullDetails', () => {
-  it('gọi Product.findByPk với id và đầy đủ associations', async () => {
+  it('gọi Product.findOne với id, status=active và đầy đủ associations', async () => {
     const { repo, deps } = makeRepo();
     const fakeProduct = { id: 5, name: 'iPhone 15' };
-    deps.Product.findByPk.mockResolvedValue(fakeProduct);
+    deps.Product.findOne.mockResolvedValue(fakeProduct);
 
     const result = await repo.findProductByIdWithFullDetails(5);
 
-    expect(deps.Product.findByPk).toHaveBeenCalledWith(
-      5,
+    expect(deps.Product.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: { id: 5, status: 'active' },
         include: expect.arrayContaining([
           expect.objectContaining({ association: 'category' }),
           expect.objectContaining({ association: 'variants' }),
@@ -295,7 +295,7 @@ describe('findProductByIdWithFullDetails', () => {
 
   it('trả về null khi sản phẩm không tồn tại', async () => {
     const { repo, deps } = makeRepo();
-    deps.Product.findByPk.mockResolvedValue(null);
+    deps.Product.findOne.mockResolvedValue(null);
 
     const result = await repo.findProductByIdWithFullDetails(999);
 

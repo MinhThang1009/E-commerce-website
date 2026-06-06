@@ -459,19 +459,19 @@ describe('Product fetching methods', () => {
     const result = await repo.findProductBySlugWithFullDetails('iphone-15');
 
     expect(deps.Product.findOne).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { slug: 'iphone-15' } }),
+      expect.objectContaining({ where: { slug: 'iphone-15', status: 'active' } }),
     );
     expect(result).toBe(product);
   });
 
-  test('TC-38 findProductByPk — delegate Product.findByPk', async () => {
+  test('TC-38 findProductByPk — findOne với id và status=active', async () => {
     const { repo, deps } = makeRepo();
     const product = { id: 5 };
-    deps.Product.findByPk.mockResolvedValue(product);
+    deps.Product.findOne.mockResolvedValue(product);
 
     const result = await repo.findProductByPk(5);
 
-    expect(deps.Product.findByPk).toHaveBeenCalledWith(5);
+    expect(deps.Product.findOne).toHaveBeenCalledWith({ where: { id: 5, status: 'active' } });
     expect(result).toBe(product);
   });
 

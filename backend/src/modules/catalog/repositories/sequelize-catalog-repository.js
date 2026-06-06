@@ -308,7 +308,8 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   }
 
   async findProductByIdWithFullDetails(id) {
-    return this.Product.findByPk(id, {
+    return this.Product.findOne({
+      where: { id, status: 'active' },
       include: [
         { association: 'category' },
         {
@@ -331,7 +332,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
 
   async findProductBySlugWithFullDetails(slug) {
     return this.Product.findOne({
-      where: { slug },
+      where: { slug, status: 'active' },
       include: [
         { association: 'category' },
         {
@@ -353,7 +354,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   }
 
   async findProductByPk(id) {
-    return this.Product.findByPk(id);
+    return this.Product.findOne({ where: { id, status: 'active' } });
   }
 
   async findFeaturedProducts(limit = 8) {

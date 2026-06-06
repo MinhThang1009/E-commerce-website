@@ -20,6 +20,7 @@ function makeRepo(overrides = {}) {
     deleteReview: jest.fn().mockResolvedValue(),
     getProductRatingsAggregate: jest.fn().mockResolvedValue({ avg: 4.5, count: 10 }),
     updateProductRating: jest.fn().mockResolvedValue(),
+    runInTransaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     ...overrides,
   };
 }
@@ -97,6 +98,7 @@ describe('ReviewsService — mutation kill', () => {
           images: ['a.jpg'],
           isVerified: true,
         }),
+        expect.objectContaining({ transaction: expect.anything() }),
       );
       expect(repo.updateProductRating).toHaveBeenCalledWith(1, 4.5, 10); // includeCount true
       expect(result.review).toEqual({ id: 5 });
@@ -122,7 +124,10 @@ describe('ReviewsService — mutation kill', () => {
       expect(existing.content).toBe('nội dung mới');
       expect(existing.images).toEqual(['b.jpg']);
       expect(existing.isVerified).toBe(true);
-      expect(repo.saveReview).toHaveBeenCalledWith(existing);
+      expect(repo.saveReview).toHaveBeenCalledWith(
+        existing,
+        expect.objectContaining({ transaction: expect.anything() }),
+      );
       expect(repo.createReview).not.toHaveBeenCalled();
     });
 

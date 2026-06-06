@@ -137,7 +137,7 @@ describe('SequelizeReviewsRepository — Review CRUD', () => {
 
     const result = await repo.createReview(payload);
 
-    expect(deps.Review.create).toHaveBeenCalledWith(payload);
+    expect(deps.Review.create).toHaveBeenCalledWith(payload, {});
     expect(result).toBe(created);
   });
 

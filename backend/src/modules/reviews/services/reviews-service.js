@@ -41,29 +41,37 @@ class ReviewsService {
       throw new AppError('reviews.purchaseRequired', 403);
     }
 
-    const existing = await this.reviewsRepository.findReviewByUserAndProduct(userId, productId);
-
     let review;
-    if (existing) {
-      Object.assign(existing, {
-        rating,
-        title,
-        content: comment,
-        images: images || [],
-        isVerified: true,
+    await this.reviewsRepository.runInTransaction(async (tx) => {
+      const existing = await this.reviewsRepository.findReviewByUserAndProduct(userId, productId, {
+        transaction: tx,
+        lock: tx.LOCK.UPDATE,
       });
-      review = await this.reviewsRepository.saveReview(existing);
-    } else {
-      review = await this.reviewsRepository.createReview({
-        productId,
-        userId,
-        rating,
-        title,
-        content: comment,
-        images: images || [],
-        isVerified: true,
-      });
-    }
+
+      if (existing) {
+        Object.assign(existing, {
+          rating,
+          title,
+          content: comment,
+          images: images || [],
+          isVerified: true,
+        });
+        review = await this.reviewsRepository.saveReview(existing, { transaction: tx });
+      } else {
+        review = await this.reviewsRepository.createReview(
+          {
+            productId,
+            userId,
+            rating,
+            title,
+            content: comment,
+            images: images || [],
+            isVerified: true,
+          },
+          { transaction: tx },
+        );
+      }
+    });
 
     const created = await this.reviewsRepository.findReviewByPkWithUser(review.id);
     await this._refreshProductRating(productId);

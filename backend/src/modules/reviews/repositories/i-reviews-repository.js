@@ -15,7 +15,7 @@ class IReviewsRepository {
   async findReviewByIdAndUserId(_id, _userId) {
     throw new Error('not implemented');
   }
-  async findReviewByUserAndProduct(_userId, _productId) {
+  async findReviewByUserAndProduct(_userId, _productId, _options) {
     throw new Error('not implemented');
   }
   async findReviewByPkWithUser(_id) {
@@ -30,10 +30,13 @@ class IReviewsRepository {
   async findAllReviews(_options) {
     throw new Error('not implemented');
   }
-  async createReview(_payload) {
+  async createReview(_payload, _options) {
     throw new Error('not implemented');
   }
-  async saveReview(_review) {
+  async saveReview(_review, _options) {
+    throw new Error('not implemented');
+  }
+  async runInTransaction(_work) {
     throw new Error('not implemented');
   }
   async deleteReview(_review) {

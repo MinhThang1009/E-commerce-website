@@ -28,8 +28,8 @@ class SequelizeReviewsRepository extends IReviewsRepository {
     return this.Review.findOne({ where: { id, userId } });
   }
 
-  async findReviewByUserAndProduct(userId, productId) {
-    return this.Review.findOne({ where: { userId, productId } });
+  async findReviewByUserAndProduct(userId, productId, options = {}) {
+    return this.Review.findOne({ where: { userId, productId }, ...options });
   }
 
   async findReviewByPkWithUser(id) {
@@ -91,12 +91,16 @@ class SequelizeReviewsRepository extends IReviewsRepository {
     });
   }
 
-  async createReview(payload) {
-    return this.Review.create(payload);
+  async createReview(payload, options = {}) {
+    return this.Review.create(payload, options);
   }
 
-  async saveReview(review) {
-    return review.save();
+  async saveReview(review, options = {}) {
+    return review.save(options);
+  }
+
+  async runInTransaction(work) {
+    return this.Review.sequelize.transaction(work);
   }
 
   async deleteReview(review) {

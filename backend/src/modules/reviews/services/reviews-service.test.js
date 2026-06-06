@@ -20,6 +20,7 @@ describe('ReviewsService', () => {
       findAllReviews: jest.fn(),
       getProductRatingsAggregate: jest.fn().mockResolvedValue({ avg: 4.5, count: 10 }),
       updateProductRating: jest.fn().mockResolvedValue(),
+      runInTransaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     };
 
     service = new ReviewsService({
@@ -68,8 +69,29 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.createReview).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 1, productId: 1, rating: 5, isVerified: true }),
+        expect.objectContaining({ transaction: expect.anything() }),
       );
       expect(result.review).toBe(newReview);
+    });
+
+    test('findReviewByUserAndProduct gọi với SELECT FOR UPDATE lock (REGRESSION: concurrent POST tạo duplicate review)', async () => {
+      // Trước fix: findReviewByUserAndProduct không có lock → 2 concurrent requests đều
+      // thấy existing=null và đều createReview → duplicate reviews, product.rating sai.
+      // Sau fix: lock: tx.LOCK.UPDATE → serializes concurrent upsert.
+      const newReview = { id: 10, rating: 5 };
+      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
+      reviewsRepository.hasUserPurchasedProduct.mockResolvedValue(true);
+      reviewsRepository.findReviewByUserAndProduct.mockResolvedValue(null);
+      reviewsRepository.createReview.mockResolvedValue(newReview);
+      reviewsRepository.findReviewByPkWithUser.mockResolvedValue(newReview);
+
+      await service.createReview({ userId: 1, productId: 1, rating: 5, title: 'T', comment: 'C' });
+
+      expect(reviewsRepository.findReviewByUserAndProduct).toHaveBeenCalledWith(
+        1,
+        1,
+        expect.objectContaining({ lock: 'UPDATE' }),
+      );
     });
 
     test('user đã có review → cập nhật review cũ thay vì tạo mới', async () => {
@@ -93,7 +115,10 @@ describe('ReviewsService', () => {
       expect(existingReview.title).toBe('Mới');
       expect(existingReview.content).toBe('Tốt hơn');
       expect(existingReview.isVerified).toBe(true);
-      expect(reviewsRepository.saveReview).toHaveBeenCalledWith(existingReview);
+      expect(reviewsRepository.saveReview).toHaveBeenCalledWith(
+        existingReview,
+        expect.objectContaining({ transaction: expect.anything() }),
+      );
     });
 
     test('images mặc định là [] khi không truyền', async () => {
@@ -107,6 +132,7 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.createReview).toHaveBeenCalledWith(
         expect.objectContaining({ images: [] }),
+        expect.objectContaining({ transaction: expect.anything() }),
       );
     });
 

@@ -203,3 +203,30 @@ describe('Reviews edge cases — admin verify', () => {
     expect(existingReview.isVerified).toBe(true);
   });
 });
+
+// Verifies HIGH-1 (fix): concurrent createReview SELECT FOR UPDATE lock
+// ngăn duplicate reviews khi 2 requests đồng thời từ cùng user+product.
+// Trước fix: findReviewByUserAndProduct không có lock + không có transaction
+// → 2 requests đều thấy existing=null → đều createReview → 2 duplicate records.
+// Sau fix: SELECT FOR UPDATE trong transaction → serializes, request thứ 2
+// chờ commit → thấy existing review → update thay vì create.
+// Yêu cầu MySQL thật để verify concurrent behavior.
+describe('HIGH-1 — createReview concurrent lock (requires MySQL)', () => {
+  test.skip('HIGH-1: 2 concurrent createReview cùng user+product → chỉ 1 review, không duplicate', async () => {
+    const service = makeService();
+    const reviewData = {
+      userId: userWithPurchase.id,
+      productId: product.id,
+      rating: 5,
+      title: 'T',
+      comment: 'C',
+    };
+    // Trigger 2 concurrent createReview với Promise.all
+    await Promise.all([service.createReview(reviewData), service.createReview(reviewData)]);
+    // Assert: chỉ 1 review trong DB (FAIL nếu revert fix HIGH-1)
+    const reviews = await Review.findAll({
+      where: { userId: userWithPurchase.id, productId: product.id },
+    });
+    expect(reviews).toHaveLength(1);
+  });
+});

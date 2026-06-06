@@ -22,6 +22,7 @@ describe('ReviewsService', () => {
       getProductRatingsAggregate: jest.fn().mockResolvedValue({ avg: 4.5, count: 10 }),
       updateProductRating: jest.fn().mockResolvedValue(),
       hasUserPurchasedProduct: jest.fn(),
+      runInTransaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     };
     service = new ReviewsService({
       reviewsRepository,
@@ -63,6 +64,7 @@ describe('ReviewsService', () => {
 
       expect(reviewsRepository.createReview).toHaveBeenCalledWith(
         expect.objectContaining({ rating: 5, title: 't', content: 'c', isVerified: true }),
+        expect.objectContaining({ transaction: expect.anything() }),
       );
       expect(reviewsRepository.updateProductRating).toHaveBeenCalledWith(1, 4.5, 10);
       expect(result.review.id).toBe(5);
@@ -78,7 +80,10 @@ describe('ReviewsService', () => {
       await service.createReview({ userId: 1, productId: 1, rating: 4, title: 't', comment: 'c' });
 
       expect(existing.rating).toBe(4);
-      expect(reviewsRepository.saveReview).toHaveBeenCalledWith(existing);
+      expect(reviewsRepository.saveReview).toHaveBeenCalledWith(
+        existing,
+        expect.objectContaining({ transaction: expect.anything() }),
+      );
       expect(reviewsRepository.createReview).not.toHaveBeenCalled();
     });
   });

@@ -21,6 +21,7 @@ function makeRepo() {
     findAllReviews: jest.fn(),
     getProductRatingsAggregate: jest.fn().mockResolvedValue({ avg: 4.0, count: 5 }),
     updateProductRating: jest.fn().mockResolvedValue(),
+    runInTransaction: jest.fn((work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     findFeedback: jest.fn(),
     createFeedback: jest.fn().mockResolvedValue(),
     saveFeedback: jest.fn((f) => Promise.resolve(f)),

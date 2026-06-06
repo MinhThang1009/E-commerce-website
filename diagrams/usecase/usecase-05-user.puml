@@ -1,0 +1,74 @@
+@startuml usecase-05-user
+' Sơ đồ use case — Quản lý tài khoản người dùng (Users §2.1b)
+' Ground-truth: backend/src/modules/users/routes.js (7 routes, basePath /users)
+'   router.use(authenticate) — tất cả routes yêu cầu đăng nhập
+'   PUT    /profile              — validateRequest(updateProfileSchema)
+'   POST   /change-password      — validateRequest(changePasswordSchema)
+'   GET    /addresses            — danh sách địa chỉ
+'   POST   /addresses            — validateRequest(addressSchema)
+'   PUT    /addresses/:id        — validateRequest(addressSchema)
+'   DELETE /addresses/:id        — xóa địa chỉ
+'   PATCH  /addresses/:id/default — đặt địa chỉ mặc định
+' Denominator: 7 routes → 7 UC (tất cả riêng biệt)
+' Cross-module: admin/routes.js có user CRUD (/admin/users) → thuộc uc-22 (admin-users)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách hàng\n(Customer)" as customer
+
+rectangle "Quản lý tài khoản — TechStore" {
+  usecase "Cập nhật\nthông tin cá nhân" as UC_profile
+  usecase "Đổi mật khẩu" as UC_password
+  usecase "Xem danh sách\nđịa chỉ" as UC_addr_list
+  usecase "Thêm địa chỉ\ngiao hàng" as UC_addr_add
+  usecase "Cập nhật\nđịa chỉ" as UC_addr_update
+  usecase "Xóa địa chỉ" as UC_addr_delete
+  usecase "Đặt địa chỉ\nmặc định" as UC_addr_default
+}
+
+customer -- UC_profile
+customer -- UC_password
+customer -- UC_addr_list
+customer -- UC_addr_add
+customer -- UC_addr_update
+customer -- UC_addr_delete
+customer -- UC_addr_default
+
+note right of UC_profile
+  PUT /api/users/profile — authenticate.
+  Fields: firstName, lastName, phone, avatar (URL).
+  firstName/lastName/avatar: truthy-check (chuỗi rỗng
+  không ghi đè). phone: cho phép set '' để xóa số.
+  Avatar upload delegate sang /api/uploads/avatars/single
+  → nhận URL → gọi endpoint này với { avatar: url }.
+end note
+
+note right of UC_password
+  POST /api/users/change-password — authenticate.
+  1. Verify currentPassword (bcrypt compare).
+  2. user.password = newPassword → Sequelize
+     beforeUpdate hook tự hash (cost 12).
+  confirmPassword phải khớp newPassword (Zod).
+end note
+
+note right of UC_addr_add
+  POST /api/users/addresses — authenticate.
+  Address đầu tiên → isDefault=true tự động.
+  isDefault=true trong request → clearDefaultAddresses
+  trước rồi tạo mới (chỉ 1 default mỗi lúc).
+end note
+
+note right of UC_addr_delete
+  DELETE /api/users/addresses/:id — authenticate.
+  Xóa default address → address mới nhất còn lại
+  được auto-promote làm default (không throw lỗi).
+end note
+@enduml

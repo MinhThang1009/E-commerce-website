@@ -24,11 +24,11 @@ usecase:
   - { seq: 12, scope: orders-customer,            section: "§2.4a", module: orders,   notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 orders fixes (HIGH double-restore + LOCK): T1 MATCH — 9 UC + track-public đúng guards. GATE-D signed 2026-06-06.
   - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 payment fix (1 INFO): T1 MATCH — 5 UC phủ 7 route đúng guards. GATE-D signed 2026-06-06.
   - { seq: 14, scope: orders-admin,               section: "§2.4c", module: orders,   notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06: T1 MATCH — UC_cancel staff khớp admin/routes.js:343; admin xem-only đúng guards. GATE-D signed 2026-06-06.
-  - { seq: 15, scope: reviews,                     section: "§2.5",  module: reviews,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 15, scope: reviews,                     section: "§2.5",  module: reviews,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (0 bugs; 9 routes→8 UC cross-module); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 16, scope: inventory,                   section: "§2.6",  module: inventory, notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (fix changeType 'cancellation'→'return'); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 17, scope: ai-chatbot,                 section: "§2.7",  module: ai,       notation: UML, tool: plantuml, status: pending }
-  - { seq: 18, scope: wishlist-upload-discount,   section: "§2.8",  module: "wishlist+upload+discount-code", notation: UML, tool: plantuml, status: pending }
-  - { seq: 19, scope: attribute,                   section: "§2.8b", module: attribute, notation: UML, tool: plantuml, status: pending }
+  - { seq: 18, scope: wishlist-upload-discount,   section: "§2.8",  module: "wishlist+upload+discount-code", notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (fix admin--UC_up_xoa); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
+  - { seq: 19, scope: attribute,                   section: "§2.8b", module: attribute, notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (0 bugs; 13 routes→8 UC); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 20, scope: content,                     section: "§2.9",  module: content,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (1 endpoint); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 21, scope: admin-analytics,            section: "§2.10a", module: admin,    notation: UML, tool: plantuml, status: pending }
   - { seq: 22, scope: admin-users,                section: "§2.10b", module: admin,    notation: UML, tool: plantuml, status: pending }

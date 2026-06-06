@@ -60,6 +60,29 @@
 | INV-PAY-3 | Payment success (IPN/return — MoMo/VNPay) khi `order.status === 'cancelled'` | **KHÔNG** mark paid, **KHÔNG** hồi sinh đơn (giữ `cancelled`, không trừ lại kho); `logger.warn` để xử refund thủ công (đã thu tiền). Enforce INV-ORD-8 | GATE-B 2026-06-03; C (payment không check order.status → oversell) | [x] |
 | INV-PAY-4 | Refund (chỉ VNPay) theo `order.status`: `∈ {pending,processing}` (CHƯA giao — hàng còn trong kho) | hoàn kho + set `order.status='cancelled'` + `paymentStatus='refunded'`, trong transaction + `SELECT FOR UPDATE`; `shipped`/`delivered` (hàng ĐÃ rời kho) → CHỈ `paymentStatus='refunded'`, KHÔNG hoàn kho (nhất quán INV-STK-6: hàng đã đi không hoàn) | GATE-B 2026-06-03; H (refund không hoàn kho → tồn thiếu ảo). shipped reconcile với A/INV-STK-6 | [x] |
 
+## VI. Auth (đăng ký / đăng nhập / token / OTP / password reset)
+
+> ⚠️ **DRAFT — agent seed từ code. CHƯA hợp lệ làm oracle T0 cho đến khi HUMAN đánh `[x]` từng dòng.**
+
+| ID | WHEN | THEN (outcome PHẢI) | Nguồn DRAFT | Duyệt |
+|---|---|---|---|---|
+| INV-AUTH-1 | Đăng ký email đã tồn tại | TỪ CHỐI 400 `auth.emailInUse` (**intentionally** lộ email tồn tại — UX trade-off, khác `forgotPassword`/`resendVerification`) | register L29 | [ ] |
+| INV-AUTH-2 | Đăng nhập email/password đúng + `isEmailVerified=true` + `isActive=true` | Trả `{ token, refreshToken, user }` (access JWT HS256 + refresh JWT) | login L74 | [ ] |
+| INV-AUTH-3 | Đăng nhập khi `isEmailVerified=false` | TỪ CHỐI 401 `auth.emailNotVerified` | login L66 | [ ] |
+| INV-AUTH-4 | Đăng nhập khi `isActive=false` | TỪ CHỐI 401 `auth.accountDisabled` | login L70 | [ ] |
+| INV-AUTH-5 | `verifyOtp` với OTP đúng + còn hạn + user chưa `isEmailVerified` | `isEmailVerified=true`; `otpCode=null`; `otpExpires=null` lưu vào DB; → 200 | verifyOtp L181-184 | [ ] |
+| INV-AUTH-6 | `verifyOtp` với OTP đúng **ĐÃ hết hạn** | TỪ CHỐI 400 `auth.otpExpired` (khác với OTP sai → `auth.otpInvalidOrExpired`) | verifyOtp L177 | [ ] |
+| INV-AUTH-7 | `verifyOtp` khi user đã `isEmailVerified=true` | TỪ CHỐI 400 (generic — chống enumeration) | verifyOtp L163 | [ ] |
+| INV-AUTH-8 | `resendVerification` với BẤT KỲ email | Luôn 200 (chống enumeration). Chỉ khi user tồn tại + chưa xác thực mới tạo OTP mới + gửi email (non-blocking) | resendVerification L192 | [ ] |
+| INV-AUTH-9 | `forgotPassword` với BẤT KỲ email | Luôn 200 `auth.passwordResetSent` (chống enumeration). Token 32 bytes = hex 64 char, TTL 15 phút, CHỈ set nếu user tồn tại | forgotPassword L246 | [ ] |
+| INV-AUTH-10 | `resetPassword` với token hợp lệ còn hạn | Password mới được hash (bcrypt cost 12 trong User model hook), `resetPasswordToken=null`, `resetPasswordExpires=null` lưu vào DB | resetPassword L276 | [ ] |
+| INV-AUTH-11 | `resetPassword` với token hết hạn hoặc không tồn tại | TỪ CHỐI 400 `auth.tokenInvalidOrExpired`. Hết hạn được chặn tại DB (repo query `resetPasswordExpires > now`) | resetPassword L273; repo L47 | [ ] |
+| INV-AUTH-12 | `refreshToken` hợp lệ + user `isActive=true` | Trả cặp token MỚI `{ token, refreshToken }`. Token cũ vẫn valid đến hết TTL (stateless — không revoke) | refreshToken L240 | [ ] |
+| INV-AUTH-13 | `refreshToken` khi user `isActive=false` | TỪ CHỐI 401 `auth.accountDisabled` | refreshToken L237 | [ ] |
+| INV-AUTH-14 | Google login khi Google payload `email_verified === false` (tường minh) | TỪ CHỐI 401 `auth.googleAuthFailed`. Nếu `email_verified` vắng mặt (undefined) → PASS (intentional: tương thích payload) | googleLogin L102 | [ ] |
+| INV-AUTH-15 | Google login hợp lệ + user chưa tồn tại | Tạo user mới (`isEmailVerified=true`), trả `{ token, refreshToken, user }` | googleLogin L116 | [ ] |
+| INV-AUTH-16 | `logout` (yêu cầu `authenticate`) | Server no-op (200, không revoke token). Token vẫn valid đến hết TTL. Client tự xóa | logout L147 | [ ] |
+
 ---
 
 > **Khi duyệt xong:** đánh dấu `[x]` từng dòng. Tầng 0 (GATE-B) sẽ kiểm: integration test có assert **đúng cột THEN này** không (assert OUTCOME, không phải "method được gọi"). RAW lệch THEN đã duyệt → human phân xử *code-sai hay invariant-sai*.

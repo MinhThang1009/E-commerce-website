@@ -1,0 +1,86 @@
+@startuml usecase-15-reviews
+' Sơ đồ use case — Đánh giá sản phẩm (Reviews module §2.5)
+' Ground-truth:
+'   reviews/routes.js — 7 routes:
+'     GET  /product/:productId      public                          — xem đánh giá sp
+'     GET  /user                    authenticate                    — xem đánh giá của tôi
+'     POST /                        authenticate + validate         — tạo (upsert)
+'     PUT  /:id                     authenticate + validate         — chỉnh sửa (owner)
+'     DELETE /:id                   authenticate                    — xóa (owner)
+'     GET  /admin/all               authorize('admin','staff')      — xem tất cả
+'     PATCH /admin/:id/verify       authorize('staff')              — kiểm duyệt
+'   admin/routes.js — 2 routes reviews:
+'     GET  /api/admin/reviews       backoffice (admin+staff)        — xem tất cả (đồng nghĩa /admin/all)
+'     DELETE /api/admin/reviews/:id staffOnly                       — xóa bất kỳ
+' Denominator: 9 routes → 8 UC (GET /admin/all ≡ GET /api/admin/reviews → gộp)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách vãng lai\n(Guest)" as guest
+actor "Khách hàng\n(Customer)" as customer
+actor "Nhân viên\n(Staff)" as staff
+actor "Quản trị viên\n(Admin)" as admin
+
+rectangle "Đánh giá sản phẩm — TechStore" {
+  usecase "Xem đánh giá\nsản phẩm" as UC_xem_sp
+  usecase "Xem đánh giá\ncủa tôi" as UC_xem_ca_nhan
+  usecase "Tạo đánh giá\n(upsert)" as UC_tao
+  usecase "Chỉnh sửa\nđánh giá" as UC_chinh_sua
+  usecase "Xóa đánh giá\ncủa tôi" as UC_xoa_ca_nhan
+  usecase "Xem tất cả\nđánh giá" as UC_xem_tat_ca
+  usecase "Kiểm duyệt\nđánh giá" as UC_kiem_duyet
+  usecase "Xóa đánh giá\n(back-office)" as UC_xoa_admin
+}
+
+guest -- UC_xem_sp
+customer -- UC_xem_sp
+customer -- UC_xem_ca_nhan
+customer -- UC_tao
+customer -- UC_chinh_sua
+customer -- UC_xoa_ca_nhan
+
+staff -- UC_xem_tat_ca
+staff -- UC_kiem_duyet
+staff -- UC_xoa_admin
+
+admin -- UC_xem_tat_ca
+
+note right of UC_tao
+  Yêu cầu đã mua hàng:
+  Order.status = 'delivered'
+  chứa productId tương ứng (403 nếu chưa).
+  Upsert: nếu đã có review cho sản phẩm
+  này → cập nhật thay vì tạo mới.
+  Dùng SELECT FOR UPDATE chống duplicate.
+  Sau CRUD: tính lại Product.rating
+  và reviewCount.
+end note
+
+note right of UC_xem_tat_ca
+  2 endpoint đồng nghĩa (gộp 1 UC):
+  GET /api/reviews/admin/all (authorize admin+staff)
+  GET /api/admin/reviews (backoffice).
+  Admin = xem-only; Staff = xem + kiểm duyệt + xóa.
+end note
+
+note right of UC_kiem_duyet
+  Toggle isVerified (true/false).
+  Staff only — PATCH /api/reviews/admin/:id/verify.
+  Không ảnh hưởng Product.rating / reviewCount.
+end note
+
+note right of UC_xoa_admin
+  Staff only — DELETE /api/admin/reviews/:id.
+  Xóa bất kỳ review (không giới hạn owner).
+  Khác UC_xoa_ca_nhan: owner-only (/reviews/:id).
+end note
+
+@enduml

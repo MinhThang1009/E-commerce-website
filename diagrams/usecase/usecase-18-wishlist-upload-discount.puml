@@ -1,0 +1,121 @@
+@startuml usecase-18-wishlist-upload-discount
+' Sơ đồ use case — Wishlist + Upload + Mã giảm giá (§2.8)
+' Ground-truth:
+'   wishlist/routes.js  — 5 routes, router.use(authenticate):
+'     GET  /wishlists/               — xem danh sách
+'     POST /wishlists/               — thêm sản phẩm
+'     GET  /wishlists/check/:pid     — kiểm tra sản phẩm
+'     DELETE /wishlists/:pid         — xóa 1 sản phẩm
+'     DELETE /wishlists/             — xóa toàn bộ
+'   upload/routes.js    — 3 routes, authenticate inline:
+'     POST   /uploads/:type/single   — upload 1 file
+'     POST   /uploads/:type/multiple — upload nhiều file
+'     DELETE /uploads/:type/:file    — xóa file (role check trong service)
+'   discount-code/routes.js — 2 routes public:
+'     GET  /discount-codes/          — danh sách khả dụng
+'     POST /discount-codes/apply     — áp dụng mã
+'   admin/routes.js (discount CRUD) — 5 routes adminAuthenticate:
+'     GET    /admin/discount-codes         backoffice (admin+staff)
+'     GET    /admin/discount-codes/:id     backoffice (admin+staff)
+'     POST   /admin/discount-codes         staffOnly
+'     PUT    /admin/discount-codes/:id     staffOnly
+'     DELETE /admin/discount-codes/:id     staffOnly
+' Denominator: 15 routes → 11 UC
+'   (upload single+multiple gộp; admin DC list+detail gộp; admin DC write gộp)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách hàng\n(Customer)" as customer
+actor "Khách / Bất kỳ\n(Public)" as pub
+actor "Nhân viên\n(Staff)" as staff
+actor "Quản trị viên\n(Admin)" as admin
+
+package "Danh sách yêu thích   /api/wishlists" {
+  usecase "Xem danh sách\nyêu thích" as UC_wl_xem
+  usecase "Thêm sản phẩm\nvào yêu thích" as UC_wl_them
+  usecase "Kiểm tra sản phẩm\ntrong yêu thích" as UC_wl_check
+  usecase "Xóa sản phẩm\nkhỏi yêu thích" as UC_wl_xoa
+  usecase "Xóa toàn bộ\nyêu thích" as UC_wl_clear
+}
+
+package "Upload file   /api/uploads" {
+  usecase "Upload file\n(single / multiple)" as UC_up_upload
+  usecase "Xóa file\n(back-office)" as UC_up_xoa
+}
+
+package "Mã giảm giá   /api/discount-codes" {
+  usecase "Xem mã giảm giá\nkhả dụng" as UC_dc_xem
+  usecase "Áp dụng\nmã giảm giá" as UC_dc_apply
+  usecase "Xem & tìm mã\n(back-office)" as UC_dc_bo_xem
+  usecase "Quản lý mã\ngiảm giá (CRUD)" as UC_dc_crud
+}
+
+' Wishlist — Customer only (all routes require authenticate)
+customer -- UC_wl_xem
+customer -- UC_wl_them
+customer -- UC_wl_check
+customer -- UC_wl_xoa
+customer -- UC_wl_clear
+
+' Upload — Customer uploads; Admin + Staff delete (service check role∈['admin','staff'])
+customer -- UC_up_upload
+staff -- UC_up_xoa
+admin -- UC_up_xoa
+
+' Discount public — bất kỳ
+pub -- UC_dc_xem
+pub -- UC_dc_apply
+
+' Discount back-office
+staff -- UC_dc_bo_xem
+staff -- UC_dc_crud
+admin -- UC_dc_bo_xem
+
+note right of UC_wl_them
+  POST: non-throwing nếu đã có (alreadyExists: true).
+  Unique: uq_wishlists_user_product (chống duplicate).
+  DELETE /:productId: xóa 1 item (404 nếu không tồn tại).
+  DELETE /: xóa toàn bộ (không confirm từ server).
+  Guest wishlist: Zustand local — không có API.
+end note
+
+note right of UC_up_upload
+  2 routes gộp (authenticate — bất kỳ role đã đăng nhập):
+  POST /:type/single, POST /:type/multiple.
+  type hợp lệ: reviews|products|users|
+    categories|brands|avatars|temp.
+  Validate magic bytes JPEG/PNG/WebP.
+  Giới hạn: 5MB/file, max 10 files (reviews max 5).
+end note
+
+note right of UC_up_xoa
+  DELETE /:type/:filename — authenticate.
+  Role check role∈['admin','staff'] tại service
+  (không dùng authorize middleware).
+  Path traversal guard: basename + startsWith.
+end note
+
+note right of UC_dc_apply
+  POST /discount-codes/apply — public.
+  Validate: isActive→startDate→endDate→
+    usageLimit→minOrderAmount→tính amount.
+  KHÔNG tăng usedCount (orders/payment làm sau).
+  type: percent (cap maxDiscountAmount) | fixed.
+end note
+
+note right of UC_dc_crud
+  3 routes (staffOnly):
+  POST, PUT, DELETE /admin/discount-codes/:id.
+  Admin xem-only qua UC_dc_bo_xem (backoffice).
+  Staff: CRUD đầy đủ.
+end note
+
+@enduml

@@ -1,0 +1,93 @@
+@startuml usecase-19-attribute
+' Sơ đồ use case — Thuộc tính sản phẩm (Attribute module §2.8b)
+' Ground-truth: backend/src/modules/attribute/routes.js
+' Public (không auth) — 5 routes:
+'   GET  /groups                              — tất cả nhóm + values
+'   GET  /products/:productId/groups          — nhóm theo sản phẩm
+'   POST /preview-name                        — preview tên từ attributes
+'   POST /generate-name-realtime              — sinh tên realtime + suggestions
+'   GET  /name-affecting                      — attributes có affectsName=true
+' Staff-only (router.use authenticate + authorize('staff')) — 8 routes:
+'   POST   /groups                            — tạo nhóm
+'   PUT    /groups/:id                        — cập nhật nhóm
+'   DELETE /groups/:id                        — xóa mềm (isActive=false)
+'   POST   /groups/:attributeGroupId/values   — thêm giá trị
+'   PUT    /values/:id                        — cập nhật giá trị
+'   DELETE /values/:id                        — xóa mềm (isActive=false)
+'   POST   /products/:productId/groups/:gid   — gán nhóm vào sản phẩm
+'   POST   /batch-generate-names              — sinh tên hàng loạt
+' Denominator: 13 routes → 8 UC (CRUD nhóm gộp, CRUD giá trị gộp, 2 name-gen public gộp)
+' Admin KHÔNG có route riêng trong module này (attribute CRUD = staffOnly per RBAC 4-actor).
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách / Bất kỳ\n(Public)" as pub
+actor "Nhân viên\n(Staff)" as staff
+
+rectangle "Thuộc tính sản phẩm — TechStore" {
+  usecase "Xem danh sách\nnhóm thuộc tính" as UC_xem_nhom
+  usecase "Xem thuộc tính\ntheo sản phẩm" as UC_xem_nhom_sp
+  usecase "Sinh tên sản phẩm\n(preview / realtime)" as UC_sinh_ten_public
+  usecase "Xem thuộc tính\nảnh hưởng tên SP" as UC_anh_huong_ten
+  usecase "Quản lý nhóm\nthuộc tính (CRUD)" as UC_crud_nhom
+  usecase "Quản lý giá trị\nthuộc tính (CRUD)" as UC_crud_gia_tri
+  usecase "Gán nhóm vào\nsản phẩm" as UC_gan_nhom
+  usecase "Sinh tên hàng loạt\n(batch)" as UC_batch
+}
+
+pub -- UC_xem_nhom
+pub -- UC_xem_nhom_sp
+pub -- UC_sinh_ten_public
+pub -- UC_anh_huong_ten
+
+staff -- UC_crud_nhom
+staff -- UC_crud_gia_tri
+staff -- UC_gan_nhom
+staff -- UC_batch
+
+note right of UC_xem_nhom
+  GET /api/attributes/groups — public.
+  Trả AttributeGroup (isActive=true)
+  kèm AttributeValue (isActive=true),
+  sort theo sortOrder.
+end note
+
+note right of UC_sinh_ten_public
+  2 endpoint public (admin UI dùng khi tạo variant):
+  POST /attributes/preview-name (preview tên).
+  POST /attributes/generate-name-realtime
+    (realtime + suggestions từ 10 variant gần nhất).
+  Cả 2 delegate sang nameGenerator (AI module, setter injection).
+end note
+
+note right of UC_crud_nhom
+  3 routes gộp — Staff only:
+  POST /groups (tạo); PUT /groups/:id (cập nhật);
+  DELETE /groups/:id (soft delete: isActive=false).
+  AttributeGroup.type: color|config|storage|size|custom.
+  Không có validateRequest — low-risk (staff trusted).
+end note
+
+note right of UC_crud_gia_tri
+  3 routes gộp — Staff only:
+  POST /groups/:id/values; PUT /values/:id;
+  DELETE /values/:id (soft delete: isActive=false).
+  AttributeValue: affectsName (flag tên SP),
+  nameTemplate (override hiển thị trong tên).
+end note
+
+note right of UC_batch
+  POST /attributes/batch-generate-names — Staff only.
+  Input: [{ baseName, selectedAttributes, id }].
+  Đầu ra: tên sản phẩm cho từng item.
+end note
+
+@enduml

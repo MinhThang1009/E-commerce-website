@@ -210,7 +210,10 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     for (const order of pendingOrders) {
       for (const item of order.items) {
         if (item.variantId) {
-          await this.restoreVariantStock(item.ProductVariant, item.quantity, { transaction });
+          // Guard null: variant có thể đã bị soft-delete sau khi đơn được tạo
+          if (item.ProductVariant) {
+            await this.restoreVariantStock(item.ProductVariant, item.quantity, { transaction });
+          }
         } else {
           await this.restoreProductStock(item.Product, item.quantity, { transaction });
         }

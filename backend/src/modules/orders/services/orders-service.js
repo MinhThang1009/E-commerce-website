@@ -535,10 +535,18 @@ class OrdersService {
       order.status = STATUS.CANCELLED;
       await this.repo.saveOrder(order, { transaction });
 
-      // Restore stock
+      // Restore stock (guard null nếu variant đã bị soft-delete sau khi tạo đơn)
       for (const item of order.items) {
         if (item.variantId) {
-          await this.repo.restoreVariantStock(item.ProductVariant, item.quantity, { transaction });
+          if (!item.ProductVariant) {
+            this.logger.warn('Variant soft-deleted, bỏ qua restore stock', {
+              variantId: item.variantId,
+            });
+          } else {
+            await this.repo.restoreVariantStock(item.ProductVariant, item.quantity, {
+              transaction,
+            });
+          }
         } else {
           await this.repo.restoreProductStock(item.Product, item.quantity, { transaction });
         }

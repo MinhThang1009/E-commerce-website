@@ -65,7 +65,7 @@ module.exports = {
     if (!brand) throw new AppError('catalog.brandNotFound', 404);
 
     const lim = parseInt(limit, 10);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
 
     const { count, rows: products } = await this.catalogRepository.findProductsByBrandId(brand.id, {
       sort,

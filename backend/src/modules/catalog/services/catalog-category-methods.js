@@ -91,7 +91,7 @@ module.exports = {
     if (!category) throw new AppError('catalog.categoryNotFound', 404);
 
     const lim = parseInt(limit, 10);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
 
     const { count, rows } = await this.catalogRepository.findProductsByCategoryId(category.id, {
       status,

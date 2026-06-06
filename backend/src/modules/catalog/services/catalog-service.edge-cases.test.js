@@ -1578,3 +1578,22 @@ describe('getProductBySlug — sản phẩm không active → 404', () => {
     });
   });
 });
+
+// ─── BUG-MEDIUM-1: page=0 không gây MySQL negative offset ───────────────────
+
+describe('getAllProducts — page=0 không gây negative offset (MEDIUM-1)', () => {
+  it('page=0 → offset=0 (clamp về page 1), không throw', async () => {
+    const { service, catalogRepository } = makeService();
+    await service.getAllProducts({ page: 0, limit: 20 });
+    const callArgs = catalogRepository.findProductsList.mock.calls[0][0];
+    expect(callArgs.offset).toBe(0); // Math.max((0-1)*20, 0) = 0
+    expect(callArgs.offset).not.toBeLessThan(0);
+  });
+
+  it('page=-5 → offset=0 (clamp về 0), không throw', async () => {
+    const { service, catalogRepository } = makeService();
+    await service.getAllProducts({ page: -5, limit: 10 });
+    const callArgs = catalogRepository.findProductsList.mock.calls[0][0];
+    expect(callArgs.offset).toBe(0);
+  });
+});

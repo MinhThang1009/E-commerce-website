@@ -205,7 +205,7 @@ module.exports = {
     limit,
   }) {
     const lim = Math.min(parseInt(limit, 10) || DEFAULT_PAGE_SIZE, MAX_QUERY_LIMIT);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
 
     let categoryId;
     let categoryIdMissingSentinel = false;
@@ -341,7 +341,7 @@ module.exports = {
     if (!q) throw new AppError('catalog.searchKeywordRequired', 400);
 
     const lim = parseInt(limit, 10);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
 
     const { count, rows: productsRaw } = await this.catalogRepository.searchProducts({
       q,

@@ -257,6 +257,29 @@ describe('InventoryService', () => {
   });
 
   describe('getInventoryLogs — offset, filter conditions, return object', () => {
+    test('page=0 → offset không âm, page trả về tối thiểu là 1 (REGRESSION: page=0 gây offset âm → 500)', async () => {
+      // Trước fix: (0-1)*20 = -20 → MySQL "Row offset cannot be negative" → 500.
+      // Sau fix: Math.max(0||1,1)=1 → (1-1)*20=0 → offset 0, page trả về 1.
+      repo.findInventoryLogs.mockResolvedValue({ count: 0, rows: [] });
+      const result = await service.getInventoryLogs({ page: 0, limit: 20 });
+      expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+      expect(result.page).toBe(1);
+    });
+
+    test('page=-5 → offset không âm (REGRESSION: page âm gây offset âm → 500)', async () => {
+      repo.findInventoryLogs.mockResolvedValue({ count: 0, rows: [] });
+      const result = await service.getInventoryLogs({ page: -5, limit: 20 });
+      expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+      expect(result.page).toBe(1);
+    });
+
+    test('page="abc" → fallback về 1, offset=0 (REGRESSION: page NaN gây offset NaN)', async () => {
+      repo.findInventoryLogs.mockResolvedValue({ count: 0, rows: [] });
+      const result = await service.getInventoryLogs({ page: 'abc', limit: 20 });
+      expect(repo.findInventoryLogs).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+      expect(result.page).toBe(1);
+    });
+
     test('page=3, limit=10 → offset = 20 không phải 1 (kills ArithmeticOperator /)', async () => {
       // Kills L99:17 ArithmeticOperator ((page-1)/lim vs (page-1)*lim)
       repo.findInventoryLogs.mockResolvedValue({ count: 0, rows: [] });

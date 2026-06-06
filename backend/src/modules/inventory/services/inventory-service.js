@@ -98,7 +98,8 @@ class InventoryService {
   // GET /api/inventory/logs — list inventory logs với filter
   async getInventoryLogs({ page = 1, limit = 20, productId, changeType }) {
     const lim = Math.min(parseInt(limit, 10) || 20, 100);
-    const off = (parseInt(page, 10) - 1) * lim;
+    const p = Math.max(parseInt(page, 10) || 1, 1);
+    const off = (p - 1) * lim;
 
     const where = {};
     if (productId) where.productId = parseInt(productId, 10);
@@ -108,7 +109,7 @@ class InventoryService {
     return {
       data: rows,
       total: count,
-      page: parseInt(page, 10),
+      page: p,
       limit: lim,
     };
   }

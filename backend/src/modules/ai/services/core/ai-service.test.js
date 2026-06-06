@@ -120,6 +120,29 @@ describe('AIService', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
     });
 
+    test('BUG-MEDIUM-1: variantId không thuộc product → AppError 400 (không skip check)', async () => {
+      // Trước fix: targetVariant = undefined → if(targetVariant && ...) skip → CartItem mismatched
+      // Sau fix: !targetVariant → throw 400
+      repo.findProductForCart.mockResolvedValue({
+        id: 5,
+        status: 'active',
+        stockQuantity: 10,
+        variants: [
+          { id: 20, stockQuantity: 5 }, // variants của product 5
+        ],
+      });
+
+      await expect(
+        service.addToCart({
+          productId: 5,
+          variantId: 999, // variant 999 thuộc product khác, không có trong variants trên
+          quantity: 1,
+          sessionId: 'sess',
+          userId: 1,
+        }),
+      ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không thuộc') });
+    });
+
     test('sản phẩm active nhưng stock = 0 ở cả product và variants → AppError 400', async () => {
       repo.findProductForCart.mockResolvedValue({
         id: 3,

@@ -114,7 +114,10 @@ class AIService {
       const targetVariant = (product.variants || []).find(
         (v) => String(v.id) === String(variantId),
       );
-      if (targetVariant && targetVariant.stockQuantity <= 0) {
+      if (!targetVariant) {
+        throw new AppError('Biến thể sản phẩm không thuộc sản phẩm này', 400);
+      }
+      if (targetVariant.stockQuantity <= 0) {
         throw new AppError('Biến thể sản phẩm đã hết hàng', 400);
       }
     }

@@ -62,11 +62,12 @@ describe('AIService.addToCart — mutation kill', () => {
   });
 
   it('analytics event ghi đúng metadata { quantity, source: "chatbot" }', async () => {
+    // id: 7 phải khớp với variantId: 7 bên dưới — fix BUG-MEDIUM-1 yêu cầu variant thuộc product
     repo.findProductForCart.mockResolvedValue({
       id: 5,
       status: 'active',
       stockQuantity: 0,
-      variants: [{ stockQuantity: 5 }],
+      variants: [{ id: 7, stockQuantity: 5 }],
     });
 
     await service.addToCart({

@@ -91,7 +91,7 @@ describe('findProductRatingsRows — happy path', () => {
     const result = await repo.findProductRatingsRows(3);
 
     expect(deps.Review.findAll).toHaveBeenCalledWith({
-      where: { productId: 3 },
+      where: { productId: 3, isVerified: true },
       attributes: ['rating'],
     });
     expect(result).toBe(reviews);

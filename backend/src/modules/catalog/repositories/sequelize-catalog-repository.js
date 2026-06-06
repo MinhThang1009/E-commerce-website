@@ -389,7 +389,11 @@ class SequelizeCatalogRepository extends ICatalogRepository {
 
   async findRelatedProductsFallback(excludeId, limit = 4) {
     return this.Product.findAll({
-      include: [{ association: 'reviews' }],
+      include: [
+        { association: 'reviews' },
+        { association: 'productImages', required: false },
+        { association: 'variants', required: false },
+      ],
       where: { id: { [Op.ne]: excludeId }, status: 'active' },
       limit,
       order: [
@@ -584,7 +588,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (!this.Review) {
       throw new Error('Review model bắt buộc trong constructor');
     }
-    return this.Review.findAll({ where: { productId }, attributes: ['rating'] });
+    return this.Review.findAll({ where: { productId, isVerified: true }, attributes: ['rating'] });
   }
 
   async getProductPriceRange({ categoryId } = {}) {

@@ -281,7 +281,11 @@ module.exports = {
   },
 
   async getProductById({ id, skuId, queryColor, userId }) {
-    let product = await this.catalogRepository.findProductByIdWithFullDetails(id);
+    let product = null;
+    const numId = parseInt(id, 10);
+    if (numId > 0) {
+      product = await this.catalogRepository.findProductByIdWithFullDetails(numId);
+    }
     if (!product) {
       product = await this.catalogRepository.findProductBySlugWithFullDetails(id);
     }

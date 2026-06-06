@@ -120,12 +120,12 @@ Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAna
 
 - `getAllProducts({ page, limit, sortBy, sortOrder })` — danh sách có phân trang
 - `getProductById(id)` — chi tiết kèm categories, variants, specs, attributes
-- `createProduct(data)` — tạo mới, sync vector store async sau khi tạo
+- `createProduct(data)` — tạo mới trong **1 transaction** (product + categories + attributes + variants + images + specs); rollback toàn bộ nếu lỗi. Sync vector store sau commit
 - `updateProduct(id, data)` — cập nhật, sync vector store async; nếu product không tồn tại → 404 (catch block rollback duy nhất, không early-rollback)
 - `deleteProduct(id)` — xóa, remove khỏi vector store
 - `cloneProduct(id)` — nhân bản sản phẩm (deep clone kèm variants, specs, images)
 - `toggleProductStatus(id)` — bật/tắt hiển thị
-- `updateProductStock(id, { variantId, stockQuantity })` — cập nhật tồn kho
+- `updateProductStock(id, { variantId, stockQuantity })` — cập nhật tồn kho; khi có `variantId`: variant.update + sumStock + product.update bọc trong **transaction** để tránh race condition
 
 ## 3.3 Product import/export pipeline
 
@@ -133,7 +133,7 @@ Hầu hết dùng Sequelize.fn aggregate, NGOẠI TRỪ `getRevenueByCategoryAna
 
 1. Parse file: CSV qua `utils/csv-parser.js` hoặc JSON (phân biệt theo `.ext` file upload)
 2. Validate từng row — required fields: `name`, `base_price`, `category_slug`
-3. Nếu toàn bộ rows fail → trả về `{ allFailed: true, errors }`, không insert gì
+3. Nếu file rỗng (CSV không có dòng dữ liệu, JSON là `[]`) → throw `AppError 400`. Nếu toàn bộ rows fail validation → trả về `{ allFailed: true, errors }`, không insert gì
 4. Bulk insert từng row trong transaction riêng (Product + ProductVariant + ProductImage + ProductCategory + ProductSpecification)
    - `createProductSpecification` truyền `{ name, value }` — đúng với ProductSpecification model (NOT `specKey`/`specValue`)
    - `findProductsForExport` include `as: 'productSpecifications'` — đúng với association trong `models/index.js`
@@ -218,7 +218,7 @@ Không module nào depend vào admin (leaf node trong dependency graph).
 - **`admin-controller.js` chỉ re-export**: Controller layer chưa tách hoàn toàn — handlers là HTTP-aware (dùng `catchAsync(req, res, next)`). Comment TODO trong file: tách ra trong sprint riêng.
 - **Import routes trước `/products/:id`**: Routes `/products/import-template`, `/products/import`, `/products/export` phải đăng ký trước `/products/:id` để Express không nhầm `import-template` là một product ID.
 - **`product-import-service.js` có repo riêng**: Dùng `sequelize-product-import-repository.js`, không phải `sequelize-admin-repository.js`. Không nhầm lẫn.
-- **`allFailed` flag trong import**: Nếu mọi row đều fail validation → trả về HTTP 422 với `{ allFailed: true }`. Không insert bất kỳ row nào.
+- **`allFailed` flag trong import**: Nếu mọi row đều fail validation → trả về HTTP 422 với `{ allFailed: true }`. File rỗng (CSV không có dữ liệu, JSON `[]`) → throw AppError 400 trước validation. Không insert bất kỳ row nào.
 - **Vector store sync — 2 cơ chế khác nhau**: Create/update product dùng direct `await` với try/catch — response chờ sync xong, lỗi chỉ log không ảnh hưởng status code. Import dùng `setImmediate` fire-and-forget — response trả về trước khi sync xong.
 - **Multer memoryStorage**: File upload lưu trong RAM (không lưu disk). Giới hạn 5MB. Chỉ nhận `.csv` hoặc `.json`.
 - **Discount code trong admin routes**: `routes.js` import trực tiếp `discountCodeController` từ `@modules/discount-code/controllers/...` — là cross-module import nhưng cho phép ở routes layer.

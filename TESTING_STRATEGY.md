@@ -38,14 +38,14 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | **5.346** | ~12s | `jest.config.js` |
+| BE Unit Tests | 215 | **5.374** | ~12s | `jest.config.js` |
 | BE Integration Tests | 38 | **210** | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **675** | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | **937** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **7.268** | | |
+| **Tổng** | **325** | **7.284** | | |
 
-> Đo lại 2026-06-05 (§C dọn API + §A FE coverage ~99.9% + thêm 148 FE test cases). Unit gồm ~1.600 test mutation-kill + property.
+> Đo lại 2026-06-06 (§D admin logic audit: thêm 8 regression test cases). Unit gồm ~1.600 test mutation-kill + property.
 
 ---
 
@@ -429,12 +429,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 215 | 5.346 | ~12s |
+| BE Unit Tests | 215 | 5.374 | ~12s |
 | BE Integration Tests | 38 | 210 | ~57s |
 | BE API HTTP Tests | 39 | 675 | ~160s |
 | BE E2E Tests | 5 | 100 | ~22s |
 | FE Component Tests | 28 | 937 | ~12s |
-| **Tổng** | **325** | **7.268** | |
+| **Tổng** | **325** | **7.284** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)

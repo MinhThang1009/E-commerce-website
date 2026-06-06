@@ -981,6 +981,8 @@ const updateProductStock = catchAsync(async (req, res) => {
   const product = await adminRepository.findProductById(id);
   if (!product) throw new AppError(t('admin.productNotFound', req.locale), 404);
 
+  let stockQuantityResult = qty;
+
   if (variantId) {
     const variant = await adminRepository.findProductVariantById(variantId, id);
     if (!variant) throw new AppError(t('admin.variantNotFound', req.locale), 404);
@@ -991,6 +993,7 @@ const updateProductStock = catchAsync(async (req, res) => {
       const total = (await adminRepository.sumProductVariantStock(id, { transaction })) || 0;
       await product.update({ stockQuantity: total }, { transaction });
       await transaction.commit();
+      stockQuantityResult = total;
     } catch (error) {
       await transaction.rollback();
       throw error;
@@ -1001,7 +1004,7 @@ const updateProductStock = catchAsync(async (req, res) => {
 
   res.status(200).json({
     status: 'success',
-    data: { id: product.id, stockQuantity: qty },
+    data: { id: product.id, stockQuantity: stockQuantityResult },
   });
 });
 

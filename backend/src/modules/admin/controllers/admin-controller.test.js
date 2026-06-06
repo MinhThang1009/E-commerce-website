@@ -1710,6 +1710,23 @@ describe('PATCH /api/admin/products/:id/stock — sumVariantStock null → fallb
     // transaction.commit phải được gọi sau khi thành công
     expect(sequelize.transaction).toHaveBeenCalled();
   });
+
+  it('response trả total (tổng variants) không phải qty (stock variant) khi có variantId', async () => {
+    // qty=5 (stock của 1 variant), sum=30 (tổng tất cả variants sau update)
+    // Response phải là 30 (product-level), không phải 5 (variant-level)
+    const fakeProduct = makeProduct({ id: 72, stockQuantity: 25 });
+    const fakeVariant = { id: 3, stockQuantity: 20, update: jest.fn().mockResolvedValue({}) };
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    ProductVariant.findOne.mockResolvedValueOnce(fakeVariant);
+    ProductVariant.sum.mockResolvedValueOnce(30); // tổng = 5 + 25 (variant khác)
+
+    const res = await request
+      .patch('/api/admin/products/72/stock')
+      .send({ stockQuantity: 5, variantId: 3 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.stockQuantity).toBe(30); // total, không phải 5
+  });
 });
 
 // ── Branch 145[1]: stockQuantity fallback khi stock và stockQuantity đều falsy ─

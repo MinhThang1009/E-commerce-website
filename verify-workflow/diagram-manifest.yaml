@@ -10,9 +10,9 @@ meta:
 
 # ===== NHÓM A — use case (24): flowchart-giả -> actor/oval/association =====
 usecase:
-  - { seq: 1,  scope: overview-guest,             section: "§1.1", module: _overview, notation: UML, tool: plantuml, status: signed }   # 10 UC (re-verify 2026-06-03). Re-verify 2026-06-06 sau session-4 fixes: T1 MATCH — 10 UC đều có public/optionalAuthenticate route backing (catalog/cart/ai/auth/content/discount-code routes). Không thêm/xóa route ảnh hưởng guest sau session-4. Chờ GATE-D human re-sign.
-  - { seq: 2,  scope: overview-customer,          section: "§1.2", module: _overview, notation: UML, tool: plantuml, status: signed }   # 16 UC (re-verify 2026-06-03, 6-verifier round). Re-verify 2026-06-06 sau session-4 fixes (cart/catalog/ai bugs): T1 MATCH — tất cả 15 UC có route backing, <<extend>> discount→order đúng UML. 2 omission intentional: logout UC + discount-list UC (overview scope). PNG re-render 2026-06-06. Chờ GATE-D human re-sign.
-  - { seq: 3,  scope: overview-admin,             section: "§1.3", module: _overview, notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03. Re-verify 2026-06-06 sau session-4 admin fixes (HIGH×2 staff-validator + createProduct-tx, total 9 bugs): T1 MATCH — tất cả 4 backoffice UCs, 2 adminOnly UCs, 9 staffOnly UCs đều khớp guard code (admin/catalog/inventory/attribute/payment routes). PNG re-render 2026-06-06. Chờ GATE-D human re-sign.
+  - { seq: 1,  scope: overview-guest,             section: "§1.1", module: _overview, notation: UML, tool: plantuml, status: signed }   # 10 UC (re-verify 2026-06-03). Re-verify 2026-06-06 sau session-4 fixes: T1 MATCH — 10 UC đều có public/optionalAuthenticate route backing. GATE-D signed 2026-06-06.
+  - { seq: 2,  scope: overview-customer,          section: "§1.2", module: _overview, notation: UML, tool: plantuml, status: signed }   # 15 UC (re-verify 2026-06-06): T1 MATCH — <<extend>> discount→order đúng UML. 2 omission intentional: logout + discount-list. GATE-D signed 2026-06-06.
+  - { seq: 3,  scope: overview-admin,             section: "§1.3", module: _overview, notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 admin fixes (9 bugs): T1 MATCH — 4 backoffice UCs, 2 adminOnly, 9 staffOnly khớp guard code. GATE-D signed 2026-06-06.
   - { seq: 4,  scope: auth,                        section: "§2.1a", module: auth,     notation: UML, tool: plantuml, status: pending }
   - { seq: 5,  scope: user,                        section: "§2.1b", module: users,    notation: UML, tool: plantuml, status: pending }
   - { seq: 6,  scope: catalog-browse,             section: "§2.2a", module: catalog,  notation: UML, tool: plantuml, status: pending }
@@ -21,15 +21,15 @@ usecase:
   - { seq: 9,  scope: catalog-admin,              section: "§2.2d", module: catalog,  notation: UML, tool: plantuml, status: pending }
   - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: pending }
   - { seq: 11, scope: checkout,                    section: "§2.3b", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }
-  - { seq: 12, scope: orders-customer,            section: "§2.4a", module: orders,   notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03. Re-verify 2026-06-06 sau session-4 orders fixes (cancelPendingOrdersByUser double-restore HIGH + LOCK MEDIUM): T1 MATCH — session-4 fixes là service-layer only, không thêm/xóa route; 9 UC + track public đúng guards. Chờ GATE-D human re-sign.
-  - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03. Re-verify 2026-06-06 sau session-4 payment fix (1 INFO optional chaining): T1 MATCH — fix không thêm/xóa route; 5 UC phủ đúng 7 route với guards xác nhận. Chờ GATE-D human re-sign.
-  - { seq: 14, scope: orders-admin,               section: "§2.4c", module: orders,   notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03. Re-verify 2026-06-06: T1 MATCH — UC_cancel (staff) đã có trong diagram khớp admin/routes.js:343 POST /orders/:id/cancel staffOnly; admin chỉ xem đúng guards; session-4 fixes không đổi route structure. Chờ GATE-D human re-sign.
+  - { seq: 12, scope: orders-customer,            section: "§2.4a", module: orders,   notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 orders fixes (HIGH double-restore + LOCK): T1 MATCH — 9 UC + track-public đúng guards. GATE-D signed 2026-06-06.
+  - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 payment fix (1 INFO): T1 MATCH — 5 UC phủ 7 route đúng guards. GATE-D signed 2026-06-06.
+  - { seq: 14, scope: orders-admin,               section: "§2.4c", module: orders,   notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06: T1 MATCH — UC_cancel staff khớp admin/routes.js:343; admin xem-only đúng guards. GATE-D signed 2026-06-06.
   - { seq: 15, scope: reviews,                     section: "§2.5",  module: reviews,  notation: UML, tool: plantuml, status: pending }
-  - { seq: 16, scope: inventory,                   section: "§2.6",  module: inventory, notation: UML, tool: plantuml, status: drawn }   # 2026-06-06: T0 pass (0 bugs + fix changeType 'cancellation'→'return' INV-ENUM bug); T1 MATCH (verifier); T2 pass. Chờ GATE-D.
+  - { seq: 16, scope: inventory,                   section: "§2.6",  module: inventory, notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (fix changeType 'cancellation'→'return'); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 17, scope: ai-chatbot,                 section: "§2.7",  module: ai,       notation: UML, tool: plantuml, status: pending }
   - { seq: 18, scope: wishlist-upload-discount,   section: "§2.8",  module: "wishlist+upload+discount-code", notation: UML, tool: plantuml, status: pending }
   - { seq: 19, scope: attribute,                   section: "§2.8b", module: attribute, notation: UML, tool: plantuml, status: pending }
-  - { seq: 20, scope: content,                     section: "§2.9",  module: content,  notation: UML, tool: plantuml, status: drawn }   # 2026-06-06: T0 pass (1 endpoint, logic đơn giản); T1 MATCH (verifier); T2 pass. Chờ GATE-D.
+  - { seq: 20, scope: content,                     section: "§2.9",  module: content,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (1 endpoint); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 21, scope: admin-analytics,            section: "§2.10a", module: admin,    notation: UML, tool: plantuml, status: pending }
   - { seq: 22, scope: admin-users,                section: "§2.10b", module: admin,    notation: UML, tool: plantuml, status: pending }
   - { seq: 23, scope: admin-products,             section: "§2.10c", module: admin,    notation: UML, tool: plantuml, status: pending }
@@ -44,7 +44,7 @@ component:
 
 # ===== NHÓM B — state (4): PlantUML =====
 state:
-  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: signed }   # GATE-D 2026-06-03 (re-vẽ + verify độc lập MATCH 13 transition, logic_heavy): cập nhật theo fix F9-F14. Re-verify 2026-06-06 sau session-4 fixes (cancelPendingOrdersByUser double-restore HIGH + updateOrderStatus LOCK MEDIUM): T1 MATCH — fix label processing→delivered "staff cập nhật hoặc khách xác nhận" (updateOrderStatus không chặn path này). PNG re-render 2026-06-06. Chờ GATE-D human re-sign.
+  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06: T1 MATCH — 13 transition, fix label processing→delivered thêm staff path. GATE-D signed 2026-06-06.
   - { seq: 2, scope: payment, section: "§7.2", module: payment, notation: UML, tool: plantuml, status: pending }
   - { seq: 3, scope: product, section: "§7.3", module: catalog, notation: UML, tool: plantuml, status: pending }
   - { seq: 4, scope: user,    section: "§7.4", module: auth,    notation: UML, tool: plantuml, status: pending }

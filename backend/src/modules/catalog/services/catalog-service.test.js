@@ -995,10 +995,14 @@ describe('CatalogService', () => {
       expect(catalogRepository.saveCategory).toHaveBeenCalledWith(cat);
     });
 
-    test('getFeaturedCategories → trả danh sách categories', async () => {
-      catalogRepository.findAllCategoriesSorted.mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    test('getFeaturedCategories → dùng getAllCategories (filter isActive + productCount>0)', async () => {
+      catalogRepository.findAllCategoriesSorted.mockResolvedValue([
+        { id: 1, toJSON: () => ({ id: 1, isActive: true }) },
+        { id: 2, toJSON: () => ({ id: 2, isActive: false }) },
+      ]);
+      catalogRepository.getCategoryProductCounts.mockResolvedValue({ 1: 5 });
       const result = await service.getFeaturedCategories();
-      expect(result).toHaveLength(2);
+      expect(result.data).toHaveLength(1); // chỉ active + có sản phẩm
     });
 
     test('getProductsByCategory không tìm thấy cả id lẫn slug → 404', async () => {

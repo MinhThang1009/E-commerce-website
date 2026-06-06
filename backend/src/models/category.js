@@ -78,9 +78,9 @@ const Category = sequelize.define(
     // Dùng snake_case cho tên cột tự động (created_at, updated_at)
     underscored: true,
     hooks: {
-      // Tự động tạo slug từ tên danh mục
+      // Tự động tạo slug từ tên danh mục (chỉ khi chưa có slug — tránh ghi đè slug tùy chỉnh)
       beforeValidate: (category) => {
-        if (category.name) {
+        if (category.name && !category.slug) {
           category.slug = slugify(category.name, {
             lower: true,
             strict: true,

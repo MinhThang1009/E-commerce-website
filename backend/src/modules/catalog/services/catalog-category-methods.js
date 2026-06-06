@@ -90,7 +90,7 @@ module.exports = {
     }
     if (!category) throw new AppError('catalog.categoryNotFound', 404);
 
-    const lim = parseInt(limit, 10);
+    const lim = Math.max(parseInt(limit, 10) || 10, 1);
     const off = Math.max((parseInt(page, 10) - 1) * lim, 0);
 
     const { count, rows } = await this.catalogRepository.findProductsByCategoryId(category.id, {
@@ -111,7 +111,8 @@ module.exports = {
   },
 
   async getFeaturedCategories() {
-    return this.catalogRepository.findAllCategoriesSorted();
+    // Reuse getAllCategories logic: chỉ trả active categories có sản phẩm
+    return this.getAllCategories();
   },
 
   _mapProductWithImages(product) {
@@ -131,8 +132,8 @@ module.exports = {
     if (json.variants && json.variants.length > 0) {
       const defaultVariant =
         json.variants.find((v) => v.isDefault === true || v.isDefault === 1) || json.variants[0];
-      json.price = defaultVariant?.price || json.basePrice;
-      json.compareAtPrice = defaultVariant?.compareAtPrice || json.compareAtPrice;
+      json.price = defaultVariant?.price ?? json.basePrice;
+      json.compareAtPrice = defaultVariant?.compareAtPrice ?? json.compareAtPrice;
     } else {
       json.price = json.basePrice;
     }

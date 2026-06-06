@@ -1685,7 +1685,30 @@ describe('PATCH /api/admin/products/:id/stock — sumVariantStock null → fallb
 
     expect(res.status).toBe(200);
     // product.update phải nhận { stockQuantity: 0 } do null || 0
-    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 0 });
+    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 0 }, expect.anything());
+  });
+
+  it('BUG-FIX MEDIUM-1: variant update + sum + product update chạy trong cùng transaction', async () => {
+    const fakeProduct = makeProduct({ id: 71, stockQuantity: 20 });
+    const fakeVariant = {
+      id: 2,
+      stockQuantity: 10,
+      update: jest.fn().mockResolvedValue({}),
+    };
+    Product.findByPk.mockResolvedValueOnce(fakeProduct);
+    ProductVariant.findOne.mockResolvedValueOnce(fakeVariant);
+    ProductVariant.sum.mockResolvedValueOnce(15);
+
+    const res = await request
+      .patch('/api/admin/products/71/stock')
+      .send({ stockQuantity: 15, variantId: 2 });
+
+    expect(res.status).toBe(200);
+    // Tất cả 3 operations phải nhận cùng transaction object
+    expect(fakeVariant.update).toHaveBeenCalledWith({ stockQuantity: 15 }, expect.anything());
+    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 15 }, expect.anything());
+    // transaction.commit phải được gọi sau khi thành công
+    expect(sequelize.transaction).toHaveBeenCalled();
   });
 });
 

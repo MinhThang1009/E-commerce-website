@@ -198,8 +198,8 @@ const bulkCreateProductVariants = (data, options = {}) => ProductVariant.bulkCre
 const findProductVariantById = (id, productId, options = {}) =>
   ProductVariant.findOne({ where: { id, productId }, ...options });
 
-const sumProductVariantStock = (productId) =>
-  ProductVariant.sum('stockQuantity', { where: { productId } });
+const sumProductVariantStock = (productId, options = {}) =>
+  ProductVariant.sum('stockQuantity', { where: { productId }, ...options });
 
 // ─── Raw sequelize query (chỉ dùng cho analytics phức tạp) ───────────────────
 

@@ -989,9 +989,17 @@ const updateProductStock = catchAsync(async (req, res) => {
   if (variantId) {
     const variant = await adminRepository.findProductVariantById(variantId, id);
     if (!variant) throw new AppError(t('admin.variantNotFound', req.locale), 404);
-    await variant.update({ stockQuantity: qty });
-    const total = (await adminRepository.sumProductVariantStock(id)) || 0;
-    await product.update({ stockQuantity: total });
+
+    const transaction = await sequelize.transaction();
+    try {
+      await variant.update({ stockQuantity: qty }, { transaction });
+      const total = (await adminRepository.sumProductVariantStock(id, { transaction })) || 0;
+      await product.update({ stockQuantity: total }, { transaction });
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   } else {
     await product.update({ stockQuantity: qty });
   }

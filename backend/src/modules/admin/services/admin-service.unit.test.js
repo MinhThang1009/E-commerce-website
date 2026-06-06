@@ -461,8 +461,8 @@ describe('updateProductStock — cập nhật variant stock (lines 2025-2029)', 
       .send({ stockQuantity: 5, variantId: 5 });
 
     expect(res.status).toBe(200);
-    expect(fakeVariant.update).toHaveBeenCalledWith({ stockQuantity: 5 });
-    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 15 });
+    expect(fakeVariant.update).toHaveBeenCalledWith({ stockQuantity: 5 }, expect.anything());
+    expect(fakeProduct.update).toHaveBeenCalledWith({ stockQuantity: 15 }, expect.anything());
   });
 
   test('404 khi variant không tìm thấy', async () => {

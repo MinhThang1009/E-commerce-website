@@ -421,8 +421,8 @@ describe('updateProductStock', () => {
       params: { id: '5' },
       body: { stockQuantity: '8', variantId: '3' },
     });
-    expect(variant.update).toHaveBeenCalledWith({ stockQuantity: 8 });
-    expect(prod.update).toHaveBeenCalledWith({ stockQuantity: 20 });
+    expect(variant.update).toHaveBeenCalledWith({ stockQuantity: 8 }, expect.anything());
+    expect(prod.update).toHaveBeenCalledWith({ stockQuantity: 20 }, expect.anything());
   });
 
   test('variantId không tồn tại → 404 biến thể', async () => {

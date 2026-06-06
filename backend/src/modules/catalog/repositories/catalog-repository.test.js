@@ -275,7 +275,7 @@ describe('Brand methods', () => {
 
     const result = await repo.countProductsByBrandId(2);
 
-    expect(deps.Product.count).toHaveBeenCalledWith({ where: { brandId: 2 } });
+    expect(deps.Product.count).toHaveBeenCalledWith({ where: { brandId: 2, status: 'active' } });
     expect(result).toBe(7);
   });
 

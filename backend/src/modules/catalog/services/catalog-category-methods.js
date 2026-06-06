@@ -76,14 +76,9 @@ module.exports = {
     return { message: 'catalog.categoryDeleted' };
   },
 
-  async getProductsByCategory({
-    id,
-    page = 1,
-    limit = 10,
-    sort = 'createdAt',
-    order = 'DESC',
-    status = 'active',
-  }) {
+  async getProductsByCategory({ id, page = 1, limit = 10, sort = 'createdAt', order = 'DESC' }) {
+    // status luôn = 'active' — không cho public caller override
+    const status = 'active';
     let category = await this.catalogRepository.findCategoryById(id);
     if (!category) {
       category = await this.catalogRepository.findCategoryBySlug(id);

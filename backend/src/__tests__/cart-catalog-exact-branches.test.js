@@ -18,6 +18,7 @@ function makeCartService() {
     findCartItemsByCartId: jest.fn(),
     findCartItemsWithDetails: jest.fn().mockResolvedValue([]),
     findCartItemByIdWithCartAndStock: jest.fn(),
+    runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     createCartItem: jest.fn().mockResolvedValue({ id: 1 }),
     saveCartItem: jest.fn().mockResolvedValue({}),
     deleteCartItem: jest.fn().mockResolvedValue(1),
@@ -92,7 +93,7 @@ describe('CartService.updateCartItem — branch coverage', () => {
     });
 
     // No throw — quantity 5 <= stock 10, repo.saveCartItem called
-    expect(repo.saveCartItem).toHaveBeenCalledWith(cartItemWithCart);
+    expect(repo.saveCartItem).toHaveBeenCalledWith(cartItemWithCart, expect.any(Object));
   });
 });
 

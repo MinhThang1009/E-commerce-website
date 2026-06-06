@@ -167,7 +167,7 @@ describe('CartService — branch coverage bổ sung', () => {
       });
 
       expect(cartItem.quantity).toBe(5);
-      expect(cartRepository.saveCartItem).toHaveBeenCalledWith(cartItem);
+      expect(cartRepository.saveCartItem).toHaveBeenCalledWith(cartItem, expect.any(Object));
     });
   });
 

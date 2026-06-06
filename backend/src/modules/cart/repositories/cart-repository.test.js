@@ -353,16 +353,16 @@ describe('findCartItemsWithDetails', () => {
 });
 
 describe('findCartItemByIdWithCartAndStock', () => {
-  it('gọi CartItem.findByPk với include Cart, Product, ProductVariant', async () => {
+  it('gọi CartItem.findOne với where id và include Cart, Product, ProductVariant', async () => {
     const { repo, deps } = makeRepo();
     const item = { id: 5 };
-    deps.CartItem.findByPk.mockResolvedValue(item);
+    deps.CartItem.findOne.mockResolvedValue(item);
 
     const result = await repo.findCartItemByIdWithCartAndStock(5);
 
-    expect(deps.CartItem.findByPk).toHaveBeenCalledWith(
-      5,
+    expect(deps.CartItem.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: { id: 5 },
         include: expect.arrayContaining([
           expect.objectContaining({ model: deps.Cart }),
           expect.objectContaining({ model: deps.Product }),

@@ -129,8 +129,9 @@ class SequelizeCartRepository extends ICartRepository {
     });
   }
 
-  async findCartItemByIdWithCartAndStock(id) {
-    return this.CartItem.findByPk(id, {
+  async findCartItemByIdWithCartAndStock(id, options = {}) {
+    return this.CartItem.findOne({
+      where: { id },
       include: [
         { model: this.Cart, attributes: ['id', 'userId', 'sessionId'] },
         {
@@ -140,6 +141,7 @@ class SequelizeCartRepository extends ICartRepository {
         },
         { model: this.ProductVariant, attributes: ['id', 'stockQuantity'] },
       ],
+      ...options,
     });
   }
 

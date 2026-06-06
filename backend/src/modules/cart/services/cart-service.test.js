@@ -80,10 +80,10 @@ describe('CartService', () => {
 
       // guest item moved to user cart
       expect(guestItem.cartId).toBe(10);
-      expect(cartRepository.saveCartItem).toHaveBeenCalledWith(guestItem);
+      expect(cartRepository.saveCartItem).toHaveBeenCalledWith(guestItem, expect.any(Object));
       // guest cart marked merged
       expect(guestCart.status).toBe('merged');
-      expect(cartRepository.saveCart).toHaveBeenCalledWith(guestCart);
+      expect(cartRepository.saveCart).toHaveBeenCalledWith(guestCart, expect.any(Object));
     });
 
     test('user merge guest cart + item trùng → cộng dồn quantity (dùng findCartItemsForMerge)', async () => {
@@ -103,7 +103,7 @@ describe('CartService', () => {
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'sess' });
 
       expect(existing.quantity).toBe(5); // 3 + 2, capped at stock=20 → 5
-      expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(guestItem);
+      expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(guestItem, expect.any(Object));
     });
 
     test('user merge guest cart + item trùng → quantity bị cap theo maxStock (REGRESSION: getCart merge không cap)', async () => {

@@ -249,7 +249,7 @@ describe('DELETE /api/cart/items/:id — xóa item khỏi giỏ hàng', () => {
       Cart: { id: 10, userId: 1, sessionId: null },
       destroy: mockDestroyFn,
     };
-    CartItem.findByPk.mockResolvedValue(mockItem);
+    CartItem.findOne.mockResolvedValue(mockItem);
 
     const res = await request.delete('/api/cart/items/5').set('Authorization', 'Bearer test-token');
 
@@ -258,7 +258,7 @@ describe('DELETE /api/cart/items/:id — xóa item khỏi giỏ hàng', () => {
   });
 
   test('Item không tồn tại → 404', async () => {
-    CartItem.findByPk.mockResolvedValue(null);
+    CartItem.findOne.mockResolvedValue(null);
 
     const res = await request
       .delete('/api/cart/items/999')
@@ -276,7 +276,7 @@ describe('DELETE /api/cart/items/:id — xóa item khỏi giỏ hàng', () => {
       Cart: { id: 20, userId: 99, sessionId: null }, // userId = 99, nhưng req.user.id = 1
       destroy: jest.fn(),
     };
-    CartItem.findByPk.mockResolvedValue(mockItem);
+    CartItem.findOne.mockResolvedValue(mockItem);
 
     const res = await request.delete('/api/cart/items/5').set('Authorization', 'Bearer test-token');
 
@@ -297,7 +297,7 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
   });
 
   test('Item không tồn tại → 404', async () => {
-    CartItem.findByPk.mockResolvedValue(null);
+    CartItem.findOne.mockResolvedValue(null);
 
     const res = await request
       .put('/api/cart/items/999')
@@ -319,7 +319,7 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
       ProductVariant: null,
       update: jest.fn(),
     };
-    CartItem.findByPk.mockResolvedValue(mockItem);
+    CartItem.findOne.mockResolvedValue(mockItem);
 
     const res = await request
       .put('/api/cart/items/5')
@@ -343,7 +343,7 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
       quantity: 1,
       save: mockSaveFn,
     };
-    CartItem.findByPk.mockResolvedValue(mockItem);
+    CartItem.findOne.mockResolvedValue(mockItem);
 
     const res = await request
       .put('/api/cart/items/5')
@@ -365,7 +365,7 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
       quantity: 1,
       save: mockSaveFn,
     };
-    CartItem.findByPk.mockResolvedValue(mockItem);
+    CartItem.findOne.mockResolvedValue(mockItem);
 
     const res = await request
       .put('/api/cart/items/5')
@@ -391,7 +391,7 @@ describe('PUT /api/cart/items/:id — cập nhật số lượng', () => {
       quantity: 1,
       save: mockSaveFn,
     };
-    CartItem.findByPk.mockResolvedValue(mockItem);
+    CartItem.findOne.mockResolvedValue(mockItem);
 
     const res = await request
       .put('/api/cart/items/5')

@@ -422,14 +422,13 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'guest-sess' });
 
-      expect(repo.findCartItemMatching).toHaveBeenCalledWith({
-        cartId: 10,
-        productId: 3,
-        variantId: 5,
-      });
+      expect(repo.findCartItemMatching).toHaveBeenCalledWith(
+        { cartId: 10, productId: 3, variantId: 5 },
+        expect.any(Object),
+      );
       expect(existing.quantity).toBe(6); // 4 + 2, capped at stock=20 → 6
-      expect(repo.saveCartItem).toHaveBeenCalledWith(existing);
-      expect(repo.deleteCartItem).toHaveBeenCalledWith(guestItem);
+      expect(repo.saveCartItem).toHaveBeenCalledWith(existing, expect.any(Object));
+      expect(repo.deleteCartItem).toHaveBeenCalledWith(guestItem, expect.any(Object));
     });
 
     test('item guest MỚI → reassign cartId sang user cart + save', async () => {
@@ -452,7 +451,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'guest-sess' });
 
       expect(guestItem.cartId).toBe(10);
-      expect(repo.saveCartItem).toHaveBeenCalledWith(guestItem);
+      expect(repo.saveCartItem).toHaveBeenCalledWith(guestItem, expect.any(Object));
     });
 
     test('sau merge → guest cart status = "merged" và được save', async () => {
@@ -476,7 +475,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'guest-sess' });
 
       expect(guestCart.status).toBe('merged');
-      expect(repo.saveCart).toHaveBeenCalledWith(guestCart);
+      expect(repo.saveCart).toHaveBeenCalledWith(guestCart, expect.any(Object));
     });
 
     test('guest cart rỗng (không item) → KHÔNG đổi status, KHÔNG log', async () => {

@@ -134,28 +134,33 @@ class CartService {
             this.logger.info(
               `Đang gộp giỏ hàng khách ${guestCart.id} vào giỏ hàng người dùng ${cart.id}`,
             );
-            for (const guestItem of guestItems) {
-              const existing = await this.cartRepository.findCartItemMatching({
-                cartId: cart.id,
-                productId: guestItem.productId,
-                variantId: guestItem.variantId,
-              });
-              if (existing) {
-                const newQuantity = existing.quantity + guestItem.quantity;
-                const baseStockQuantity = guestItem.Product?.defaultVariant?.stockQuantity || 0;
-                const maxStock = guestItem.ProductVariant
-                  ? guestItem.ProductVariant.stockQuantity
-                  : baseStockQuantity;
-                existing.quantity = maxStock > 0 ? Math.min(newQuantity, maxStock) : newQuantity;
-                await this.cartRepository.saveCartItem(existing);
-                await this.cartRepository.deleteCartItem(guestItem);
-              } else {
-                guestItem.cartId = cart.id;
-                await this.cartRepository.saveCartItem(guestItem);
+            await this.cartRepository.runInTransaction(async (transaction) => {
+              for (const guestItem of guestItems) {
+                const existing = await this.cartRepository.findCartItemMatching(
+                  {
+                    cartId: cart.id,
+                    productId: guestItem.productId,
+                    variantId: guestItem.variantId,
+                  },
+                  { transaction, lock: transaction.LOCK.UPDATE },
+                );
+                if (existing) {
+                  const newQuantity = existing.quantity + guestItem.quantity;
+                  const baseStockQuantity = guestItem.Product?.defaultVariant?.stockQuantity || 0;
+                  const maxStock = guestItem.ProductVariant
+                    ? guestItem.ProductVariant.stockQuantity
+                    : baseStockQuantity;
+                  existing.quantity = maxStock > 0 ? Math.min(newQuantity, maxStock) : newQuantity;
+                  await this.cartRepository.saveCartItem(existing, { transaction });
+                  await this.cartRepository.deleteCartItem(guestItem, { transaction });
+                } else {
+                  guestItem.cartId = cart.id;
+                  await this.cartRepository.saveCartItem(guestItem, { transaction });
+                }
               }
-            }
-            guestCart.status = 'merged';
-            await this.cartRepository.saveCart(guestCart);
+              guestCart.status = 'merged';
+              await this.cartRepository.saveCart(guestCart, { transaction });
+            });
           }
         }
       }
@@ -261,28 +266,33 @@ class CartService {
     return this.getCart({ user, cookieSessionId: nextSessionId });
   }
 
-  // Cập nhật quantity item — kiểm tra ownership + stock.
+  // Cập nhật quantity item — kiểm tra ownership + stock trong transaction với SELECT FOR UPDATE.
   async updateCartItem({ user, cookieSessionId, itemId, quantity }) {
-    const cartItem = await this.cartRepository.findCartItemByIdWithCartAndStock(itemId);
-    if (!cartItem) {
-      throw new AppError('cart.itemNotFound', 404);
-    }
+    await this.cartRepository.runInTransaction(async (transaction) => {
+      const cartItem = await this.cartRepository.findCartItemByIdWithCartAndStock(itemId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!cartItem) {
+        throw new AppError('cart.itemNotFound', 404);
+      }
 
-    this._assertOwnership(cartItem, user, cookieSessionId);
+      this._assertOwnership(cartItem, user, cookieSessionId);
 
-    const baseStockQuantity = cartItem.Product.defaultVariant
-      ? cartItem.Product.defaultVariant.stockQuantity
-      : 0;
-    if (cartItem.ProductVariant) {
-      if (cartItem.ProductVariant.stockQuantity < quantity) {
+      const baseStockQuantity = cartItem.Product.defaultVariant
+        ? cartItem.Product.defaultVariant.stockQuantity
+        : 0;
+      if (cartItem.ProductVariant) {
+        if (cartItem.ProductVariant.stockQuantity < quantity) {
+          throw new AppError('cart.quantityExceedsStock', 400);
+        }
+      } else if (baseStockQuantity < quantity) {
         throw new AppError('cart.quantityExceedsStock', 400);
       }
-    } else if (baseStockQuantity < quantity) {
-      throw new AppError('cart.quantityExceedsStock', 400);
-    }
 
-    cartItem.quantity = quantity;
-    await this.cartRepository.saveCartItem(cartItem);
+      cartItem.quantity = quantity;
+      await this.cartRepository.saveCartItem(cartItem, { transaction });
+    });
 
     return this.getCart({ user, cookieSessionId });
   }

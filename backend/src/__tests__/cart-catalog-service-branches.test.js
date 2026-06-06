@@ -35,7 +35,7 @@ function buildCartService() {
     findCartItemByIdWithCartAndStock: jest.fn(),
     findCartItemsForValidation: jest.fn().mockResolvedValue([]),
     findCartItemsForMerge: jest.fn().mockResolvedValue([]),
-    runInTransaction: jest.fn((work) => work({})),
+    runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
   };
   const eventBus = { publish: jest.fn().mockResolvedValue() };
   const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() };
@@ -101,7 +101,7 @@ describe('CartService.updateCartItem — line 248 FALSE: ProductVariant null, ba
 
     // Quantity được cập nhật thành công
     expect(cartItem.quantity).toBe(5);
-    expect(cartRepository.saveCartItem).toHaveBeenCalledWith(cartItem);
+    expect(cartRepository.saveCartItem).toHaveBeenCalledWith(cartItem, expect.any(Object));
   });
 });
 
@@ -272,7 +272,7 @@ function makeCatalogService(repoOverrides = {}) {
     setProductCategories: jest.fn().mockResolvedValue(),
     clearProductAttributes: jest.fn().mockResolvedValue(),
     clearProductVariants: jest.fn().mockResolvedValue(),
-    runInTransaction: jest.fn((fn) => fn({})),
+    runInTransaction: jest.fn(async (fn) => fn({ LOCK: { UPDATE: 'UPDATE' } })),
     ...repoOverrides,
   };
 
@@ -555,7 +555,7 @@ const CONSTANTS = {
 
 function buildOrdersService() {
   const repo = {
-    runInTransaction: jest.fn(async (work) => work({})),
+    runInTransaction: jest.fn(async (work) => work({ LOCK: { UPDATE: 'UPDATE' } })),
     findProductWithDefaultVariant: jest.fn(),
     findVariantBasic: jest.fn(),
     lockProduct: jest.fn(),

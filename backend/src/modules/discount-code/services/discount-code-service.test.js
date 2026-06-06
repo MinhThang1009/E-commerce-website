@@ -66,6 +66,30 @@ describe('discountCodeService.getAllDiscountCodes', () => {
     const callArgs = discountCodeRepository.findAll.mock.calls[0][0];
     expect(callArgs.where).toEqual({});
   });
+
+  it('page=0 → offset không âm, currentPage tối thiểu là 1 (REGRESSION: page=0 gây offset âm → 500)', async () => {
+    // Trước fix: (0-1)*10 = -10 → MySQL "Row offset cannot be negative".
+    // Sau fix: Math.max(0||1,1)=1 → (1-1)*10=0 → offset 0, page trả về 1.
+    discountCodeRepository.findAll.mockResolvedValue({ count: 0, rows: [] });
+
+    const result = await discountCodeService.getAllDiscountCodes({ page: 0 });
+
+    expect(discountCodeRepository.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ offset: 0 }),
+    );
+    expect(result.pagination.currentPage).toBe(1);
+  });
+
+  it('page="abc" → fallback về 1, offset=0 (REGRESSION: page NaN gây offset NaN)', async () => {
+    discountCodeRepository.findAll.mockResolvedValue({ count: 0, rows: [] });
+
+    const result = await discountCodeService.getAllDiscountCodes({ page: 'abc' });
+
+    expect(discountCodeRepository.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ offset: 0 }),
+    );
+    expect(result.pagination.currentPage).toBe(1);
+  });
 });
 
 describe('discountCodeService.getDiscountCodeById', () => {

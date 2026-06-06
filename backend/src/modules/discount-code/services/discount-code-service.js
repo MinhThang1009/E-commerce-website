@@ -38,7 +38,9 @@ const getAllDiscountCodes = async ({
   sortBy = 'createdAt',
   sortOrder = 'DESC',
 }) => {
-  const offset = (page - 1) * limit;
+  const p = Math.max(parseInt(page, 10) || 1, 1);
+  const lim = Math.max(parseInt(limit, 10) || 10, 1);
+  const offset = (p - 1) * lim;
   const where = {};
 
   if (search) {
@@ -50,18 +52,18 @@ const getAllDiscountCodes = async ({
 
   const { count, rows: discountCodes } = await discountCodeRepository.findAll({
     where,
-    limit: parseInt(limit),
-    offset: parseInt(offset),
+    limit: lim,
+    offset,
     order: [[sortBy, sortOrder.toUpperCase()]],
   });
 
   return {
     discountCodes,
     pagination: {
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(count / limit),
+      currentPage: p,
+      totalPages: Math.ceil(count / lim),
       totalItems: count,
-      itemsPerPage: parseInt(limit),
+      itemsPerPage: lim,
     },
   };
 };

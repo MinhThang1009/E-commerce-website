@@ -150,7 +150,7 @@ class PaymentService {
     if (!isValid) return { valid: false };
 
     const { resultCode, extraData, transId } = body;
-    const orderIdMatch = extraData.match(/orderId=([^&]+)/);
+    const orderIdMatch = extraData?.match(/orderId=([^&]+)/);
     const orderId = orderIdMatch ? orderIdMatch[1] : null;
 
     if (resultCode == 0 && orderId) {

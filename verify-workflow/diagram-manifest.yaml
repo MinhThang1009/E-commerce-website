@@ -15,8 +15,8 @@ usecase:
   - { seq: 3,  scope: overview-admin,             section: "§1.3", module: _overview, notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 admin fixes (9 bugs): T1 MATCH — 4 backoffice UCs, 2 adminOnly, 9 staffOnly khớp guard code. GATE-D signed 2026-06-06.
   - { seq: 4,  scope: auth,                        section: "§2.1a", module: auth,     notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (GATE-A INV-AUTH-1..16 [x]); T1 MATCH (logout cookie + refresh body verified auth-controller.js); T2 pass. GATE-D signed 2026-06-06.
   - { seq: 5,  scope: user,                        section: "§2.1b", module: users,    notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (0 bugs); T1 MATCH (beforeUpdate verified user.js:92); T2 pass. GATE-D signed 2026-06-06.
-  - { seq: 6,  scope: catalog-browse,             section: "§2.2a", module: catalog,  notation: UML, tool: plantuml, status: pending }
-  - { seq: 7,  scope: catalog-detail,             section: "§2.2b", module: catalog,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 6,  scope: catalog-browse,             section: "§2.2a", module: catalog,  notation: UML, tool: plantuml, status: drawn }   # 2026-06-06: T0 pass (2 lenses: guards + page=0 Math.max verified L208); T1 MATCH (limit=10 verified catalog-product-methods.js:525); T2 pass. Chờ GATE-D.
+  - { seq: 7,  scope: catalog-detail,             section: "§2.2b", module: catalog,  notation: UML, tool: plantuml, status: drawn }   # 2026-06-06: T0 exhaustive (9 runs, ~20 bugs fixed); T1 MATCH; T2 pass. Chờ GATE-D.
   - { seq: 8,  scope: catalog-category-brand,     section: "§2.2c", module: catalog,  notation: UML, tool: plantuml, status: pending }
   - { seq: 9,  scope: catalog-admin,              section: "§2.2d", module: catalog,  notation: UML, tool: plantuml, status: pending }
   - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: pending }

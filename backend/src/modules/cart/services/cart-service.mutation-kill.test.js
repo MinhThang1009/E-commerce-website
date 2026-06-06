@@ -406,8 +406,16 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       const repo = makeRepo();
       repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
       repo.findActiveCartBySessionId.mockResolvedValue({ id: 99 });
-      const guestItem = { id: 7, productId: 3, variantId: 5, quantity: 2, cartId: 99 };
-      repo.findCartItemsByCartId.mockResolvedValue([guestItem]);
+      const guestItem = {
+        id: 7,
+        productId: 3,
+        variantId: 5,
+        quantity: 2,
+        cartId: 99,
+        Product: { defaultVariant: { stockQuantity: 20 } },
+        ProductVariant: { stockQuantity: 20 },
+      };
+      repo.findCartItemsForMerge.mockResolvedValue([guestItem]);
       const existing = { id: 8, quantity: 4 };
       repo.findCartItemMatching.mockResolvedValue(existing);
       const service = makeService(repo);
@@ -419,7 +427,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
         productId: 3,
         variantId: 5,
       });
-      expect(existing.quantity).toBe(6); // 4 + 2
+      expect(existing.quantity).toBe(6); // 4 + 2, capped at stock=20 → 6
       expect(repo.saveCartItem).toHaveBeenCalledWith(existing);
       expect(repo.deleteCartItem).toHaveBeenCalledWith(guestItem);
     });
@@ -428,8 +436,16 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       const repo = makeRepo();
       repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
       repo.findActiveCartBySessionId.mockResolvedValue({ id: 99 });
-      const guestItem = { id: 7, productId: 3, variantId: null, quantity: 2, cartId: 99 };
-      repo.findCartItemsByCartId.mockResolvedValue([guestItem]);
+      const guestItem = {
+        id: 7,
+        productId: 3,
+        variantId: null,
+        quantity: 2,
+        cartId: 99,
+        Product: { defaultVariant: { stockQuantity: 10 } },
+        ProductVariant: null,
+      };
+      repo.findCartItemsForMerge.mockResolvedValue([guestItem]);
       repo.findCartItemMatching.mockResolvedValue(null);
       const service = makeService(repo);
 
@@ -444,8 +460,15 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
       const guestCart = { id: 99, status: 'active' };
       repo.findActiveCartBySessionId.mockResolvedValue(guestCart);
-      repo.findCartItemsByCartId.mockResolvedValue([
-        { id: 7, productId: 3, variantId: null, quantity: 2 },
+      repo.findCartItemsForMerge.mockResolvedValue([
+        {
+          id: 7,
+          productId: 3,
+          variantId: null,
+          quantity: 2,
+          Product: { defaultVariant: { stockQuantity: 10 } },
+          ProductVariant: null,
+        },
       ]);
       repo.findCartItemMatching.mockResolvedValue(null);
       const service = makeService(repo);
@@ -460,7 +483,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       const repo = makeRepo();
       repo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
       repo.findActiveCartBySessionId.mockResolvedValue({ id: 99, status: 'active' });
-      repo.findCartItemsByCartId.mockResolvedValue([]);
+      repo.findCartItemsForMerge.mockResolvedValue([]);
       const logger = { info: jest.fn(), error: jest.fn(), warn: jest.fn() };
       const service = new CartService({
         cartRepository: repo,

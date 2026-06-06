@@ -63,11 +63,17 @@ describe('CartService', () => {
     test('user đã login + có guest cart → merge guest items vào user cart', async () => {
       const userCart = { id: 10 };
       const guestCart = { id: 20, status: 'active' };
-      const guestItem = { productId: 1, variantId: null, quantity: 2 };
+      const guestItem = {
+        productId: 1,
+        variantId: null,
+        quantity: 2,
+        Product: { defaultVariant: { stockQuantity: 10 } },
+        ProductVariant: null,
+      };
 
       cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue(userCart);
       cartRepository.findActiveCartBySessionId.mockResolvedValue(guestCart);
-      cartRepository.findCartItemsByCartId.mockResolvedValue([guestItem]);
+      cartRepository.findCartItemsForMerge.mockResolvedValue([guestItem]);
       cartRepository.findCartItemMatching.mockResolvedValue(null); // không có existing
 
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'sess' });
@@ -80,18 +86,45 @@ describe('CartService', () => {
       expect(cartRepository.saveCart).toHaveBeenCalledWith(guestCart);
     });
 
-    test('user merge guest cart + item trùng → cộng dồn quantity', async () => {
+    test('user merge guest cart + item trùng → cộng dồn quantity (dùng findCartItemsForMerge)', async () => {
       cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
       cartRepository.findActiveCartBySessionId.mockResolvedValue({ id: 20, status: 'active' });
-      const guestItem = { productId: 1, variantId: null, quantity: 2 };
-      cartRepository.findCartItemsByCartId.mockResolvedValue([guestItem]);
+      const guestItem = {
+        productId: 1,
+        variantId: null,
+        quantity: 2,
+        Product: { defaultVariant: { stockQuantity: 20 } },
+        ProductVariant: null,
+      };
+      cartRepository.findCartItemsForMerge.mockResolvedValue([guestItem]);
       const existing = { quantity: 3 };
       cartRepository.findCartItemMatching.mockResolvedValue(existing);
 
       await service.getCart({ user: { id: 1 }, cookieSessionId: 'sess' });
 
-      expect(existing.quantity).toBe(5);
+      expect(existing.quantity).toBe(5); // 3 + 2, capped at stock=20 → 5
       expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(guestItem);
+    });
+
+    test('user merge guest cart + item trùng → quantity bị cap theo maxStock (REGRESSION: getCart merge không cap)', async () => {
+      // Trước fix: existing.quantity = existing + guest (không cap) → vượt stock.
+      // Sau fix: Math.min(newQuantity, maxStock) → đồng nhất với mergeCart.
+      cartRepository.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 10 });
+      cartRepository.findActiveCartBySessionId.mockResolvedValue({ id: 20, status: 'active' });
+      const guestItem = {
+        productId: 1,
+        variantId: null,
+        quantity: 5,
+        Product: { defaultVariant: { stockQuantity: 7 } },
+        ProductVariant: null,
+      };
+      cartRepository.findCartItemsForMerge.mockResolvedValue([guestItem]);
+      const existing = { quantity: 4 }; // 4+5=9 vượt stock=7 → phải cap về 7
+      cartRepository.findCartItemMatching.mockResolvedValue(existing);
+
+      await service.getCart({ user: { id: 1 }, cookieSessionId: 'sess' });
+
+      expect(existing.quantity).toBe(7); // capped at maxStock=7, not 9
     });
   });
 

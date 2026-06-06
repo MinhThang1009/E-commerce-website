@@ -129,7 +129,7 @@ class CartService {
       if (cookieSessionId) {
         const guestCart = await this.cartRepository.findActiveCartBySessionId(cookieSessionId);
         if (guestCart) {
-          const guestItems = await this.cartRepository.findCartItemsByCartId(guestCart.id);
+          const guestItems = await this.cartRepository.findCartItemsForMerge(guestCart.id);
           if (guestItems.length > 0) {
             this.logger.info(
               `Đang gộp giỏ hàng khách ${guestCart.id} vào giỏ hàng người dùng ${cart.id}`,
@@ -141,7 +141,12 @@ class CartService {
                 variantId: guestItem.variantId,
               });
               if (existing) {
-                existing.quantity = existing.quantity + guestItem.quantity;
+                const newQuantity = existing.quantity + guestItem.quantity;
+                const baseStockQuantity = guestItem.Product?.defaultVariant?.stockQuantity || 0;
+                const maxStock = guestItem.ProductVariant
+                  ? guestItem.ProductVariant.stockQuantity
+                  : baseStockQuantity;
+                existing.quantity = maxStock > 0 ? Math.min(newQuantity, maxStock) : newQuantity;
                 await this.cartRepository.saveCartItem(existing);
                 await this.cartRepository.deleteCartItem(guestItem);
               } else {

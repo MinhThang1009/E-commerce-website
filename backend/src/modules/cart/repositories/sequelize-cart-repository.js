@@ -95,14 +95,15 @@ class SequelizeCartRepository extends ICartRepository {
 
   // -------- Catalog (cross-module shortcut) --------
 
-  async findProductById(id) {
+  async findProductById(id, options = {}) {
     return this.Product.findByPk(id, {
       include: [{ association: 'defaultVariant' }],
+      ...options,
     });
   }
 
-  async findVariantByIdAndProductId(variantId, productId) {
-    return this.ProductVariant.findOne({ where: { id: variantId, productId } });
+  async findVariantByIdAndProductId(variantId, productId, options = {}) {
+    return this.ProductVariant.findOne({ where: { id: variantId, productId }, ...options });
   }
 
   // -------- Eager load helpers --------

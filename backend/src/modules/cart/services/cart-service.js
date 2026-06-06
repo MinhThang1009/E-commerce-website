@@ -298,13 +298,17 @@ class CartService {
   }
 
   async removeCartItem({ user, cookieSessionId, itemId }) {
-    const cartItem = await this.cartRepository.findCartItemByIdWithCartAndStock(itemId);
-    if (!cartItem) {
-      throw new AppError('cart.itemNotFound', 404);
-    }
-
-    this._assertOwnership(cartItem, user, cookieSessionId);
-    await this.cartRepository.deleteCartItem(cartItem);
+    await this.cartRepository.runInTransaction(async (transaction) => {
+      const cartItem = await this.cartRepository.findCartItemByIdWithCartAndStock(itemId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!cartItem) {
+        throw new AppError('cart.itemNotFound', 404);
+      }
+      this._assertOwnership(cartItem, user, cookieSessionId);
+      await this.cartRepository.deleteCartItem(cartItem, { transaction });
+    });
 
     return this.getCart({ user, cookieSessionId });
   }
@@ -344,7 +348,7 @@ class CartService {
 
       for (const item of items) {
         const { productId, variantId, quantity } = item;
-        const product = await this.cartRepository.findProductById(productId);
+        const product = await this.cartRepository.findProductById(productId, { transaction });
         const baseStockQuantity =
           product && product.defaultVariant ? product.defaultVariant.stockQuantity : 0;
 
@@ -354,6 +358,7 @@ class CartService {
           const variant = await this.cartRepository.findVariantByIdAndProductId(
             variantId,
             productId,
+            { transaction },
           );
           if (!variant) continue;
 
@@ -420,7 +425,7 @@ class CartService {
             productId: sessionItem.productId,
             variantId: sessionItem.variantId || null,
           },
-          { transaction },
+          { transaction, lock: transaction.LOCK.UPDATE },
         );
 
         const currentPrice = sessionItem.ProductVariant

@@ -877,7 +877,7 @@ describe('removeCartItem — session path (lines 267-268)', () => {
       itemId: 50,
     });
 
-    expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(cartItem);
+    expect(cartRepository.deleteCartItem).toHaveBeenCalledWith(cartItem, expect.any(Object));
   });
 });
 

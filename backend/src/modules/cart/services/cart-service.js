@@ -129,12 +129,16 @@ class CartService {
       if (cookieSessionId) {
         const guestCart = await this.cartRepository.findActiveCartBySessionId(cookieSessionId);
         if (guestCart) {
-          const guestItems = await this.cartRepository.findCartItemsForMerge(guestCart.id);
-          if (guestItems.length > 0) {
+          const preCheckItems = await this.cartRepository.findCartItemsForMerge(guestCart.id);
+          if (preCheckItems.length > 0) {
             this.logger.info(
               `Đang gộp giỏ hàng khách ${guestCart.id} vào giỏ hàng người dùng ${cart.id}`,
             );
             await this.cartRepository.runInTransaction(async (transaction) => {
+              // Re-fetch inside transaction để atomic với guestCart.status='merged'
+              const guestItems = await this.cartRepository.findCartItemsForMerge(guestCart.id, {
+                transaction,
+              });
               for (const guestItem of guestItems) {
                 const existing = await this.cartRepository.findCartItemMatching(
                   {
@@ -416,6 +420,7 @@ class CartService {
       });
       const sessionItems = await this.cartRepository.findCartItemsForMerge(sessionCart.id, {
         transaction,
+        lock: transaction.LOCK.UPDATE,
       });
 
       for (const sessionItem of sessionItems) {
@@ -486,7 +491,7 @@ class CartService {
           id: item.id,
           productId: item.productId,
           variantId: item.variantId,
-          name: 'Sản phẩm không còn tồn tại',
+          name: 'cart.productNoLongerExists',
           hasIssue: true,
           outOfStock: true,
         };

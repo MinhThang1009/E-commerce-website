@@ -82,7 +82,8 @@
     "itemNotFound": "Item not found in cart",
     "syncRequiresLogin": "You must be logged in to sync cart",
     "loginRequired": "You must be logged in to perform this action",
-    "accessDenied": "You do not have access to this cart"
+    "accessDenied": "You do not have access to this cart",
+    "productNoLongerExists": "Product no longer exists"
   },
   "wishlist": {
     "alreadyExists": "Product is already in your wishlist",

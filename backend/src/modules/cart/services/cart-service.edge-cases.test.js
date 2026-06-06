@@ -976,7 +976,7 @@ describe('validateCart — guest không có cookieSessionId (line 448)', () => {
 // ─── validateCart — item không có Product (line 457-458) ─────────────────────
 
 describe('validateCart — item không có Product (line 457-458)', () => {
-  it('trả về item với name "Sản phẩm không còn tồn tại" khi Product null', async () => {
+  it('trả về item với name "cart.productNoLongerExists" khi Product null', async () => {
     const { service, cartRepository } = buildService();
     cartRepository.findActiveCartByUserId.mockResolvedValue({ id: 1 });
     cartRepository.findCartItemsForValidation.mockResolvedValue([
@@ -991,7 +991,7 @@ describe('validateCart — item không có Product (line 457-458)', () => {
 
     const result = await service.validateCart({ user: { id: 1 } });
 
-    expect(result.items[0].name).toBe('Sản phẩm không còn tồn tại');
+    expect(result.items[0].name).toBe('cart.productNoLongerExists');
     expect(result.hasIssues).toBe(true);
   });
 });

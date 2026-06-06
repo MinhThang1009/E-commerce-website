@@ -1291,7 +1291,10 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       await service.mergeCart({ user: { id: 1 }, cookieSessionId: 'sess-x' });
 
       expect(repo.findOrCreateActiveCartByUserId).toHaveBeenCalledWith(1, { transaction: TX });
-      expect(repo.findCartItemsForMerge).toHaveBeenCalledWith(99, { transaction: TX });
+      expect(repo.findCartItemsForMerge).toHaveBeenCalledWith(99, {
+        transaction: TX,
+        lock: TX.LOCK.UPDATE,
+      });
       expect(repo.findCartItemMatching).toHaveBeenCalledWith(
         expect.objectContaining({ cartId: 10, productId: 3, variantId: 5 }),
         { transaction: TX, lock: TX.LOCK.UPDATE },

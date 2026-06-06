@@ -83,7 +83,8 @@
     "itemNotFound": "Không tìm thấy sản phẩm trong giỏ hàng",
     "syncRequiresLogin": "Bạn cần đăng nhập để đồng bộ giỏ hàng",
     "loginRequired": "Bạn cần đăng nhập để thực hiện chức năng này",
-    "accessDenied": "Bạn không có quyền truy cập giỏ hàng này"
+    "accessDenied": "Bạn không có quyền truy cập giỏ hàng này",
+    "productNoLongerExists": "Sản phẩm không còn tồn tại"
   },
   "wishlist": {
     "alreadyExists": "Sản phẩm đã có trong danh sách yêu thích",

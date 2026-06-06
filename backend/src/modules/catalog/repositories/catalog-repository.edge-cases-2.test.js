@@ -64,7 +64,9 @@ describe('findProductVariantsByProductId — happy path', () => {
 
     const result = await repo.findProductVariantsByProductId(5);
 
-    expect(deps.ProductVariant.findAll).toHaveBeenCalledWith({ where: { productId: 5 } });
+    expect(deps.ProductVariant.findAll).toHaveBeenCalledWith({
+      where: { productId: 5, isAvailable: true },
+    });
     expect(result).toBe(variants);
   });
 

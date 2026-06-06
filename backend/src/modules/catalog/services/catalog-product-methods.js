@@ -310,7 +310,9 @@ module.exports = {
   },
 
   async getFeaturedProducts({ limit = DEFAULT_LIST_LIMIT }) {
-    const productsRaw = await this.catalogRepository.findFeaturedProducts(parseInt(limit, 10));
+    const productsRaw = await this.catalogRepository.findFeaturedProducts(
+      Math.min(Math.max(parseInt(limit, 10) || DEFAULT_LIST_LIMIT, 1), MAX_QUERY_LIMIT),
+    );
     return productsRaw.map((p) => this._mapProductForList(p));
   },
 
@@ -318,7 +320,7 @@ module.exports = {
     const product = await this.catalogRepository.findProductByPk(id);
     if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
-    const lim = parseInt(limit, 10);
+    const lim = Math.min(parseInt(limit, 10) || 4, MAX_QUERY_LIMIT);
     let related = [];
     if (product.categoryId) {
       related = await this.catalogRepository.findRelatedProducts(id, lim, product.categoryId);
@@ -342,7 +344,7 @@ module.exports = {
   async searchProducts({ q, page = 1, limit = 10 }) {
     if (!q) throw new AppError('catalog.searchKeywordRequired', 400);
 
-    const lim = parseInt(limit, 10);
+    const lim = Math.min(parseInt(limit, 10) || 10, MAX_QUERY_LIMIT);
     const pageNum = Math.max(parseInt(page, 10) || 1, 1);
     const off = (pageNum - 1) * lim;
 
@@ -386,7 +388,9 @@ module.exports = {
   },
 
   async getNewArrivals({ limit = DEFAULT_LIST_LIMIT }) {
-    const productsRaw = await this.catalogRepository.findNewArrivals(parseInt(limit, 10));
+    const productsRaw = await this.catalogRepository.findNewArrivals(
+      Math.min(Math.max(parseInt(limit, 10) || DEFAULT_LIST_LIMIT, 1), MAX_QUERY_LIMIT),
+    );
     return productsRaw.map((product) => {
       const json = product.toJSON();
       json.price = json.basePrice;
@@ -412,7 +416,10 @@ module.exports = {
         break;
     }
 
-    const lim = parseInt(limit, 10);
+    const lim = Math.min(
+      Math.max(parseInt(limit, 10) || DEFAULT_BESTSELLERS_LIMIT, 1),
+      MAX_QUERY_LIMIT,
+    );
     const bestSellers = await this.catalogRepository.findBestSellersRaw({ startDate, limit: lim });
 
     if (bestSellers.length === 0) {
@@ -522,7 +529,7 @@ module.exports = {
   async getRecentlyViewed({ userId, limit = 10 }) {
     const recentlyViewed = await this.catalogRepository.findRecentlyViewedByUser(
       userId,
-      parseInt(limit, 10),
+      Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50),
     );
     return recentlyViewed.map((rv) => {
       const product = rv.Product;

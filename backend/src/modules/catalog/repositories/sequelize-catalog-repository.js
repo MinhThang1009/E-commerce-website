@@ -577,7 +577,7 @@ class SequelizeCatalogRepository extends ICatalogRepository {
     if (!this.ProductVariant) {
       throw new Error('ProductVariant model bắt buộc trong constructor');
     }
-    return this.ProductVariant.findAll({ where: { productId } });
+    return this.ProductVariant.findAll({ where: { productId, isAvailable: true } });
   }
 
   async findProductRatingsRows(productId) {

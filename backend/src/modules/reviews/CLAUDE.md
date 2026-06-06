@@ -170,7 +170,7 @@ Inject từ `app.js`:
 
 # 6. Gotchas & Edge Cases
 
-- **`createReview` là upsert:** Nếu user đã review sản phẩm → update review cũ thay vì báo duplicate. Không có unique constraint enforced tại service layer.
+- **`createReview` là upsert:** Nếu user đã review sản phẩm → update review cũ thay vì báo duplicate. Toàn bộ check-then-create/update chạy trong transaction với `SELECT FOR UPDATE` trên `findReviewByUserAndProduct` — serializes concurrent requests chống duplicate review.
 - **Order status phải là `delivered`:** `processing` hay `shipped` chưa đủ điều kiện review. `hasUserPurchasedProduct` join `Order` với `where status = 'delivered'`.
 - **`isVerified`:** `isVerified = false` → hiện nhưng không có badge "Verified Purchase". Giá trị `isVerified` mặc định khi user tạo/update là `true` (model default là `false`, nhưng service luôn set `true`). Review model KHÔNG có field `isHidden`.
 - **`avgRating` update sau mỗi review CRUD:** `_refreshProductRating()` gọi inline trong service, không qua model hooks. Nếu `rating` sai trên Product → kiểm tra xem có code path nào bỏ qua `_refreshProductRating` không.

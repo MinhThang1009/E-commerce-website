@@ -1,0 +1,63 @@
+@startuml usecase-07-catalog-detail
+' Sơ đồ use case — Chi tiết Sản phẩm (Catalog detail §2.2b)
+' Ground-truth: backend/src/modules/catalog/routes.js — products router (L293-297)
+'   GET /api/products/slug/:slug   — optionalAuthenticate  → chi tiết theo slug
+'   GET /api/products/:id          — optionalAuthenticate  → chi tiết theo ID
+'   GET /api/products/:id/related  — public               → sản phẩm liên quan
+'   GET /api/products/:id/variants — public               → biến thể sản phẩm
+'   GET /api/products/:id/reviews-summary — public        → tổng hợp đánh giá
+' Denominator: 5 routes → 5 UC
+' Scope: product detail only. Browse/listing → uc-06. Category/Brand → uc-08.
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách / Bất kỳ\n(Public)" as pub
+
+rectangle "Chi tiết sản phẩm — TechStore" {
+  usecase "Xem chi tiết\ntheo ID" as UC_detail_id
+  usecase "Xem chi tiết\ntheo slug" as UC_detail_slug
+  usecase "Xem sản phẩm\nliên quan" as UC_related
+  usecase "Xem biến thể\nsản phẩm" as UC_variants
+  usecase "Xem tổng hợp\nđánh giá" as UC_reviews_summary
+}
+
+pub -- UC_detail_id
+pub -- UC_detail_slug
+pub -- UC_related
+pub -- UC_variants
+pub -- UC_reviews_summary
+
+note right of UC_detail_id
+  GET /api/products/:id — optionalAuthenticate.
+  Nếu đã đăng nhập: track recently-viewed async
+  (fire-and-forget, max 20 entries per user).
+  Variant resolve: skuId → color → isDefault → variants[0].
+  status='active' bắt buộc (404 nếu inactive).
+end note
+
+note right of UC_detail_slug
+  GET /api/products/slug/:slug — optionalAuthenticate.
+  Chấp nhận cả slug lẫn numeric id (backward compat).
+  Cùng logic variant resolve và tracking như /:id.
+end note
+
+note right of UC_related
+  GET /api/products/:id/related — public.
+  Cùng category → fallback newest active nếu không có.
+  status='active' bắt buộc (404 nếu inactive).
+end note
+
+note right of UC_reviews_summary
+  GET /api/products/:id/reviews-summary — public.
+  Trả: average, count, distribution {1:N, 2:N, ...5:N}.
+  status='active' bắt buộc (404 nếu inactive).
+end note
+@enduml

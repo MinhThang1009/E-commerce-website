@@ -46,7 +46,7 @@ end note
 
 note right of UC_estimate
   GET /api/orders/shipping-estimate — authenticate.
-  Body: { subtotal, distanceKm }.
+  Query params: ?subtotal=N.
   Server tính lại — KHÔNG tin giá FE.
   shippingCost = 0 nếu subtotal ≥ ngưỡng free ship.
 end note

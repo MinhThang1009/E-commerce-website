@@ -38,12 +38,12 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | **5.374** | ~12s | `jest.config.js` |
+| BE Unit Tests | 215 | **5.382** | ~12s | `jest.config.js` |
 | BE Integration Tests | 38 | **210** | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | **675** | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | **100** | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | **937** | ~12s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **7.284** | | |
+| **Tổng** | **325** | **~7.304** | | |
 
 > Đo lại 2026-06-06 (§D admin logic audit: thêm 8 regression test cases). Unit gồm ~1.600 test mutation-kill + property.
 
@@ -59,7 +59,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
                 ┌─┴──────────────────────┴─┐
                 │ Integration Tests (210)   │  ← Service/repo layer (real DB)
               ┌─┴──────────────────────────┴─┐
-              │  Unit Tests (5.346 + 937)      │  ← Isolated logic + React components
+              │  Unit Tests (5.382 + 937)      │  ← Isolated logic + React components
               └────────────────────────────────┘
 ```
 
@@ -79,7 +79,7 @@ TechStore áp dụng chiến lược kiểm thử đa tầng. Mỗi tầng phụ
 
 **Mục đích**: Kiểm tra logic nghiệp vụ của từng hàm trong isolation hoàn toàn. Mọi external dependency (Sequelize models, email, AI) đều được mock bằng `jest.fn()`.
 
-**Phạm vi**: 215 test suites, 5.346 test cases.
+**Phạm vi**: 215 test suites, 5.382 test cases.
 - Tất cả Service classes (17 modules × nhiều methods)
 - Repository classes
 - Controller handlers (input/output, error paths)
@@ -429,12 +429,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 215 | 5.374 | ~12s |
+| BE Unit Tests | 215 | 5.382 | ~12s |
 | BE Integration Tests | 38 | 210 | ~57s |
 | BE API HTTP Tests | 39 | 675 | ~160s |
 | BE E2E Tests | 5 | 100 | ~22s |
 | FE Component Tests | 28 | 937 | ~12s |
-| **Tổng** | **325** | **7.284** | |
+| **Tổng** | **325** | **~7.304** | |
 
 **Coverage (local unit tests)**:
 - Statements: 99,98% (threshold 99,7%)

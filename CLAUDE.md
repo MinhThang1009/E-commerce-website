@@ -273,7 +273,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **~7.285** | | |
+| **Tổng** | **325** | **~7.304** | | |
 
 > Đo lại 2026-06-06 (§A FE coverage: xóa 25 false-positive istanbul-ignore, thêm 22 test cases; §B payment audit: thêm 2 test cases; §C orders audit: thêm 2 test cases; §D admin logic audit: thêm 8 test cases). Cập nhật 2026-06-06 §E orders logic audit: thêm 1 test case (cancelPendingOrdersByUser lock assertion).
 
@@ -294,7 +294,7 @@ STRUCTURE.md                                 ← Architecture, tech stack, data 
 DIAGRAMS.md                                  ← Mermaid diagrams (Use Case, Sequence, ERD, Flow)
 RAG_CHATBOT_PIPELINE.md                      ← RAG pipeline 7 bước + 53 edge case (chatbot)
 PIPELINE_TRACE_EXAMPLES.md                   ← Trace 22 path + Node Reference 43 node (chatbot)
-TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng (~7.251 tests) + mutation/property (§13)
+TESTING_STRATEGY.md                          ← Chiến lược test 5 tầng (~7.304 tests) + mutation/property (§13)
 README.md                                    ← Project README, setup instructions
 
 backend/CLAUDE.md                            ← BE architecture, DI pattern, request trace

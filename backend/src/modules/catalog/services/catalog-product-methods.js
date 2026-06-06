@@ -324,7 +324,9 @@ module.exports = {
   },
 
   async getRelatedProducts({ id, limit = 4 }) {
-    const product = await this.catalogRepository.findProductByPk(id);
+    const numId = parseInt(id, 10);
+    if (!numId) throw new AppError('catalog.productNotFound', 404);
+    const product = await this.catalogRepository.findProductByPk(numId);
     if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const lim = Math.min(parseInt(limit, 10) || 4, MAX_QUERY_LIMIT);
@@ -467,7 +469,9 @@ module.exports = {
   },
 
   async getProductVariants({ id }) {
-    const product = await this.catalogRepository.findProductByPk(id);
+    const numId = parseInt(id, 10);
+    if (!numId) throw new AppError('catalog.productNotFound', 404);
+    const product = await this.catalogRepository.findProductByPk(numId);
     if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
     const variants = await this.catalogRepository.findProductVariantsByProductId(id);
@@ -475,10 +479,12 @@ module.exports = {
   },
 
   async getProductReviewsSummary({ id }) {
-    const product = await this.catalogRepository.findProductByPk(id);
+    const numId = parseInt(id, 10);
+    if (!numId) throw new AppError('catalog.productNotFound', 404);
+    const product = await this.catalogRepository.findProductByPk(numId);
     if (!product || product.status !== 'active') throw new AppError('catalog.productNotFound', 404);
 
-    const reviews = await this.catalogRepository.findProductRatingsRows(id);
+    const reviews = await this.catalogRepository.findProductRatingsRows(numId);
     const count = reviews.length;
     const average = count > 0 ? reviews.reduce((s, r) => s + r.rating, 0) / count : 0;
 

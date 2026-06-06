@@ -582,20 +582,17 @@ class SequelizeCatalogRepository extends ICatalogRepository {
   }
 
   async getProductPriceRange({ categoryId } = {}) {
-    const include = [];
-    if (categoryId) {
-      include.push({
-        association: 'category',
-        where: { id: categoryId },
-        required: false,
-      });
-    }
+    // Filter bằng Product.categoryId trực tiếp — include với required:false là LEFT JOIN
+    // không filter sản phẩm, trả range của toàn bộ products thay vì chỉ category.
+    const where = {};
+    if (categoryId) where.categoryId = categoryId;
+
     const rows = await this.Product.findAll({
       attributes: [
         [this.sequelize.fn('MIN', this.sequelize.col('base_price')), 'min'],
         [this.sequelize.fn('MAX', this.sequelize.col('base_price')), 'max'],
       ],
-      include,
+      where,
       raw: true,
     });
     return { min: parseFloat(rows[0]?.min || 0), max: parseFloat(rows[0]?.max || 0) };

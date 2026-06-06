@@ -99,27 +99,29 @@ describe('findProductRatingsRows — happy path', () => {
 // ─── getProductPriceRange — với categoryId ────────────────────────────────────
 
 describe('getProductPriceRange — khi có categoryId', () => {
-  it('build include với association category + where id khi truyền categoryId', async () => {
+  it('BUG-MEDIUM-2 fix: dùng where.categoryId thay vì include để filter đúng products', async () => {
+    // include với required:false = LEFT JOIN → không filter products → range toàn bộ shop (sai).
+    // Fix: where.categoryId = categoryId → filter đúng products trong category.
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([{ min: '50.00', max: '200.00' }]);
 
     const result = await repo.getProductPriceRange({ categoryId: 3 });
 
     const call = deps.Product.findAll.mock.calls[0][0];
-    expect(call.include).toHaveLength(1);
-    expect(call.include[0].association).toBe('category');
-    expect(call.include[0].where).toEqual({ id: 3 });
+    expect(call.where).toEqual({ categoryId: 3 });
+    expect(call.include).toBeUndefined(); // không dùng include để filter
     expect(result).toEqual({ min: 50, max: 200 });
   });
 
-  it('không có categoryId → include rỗng', async () => {
+  it('không có categoryId → where rỗng (tất cả products)', async () => {
     const { repo, deps } = makeRepo();
     deps.Product.findAll.mockResolvedValue([{ min: '10.00', max: '100.00' }]);
 
     await repo.getProductPriceRange({});
 
     const call = deps.Product.findAll.mock.calls[0][0];
-    expect(call.include).toHaveLength(0);
+    expect(call.where).toEqual({});
+    expect(call.include).toBeUndefined();
   });
 });
 

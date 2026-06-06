@@ -768,6 +768,24 @@ describe('Edge cases', () => {
     expect(result).toEqual({ min: 0, max: 0 });
   });
 
+  test('BUG-MEDIUM-2: getProductPriceRange với categoryId filter Products theo categoryId (không phải LEFT JOIN)', async () => {
+    // Trước fix: include với required:false = LEFT JOIN → không filter products
+    // → price range của toàn bộ products, không chỉ category đó.
+    // Sau fix: where.categoryId = categoryId → filter đúng.
+    const { repo, deps } = makeRepo();
+    deps.Product.findAll.mockResolvedValue([{ min: '5000000', max: '15000000' }]);
+
+    await repo.getProductPriceRange({ categoryId: 5 });
+
+    // Phải truyền where.categoryId = 5, không phải include category
+    expect(deps.Product.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { categoryId: 5 } }),
+    );
+    // Không được dùng include để filter (LEFT JOIN không filter parent records)
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.include).toBeUndefined();
+  });
+
   test('TC-65 findBrandIdsByCategoryId — lọc falsy brandId', async () => {
     const seq = makeSequelize();
     seq.fn.mockReturnValue({});

@@ -268,14 +268,14 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | 5.376 | ~12s | `jest.config.js` |
+| BE Unit Tests | 215 | 5.377 | ~12s | `jest.config.js` |
 | BE Integration Tests | 38 | 210 | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **~7.284** | | |
+| **Tổng** | **325** | **~7.285** | | |
 
-> Đo lại 2026-06-06 (§A FE coverage: xóa 25 false-positive istanbul-ignore, thêm 22 test cases; §B payment audit: thêm 2 test cases; §C orders audit: thêm 2 test cases; §D admin logic audit: thêm 8 test cases).
+> Đo lại 2026-06-06 (§A FE coverage: xóa 25 false-positive istanbul-ignore, thêm 22 test cases; §B payment audit: thêm 2 test cases; §C orders audit: thêm 2 test cases; §D admin logic audit: thêm 8 test cases). Cập nhật 2026-06-06 §E orders logic audit: thêm 1 test case (cancelPendingOrdersByUser lock assertion).
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%

@@ -279,7 +279,7 @@ Inject từ `app.js`:
 - **SELECT FOR UPDATE bắt buộc:** `lockVariant(variantId, tx)` / `lockProduct(productId, tx)` trước khi decrement stock — không bỏ. Nếu bỏ → race condition oversell khi nhiều requests tạo đơn cùng lúc.
 - **Discount `usedCount` tăng khi nào:** Manual methods (cod/bank_transfer/installment) → tăng ngay trong `createOrder` transaction. Online methods (momo/vnpay) → tăng trong `payment-service.js` sau IPN/return success.
 - **Stock restore là inline trong cancelOrder:** Restore xảy ra trong `orders-service.js` trực tiếp — không qua inventory event. `order.cancelled` event chỉ để inventory ghi InventoryLog, không để restore stock.
-- **`cancelPendingOrdersByUser()`:** Được gọi trong `createOrder()` để hủy pending order cũ trước khi tạo mới (1 user chỉ có 1 pending order tại một thời điểm). Không expose qua HTTP.
+- **`cancelPendingOrdersByUser()`:** Được gọi trong `createOrder()` để hủy pending order cũ trước khi tạo mới (1 user chỉ có 1 pending order tại một thời điểm). Không expose qua HTTP. Dùng `lock: LOCK.UPDATE` trên `findAll` để serialize concurrent double-submit — tránh double-restore phantom stock.
 - **`emailGateway` là adapter:** Wrap `emailService` để dễ mock trong tests. Không gọi `emailService` trực tiếp trong service.
 - **`confirmReceived` không idempotent:** Nếu `order.status === 'delivered'` → throw 422. Chỉ cho phép từ `shipped` hoặc `processing`.
 - **productImages mapping:** `getUserOrders()` và `getOrderById()` map `productImages[]` → `thumbnail` + `images[]` + delete `productImages`. FE expect shape này.

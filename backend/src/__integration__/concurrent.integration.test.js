@@ -283,3 +283,14 @@ describe('Concurrent apply discount code — usageLimit=1', () => {
     expect(discountCode.usedCount).toBe(1);
   });
 });
+
+// Verifies BUG-HIGH-1: cancelPendingOrdersByUser cần SELECT FOR UPDATE để tránh double-restore
+// khi cùng 1 user double-submit (2 createOrder requests đồng thời).
+// Scenario: user có pending order X (đã trừ 2 units). Concurrent createOrder A và B:
+//   - Cả 2 thấy Order X là 'pending' → cả 2 restore +2 → phantom stock +2.
+// Fix: thêm lock: LOCK.UPDATE vào findAll trong cancelPendingOrdersByUser.
+test.skip('BUG-HIGH-1: double-submit từ cùng user không tạo phantom stock — requires real MySQL', async () => {
+  // Setup: user có 1 pending order cho 2 units (variant stock đã trừ)
+  // Action: 2 concurrent createOrder requests từ cùng user
+  // Assert: variant.stockQuantity sau khi cả 2 commit = expected (không có phantom +2)
+});

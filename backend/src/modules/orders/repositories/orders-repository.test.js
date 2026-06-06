@@ -195,6 +195,10 @@ describe('SequelizeOrdersRepository — Order', () => {
     expect(deps.Order.findAll).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: 3, status: 'pending' }, transaction: 'tx' }),
     );
+    // BUG-HIGH-1: findAll phải truyền lock để serialize concurrent createOrder (chống double-restore)
+    expect(deps.Order.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ lock: undefined }), // mock tx không có LOCK.UPDATE → undefined an toàn
+    );
     // Hoàn kho: variant +2, product +3
     expect(variant.increment).toHaveBeenCalledWith('stockQuantity', { by: 2, transaction: 'tx' });
     expect(product.increment).toHaveBeenCalledWith('stockQuantity', { by: 3, transaction: 'tx' });

@@ -191,6 +191,8 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     // restore → kho thiếu ảo vĩnh viễn khi user checkout lại). Phải chạy trong transaction
     // của createOrder để atomic.
     const { transaction } = options;
+    // SELECT FOR UPDATE trên orders để serialize concurrent createOrder cho cùng user —
+    // không có lock → 2 request đồng thời cùng thấy cùng pending order → double-restore stock (phantom).
     const pendingOrders = await this.Order.findAll({
       where: { userId, status: 'pending' },
       include: [
@@ -200,6 +202,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
         },
       ],
       transaction,
+      lock: transaction?.LOCK?.UPDATE,
     });
     for (const order of pendingOrders) {
       for (const item of order.items) {

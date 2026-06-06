@@ -97,7 +97,7 @@ Trả về: `{ discountAmount, discountCodeId, code }`.
 
 Functions: `getAllDiscountCodes({ page, limit, search, isActive, sortBy, sortOrder })`, `getDiscountCodeById(id)`, `createDiscountCode(data, actor)`, `updateDiscountCode(id, data, actor)`, `deleteDiscountCode(id, actor)`.
 
-Tất cả write operations được ghi nhận qua service. `updateDiscountCode` cập nhật các trường được truyền vào — không có phân nhánh action type đặc biệt.
+Tất cả write operations được ghi nhận qua service. `updateDiscountCode` cập nhật các trường được truyền vào — không có phân nhánh action type đặc biệt. **Để xóa `startDate` hoặc `endDate` (làm code vô thời hạn), truyền `null` tường minh** — validator hỗ trợ `.nullable()` cho cả hai fields.
 
 ## 3.3 Business rules
 

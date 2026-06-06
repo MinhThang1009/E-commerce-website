@@ -268,7 +268,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | 5.359 | ~12s | `jest.config.js` |
+| BE Unit Tests | 215 | 5.363 | ~12s | `jest.config.js` |
 | BE Integration Tests | 38 | 210 | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |

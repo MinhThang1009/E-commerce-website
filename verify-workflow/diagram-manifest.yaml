@@ -17,7 +17,7 @@ usecase:
   - { seq: 5,  scope: user,                        section: "§2.1b", module: users,    notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (0 bugs); T1 MATCH (beforeUpdate verified user.js:92); T2 pass. GATE-D signed 2026-06-06.
   - { seq: 6,  scope: catalog-browse,             section: "§2.2a", module: catalog,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass; T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 7,  scope: catalog-detail,             section: "§2.2b", module: catalog,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 exhaustive (9 runs, ~20 bugs fixed); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
-  - { seq: 8,  scope: catalog-category-brand,     section: "§2.2c", module: catalog,  notation: UML, tool: plantuml, status: pending }
+  - { seq: 8,  scope: catalog-category-brand,     section: "§2.2c", module: catalog,  notation: UML, tool: plantuml, status: drawn }   # 2026-06-06: T0 (3 runs, ~13 bugs fixed); T1 MATCH; T2 pass. Chờ GATE-D.
   - { seq: 9,  scope: catalog-admin,              section: "§2.2d", module: catalog,  notation: UML, tool: plantuml, status: pending }
   - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: pending }
   - { seq: 11, scope: checkout,                    section: "§2.3b", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }

@@ -1,0 +1,88 @@
+@startuml usecase-08-catalog-category-brand
+' Sơ đồ use case — Duyệt & Quản lý Danh mục + Thương hiệu (Catalog §2.2c)
+' Ground-truth: backend/src/modules/catalog/routes.js
+'   Categories (/api/categories):
+'     GET  /                    — public            — danh sách (filter productCount>0)
+'     GET  /tree                — public            — cây phân cấp (raw, không filter)
+'     GET  /featured            — public            — nổi bật
+'     GET  /slug/:slug          — public            — theo slug (chấp nhận numeric id)
+'     GET  /:id/products        — public            — sản phẩm trong danh mục
+'     GET  /:id                 — public            — chi tiết danh mục
+'     POST /                    — authenticate + authorize('staff')
+'     PUT  /:id                 — authenticate + authorize('staff')
+'     DELETE /:id               — authenticate + authorize('staff')
+'   Brands (/api/brands):
+'     GET  /                    — public            — danh sách (param hasProducts)
+'     GET  /slug/:slug          — public            — theo slug
+'     GET  /slug/:slug/products — public            — sản phẩm của thương hiệu
+'     POST /                    — authenticate + authorize('staff')
+'     PUT  /:id                 — authenticate + authorize('staff')
+'     DELETE /:id               — authenticate + authorize('staff')
+' Denominator: 15 routes → 10 UC
+'   (category list+tree+featured gộp; brand list gộp; category write gộp; brand write gộp)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách / Bất kỳ\n(Public)" as pub
+actor "Nhân viên\n(Staff)" as staff
+
+package "Danh mục   /api/categories" {
+  usecase "Xem danh mục\n(list/tree/nổi bật)" as UC_cat_browse
+  usecase "Xem chi tiết\nDanh mục" as UC_cat_detail
+  usecase "Xem sản phẩm\ntheo Danh mục" as UC_cat_products
+  usecase "Quản lý\nDanh mục (CRUD)" as UC_cat_write
+}
+
+package "Thương hiệu   /api/brands" {
+  usecase "Xem danh sách\nThương hiệu" as UC_brand_list
+  usecase "Xem chi tiết\nThương hiệu" as UC_brand_detail
+  usecase "Xem sản phẩm\ntheo Thương hiệu" as UC_brand_products
+  usecase "Quản lý\nThương hiệu (CRUD)" as UC_brand_write
+}
+
+pub -- UC_cat_browse
+pub -- UC_cat_detail
+pub -- UC_cat_products
+pub -- UC_brand_list
+pub -- UC_brand_detail
+pub -- UC_brand_products
+
+staff -- UC_cat_write
+staff -- UC_brand_write
+
+note right of UC_cat_browse
+  GET /api/categories — public (filter productCount>0, isActive).
+  GET /api/categories/tree — public (raw, không filter, dùng admin UI).
+  GET /api/categories/featured — public.
+end note
+
+note right of UC_cat_detail
+  GET /api/categories/slug/:slug — chấp nhận slug hoặc numeric id.
+  GET /api/categories/:id — chi tiết danh mục.
+end note
+
+note right of UC_cat_write
+  POST / PUT / DELETE /api/categories/:id — Staff only.
+  Xóa: fail nếu category còn sản phẩm (400).
+  parentId: integer (không phải UUID).
+end note
+
+note right of UC_brand_list
+  GET /api/brands — public.
+  ?hasProducts=true: chỉ brands có active product.
+  ?categoryId: filter theo danh mục.
+end note
+
+note right of UC_brand_write
+  POST / PUT / DELETE /api/brands/:id — Staff only.
+  Xóa: fail nếu brand còn sản phẩm (400).
+end note
+@enduml

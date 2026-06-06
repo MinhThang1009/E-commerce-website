@@ -274,15 +274,15 @@ describe('SequelizeOrdersRepository — findProductWithDefaultVariant', () => {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe('SequelizeOrdersRepository — findVariantBasic', () => {
-  test('gọi ProductVariant.findByPk với attributes giới hạn', async () => {
+  test('gọi ProductVariant.findOne với where id + productId và attributes giới hạn', async () => {
     const mockVariant = { id: 5, sku: 'SKU-001', price: 100000 };
-    const { repo, deps } = makeRepo({ ProductVariant: makeModel({ findByPk: mockVariant }) });
+    const { repo, deps } = makeRepo({ ProductVariant: makeModel({ findOne: mockVariant }) });
 
-    const result = await repo.findVariantBasic(5);
+    const result = await repo.findVariantBasic(5, 1);
 
-    expect(deps.ProductVariant.findByPk).toHaveBeenCalledWith(
-      5,
+    expect(deps.ProductVariant.findOne).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: { id: 5, productId: 1 },
         attributes: expect.any(Array),
       }),
     );

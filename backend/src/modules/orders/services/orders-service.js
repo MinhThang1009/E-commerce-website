@@ -107,7 +107,7 @@ class OrdersService {
           }
           let variant = null;
           if (item.variantId) {
-            variant = await this.repo.findVariantBasic(item.variantId);
+            variant = await this.repo.findVariantBasic(item.variantId, item.productId);
             if (!variant) {
               throw new AppError('orders.variantNotFound', 404, { id: item.variantId });
             }
@@ -434,7 +434,7 @@ class OrdersService {
 
   async getUserOrders({ userId, page = 1, limit = 20 }) {
     const pageLimit = Math.min(parseInt(limit, 10) || 20, 100);
-    const offset = (parseInt(page, 10) - 1) * pageLimit;
+    const offset = Math.max((parseInt(page, 10) - 1) * pageLimit, 0);
     const { count, rows } = await this.repo.findUserOrdersWithItems(userId, {
       limit: pageLimit,
       offset,
@@ -472,7 +472,7 @@ class OrdersService {
   async getOrderById({ id, userId, role }) {
     const order = await this.repo.findOrderByPkWithItemsAndUser(id);
     if (!order) throw new AppError('orders.notFound', 404);
-    if (order.userId !== userId && role !== 'admin') {
+    if (order.userId !== userId && role !== 'admin' && role !== 'staff') {
       throw new AppError('orders.accessDenied', 403);
     }
     // Map productImages → thumbnail + images (giống getUserOrders)

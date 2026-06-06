@@ -122,6 +122,12 @@ jest.mock('@models', () => {
     },
     ProductVariant: {
       findByPk: jest.fn().mockImplementation((...args) => mockVariantFindByPkImpl(...args)),
+      findOne: jest.fn().mockImplementation((...args) => {
+        // findVariantBasic now uses findOne({ where: { id, productId } }) — delegate to findByPk mock
+        const opts = args[0];
+        const id = opts?.where?.id ?? args[0];
+        return mockVariantFindByPkImpl(id, opts);
+      }),
       decrement: jest.fn().mockResolvedValue(undefined),
     },
     Cart: {

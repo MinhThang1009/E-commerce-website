@@ -1,0 +1,67 @@
+@startuml usecase-11-checkout
+' Sơ đồ use case — Checkout / Đặt hàng (§2.3b)
+' Cross-module: cart + orders + payment
+' Ground-truth:
+'   GET  /api/cart/validate          — optionalAuthenticate (cart module)
+'   GET  /api/orders/shipping-estimate — authenticate (orders module)
+'   POST /api/orders                 — authenticate (orders module)
+'     → Nếu paymentMethod ∈ {momo, vnpay}: orders service gọi payment service
+'       để tạo paymentUrl → trả về cùng response
+'     → IPN/return (MoMo, VNPay) xử lý ở payment module (uc-13)
+' Denominator: 3 routes → 3 UC
+' Scope: checkout initiation only. Order management → uc-12. Payment IPN/return → uc-13.
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách hàng\n(Customer)" as customer
+' Actor hệ-thống-ngoài: ký pháp UML hình chữ nhật (UML 2.5 §11.3.2 non-human actor)
+rectangle "Cổng thanh toán\n(MoMo / VNPay)" as gateway <<external system>>
+
+rectangle "Checkout — TechStore" {
+  usecase "Kiểm tra\ngiỏ hàng" as UC_validate
+  usecase "Ước tính phí\nvận chuyển" as UC_estimate
+  usecase "Đặt hàng" as UC_order
+}
+
+customer -- UC_validate
+customer -- UC_estimate
+customer -- UC_order
+UC_order ..> gateway : <<initiate>>\n(nếu online payment)
+
+note right of UC_validate
+  GET /api/cart/validate — optionalAuthenticate.
+  Trả { hasIssues, items } per-item flags:
+  priceChanged, outOfStock, quantityExceedsStock.
+  KHÔNG lock stock (lock xảy ra ở createOrder).
+  Bước kiểm tra tùy chọn trước khi đặt hàng.
+end note
+
+note right of UC_estimate
+  GET /api/orders/shipping-estimate — authenticate.
+  Body: { subtotal, distanceKm }.
+  Server tính lại — KHÔNG tin giá FE.
+  shippingCost = 0 nếu subtotal ≥ ngưỡng free ship.
+end note
+
+note right of UC_order
+  POST /api/orders — authenticate.
+  Input: { items, shippingAddress, paymentMethod,
+    discountCode?, shippingCost, note? }.
+  Trong transaction + SELECT FOR UPDATE:
+    → decrement stock, create Order + OrderItems
+    → apply discountCode nếu có
+    → gửi email xác nhận (async)
+  paymentMethod:
+    cod/bank_transfer/installment → order.status='pending'
+    momo/vnpay → gọi payment service, trả paymentUrl
+  Xem uc-13 cho MoMo/VNPay IPN + return flow.
+end note
+@enduml

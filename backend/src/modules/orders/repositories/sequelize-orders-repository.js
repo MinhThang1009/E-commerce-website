@@ -293,8 +293,11 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     });
   }
 
-  async findVariantBasic(id, options = {}) {
-    return this.ProductVariant.findByPk(id, {
+  async findVariantBasic(id, productId, options = {}) {
+    const where = { id };
+    if (productId !== undefined) where.productId = productId;
+    return this.ProductVariant.findOne({
+      where,
       attributes: ['id', [col('variant_name'), 'name'], 'price', 'stockQuantity', 'sku'],
       ...options,
     });

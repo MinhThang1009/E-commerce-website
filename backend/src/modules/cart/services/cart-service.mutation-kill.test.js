@@ -710,7 +710,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
 
       const result = await service.clearCart({ user: { id: 1 }, cookieSessionId: null });
 
-      expect(repo.clearCartItems).toHaveBeenCalledWith(10);
+      expect(repo.clearCartItems).toHaveBeenCalledWith(10, expect.any(Object));
       expect(result.message).toBe('cart.cleared');
       expect(result.data).toEqual({ id: 10, items: [], totalItems: 0, subtotal: 0 });
     });
@@ -723,7 +723,7 @@ describe('CartService — mutation kill (OUTCOME + atomicity)', () => {
       await service.clearCart({ user: null, cookieSessionId: 'sess-1' });
 
       expect(repo.findActiveCartBySessionId).toHaveBeenCalledWith('sess-1');
-      expect(repo.clearCartItems).toHaveBeenCalledWith(20);
+      expect(repo.clearCartItems).toHaveBeenCalledWith(20, expect.any(Object));
     });
   });
 

@@ -1036,7 +1036,7 @@ describe('clearCart — guest có cookieSessionId → tìm cart theo session (li
     const result = await service.clearCart({ user: null, cookieSessionId: 'sess-abc' });
 
     expect(cartRepository.findActiveCartBySessionId).toHaveBeenCalledWith('sess-abc');
-    expect(cartRepository.clearCartItems).toHaveBeenCalledWith(30);
+    expect(cartRepository.clearCartItems).toHaveBeenCalledWith(30, expect.any(Object));
     expect(result.message).toBe('cart.cleared');
   });
 });

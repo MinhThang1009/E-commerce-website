@@ -330,7 +330,9 @@ class CartService {
 
     if (!cart) return { message: 'cart.alreadyEmpty' };
 
-    await this.cartRepository.clearCartItems(cart.id);
+    await this.cartRepository.runInTransaction(async (transaction) => {
+      await this.cartRepository.clearCartItems(cart.id, { transaction });
+    });
 
     return {
       message: 'cart.cleared',
@@ -433,13 +435,19 @@ class CartService {
           { transaction, lock: transaction.LOCK.UPDATE },
         );
 
+        // Nếu product đã bị xóa sau khi thêm vào giỏ → bỏ qua item stale
+        if (!sessionItem.Product && !sessionItem.ProductVariant) {
+          await this.cartRepository.deleteCartItem(sessionItem, { transaction });
+          continue;
+        }
+
         const currentPrice = sessionItem.ProductVariant
           ? parseFloat(sessionItem.ProductVariant.price)
-          : parseFloat(sessionItem.Product.basePrice);
+          : parseFloat(sessionItem.Product?.basePrice || 0);
 
         if (existingUserItem) {
           const newQuantity = existingUserItem.quantity + sessionItem.quantity;
-          const baseStockQuantity = sessionItem.Product.defaultVariant
+          const baseStockQuantity = sessionItem.Product?.defaultVariant
             ? sessionItem.Product.defaultVariant.stockQuantity
             : 0;
           const maxStock = sessionItem.ProductVariant

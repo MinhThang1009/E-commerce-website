@@ -236,6 +236,7 @@ const importProducts = async ({ file, adminId, locale = 'vi' }) => {
       throw new AppError(i18n('admin.jsonParseError', locale), 400);
     }
     if (!Array.isArray(parsed)) throw new AppError(i18n('admin.jsonMustBeArray', locale), 400);
+    if (parsed.length === 0) throw new AppError(i18n('admin.csvEmpty', locale), 400);
     rows = parsed.map((item, idx) => ({ ...item, _lineNumber: idx + 2 }));
   } else {
     const { rows: csvRows } = parseCsv(content);

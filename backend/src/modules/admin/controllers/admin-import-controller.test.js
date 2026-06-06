@@ -388,6 +388,19 @@ describe('POST /api/admin/products/import — JSON', () => {
     Category.findAll.mockResolvedValue([{ id: 2, slug: 'laptop', name: 'Laptop' }]);
   });
 
+  test('BUG-FIX MEDIUM-3: 400 khi file JSON là mảng rỗng [] — không trả allFailed', async () => {
+    // Trước đây: rows.length=0 → failedRowCount=0 === 0 → return { allFailed: true, errors: [], totalRows: 0 }
+    // Controller trả 422 "Tất cả dòng không hợp lệ" — sai về ngữ nghĩa.
+    // Sau fix: throw AppError 400 giống CSV rỗng.
+    const res = await request.post('/api/admin/products/import').attach('file', Buffer.from('[]'), {
+      filename: 'empty.json',
+      contentType: 'application/json',
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/rỗng/i);
+  });
+
   test('400 khi file JSON không phải mảng', async () => {
     const notArray = JSON.stringify({ name: 'single object' });
     const res = await request

@@ -1,4 +1,9 @@
 {
+  "validation": {
+    "invalidProductId": "ID sản phẩm không hợp lệ",
+    "integerRequired": "Số lượng phải là số nguyên",
+    "minQuantity": "Số lượng phải lớn hơn 0"
+  },
   "common": {
     "serverError": "Lỗi máy chủ",
     "unknownError": "Đã xảy ra lỗi. Vui lòng thử lại sau.",

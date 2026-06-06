@@ -1,4 +1,9 @@
 {
+  "validation": {
+    "invalidProductId": "Invalid product ID",
+    "integerRequired": "Quantity must be an integer",
+    "minQuantity": "Quantity must be greater than 0"
+  },
   "common": {
     "serverError": "Server error",
     "unknownError": "An error occurred. Please try again later.",

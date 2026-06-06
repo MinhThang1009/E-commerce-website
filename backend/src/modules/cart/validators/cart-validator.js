@@ -1,11 +1,11 @@
 const { z } = require('zod');
 const cartItemSchema = z.object({
-  productId: z.number().int().positive('ID sản phẩm không hợp lệ'),
+  productId: z.number().int().positive({ message: 'validation.invalidProductId' }),
   variantId: z.number().int().nullable().optional(),
   quantity: z
     .number()
-    .int('Số lượng phải là số nguyên')
-    .min(1, 'Số lượng phải lớn hơn 0')
+    .int({ message: 'validation.integerRequired' })
+    .min(1, { message: 'validation.minQuantity' })
     .default(1),
   name: z.string().optional(),
   price: z.number().optional(),
@@ -14,7 +14,10 @@ const cartItemSchema = z.object({
 });
 const addToCartSchema = cartItemSchema;
 const updateCartItemSchema = z.object({
-  quantity: z.number().int('Số lượng phải là số nguyên').min(1, 'Số lượng phải lớn hơn 0'),
+  quantity: z
+    .number()
+    .int({ message: 'validation.integerRequired' })
+    .min(1, { message: 'validation.minQuantity' }),
 });
 const syncCartSchema = z.object({ items: z.array(cartItemSchema) });
 module.exports = { addToCartSchema, updateCartItemSchema, syncCartSchema };

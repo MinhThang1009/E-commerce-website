@@ -411,12 +411,19 @@ class CartService {
       return this.getCart({ user, cookieSessionId });
     }
 
-    const sessionCart = await this.cartRepository.findActiveCartBySessionId(cookieSessionId);
-    if (!sessionCart) {
+    const sessionCartCheck = await this.cartRepository.findActiveCartBySessionId(cookieSessionId);
+    if (!sessionCartCheck) {
       return this.getCart({ user, cookieSessionId });
     }
 
     await this.cartRepository.runInTransaction(async (transaction) => {
+      // Re-fetch với lock để đảm bảo atomicity
+      const sessionCart = await this.cartRepository.findActiveCartBySessionId(cookieSessionId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!sessionCart) return; // đã merged/xóa bởi concurrent request
+
       const userCart = await this.cartRepository.findOrCreateActiveCartByUserId(user.id, {
         transaction,
       });

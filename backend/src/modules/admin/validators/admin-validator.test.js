@@ -5,7 +5,7 @@
 
 'use strict';
 
-const { paginationSchema } = require('./admin-validator');
+const { paginationSchema, updateUserSchema } = require('./admin-validator');
 
 describe('admin-validator — paginationSchema', () => {
   describe('isEmailVerified preprocess', () => {
@@ -56,6 +56,37 @@ describe('admin-validator — paginationSchema', () => {
     test('undefined → undefined (optional)', () => {
       const result = paginationSchema.parse({});
       expect(result.isActive).toBeUndefined();
+    });
+  });
+});
+
+describe('admin-validator — updateUserSchema', () => {
+  describe('role enum', () => {
+    test("role 'customer' hợp lệ", () => {
+      const result = updateUserSchema.safeParse({ role: 'customer' });
+      expect(result.success).toBe(true);
+    });
+
+    test("role 'admin' hợp lệ", () => {
+      const result = updateUserSchema.safeParse({ role: 'admin' });
+      expect(result.success).toBe(true);
+    });
+
+    test("role 'staff' hợp lệ — admin phải có thể assign staff role cho user", () => {
+      const result = updateUserSchema.safeParse({ role: 'staff' });
+      expect(result.success).toBe(true);
+      expect(result.data.role).toBe('staff');
+    });
+
+    test('role không hợp lệ bị từ chối', () => {
+      const result = updateUserSchema.safeParse({ role: 'manager' });
+      expect(result.success).toBe(false);
+    });
+
+    test('role undefined → bỏ qua (optional)', () => {
+      const result = updateUserSchema.safeParse({});
+      expect(result.success).toBe(true);
+      expect(result.data.role).toBeUndefined();
     });
   });
 });

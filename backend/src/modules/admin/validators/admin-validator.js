@@ -46,7 +46,7 @@ const updateUserSchema = z.object({
   firstName: z.string().min(2).max(50).optional(),
   lastName: z.string().min(2).max(50).optional(),
   phone: z.string().optional(),
-  role: z.enum(['customer', 'admin']).optional(),
+  role: z.enum(['customer', 'staff', 'admin']).optional(),
   isEmailVerified: z.boolean().optional(),
   isActive: z.boolean().optional(),
 });

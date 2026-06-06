@@ -237,6 +237,7 @@ describe('createProduct', () => {
         status: 'active',
         seoTitle: 'P1',
       }),
+      expect.anything(),
     );
   });
 
@@ -262,8 +263,8 @@ describe('createProduct', () => {
     repo.createProductFull.mockResolvedValueOnce(prod);
     repo.findCategories.mockResolvedValueOnce([{ id: 3 }, { id: 4 }]);
     await invoke(service.createProduct, { body: { name: 'P', categoryIds: [3, 4] } });
-    expect(prod.setCategories).toHaveBeenCalledWith([{ id: 3 }, { id: 4 }]);
-    expect(prod.update).toHaveBeenCalledWith({ categoryId: 3 });
+    expect(prod.setCategories).toHaveBeenCalledWith([{ id: 3 }, { id: 4 }], expect.anything());
+    expect(prod.update).toHaveBeenCalledWith({ categoryId: 3 }, expect.anything());
   });
 
   test('attributes: value chuỗi "a,b" → split/trim/filter; values rỗng → ["Default"]', async () => {
@@ -278,16 +279,14 @@ describe('createProduct', () => {
         ],
       },
     });
-    expect(repo.createProductAttribute).toHaveBeenCalledWith({
-      productId: 10,
-      name: 'Màu',
-      values: ['đỏ', 'xanh'],
-    });
-    expect(repo.createProductAttribute).toHaveBeenCalledWith({
-      productId: 10,
-      name: 'Size',
-      values: ['Default'],
-    });
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: 10, name: 'Màu', values: ['đỏ', 'xanh'] },
+      expect.anything(),
+    );
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: 10, name: 'Size', values: ['Default'] },
+      expect.anything(),
+    );
   });
 
   test('variants: generateVariantSku + parseFloat/parseInt + isDefault default false', async () => {
@@ -310,6 +309,7 @@ describe('createProduct', () => {
         isAvailable: true,
         attributes: { color: 'red' },
       }),
+      expect.anything(),
     );
   });
 
@@ -319,10 +319,13 @@ describe('createProduct', () => {
     await invoke(service.createProduct, {
       body: { name: 'P', images: ['a.jpg', { url: 'b.jpg', color: 'red' }] },
     });
-    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith([
-      { productId: 10, imageUrl: 'a.jpg', isThumbnail: true, color: null, variantId: null },
-      { productId: 10, imageUrl: 'b.jpg', isThumbnail: false, color: 'red', variantId: null },
-    ]);
+    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith(
+      [
+        { productId: 10, imageUrl: 'a.jpg', isThumbnail: true, color: null, variantId: null },
+        { productId: 10, imageUrl: 'b.jpg', isThumbnail: false, color: 'red', variantId: null },
+      ],
+      expect.anything(),
+    );
   });
 
   test('vector sync khi status active', async () => {

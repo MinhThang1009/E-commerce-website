@@ -141,23 +141,26 @@ describe('createProduct deep', () => {
   test('createProductFull fallback đầy đủ (body tối thiểu)', async () => {
     repo.createProductFull.mockResolvedValueOnce(prod());
     await invoke(service.createProduct, { body: { name: 'P', description: 'D' } });
-    expect(repo.createProductFull).toHaveBeenCalledWith({
-      name: 'P',
-      baseName: 'P',
-      description: 'D',
-      shortDescription: 'D',
-      basePrice: undefined,
-      compareAtPrice: null,
-      stockQuantity: 0,
-      status: 'active',
-      isFeatured: false,
-      seoTitle: 'P',
-      seoDescription: 'D',
-      seoKeywords: [],
-      condition: 'new',
-      specifications: {}, // specifications mặc định {} → {} || [] = {}
-      faqs: [],
-    });
+    expect(repo.createProductFull).toHaveBeenCalledWith(
+      {
+        name: 'P',
+        baseName: 'P',
+        description: 'D',
+        shortDescription: 'D',
+        basePrice: undefined,
+        compareAtPrice: null,
+        stockQuantity: 0,
+        status: 'active',
+        isFeatured: false,
+        seoTitle: 'P',
+        seoDescription: 'D',
+        seoKeywords: [],
+        condition: 'new',
+        specifications: {}, // specifications mặc định {} → {} || [] = {}
+        faqs: [],
+      },
+      expect.anything(),
+    );
   });
 
   test('không sku → generateVariantSku nhận uniqueSku SKU-<ts>-<rand>', async () => {
@@ -182,16 +185,14 @@ describe('createProduct deep', () => {
         ],
       },
     });
-    expect(repo.createProductAttribute).toHaveBeenCalledWith({
-      productId: 10,
-      name: 'A',
-      values: ['x', 'y'],
-    });
-    expect(repo.createProductAttribute).toHaveBeenCalledWith({
-      productId: 10,
-      name: 'B',
-      values: ['42'],
-    });
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: 10, name: 'A', values: ['x', 'y'] },
+      expect.anything(),
+    );
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: 10, name: 'B', values: ['42'] },
+      expect.anything(),
+    );
   });
 
   test('variant displayName/variantName fallback từ attributes; sortOrder/isAvailable', async () => {
@@ -233,7 +234,11 @@ describe('createProduct deep', () => {
     await invoke(service.createProduct, {
       body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '5' }] },
     });
-    expect(repo.updateProductWhere).toHaveBeenCalledWith({ stockQuantity: 99 }, { id: 10 });
+    expect(repo.updateProductWhere).toHaveBeenCalledWith(
+      { stockQuantity: 99 },
+      { id: 10 },
+      expect.anything(),
+    );
   });
 
   test('specs → bulkCreateProductSpecs (category General, sortOrder index)', async () => {
@@ -241,9 +246,10 @@ describe('createProduct deep', () => {
     await invoke(service.createProduct, {
       body: { name: 'P', specifications: [{ name: 'CPU', value: 'A17' }] },
     });
-    expect(repo.bulkCreateProductSpecs).toHaveBeenCalledWith([
-      { productId: 10, name: 'CPU', value: 'A17', category: 'General', sortOrder: 0 },
-    ]);
+    expect(repo.bulkCreateProductSpecs).toHaveBeenCalledWith(
+      [{ productId: 10, name: 'CPU', value: 'A17', category: 'General', sortOrder: 0 }],
+      expect.anything(),
+    );
   });
 
   test('mảng rỗng → KHÔNG gọi create tương ứng', async () => {

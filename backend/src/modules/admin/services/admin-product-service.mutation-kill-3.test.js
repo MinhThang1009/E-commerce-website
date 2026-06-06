@@ -153,7 +153,7 @@ describe('createProduct — include + arg phụ', () => {
     await invoke(service.createProduct, {
       body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1' }] },
     });
-    expect(repo.findProductAttributes).toHaveBeenCalledWith({ productId: 10 });
+    expect(repo.findProductAttributes).toHaveBeenCalledWith({ productId: 10 }, expect.anything());
   });
 
   test('final findProductById có include shape đầy đủ', async () => {
@@ -171,10 +171,13 @@ describe('createProduct — include + arg phụ', () => {
         images: [{ imageUrl: 'x.jpg', isThumbnail: true }, { url: 'y.jpg' }],
       },
     });
-    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith([
-      { productId: 10, imageUrl: 'x.jpg', isThumbnail: true, color: null, variantId: null },
-      { productId: 10, imageUrl: 'y.jpg', isThumbnail: false, color: null, variantId: null },
-    ]);
+    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith(
+      [
+        { productId: 10, imageUrl: 'x.jpg', isThumbnail: true, color: null, variantId: null },
+        { productId: 10, imageUrl: 'y.jpg', isThumbnail: false, color: null, variantId: null },
+      ],
+      expect.anything(),
+    );
   });
 });
 

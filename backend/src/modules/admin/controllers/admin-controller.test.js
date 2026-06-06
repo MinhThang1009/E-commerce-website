@@ -243,6 +243,7 @@ const {
   OrderItem,
   ChatMessage,
   ProductVariant,
+  ProductAttribute,
   InventoryLog,
   Review,
   sequelize,
@@ -803,6 +804,7 @@ describe('POST /api/admin/products', () => {
         expect.objectContaining({ imageUrl: 'https://img.com/1.jpg', isThumbnail: true }),
         expect.objectContaining({ imageUrl: 'https://img.com/2.jpg', isThumbnail: false }),
       ]),
+      expect.anything(),
     );
   });
 
@@ -818,6 +820,30 @@ describe('POST /api/admin/products', () => {
     expect(Product.create).toHaveBeenCalled();
     // Name phải đúng
     expect(createCall.name).toBe('Product không SKU');
+  });
+
+  it('rollback transaction và trả về 500 khi tạo variant gặp lỗi — product không bị orphaned', async () => {
+    // BUG FIX: trước đây createProduct không có transaction →
+    // nếu variant creation fail, product đã được persist nhưng không có variants (orphaned).
+    // Sau fix: mọi write nằm trong 1 transaction → rollback toàn bộ khi lỗi.
+    const createdProduct = makeProduct({ id: 99 });
+    Product.findOne.mockResolvedValueOnce(null); // không trùng tên
+    Product.create.mockResolvedValueOnce(createdProduct);
+    sequelize.query.mockResolvedValue([[], {}]);
+    ProductAttribute.findAll.mockResolvedValueOnce([]);
+    // Variant creation fails → triggers rollback
+    ProductVariant.create.mockRejectedValueOnce(new Error('Duplicate entry for key sku'));
+    Product.findByPk.mockClear();
+
+    const res = await request.post('/api/admin/products').send({
+      name: 'Laptop Rollback Test',
+      basePrice: 15000000,
+      variants: [{ sku: 'DUPE-SKU', price: 15000000 }],
+    });
+
+    expect(res.status).toBe(500);
+    // Re-fetch (findProductById) không được gọi — xác nhận đã rollback và throw trước re-fetch
+    expect(Product.findByPk).not.toHaveBeenCalled();
   });
 });
 
@@ -1524,6 +1550,7 @@ describe('POST /api/admin/products — variantName fallback chain (line 262)', (
     expect(res.status).toBe(201);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ variantName: expect.any(String) }),
+      expect.anything(),
     );
   });
 

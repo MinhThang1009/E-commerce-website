@@ -447,6 +447,7 @@ describe('POST /api/admin/products — lines 743-756: attr value types', () => {
     // attr.value=16 → else if (attr.value) → attrValues = [String(16)] = ['16']
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['16'] }),
+      expect.anything(),
     );
   });
 
@@ -466,6 +467,7 @@ describe('POST /api/admin/products — lines 743-756: attr value types', () => {
     // attrValues.length === 0 → ['Default'] (line 756)
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['Default'] }),
+      expect.anything(),
     );
   });
 });
@@ -494,6 +496,7 @@ describe('POST /api/admin/products — lines 820-821: variant price/stock undefi
     // parseInt(undefined) = NaN → NaN || 0 = 0 (line 821)
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ price: 0, stockQuantity: 0 }),
+      expect.anything(),
     );
   });
 });

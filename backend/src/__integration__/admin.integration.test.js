@@ -184,3 +184,16 @@ describe('Admin Integration — Product management', () => {
     await Product.destroy({ where: { id: temp.id }, force: true });
   });
 });
+
+// Verifies BUG-FIX HIGH-2: createProduct không có transaction
+// Unit tests không thể verify vì mock toàn bộ Sequelize — cần MySQL thật để xác nhận atomicity.
+describe('createProduct — transaction atomicity (requires MySQL)', () => {
+  test.skip('BUG-FIX HIGH-2: createProduct rollback toàn bộ khi variant creation fail — không để orphaned product', async () => {
+    // Test này cần gọi trực tiếp service với một variant có SKU trùng để trigger rollback.
+    // Verify: sau khi lỗi, Product.count({ where: { nameVi: testName } }) === 0
+    // (product không persist vì transaction rolled back).
+    //
+    // Setup: dùng __INT_TEST_RollbackTest_<ts> làm tên để cleanup an toàn.
+    // Cleanup: Product.destroy({ where: { nameVi: { [Op.like]: '__INT_TEST_RollbackTest_%' } }, force: true })
+  });
+});

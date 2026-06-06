@@ -603,8 +603,14 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     });
 
     expect(res.status).toBe(201);
-    expect(newProduct.setCategories).toHaveBeenCalledWith([{ id: 9, name: 'Laptop' }]);
-    expect(newProduct.update).toHaveBeenCalledWith(expect.objectContaining({ categoryId: 9 }));
+    expect(newProduct.setCategories).toHaveBeenCalledWith(
+      [{ id: 9, name: 'Laptop' }],
+      expect.anything(),
+    );
+    expect(newProduct.update).toHaveBeenCalledWith(
+      expect.objectContaining({ categoryId: 9 }),
+      expect.anything(),
+    );
   });
 
   it('tạo attribute với value là chuỗi có dấu phẩy → tách thành mảng', async () => {
@@ -624,6 +630,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(res.status).toBe(201);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Color', values: ['Red', 'Blue', 'Green'] }),
+      expect.anything(),
     );
   });
 
@@ -644,6 +651,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(res.status).toBe(201);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['8GB', '16GB'] }),
+      expect.anything(),
     );
   });
 
@@ -664,6 +672,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(res.status).toBe(201);
     expect(ProductAttribute.create).toHaveBeenCalledWith(
       expect.objectContaining({ values: ['1.5'] }),
+      expect.anything(),
     );
   });
 
@@ -710,6 +719,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
     expect(res.status).toBe(201);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ attributes: { RAM: '8GB' } }),
+      expect.anything(),
     );
   });
 
@@ -733,6 +743,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
         expect.objectContaining({ imageUrl: 'https://img.com/photo1.jpg', isThumbnail: true }),
         expect.objectContaining({ imageUrl: 'https://img.com/photo2.jpg', isThumbnail: false }),
       ]),
+      expect.anything(),
     );
   });
 
@@ -755,6 +766,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
       expect.arrayContaining([
         expect.objectContaining({ imageUrl: 'https://img.com/obj1.jpg', color: 'black' }),
       ]),
+      expect.anything(),
     );
   });
 
@@ -781,6 +793,7 @@ describe('POST /api/admin/products — createProduct với các quan hệ', () =
         expect.objectContaining({ name: 'CPU', value: 'Intel i7', category: 'Hardware' }),
         expect.objectContaining({ name: 'RAM', category: 'General' }),
       ]),
+      expect.anything(),
     );
   });
 
@@ -1440,6 +1453,7 @@ describe('POST /api/admin/products — createProduct với productAttributes và
     expect(res.status).toBe(201);
     expect(ProductVariant.create).toHaveBeenCalledWith(
       expect.objectContaining({ attributes: { 'Màu sắc': 'đỏ' } }),
+      expect.anything(),
     );
   });
 });

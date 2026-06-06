@@ -146,176 +146,202 @@ const createProduct = catchAsync(async (req, res) => {
 
   const uniqueSku = sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-  const product = await adminRepository.createProductFull({
-    name,
-    baseName: baseName || name,
-    description,
-    shortDescription: shortDescription || description,
-    basePrice: price,
-    compareAtPrice: null,
-    stockQuantity: stock || stockQuantity || 0,
-    status,
-    isFeatured: featured,
-    seoTitle: seoTitle || name,
-    seoDescription: seoDescription || description,
-    seoKeywords: seoKeywords || [],
-    condition,
-    specifications: specifications || [],
-    faqs: faqs || [],
-  });
+  const transaction = await sequelize.transaction();
+  let product;
 
-  logger.info('comparePrice từ request:', comparePrice);
-  if (comparePrice !== undefined) {
-    await sequelize.query('UPDATE products SET compare_at_price = :comparePrice WHERE id = :id', {
-      replacements: {
-        comparePrice: comparePrice,
-        id: product.id,
+  try {
+    product = await adminRepository.createProductFull(
+      {
+        name,
+        baseName: baseName || name,
+        description,
+        shortDescription: shortDescription || description,
+        basePrice: price,
+        compareAtPrice: null,
+        stockQuantity: stock || stockQuantity || 0,
+        status,
+        isFeatured: featured,
+        seoTitle: seoTitle || name,
+        seoDescription: seoDescription || description,
+        seoKeywords: seoKeywords || [],
+        condition,
+        specifications: specifications || [],
+        faqs: faqs || [],
       },
-      type: sequelize.QueryTypes.UPDATE,
-    });
+      { transaction },
+    );
 
-    product.compareAtPrice = comparePrice;
-  }
-
-  if (selectedCategories.length > 0) {
-    // Junction (M-M) cho các query đếm theo product_categories
-    await product.setCategories(selectedCategories);
-    // FK trực tiếp = danh mục đã chọn → query lọc/hiển thị theo categoryId hoạt động đúng
-    await product.update({ categoryId: selectedCategories[0].id });
-  }
-
-  if (attributes && attributes.length > 0) {
-    try {
-      logger.info('Đang xử lý attributes:', attributes);
-      const attributePromises = attributes.map(async (attr) => {
-        let attrValues = [];
-        if (typeof attr.value === 'string') {
-          attrValues = attr.value
-            .split(',')
-            .map((v) => v.trim())
-            .filter((v) => v);
-        } else if (Array.isArray(attr.value)) {
-          attrValues = attr.value;
-        } else if (attr.value) {
-          attrValues = [String(attr.value)];
-        }
-
-        logger.info(`Tạo attribute: ${attr.name} với values:`, attrValues);
-
-        return await adminRepository.createProductAttribute({
-          productId: product.id,
-          name: attr.name,
-          values: attrValues.length > 0 ? attrValues : ['Default'],
-        });
+    logger.info('comparePrice từ request:', comparePrice);
+    if (comparePrice !== undefined) {
+      await sequelize.query('UPDATE products SET compare_at_price = :comparePrice WHERE id = :id', {
+        replacements: {
+          comparePrice: comparePrice,
+          id: product.id,
+        },
+        type: sequelize.QueryTypes.UPDATE,
+        transaction,
       });
-      await Promise.all(attributePromises);
-    } catch (error) {
-      logger.error('Lỗi khi tạo attributes:', error);
-      throw error;
+
+      product.compareAtPrice = comparePrice;
     }
-  }
 
-  let createdVariants = [];
-  if (variants && variants.length > 0) {
-    try {
-      logger.info('Đang xử lý variants:', variants);
-
-      const productAttributes = await adminRepository.findProductAttributes({
-        productId: product.id,
-      });
-
-      const variantPromises = variants.map(async (variant) => {
-        const variantAttributes =
-          variant.attributes &&
-          typeof variant.attributes === 'object' &&
-          !Array.isArray(variant.attributes)
-            ? variant.attributes
-            : {};
-
-        logger.info(`Đang xử lý variant: ${variant.name}`, {
-          price: variant.price,
-          stock: variant.stock,
-          sku: variant.sku,
-          attributes: variantAttributes,
-        });
-
-        const variantSku = variant.sku || generateVariantSku(uniqueSku, variantAttributes);
-
-        logger.info(`Tạo variant với SKU: ${variantSku}`);
-
-        const displayName =
-          variant.displayName ||
-          (variantAttributes && Object.values(variantAttributes).length > 0
-            ? Object.values(variantAttributes).join(' - ')
-            : variant.name);
-
-        return await adminRepository.createProductVariant({
-          productId: product.id,
-          variantName: variant.name || variant.variantName || displayName || variantSku,
-          sku: variantSku,
-          attributes: variantAttributes,
-          price: parseFloat(variant.price) || 0,
-          stockQuantity: parseInt(variant.stock) || 0,
-          images: variant.images || [],
-          displayName,
-          sortOrder: variant.sortOrder || 0,
-          isDefault: variant.isDefault || false,
-          isAvailable: variant.isAvailable !== false,
-        });
-      });
-
-      createdVariants = await Promise.all(variantPromises);
-
-      const totalStock = calculateTotalStock(createdVariants);
-      await adminRepository.updateProductWhere({ stockQuantity: totalStock }, { id: product.id });
-    } catch (error) {
-      logger.error('Lỗi khi tạo variants:', error);
-      throw error;
+    if (selectedCategories.length > 0) {
+      // Junction (M-M) cho các query đếm theo product_categories
+      await product.setCategories(selectedCategories, { transaction });
+      // FK trực tiếp = danh mục đã chọn → query lọc/hiển thị theo categoryId hoạt động đúng
+      await product.update({ categoryId: selectedCategories[0].id }, { transaction });
     }
-  }
 
-  if (images && Array.isArray(images) && images.length > 0) {
-    try {
-      const imageData = images.map((img, index) => {
-        if (typeof img === 'string') {
+    if (attributes && attributes.length > 0) {
+      try {
+        logger.info('Đang xử lý attributes:', attributes);
+        const attributePromises = attributes.map(async (attr) => {
+          let attrValues = [];
+          if (typeof attr.value === 'string') {
+            attrValues = attr.value
+              .split(',')
+              .map((v) => v.trim())
+              .filter((v) => v);
+          } else if (Array.isArray(attr.value)) {
+            attrValues = attr.value;
+          } else if (attr.value) {
+            attrValues = [String(attr.value)];
+          }
+
+          logger.info(`Tạo attribute: ${attr.name} với values:`, attrValues);
+
+          return await adminRepository.createProductAttribute(
+            {
+              productId: product.id,
+              name: attr.name,
+              values: attrValues.length > 0 ? attrValues : ['Default'],
+            },
+            { transaction },
+          );
+        });
+        await Promise.all(attributePromises);
+      } catch (error) {
+        logger.error('Lỗi khi tạo attributes:', error);
+        throw error;
+      }
+    }
+
+    let createdVariants = [];
+    if (variants && variants.length > 0) {
+      try {
+        logger.info('Đang xử lý variants:', variants);
+
+        const productAttributes = await adminRepository.findProductAttributes(
+          { productId: product.id },
+          { transaction },
+        );
+
+        const variantPromises = variants.map(async (variant) => {
+          const variantAttributes =
+            variant.attributes &&
+            typeof variant.attributes === 'object' &&
+            !Array.isArray(variant.attributes)
+              ? variant.attributes
+              : {};
+
+          logger.info(`Đang xử lý variant: ${variant.name}`, {
+            price: variant.price,
+            stock: variant.stock,
+            sku: variant.sku,
+            attributes: variantAttributes,
+          });
+
+          const variantSku = variant.sku || generateVariantSku(uniqueSku, variantAttributes);
+
+          logger.info(`Tạo variant với SKU: ${variantSku}`);
+
+          const displayName =
+            variant.displayName ||
+            (variantAttributes && Object.values(variantAttributes).length > 0
+              ? Object.values(variantAttributes).join(' - ')
+              : variant.name);
+
+          return await adminRepository.createProductVariant(
+            {
+              productId: product.id,
+              variantName: variant.name || variant.variantName || displayName || variantSku,
+              sku: variantSku,
+              attributes: variantAttributes,
+              price: parseFloat(variant.price) || 0,
+              stockQuantity: parseInt(variant.stock) || 0,
+              images: variant.images || [],
+              displayName,
+              sortOrder: variant.sortOrder || 0,
+              isDefault: variant.isDefault || false,
+              isAvailable: variant.isAvailable !== false,
+            },
+            { transaction },
+          );
+        });
+
+        createdVariants = await Promise.all(variantPromises);
+
+        const totalStock = calculateTotalStock(createdVariants);
+        await adminRepository.updateProductWhere(
+          { stockQuantity: totalStock },
+          { id: product.id },
+          { transaction },
+        );
+      } catch (error) {
+        logger.error('Lỗi khi tạo variants:', error);
+        throw error;
+      }
+    }
+
+    if (images && Array.isArray(images) && images.length > 0) {
+      try {
+        const imageData = images.map((img, index) => {
+          if (typeof img === 'string') {
+            return {
+              productId: product.id,
+              imageUrl: img,
+              isThumbnail: index === 0,
+              color: null,
+              variantId: null,
+            };
+          }
           return {
             productId: product.id,
-            imageUrl: img,
-            isThumbnail: index === 0,
-            color: null,
-            variantId: null,
+            imageUrl: img.url || img.imageUrl,
+            isThumbnail: img.isThumbnail || index === 0,
+            color: img.color || null,
+            variantId: img.variantId || null,
           };
-        }
-        return {
+        });
+        await adminRepository.bulkCreateProductImages(imageData, { transaction });
+        logger.info(`Đã tạo ${images.length} ảnh cho sản phẩm ${product.id}`);
+      } catch (error) {
+        logger.error('Lỗi khi tạo ảnh:', error);
+      }
+    }
+
+    if (specifications && Array.isArray(specifications) && specifications.length > 0) {
+      try {
+        const specificationData = specifications.map((spec, index) => ({
           productId: product.id,
-          imageUrl: img.url || img.imageUrl,
-          isThumbnail: img.isThumbnail || index === 0,
-          color: img.color || null,
-          variantId: img.variantId || null,
-        };
-      });
-      await adminRepository.bulkCreateProductImages(imageData);
-      logger.info(`Đã tạo ${images.length} ảnh cho sản phẩm ${product.id}`);
-    } catch (error) {
-      logger.error('Lỗi khi tạo ảnh:', error);
-    }
-  }
+          name: spec.name,
+          value: spec.value,
+          category: spec.category || 'General',
+          sortOrder: spec.sortOrder || index,
+        }));
 
-  if (specifications && Array.isArray(specifications) && specifications.length > 0) {
-    try {
-      const specificationData = specifications.map((spec, index) => ({
-        productId: product.id,
-        name: spec.name,
-        value: spec.value,
-        category: spec.category || 'General',
-        sortOrder: spec.sortOrder || index,
-      }));
-
-      await adminRepository.bulkCreateProductSpecs(specificationData);
-      logger.info(`Đã tạo ${specifications.length} thông số kỹ thuật cho sản phẩm ${product.id}`);
-    } catch (error) {
-      logger.error('Lỗi khi tạo specifications:', error);
+        await adminRepository.bulkCreateProductSpecs(specificationData, { transaction });
+        logger.info(`Đã tạo ${specifications.length} thông số kỹ thuật cho sản phẩm ${product.id}`);
+      } catch (error) {
+        logger.error('Lỗi khi tạo specifications:', error);
+      }
     }
+
+    await transaction.commit();
+  } catch (error) {
+    await transaction.rollback();
+    logger.error('Lỗi khi tạo sản phẩm:', error);
+    throw error;
   }
 
   const productWithRelations = await adminRepository.findProductById(product.id, {

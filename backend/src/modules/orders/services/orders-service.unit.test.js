@@ -130,7 +130,9 @@ describe('OrdersService', () => {
   describe('repayOrder', () => {
     test('không tồn tại → 404', async () => {
       repo.findOrderByIdAndUserId.mockResolvedValue(null);
-      await expect(service.repayOrder({ id: 99, userId: 1, originUrl: '' })).rejects.toMatchObject({
+      await expect(
+        service.repayOrder({ id: 99, userId: 1, originUrl: 'http://shop' }),
+      ).rejects.toMatchObject({
         statusCode: 404,
       });
     });

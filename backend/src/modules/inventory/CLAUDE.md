@@ -116,10 +116,10 @@ modules/inventory/
 Subscribe trong `subscribeEvents()` — không trong service:
 
 ```
-order.cancelled → iterate event.payload.items → createInventoryLog(changeType: 'cancellation')
+order.cancelled → iterate event.payload.items → createInventoryLog(changeType: 'return')
 ```
 
-**Quan trọng**: Stock đã được restore trong `orders.cancelOrder` inline (trong transaction trước khi event fire). Inventory chỉ ghi inventory log. `previousStock = 0` và `newStock = 0` là placeholder — không phải giá trị thực.
+**Quan trọng**: Stock đã được restore trong `orders.cancelOrder` inline (trong transaction trước khi event fire). Inventory chỉ ghi inventory log (`changeType: 'return'`). `previousStock = 0` và `newStock = 0` là placeholder — không phải giá trị thực.
 
 Lỗi khi ghi log → `logger.warn` và tiếp tục (không fail silently với critical operations).
 

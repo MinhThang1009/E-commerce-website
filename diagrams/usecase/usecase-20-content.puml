@@ -1,0 +1,35 @@
+@startuml usecase-20-content
+' Sơ đồ use case — Liên hệ / Phản hồi (Content module §2.9)
+' Ground-truth: backend/src/modules/content/routes.js
+'   POST /api/contact/feedback — không có authenticate (public)
+'   validate: feedbackSchema 422 (name/email/subject/content bắt buộc; phone tùy chọn)
+' Denominator: 1 route — module chỉ còn 1 endpoint sau khi Banner/News đã drop.
+' Actor: bất kỳ (guest hoặc customer) — không yêu cầu đăng nhập.
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Người dùng\n(Guest / Customer)" as user
+
+rectangle "Liên hệ — TechStore" {
+  usecase "Gửi phản hồi / liên hệ" as UC_feedback
+}
+
+user -- UC_feedback
+
+note right of UC_feedback
+  Public — không yêu cầu đăng nhập.
+  Body bắt buộc: name (≥2 ký tự), email (valid),
+    subject (≥2 ký tự), content (≥10 ký tự).
+  Body tùy chọn: phone.
+  Kết quả: tạo Feedback record (status='pending')
+    + gửi email thông báo đến admin
+    (fire-and-forget; lỗi email chỉ log, không fail request → 201).
+end note
+@enduml

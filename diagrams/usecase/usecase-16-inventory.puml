@@ -1,0 +1,50 @@
+@startuml usecase-16-inventory
+' Sơ đồ use case — Tồn kho (Inventory module §2.6)
+' Ground-truth: backend/src/modules/inventory/routes.js
+'   router.use(authenticate)  — toàn bộ routes yêu cầu đăng nhập
+'   POST /products/:productId/restock  authorize('staff')           — chỉ Staff nhập kho
+'   GET  /logs                         authorize('admin','staff')   — Admin + Staff xem nhật ký
+' Phân công rõ: stock giảm (đặt hàng) ở orders service với SELECT FOR UPDATE.
+'   Inventory chỉ: nhập kho (restock) + ghi/xem InventoryLog.
+'   Event order.cancelled → tạo InventoryLog changeType='cancellation' (nội bộ, không phải HTTP).
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Quản trị viên\n(Admin)" as admin
+actor "Nhân viên bán hàng\n(Staff)" as staff
+
+rectangle "Tồn kho — TechStore" {
+  usecase "Nhập kho\n(restock)" as UC_restock
+  usecase "Xem nhật ký tồn kho" as UC_logs
+}
+
+staff -- UC_restock
+staff -- UC_logs
+admin -- UC_logs
+
+note right of UC_restock
+  POST /api/inventory/products/:productId/restock — chỉ Staff.
+  Body: quantity (số nguyên dương, bắt buộc),
+    variantId (optional — restock biến thể cụ thể), note (optional).
+  Trong transaction: cộng stock → nếu là variant thì
+    sumVariantStock → sync Product.stockQuantity → ghi InventoryLog.
+  ⚠ Known (INV-2): load variant ngoài transaction, chưa SELECT FOR UPDATE
+    → concurrent restock cùng variant có thể lost-update (rủi ro thấp).
+end note
+
+note right of UC_logs
+  GET /api/inventory/logs — Admin + Staff (cả hai).
+  Filter: productId?, changeType?. Max 100 records/page.
+  changeType (ENUM DB): 'sale' (đặt hàng), 'restock' (nhập kho),
+    'return' (hoàn kho khi đơn bị hủy), 'adjustment' (điều chỉnh thủ công).
+  InventoryLog là immutable (chỉ INSERT, không UPDATE/DELETE).
+end note
+@enduml

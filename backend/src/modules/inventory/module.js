@@ -43,7 +43,7 @@ module.exports = ({ Product, ProductVariant, InventoryLog, User, sequelize, even
             await inventoryRepository.createInventoryLog({
               productId: item.productId,
               variantId: item.variantId || null,
-              changeType: 'cancellation',
+              changeType: 'return',
               changeAmount: item.quantity,
               previousStock: 0, // Audit-only — actual values logged in orders flow
               newStock: 0,

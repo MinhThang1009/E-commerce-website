@@ -24,7 +24,7 @@ state "Đã hủy\n(cancelled)" as cancelled
 pending    --> processing : thanh toán online thành công (IPN/return)\nhoặc staff xác nhận
 processing --> shipped    : staff cập nhật giao vận
 shipped    --> delivered  : staff cập nhật\nhoặc khách xác nhận nhận hàng
-processing --> delivered  : khách xác nhận nhận hàng\n(confirmReceived)
+processing --> delivered  : staff cập nhật\nhoặc khách xác nhận (confirmReceived)
 
 ' Hủy đơn CHƯA giao → HOÀN kho (INV-STK-2/6)
 pending    --> cancelled : hủy đơn (khách / staff / đặt đơn mới)\n→ HOÀN kho

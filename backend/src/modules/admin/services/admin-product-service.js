@@ -589,52 +589,47 @@ const updateProduct = catchAsync(async (req, res) => {
         }
       }
 
-      const finalVariants = [];
-      const variantPromises = variants.map(async (variant, index) => {
-        const rawAttrs = variant.attributes || variant.attributeValues;
-        const variantAttributes =
-          rawAttrs && typeof rawAttrs === 'object' && !Array.isArray(rawAttrs) ? rawAttrs : {};
+      const finalVariants = await Promise.all(
+        variants.map(async (variant, index) => {
+          const rawAttrs = variant.attributes || variant.attributeValues;
+          const variantAttributes =
+            rawAttrs && typeof rawAttrs === 'object' && !Array.isArray(rawAttrs) ? rawAttrs : {};
 
-        const variantSku = variant.sku || generateVariantSku(sku || 'PROD', variantAttributes);
+          const variantSku = variant.sku || generateVariantSku(sku || 'PROD', variantAttributes);
 
-        const derivedName =
-          variant.name ||
-          variant.variantName ||
-          Object.values(variantAttributes).join(' - ') ||
-          variantSku;
-        const variantData = {
-          variantName: derivedName,
-          sku: variantSku,
-          attributes: variantAttributes,
-          attributeValues: variantAttributes,
-          price: parseFloat(variant.price?.toString()) || 0,
-          stockQuantity: parseInt((variant.stock || variant.stockQuantity || 0).toString()) || 0,
-          images: variant.images || [],
-          isDefault: variant.isDefault || (index === 0 && !variants.some((v) => v.isDefault)),
-          isAvailable: variant.isAvailable !== false,
-          compareAtPrice: variant.compareAtPrice || null,
-          displayName: variant.displayName || derivedName,
-        };
+          const derivedName =
+            variant.name ||
+            variant.variantName ||
+            Object.values(variantAttributes).join(' - ') ||
+            variantSku;
+          const variantData = {
+            variantName: derivedName,
+            sku: variantSku,
+            attributes: variantAttributes,
+            attributeValues: variantAttributes,
+            price: parseFloat(variant.price?.toString()) || 0,
+            stockQuantity: parseInt((variant.stock || variant.stockQuantity || 0).toString()) || 0,
+            images: variant.images || [],
+            isDefault: variant.isDefault || (index === 0 && !variants.some((v) => v.isDefault)),
+            isAvailable: variant.isAvailable !== false,
+            compareAtPrice: variant.compareAtPrice || null,
+            displayName: variant.displayName || derivedName,
+          };
 
-        if (variant.id && currentVarMap[variant.id]) {
-          const updated = await currentVarMap[variant.id].update(variantData, { transaction });
-          finalVariants.push(updated);
-          return updated;
-        } else {
-          const created = await adminRepository.createProductVariant(
-            {
-              ...variantData,
-              productId: id,
-              id: variant.id && !String(variant.id).startsWith('var-') ? variant.id : undefined,
-            },
-            { transaction },
-          );
-          finalVariants.push(created);
-          return created;
-        }
-      });
-
-      await Promise.all(variantPromises);
+          if (variant.id && currentVarMap[variant.id]) {
+            return await currentVarMap[variant.id].update(variantData, { transaction });
+          } else {
+            return await adminRepository.createProductVariant(
+              {
+                ...variantData,
+                productId: id,
+                id: variant.id && !String(variant.id).startsWith('var-') ? variant.id : undefined,
+              },
+              { transaction },
+            );
+          }
+        }),
+      );
       changes.variants = variants.length;
 
       for (let i = 0; i < variants.length; i++) {

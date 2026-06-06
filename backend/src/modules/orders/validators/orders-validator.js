@@ -42,11 +42,7 @@ const createOrderSchema = z.object({
       }),
     )
     .optional(),
-  // status không do client gửi — backend luôn tạo đơn với status 'pending'
-  status: z
-    .enum(['pending', 'processing', 'shipped', 'delivered', 'cancelled'])
-    .optional()
-    .default('pending'),
+  // status bị xóa: backend luôn tạo với status='pending', không nhận từ client
 });
 
 const updateOrderStatusSchema = z.object({

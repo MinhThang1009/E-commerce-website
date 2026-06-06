@@ -216,7 +216,7 @@ describe('OrdersService', () => {
 
       expect(order.status).toBe('delivered');
       expect(order.paymentStatus).toBe('pending'); // không phải cod → không đổi
-      expect(repo.saveOrder).toHaveBeenCalledWith(order);
+      expect(repo.saveOrder).toHaveBeenCalledWith(order, expect.any(Object));
       expect(result.data.status).toBe('delivered');
       expect(result.data.id).toBe(5);
     });

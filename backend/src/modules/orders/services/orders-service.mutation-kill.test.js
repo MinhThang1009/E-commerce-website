@@ -1501,7 +1501,7 @@ describe('OrdersService › repayOrder — URL format và paymentStatus', () => 
 
     expect(result.paymentUrl).toBe('https://shop.vn/checkout?repayOrder=99&amount=750000');
     expect(result.paymentStatus).toBe('pending');
-    expect(repo.saveOrder).toHaveBeenCalledWith(order);
+    expect(repo.saveOrder).toHaveBeenCalledWith(order, expect.any(Object));
   });
 
   it('repayOrder: COD → throw 422 (không repay được)', async () => {

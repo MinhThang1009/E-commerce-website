@@ -182,8 +182,10 @@ class OrdersService {
           throw new AppError('orders.productInactive', 400, { name: product.name });
         }
 
+        let lockedVariant = null;
+        let lockedProduct = null;
         if (item.variantId) {
-          const lockedVariant = await this.repo.lockVariant(item.variantId, transaction);
+          lockedVariant = await this.repo.lockVariant(item.variantId, transaction);
           if (!lockedVariant || lockedVariant.stockQuantity < item.quantity) {
             throw new AppError('orders.stockInsufficient', 400, {
               name: product.name,
@@ -201,7 +203,7 @@ class OrdersService {
             newStock: prev - item.quantity,
           });
         } else {
-          const lockedProduct = await this.repo.lockProduct(item.productId, transaction);
+          lockedProduct = await this.repo.lockProduct(item.productId, transaction);
           if (!lockedProduct || lockedProduct.stockQuantity < item.quantity) {
             throw new AppError('orders.stockInsufficient', 400, {
               name: product.name,
@@ -220,8 +222,11 @@ class OrdersService {
           });
         }
 
-        const variant = item.ProductVariant;
-        const price = variant ? variant.price : product.basePrice;
+        // Ưu tiên giá từ locked data (committed tại tx time); fallback về pre-tx read
+        const preVariant = item.ProductVariant ?? null;
+        const price = item.variantId
+          ? (lockedVariant?.price ?? preVariant?.price ?? product.basePrice)
+          : (lockedProduct?.basePrice ?? product.basePrice);
         subtotal += price * item.quantity;
       }
 
@@ -675,15 +680,24 @@ class OrdersService {
   }
 
   async repayOrder({ id, userId, originUrl }) {
+    await this.repo.runInTransaction(async (transaction) => {
+      const order = await this.repo.findOrderByIdAndUserId(id, userId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!order) throw new AppError('orders.notFound', 404);
+
+      if (!_canRepay(order.status, order.paymentStatus, order.paymentMethod)) {
+        throw new AppError('Đơn hàng này không thể thanh toán lại', 422);
+      }
+      // Repay KHÔNG đổi order.status (đã pending) — chỉ reset paymentStatus (failed → pending) để retry.
+      order.paymentStatus = 'pending';
+      await this.repo.saveOrder(order, { transaction });
+    });
+
+    // Reload để lấy final state sau transaction
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
-
-    if (!_canRepay(order.status, order.paymentStatus, order.paymentMethod)) {
-      throw new AppError('Đơn hàng này không thể thanh toán lại', 422);
-    }
-    // Repay KHÔNG đổi order.status (đã pending) — chỉ reset paymentStatus (failed → pending) để retry.
-    order.paymentStatus = 'pending';
-    await this.repo.saveOrder(order);
 
     const paymentUrl = `${originUrl}/checkout?repayOrder=${order.id}&amount=${order.total}`;
     return {
@@ -697,15 +711,23 @@ class OrdersService {
   }
 
   async confirmReceived({ id, userId }) {
+    await this.repo.runInTransaction(async (transaction) => {
+      const order = await this.repo.findOrderByIdAndUserId(id, userId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!order) throw new AppError('orders.notFound', 404);
+
+      if (!_canConfirmReceived(order.status)) {
+        throw new AppError('Chỉ có thể xác nhận đơn hàng khi đang giao hoặc đang xử lý', 422);
+      }
+      order.status = STATUS.DELIVERED;
+      if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';
+      await this.repo.saveOrder(order, { transaction });
+    });
+
     const order = await this.repo.findOrderByIdAndUserId(id, userId);
     if (!order) throw new AppError('orders.notFound', 404);
-
-    if (!_canConfirmReceived(order.status)) {
-      throw new AppError('Chỉ có thể xác nhận đơn hàng khi đang giao hoặc đang xử lý', 422);
-    }
-    order.status = STATUS.DELIVERED;
-    if (order.paymentMethod === 'cod') order.paymentStatus = 'paid';
-    await this.repo.saveOrder(order);
     await order.reload();
 
     return {

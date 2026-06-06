@@ -153,8 +153,11 @@ module.exports = {
           ratings,
           isVariantProduct: true,
           name: fullName,
-          price: selectedVariant.price || productJson.basePrice,
-          compareAtPrice: selectedVariant.compareAtPrice || productJson.compareAtPrice,
+          price: selectedVariant.price != null ? selectedVariant.price : productJson.basePrice,
+          compareAtPrice:
+            selectedVariant.compareAtPrice != null
+              ? selectedVariant.compareAtPrice
+              : productJson.compareAtPrice,
           stockQuantity: selectedVariant.stockQuantity,
           sku: selectedVariant.sku,
           images: variantImages.length > 0 ? variantImages : productJson.images,
@@ -166,14 +169,18 @@ module.exports = {
             fullName,
             images: variantImages.length > 0 ? variantImages : productJson.images,
             thumbnail: variantImages.length > 0 ? variantImages[0].url : productJson.thumbnail,
-            price: selectedVariant.price || productJson.basePrice,
-            compareAtPrice: selectedVariant.compareAtPrice || productJson.compareAtPrice,
+            price: selectedVariant.price != null ? selectedVariant.price : productJson.basePrice,
+            compareAtPrice:
+              selectedVariant.compareAtPrice != null
+                ? selectedVariant.compareAtPrice
+                : productJson.compareAtPrice,
           },
           availableVariants: productJson.variants.map((v) => ({
             ...v,
             name: v.variantName || v.displayName,
-            price: v.price || productJson.basePrice,
-            compareAtPrice: v.compareAtPrice || productJson.compareAtPrice,
+            price: v.price != null ? v.price : productJson.basePrice,
+            compareAtPrice:
+              v.compareAtPrice != null ? v.compareAtPrice : productJson.compareAtPrice,
           })),
           specifications: { ...productJson.specifications, ...selectedVariant.attributes },
         };

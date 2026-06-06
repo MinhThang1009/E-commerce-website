@@ -149,11 +149,11 @@ describe('Category model — beforeValidate hook', () => {
     expect(category.slug).toBe('laptop');
   });
 
-  it('ghi đè slug hiện tại khi name có giá trị (category luôn overwrite)', () => {
-    // Category hook doesn't check !slug, it always overwrites
+  it('giữ nguyên slug hiện tại khi slug đã có (không ghi đè)', () => {
+    // Category hook checks !category.slug, so existing slug is preserved
     const category = { name: 'Gaming Gear', slug: 'old-slug' };
     categoryHooks.beforeValidate(category);
-    expect(category.slug).toBe('gaming-gear');
+    expect(category.slug).toBe('old-slug');
   });
 
   it('không thay đổi slug khi category.name là null (false branch)', () => {

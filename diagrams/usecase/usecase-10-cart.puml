@@ -1,0 +1,93 @@
+@startuml usecase-10-cart
+' Sơ đồ use case — Giỏ hàng (Cart §2.3a)
+' Ground-truth: backend/src/modules/cart/routes.js (basePath /cart)
+'   router.use(optionalAuthenticate)  — tất cả routes
+'   GET    /cart              — xem giỏ hàng (auto-merge nếu guest có cookie)
+'   GET    /cart/count        — đếm số lượng items
+'   POST   /cart              — thêm sản phẩm
+'   POST   /cart/sync         — sync toàn bộ (yêu cầu login tại service)
+'   POST   /cart/merge        — merge guest → user (yêu cầu login tại service)
+'   GET    /cart/validate     — kiểm tra stock/giá trước checkout
+'   PUT    /cart/items/:id    — cập nhật quantity
+'   DELETE /cart/items/:id    — xóa 1 item
+'   DELETE /cart              — xóa toàn bộ
+' Denominator: 9 routes → 8 UC (GET /count gộp với GET /)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách / Guest\n(Public)" as guest
+actor "Khách hàng\n(Customer)" as customer
+
+rectangle "Giỏ hàng — TechStore" {
+  usecase "Xem giỏ hàng\n& đếm items" as UC_get
+  usecase "Thêm sản phẩm\nvào giỏ" as UC_add
+  usecase "Cập nhật\nsố lượng" as UC_update
+  usecase "Xóa sản phẩm\nkhỏi giỏ" as UC_remove
+  usecase "Xóa toàn bộ\ngiỏ hàng" as UC_clear
+  usecase "Kiểm tra\ngiỏ hàng" as UC_validate
+  usecase "Đồng bộ\ngiỏ hàng" as UC_sync
+  usecase "Gộp giỏ hàng\nkhách vào tài khoản" as UC_merge
+}
+
+guest -- UC_get
+guest -- UC_add
+guest -- UC_update
+guest -- UC_remove
+guest -- UC_clear
+guest -- UC_validate
+
+customer -- UC_get
+customer -- UC_add
+customer -- UC_update
+customer -- UC_remove
+customer -- UC_clear
+customer -- UC_validate
+customer -- UC_sync
+customer -- UC_merge
+
+note right of UC_get
+  GET /api/cart — optionalAuthenticate.
+  User đã login + có cookie sessionId guest
+  → auto-merge guest cart inline.
+  Guest không có sessionId → trả giỏ trống.
+  GET /api/cart/count — gộp chung UC.
+end note
+
+note right of UC_add
+  POST /api/cart — optionalAuthenticate.
+  Validate stock trước khi add (2 lần).
+  SELECT FOR UPDATE trong transaction
+  → không tạo duplicate CartItem đồng thời.
+  Guest không có sessionId → tạo UUID mới,
+  set cookie sessionId qua response.
+end note
+
+note right of UC_validate
+  GET /api/cart/validate — optionalAuthenticate.
+  Trả { hasIssues, items } với per-item flags:
+  priceChanged, outOfStock, quantityExceedsStock.
+  KHÔNG lock stock (lock thật ở orders module).
+end note
+
+note right of UC_sync
+  POST /api/cart/sync — optionalAuthenticate.
+  Yêu cầu user đăng nhập (guest → 401).
+  Replace toàn bộ items bằng danh sách từ client.
+end note
+
+note right of UC_merge
+  POST /api/cart/merge — optionalAuthenticate.
+  Yêu cầu user đăng nhập (guest → 401).
+  Items trùng productId+variantId → cộng dồn
+  (cap maxStock khi maxStock>0; maxStock=0 giữ qty).
+  Idempotent: gọi nhiều lần = no-op lần 2+.
+end note
+@enduml

@@ -216,12 +216,11 @@ describe('category.js — beforeValidate hook', () => {
     expect(category.slug).toBe('laptop');
   });
 
-  it('should OVERWRITE existing slug (no !slug guard in category.js)', () => {
-    // category.js: if (category.name) { category.slug = slugify(...) }
-    // There is NO !category.slug check, so slug is always regenerated when name is set.
+  it('should PRESERVE existing slug when slug is already set', () => {
+    // category.js: if (category.name && !category.slug) — slug preserved if already exists
     const category = { name: 'Tablet', slug: 'old-slug' };
     hook(category);
-    expect(category.slug).toBe('tablet');
+    expect(category.slug).toBe('old-slug');
   });
 
   it('should generate slug from a Vietnamese category name', () => {

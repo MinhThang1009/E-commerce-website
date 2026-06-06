@@ -165,6 +165,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           association: 'items',
           include: [{ model: this.Product }, { model: this.ProductVariant }],
         },
+        { association: 'appliedDiscount', required: false },
       ],
     };
     // Đọc trong transaction + khóa hàng đơn (chỉ OF order để tránh deadlock với createOrder
@@ -193,6 +194,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
     const { transaction } = options;
     // SELECT FOR UPDATE trên orders để serialize concurrent createOrder cho cùng user —
     // không có lock → 2 request đồng thời cùng thấy cùng pending order → double-restore stock (phantom).
+    const manualMethods = ['cod', 'bank_transfer', 'installment'];
     const pendingOrders = await this.Order.findAll({
       where: { userId, status: 'pending' },
       include: [
@@ -200,6 +202,7 @@ class SequelizeOrdersRepository extends IOrdersRepository {
           association: 'items',
           include: [{ model: this.Product }, { model: this.ProductVariant }],
         },
+        { association: 'appliedDiscount', required: false },
       ],
       transaction,
       lock: transaction?.LOCK?.UPDATE,
@@ -211,6 +214,10 @@ class SequelizeOrdersRepository extends IOrdersRepository {
         } else {
           await this.restoreProductStock(item.Product, item.quantity, { transaction });
         }
+      }
+      // Hoàn lại discount.usedCount cho đơn manual-payment đã dùng mã (tránh quota bị tiêu dù đơn bị hủy)
+      if (order.appliedDiscount && manualMethods.includes(order.paymentMethod)) {
+        await this.decrementDiscountCodeUsage(order.appliedDiscount, { transaction });
       }
       order.status = 'cancelled';
       await order.save({ transaction });
@@ -356,6 +363,10 @@ class SequelizeOrdersRepository extends IOrdersRepository {
 
   async incrementDiscountCodeUsage(code, options = {}) {
     return code.increment('usedCount', options);
+  }
+
+  async decrementDiscountCodeUsage(code, options = {}) {
+    return code.decrement('usedCount', options);
   }
 
   // -------- User --------

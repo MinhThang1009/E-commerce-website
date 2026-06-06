@@ -534,6 +534,13 @@ class OrdersService {
         }
       }
 
+      // Hoàn lại discount.usedCount cho đơn manual-payment (cod/bank_transfer/installment)
+      // Online payments (momo/vnpay) chưa increment nên không cần decrement
+      const manualPaymentMethods = ['cod', 'bank_transfer', 'installment'];
+      if (order.appliedDiscount && manualPaymentMethods.includes(order.paymentMethod)) {
+        await this.repo.decrementDiscountCodeUsage(order.appliedDiscount, { transaction });
+      }
+
       cancelledOrder = order;
     });
 
@@ -571,7 +578,7 @@ class OrdersService {
 
   async getAllOrders({ page = 1, limit = 20, status }) {
     const pageLimit = Math.min(parseInt(limit, 10) || 20, 100);
-    const offset = (parseInt(page, 10) - 1) * pageLimit;
+    const offset = Math.max((parseInt(page, 10) - 1) * pageLimit, 0);
     const where = {};
     if (status) where.status = status;
 

@@ -151,6 +151,28 @@ describe('discountCodeService.updateDiscountCode', () => {
     expect(result).toBe(code);
   });
 
+  it('endDate=null → set endDate thành null (REGRESSION: endDate||existing giữ giá trị cũ)', async () => {
+    // Trước fix: endDate=null → null||existing = giữ endDate cũ → không thể xóa ngày hết hạn.
+    // Sau fix: endDate !== undefined → endDate=null được lưu, cho phép làm code vô thời hạn.
+    const code = makeCode({ endDate: '2026-12-31' });
+    discountCodeRepository.findById.mockResolvedValue(code);
+    discountCodeRepository.findOne.mockResolvedValue(null);
+
+    await discountCodeService.updateDiscountCode('code-id-1', { endDate: null }, {});
+
+    expect(code.update).toHaveBeenCalledWith(expect.objectContaining({ endDate: null }));
+  });
+
+  it('startDate=null → set startDate thành null (xóa điều kiện ngày bắt đầu)', async () => {
+    const code = makeCode({ startDate: '2025-01-01' });
+    discountCodeRepository.findById.mockResolvedValue(code);
+    discountCodeRepository.findOne.mockResolvedValue(null);
+
+    await discountCodeService.updateDiscountCode('code-id-1', { startDate: null }, {});
+
+    expect(code.update).toHaveBeenCalledWith(expect.objectContaining({ startDate: null }));
+  });
+
   it('ném 400 khi đổi code thành mã đã tồn tại', async () => {
     discountCodeRepository.findById.mockResolvedValue(makeCode({ code: 'OLD' }));
     discountCodeRepository.findOne.mockResolvedValue(makeCode({ code: 'NEW' }));

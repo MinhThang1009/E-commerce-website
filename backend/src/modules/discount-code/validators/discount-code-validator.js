@@ -5,11 +5,11 @@ const createDiscountCodeSchema = z.object({
   value: z.number().min(0, 'Giá trị giảm giá phải lớn hơn hoặc bằng 0'),
   minOrderAmount: z.number().min(0).optional(),
   maxDiscountAmount: z.number().min(0).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
   usageLimit: z.number().int().min(1).optional(),
   isActive: z.boolean().optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
 });
 const updateDiscountCodeSchema = createDiscountCodeSchema.partial();
 const applyDiscountCodeSchema = z.object({

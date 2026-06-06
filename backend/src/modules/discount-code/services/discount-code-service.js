@@ -195,11 +195,11 @@ const updateDiscountCode = async (id, data, actor) => {
     minOrderAmount: minOrderAmount !== undefined ? minOrderAmount : discountCode.minOrderAmount,
     maxDiscountAmount:
       maxDiscountAmount !== undefined ? maxDiscountAmount : discountCode.maxDiscountAmount,
-    startDate: startDate || discountCode.startDate,
-    endDate: endDate || discountCode.endDate,
+    startDate: startDate !== undefined ? startDate : discountCode.startDate,
+    endDate: endDate !== undefined ? endDate : discountCode.endDate,
     usageLimit: usageLimit !== undefined ? usageLimit : discountCode.usageLimit,
     isActive: isActive !== undefined ? isActive : discountCode.isActive,
-    description: description || discountCode.description,
+    description: description !== undefined ? description : discountCode.description,
   });
 
   return discountCode;

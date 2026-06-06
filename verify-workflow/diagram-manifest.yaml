@@ -19,7 +19,7 @@ usecase:
   - { seq: 7,  scope: catalog-detail,             section: "§2.2b", module: catalog,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 exhaustive (9 runs, ~20 bugs fixed); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 8,  scope: catalog-category-brand,     section: "§2.2c", module: catalog,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 (3 runs, ~13 bugs fixed); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 9,  scope: catalog-admin,              section: "§2.2d", module: catalog,  notation: UML, tool: plantuml, status: pending }
-  - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: drawn }   # 2026-06-06: T0 (5 runs, ~15 bugs fixed, GATE-A INV-CART); T1 MATCH; T2 pass. Chờ GATE-D.
+  - { seq: 10, scope: cart,                        section: "§2.3a", module: cart,     notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 (5 runs, ~15 bugs fixed, GATE-A INV-CART); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 11, scope: checkout,                    section: "§2.3b", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }
   - { seq: 12, scope: orders-customer,            section: "§2.4a", module: orders,   notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 orders fixes (HIGH double-restore + LOCK): T1 MATCH — 9 UC + track-public đúng guards. GATE-D signed 2026-06-06.
   - { seq: 13, scope: payment,                     section: "§2.4b", module: payment,  notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06 sau session-4 payment fix (1 INFO): T1 MATCH — 5 UC phủ 7 route đúng guards. GATE-D signed 2026-06-06.

@@ -142,7 +142,7 @@ Inject từ `app.js`:
 - **Guest wishlist không có API:** Gọi bất kỳ endpoint nào mà không có auth → 401. Guest wishlist chỉ trong Zustand local store.
 - **Sync local → server khi login:** FE chịu trách nhiệm — đọc Zustand store, loop qua từng productId, gọi `POST /api/wishlists`. Module không biết về guest wishlist content.
 - **`DELETE /` xóa toàn bộ, không có confirmation:** FE phải confirm dialog trước khi gọi.
-- **`getWishlist` tính stock từ variants:** `stockQuantity = sum(variant.stockQuantity)`. Nếu product không có variants → dùng `defaultVariant.stockQuantity`.
+- **`getWishlist` tính stock từ variants:** `stockQuantity = sum(variant.stockQuantity)`. Nếu product không có variants → dùng `defaultVariant.stockQuantity`. **Wishlist items có product đã soft-delete (`Product = null`) bị bỏ qua tự động** — user thấy các sản phẩm còn hợp lệ.
 - **Route order quan trọng:** `GET /check/:productId` đứng trước `DELETE /:productId` để Express không nhầm `check` là productId. Đây đã được xử lý đúng trong `routes.js`.
 - **Error messages dùng i18n key (WL-1):** Mọi `throw new AppError(...)` truyền **key** (`wishlist.productNotFound`, `wishlist.notInWishlist`), KHÔNG hardcode chuỗi tiếng Việt — error-handler `t(msg) || msg` chỉ translate khi `msg` là key (raw VN sẽ lọt nguyên si sang user tiếng Anh).
 - **Unique constraint chống race add:** Index `uq_wishlists_user_product` (model) đảm bảo không có 2 record (userId, productId) trùng — `addToWishlist` race-condition (check-then-create) → create thứ 2 ném `SequelizeUniqueConstraintError` → 409, không tạo duplicate.

@@ -1,0 +1,107 @@
+@startuml usecase-04-auth
+' Sơ đồ use case — Xác thực & Phân quyền (Auth §2.1a)
+' Ground-truth: backend/src/modules/auth/routes.js (10 routes, basePath /auth)
+'   POST /register             — public, validateRequest(registerSchema)
+'   POST /login                — public, validateRequest(loginSchema)
+'   POST /google               — public
+'   POST /logout               — authenticate (no-op server-side)
+'   POST /verify-otp           — public, otpLimiter
+'   POST /resend-verification  — public, otpLimiter, validateRequest(emailSchema)
+'   POST /refresh-token        — public
+'   POST /forgot-password      — public, otpLimiter, validateRequest(forgotPasswordSchema)
+'   POST /reset-password       — public, validateRequest(resetPasswordSchema)
+'   GET  /me                   — authenticate
+' Denominator: 10 routes → 9 UC
+'   (forgot-password + reset-password → 2 UC riêng biệt vì flow khác nhau)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách vãng lai\n(Guest)" as guest
+actor "Khách hàng\n(Customer)" as customer
+
+rectangle "Xác thực — TechStore" {
+  usecase "Đăng ký\ntài khoản" as UC_register
+  usecase "Xác thực email\n(OTP 6 số)" as UC_verify_otp
+  usecase "Gửi lại OTP\nxác thực" as UC_resend
+  usecase "Đăng nhập\nemail / mật khẩu" as UC_login
+  usecase "Đăng nhập\nGoogle OAuth" as UC_google
+  usecase "Đăng xuất" as UC_logout
+  usecase "Làm mới\naccess token" as UC_refresh
+  usecase "Quên mật khẩu\n(gửi link reset)" as UC_forgot
+  usecase "Đặt lại\nmật khẩu" as UC_reset
+  usecase "Xem thông tin\ntài khoản" as UC_me
+}
+
+guest -- UC_register
+guest -- UC_verify_otp
+guest -- UC_resend
+guest -- UC_login
+guest -- UC_google
+guest -- UC_refresh
+guest -- UC_forgot
+guest -- UC_reset
+
+customer -- UC_logout
+customer -- UC_me
+
+note right of UC_register
+  POST /auth/register — public.
+  Tạo User, gửi OTP qua email (non-blocking).
+  Email đã tồn tại → 400 (intentionally lộ —
+  UX trade-off, khác forgot/resend).
+end note
+
+note right of UC_verify_otp
+  POST /auth/verify-otp — public, otpLimiter.
+  OTP 6 số, TTL 10 phút, timing-safe compare.
+  Thành công → isEmailVerified=true, clear OTP.
+  OTP hết hạn → 400 otpExpired (≠ OTP sai).
+end note
+
+note right of UC_google
+  POST /auth/google — public.
+  Thử verifyIdToken (id_token mobile) →
+  fallback verifyAccessToken (access_token web).
+  email_verified=false tường minh → 401.
+  User chưa tồn tại → tạo mới (isEmailVerified=true).
+end note
+
+note right of UC_logout
+  POST /auth/logout — authenticate.
+  Server xóa httpOnly cookie refreshToken
+  (Set-Cookie: refreshToken=; Max-Age=0).
+  Access token KHÔNG revoke — vẫn valid đến TTL.
+  Client tự xóa access token khỏi storage.
+end note
+
+note right of UC_refresh
+  POST /auth/refresh-token — public.
+  JSON body trả { token } (access token mới).
+  refreshToken mới → httpOnly cookie (không trong body).
+  Token cũ vẫn valid (stateless, không blacklist).
+  isActive=false → 401.
+end note
+
+note right of UC_forgot
+  POST /auth/forgot-password — public, otpLimiter.
+  Luôn 200 (chống enumeration).
+  CHỈ khi user tồn tại: tạo hex token 64 char,
+  TTL 15 phút, gửi email reset.
+end note
+
+note right of UC_reset
+  POST /auth/reset-password — public (không rate limit).
+  Token 64 char hex (crypto.randomBytes(32)).
+  Hết hạn chặn tại DB query (resetPasswordExpires > now).
+  Thành công → hash password mới (bcrypt cost 12
+  tại User model hook), clear token fields.
+end note
+@enduml

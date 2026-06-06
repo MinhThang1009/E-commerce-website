@@ -1,6 +1,6 @@
 # invariants.ecommerce.md — ORACLE NGHIỆP VỤ (GATE-A)
 
-> ✅ **DUYỆT 2026-06-03 (human):** toàn bộ 25 invariant đã `[x]` — hợp lệ làm oracle tầng 0/GATE-B. INV-ORD-5/8 phản ánh quyết định Option 2 (repay pending-online, cancelled terminal).
+> ✅ **DUYỆT 2026-06-03 (human):** 25 invariant sections I–V đã `[x]`. **BỔ SUNG 2026-06-06:** section VI Auth (INV-AUTH-1..16) — tổng 41 invariant đã duyệt.
 > 🔄 **BỔ SUNG 2026-06-03 (GATE-B sau audit ma trận cancel×stock×status — F9-F13):** INV-STK-6/7, INV-PAY-3/4. Quyết định human: (a) hủy `shipped` KHÔNG hoàn kho; (b) refund đơn chưa-giao hoàn kho + cancel.
 
 > ⚠️ **ĐÂY LÀ DRAFT do agent seed từ code + CLAUDE.md gotchas — KHÔNG phải oracle hợp lệ cho tới khi HUMAN DUYỆT.**
@@ -62,26 +62,26 @@
 
 ## VI. Auth (đăng ký / đăng nhập / token / OTP / password reset)
 
-> ⚠️ **DRAFT — agent seed từ code. CHƯA hợp lệ làm oracle T0 cho đến khi HUMAN đánh `[x]` từng dòng.**
+> ✅ **DUYỆT 2026-06-06 (human):** 16 invariant INV-AUTH-1..16 đã `[x]` — hợp lệ làm oracle tầng 0/GATE-B cho auth module.
 
 | ID | WHEN | THEN (outcome PHẢI) | Nguồn DRAFT | Duyệt |
 |---|---|---|---|---|
-| INV-AUTH-1 | Đăng ký email đã tồn tại | TỪ CHỐI 400 `auth.emailInUse` (**intentionally** lộ email tồn tại — UX trade-off, khác `forgotPassword`/`resendVerification`) | register L29 | [ ] |
-| INV-AUTH-2 | Đăng nhập email/password đúng + `isEmailVerified=true` + `isActive=true` | Trả `{ token, refreshToken, user }` (access JWT HS256 + refresh JWT) | login L74 | [ ] |
-| INV-AUTH-3 | Đăng nhập khi `isEmailVerified=false` | TỪ CHỐI 401 `auth.emailNotVerified` | login L66 | [ ] |
-| INV-AUTH-4 | Đăng nhập khi `isActive=false` | TỪ CHỐI 401 `auth.accountDisabled` | login L70 | [ ] |
-| INV-AUTH-5 | `verifyOtp` với OTP đúng + còn hạn + user chưa `isEmailVerified` | `isEmailVerified=true`; `otpCode=null`; `otpExpires=null` lưu vào DB; → 200 | verifyOtp L181-184 | [ ] |
-| INV-AUTH-6 | `verifyOtp` với OTP đúng **ĐÃ hết hạn** | TỪ CHỐI 400 `auth.otpExpired` (khác với OTP sai → `auth.otpInvalidOrExpired`) | verifyOtp L177 | [ ] |
-| INV-AUTH-7 | `verifyOtp` khi user đã `isEmailVerified=true` | TỪ CHỐI 400 (generic — chống enumeration) | verifyOtp L163 | [ ] |
-| INV-AUTH-8 | `resendVerification` với BẤT KỲ email | Luôn 200 (chống enumeration). Chỉ khi user tồn tại + chưa xác thực mới tạo OTP mới + gửi email (non-blocking) | resendVerification L192 | [ ] |
-| INV-AUTH-9 | `forgotPassword` với BẤT KỲ email | Luôn 200 `auth.passwordResetSent` (chống enumeration). Token 32 bytes = hex 64 char, TTL 15 phút, CHỈ set nếu user tồn tại | forgotPassword L246 | [ ] |
-| INV-AUTH-10 | `resetPassword` với token hợp lệ còn hạn | Password mới được hash (bcrypt cost 12 trong User model hook), `resetPasswordToken=null`, `resetPasswordExpires=null` lưu vào DB | resetPassword L276 | [ ] |
-| INV-AUTH-11 | `resetPassword` với token hết hạn hoặc không tồn tại | TỪ CHỐI 400 `auth.tokenInvalidOrExpired`. Hết hạn được chặn tại DB (repo query `resetPasswordExpires > now`) | resetPassword L273; repo L47 | [ ] |
-| INV-AUTH-12 | `refreshToken` hợp lệ + user `isActive=true` | Trả cặp token MỚI `{ token, refreshToken }`. Token cũ vẫn valid đến hết TTL (stateless — không revoke) | refreshToken L240 | [ ] |
-| INV-AUTH-13 | `refreshToken` khi user `isActive=false` | TỪ CHỐI 401 `auth.accountDisabled` | refreshToken L237 | [ ] |
-| INV-AUTH-14 | Google login khi Google payload `email_verified === false` (tường minh) | TỪ CHỐI 401 `auth.googleAuthFailed`. Nếu `email_verified` vắng mặt (undefined) → PASS (intentional: tương thích payload) | googleLogin L102 | [ ] |
-| INV-AUTH-15 | Google login hợp lệ + user chưa tồn tại | Tạo user mới (`isEmailVerified=true`), trả `{ token, refreshToken, user }` | googleLogin L116 | [ ] |
-| INV-AUTH-16 | `logout` (yêu cầu `authenticate`) | Server no-op (200, không revoke token). Token vẫn valid đến hết TTL. Client tự xóa | logout L147 | [ ] |
+| INV-AUTH-1 | Đăng ký email đã tồn tại | TỪ CHỐI 400 `auth.emailInUse` (**intentionally** lộ email tồn tại — UX trade-off, khác `forgotPassword`/`resendVerification`) | register L29 | [x] |
+| INV-AUTH-2 | Đăng nhập email/password đúng + `isEmailVerified=true` + `isActive=true` | Trả `{ token, refreshToken, user }` (access JWT HS256 + refresh JWT) | login L74 | [x] |
+| INV-AUTH-3 | Đăng nhập khi `isEmailVerified=false` | TỪ CHỐI 401 `auth.emailNotVerified` | login L66 | [x] |
+| INV-AUTH-4 | Đăng nhập khi `isActive=false` | TỪ CHỐI 401 `auth.accountDisabled` | login L70 | [x] |
+| INV-AUTH-5 | `verifyOtp` với OTP đúng + còn hạn + user chưa `isEmailVerified` | `isEmailVerified=true`; `otpCode=null`; `otpExpires=null` lưu vào DB; → 200 | verifyOtp L181-184 | [x] |
+| INV-AUTH-6 | `verifyOtp` với OTP đúng **ĐÃ hết hạn** | TỪ CHỐI 400 `auth.otpExpired` (khác với OTP sai → `auth.otpInvalidOrExpired`) | verifyOtp L177 | [x] |
+| INV-AUTH-7 | `verifyOtp` khi user đã `isEmailVerified=true` | TỪ CHỐI 400 (generic — chống enumeration) | verifyOtp L163 | [x] |
+| INV-AUTH-8 | `resendVerification` với BẤT KỲ email | Luôn 200 (chống enumeration). Chỉ khi user tồn tại + chưa xác thực mới tạo OTP mới + gửi email (non-blocking) | resendVerification L192 | [x] |
+| INV-AUTH-9 | `forgotPassword` với BẤT KỲ email | Luôn 200 `auth.passwordResetSent` (chống enumeration). Token 32 bytes = hex 64 char, TTL 15 phút, CHỈ set nếu user tồn tại | forgotPassword L246 | [x] |
+| INV-AUTH-10 | `resetPassword` với token hợp lệ còn hạn | Password mới được hash (bcrypt cost 12 trong User model hook), `resetPasswordToken=null`, `resetPasswordExpires=null` lưu vào DB | resetPassword L276 | [x] |
+| INV-AUTH-11 | `resetPassword` với token hết hạn hoặc không tồn tại | TỪ CHỐI 400 `auth.tokenInvalidOrExpired`. Hết hạn được chặn tại DB (repo query `resetPasswordExpires > now`) | resetPassword L273; repo L47 | [x] |
+| INV-AUTH-12 | `refreshToken` hợp lệ + user `isActive=true` | Trả cặp token MỚI `{ token, refreshToken }`. Token cũ vẫn valid đến hết TTL (stateless — không revoke) | refreshToken L240 | [x] |
+| INV-AUTH-13 | `refreshToken` khi user `isActive=false` | TỪ CHỐI 401 `auth.accountDisabled` | refreshToken L237 | [x] |
+| INV-AUTH-14 | Google login khi Google payload `email_verified === false` (tường minh) | TỪ CHỐI 401 `auth.googleAuthFailed`. Nếu `email_verified` vắng mặt (undefined) → PASS (intentional: tương thích payload) | googleLogin L102 | [x] |
+| INV-AUTH-15 | Google login hợp lệ + user chưa tồn tại | Tạo user mới (`isEmailVerified=true`), trả `{ token, refreshToken, user }` | googleLogin L116 | [x] |
+| INV-AUTH-16 | `logout` (yêu cầu `authenticate`) | Server no-op (200, không revoke token). Token vẫn valid đến hết TTL. Client tự xóa | logout L147 | [x] |
 
 ---
 

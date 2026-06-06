@@ -2,7 +2,8 @@
   "validation": {
     "invalidProductId": "Invalid product ID",
     "integerRequired": "Quantity must be an integer",
-    "minQuantity": "Quantity must be greater than 0"
+    "minQuantity": "Quantity must be greater than 0",
+    "invalidPaymentMethod": "Invalid payment method"
   },
   "common": {
     "serverError": "Server error",

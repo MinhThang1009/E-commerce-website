@@ -29,7 +29,9 @@ const createOrderSchema = z.object({
   billingZip: z.string().optional(),
   billingCountry: z.string().optional(),
   billingPhone: z.string().optional(),
-  paymentMethod: reqStr('Phương thức thanh toán không được để trống'),
+  paymentMethod: z.enum(['cod', 'bank_transfer', 'installment', 'momo', 'vnpay'], {
+    message: 'validation.invalidPaymentMethod',
+  }),
   notes: z.string().optional(),
   discountCode: z.string().optional(),
   shippingCost: z.number().min(0).optional(), // Phí ship do FE tính theo khoảng cách km

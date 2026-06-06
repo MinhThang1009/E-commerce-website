@@ -227,6 +227,7 @@ class OrdersService {
         const price = item.variantId
           ? (lockedVariant?.price ?? preVariant?.price ?? product.basePrice)
           : (lockedProduct?.basePrice ?? product.basePrice);
+        item._lockedPrice = price; // dùng để đảm bảo unitPrice = subtotal price trong createOrderItem
         subtotal += price * item.quantity;
       }
 
@@ -333,7 +334,8 @@ class OrdersService {
       for (const item of itemsToProcess) {
         const product = item.Product;
         const variant = item.ProductVariant;
-        const price = variant ? variant.price : product.basePrice;
+        // Dùng _lockedPrice đã compute ở stock loop (consistent với subtotal)
+        const price = item._lockedPrice ?? (variant ? variant.price : product.basePrice);
         const itemSubtotal = price * item.quantity;
 
         const orderItem = await this.repo.createOrderItem(
@@ -346,7 +348,10 @@ class OrdersService {
             unitPrice: price,
             quantity: item.quantity,
             subtotal: itemSubtotal,
-            image: product.thumbnail,
+            image:
+              product.productImages?.find((img) => img.isThumbnail)?.imageUrl ||
+              product.productImages?.[0]?.imageUrl ||
+              null,
             attributes: {
               ...(variant ? { variant: variant.name } : {}),
             },

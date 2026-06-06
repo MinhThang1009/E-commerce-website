@@ -288,7 +288,10 @@ class SequelizeOrdersRepository extends IOrdersRepository {
   async findProductWithDefaultVariant(id, options = {}) {
     return this.Product.findByPk(id, {
       attributes: ['id', 'nameVi', 'slug', 'basePrice', 'status'],
-      include: [{ association: 'defaultVariant', attributes: ['id', 'stockQuantity'] }],
+      include: [
+        { association: 'defaultVariant', attributes: ['id', 'stockQuantity'] },
+        { association: 'productImages', attributes: ['imageUrl', 'isThumbnail'], required: false },
+      ],
       ...options,
     });
   }

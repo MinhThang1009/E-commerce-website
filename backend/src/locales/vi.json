@@ -2,7 +2,8 @@
   "validation": {
     "invalidProductId": "ID sản phẩm không hợp lệ",
     "integerRequired": "Số lượng phải là số nguyên",
-    "minQuantity": "Số lượng phải lớn hơn 0"
+    "minQuantity": "Số lượng phải lớn hơn 0",
+    "invalidPaymentMethod": "Phương thức thanh toán không hợp lệ"
   },
   "common": {
     "serverError": "Lỗi máy chủ",

@@ -570,9 +570,13 @@ describe('OrdersService › createOrder — createOrderItem attributes', () => {
     );
   });
 
-  it('createOrderItem nhận image = product.thumbnail', async () => {
+  it('createOrderItem nhận image từ productImages (isThumbnail hoặc first)', async () => {
     const { service, repo } = buildService();
-    const product = mkProduct({ basePrice: 100000, stockQuantity: 5, thumbnail: 'thumb.png' });
+    const product = mkProduct({
+      basePrice: 100000,
+      stockQuantity: 5,
+      productImages: [{ imageUrl: 'thumb.png', isThumbnail: true }],
+    });
     repo.findProductWithDefaultVariant.mockResolvedValue(product);
     repo.lockProduct.mockResolvedValue({ ...product, stockQuantity: 5 });
     repo.createOrder.mockResolvedValue(mkCreatedOrder({ id: 1 }));

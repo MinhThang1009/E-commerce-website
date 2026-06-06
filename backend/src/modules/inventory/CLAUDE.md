@@ -106,6 +106,7 @@ modules/inventory/
 **`getInventoryLogs({ page, limit, productId, changeType })`**:
 
 - Filter: `productId`, `changeType`
+- `page` clamp ≥ 1 (page=0 / âm / không hợp lệ → mặc định 1, tránh MySQL "Row offset cannot be negative")
 - Max 100 records per page
 - Include: `Product` (id, nameVi, nameEn, slug), `ProductVariant` (id, sku), `User` (id, firstName, lastName) as `'creator'`
 - Order: `createdAt DESC`

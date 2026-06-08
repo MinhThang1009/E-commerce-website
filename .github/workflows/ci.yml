@@ -100,6 +100,96 @@ jobs:
           path: backend/coverage/coverage-summary.json
           retention-days: 7
 
+# ─── BACKEND INTEGRATION (MySQL) ─────────────────────────────────────────────
+  backend-integration:
+    name: Backend Integration + API + E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [backend]
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          MYSQL_DATABASE: techstore_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Seed test database
+        working-directory: backend
+        run: |
+          mysql -h 127.0.0.1 -u root < data/migration.sql
+          mysql -h 127.0.0.1 -u root techstore_test < data/seed_data.sql
+        env:
+          MYSQL_PWD: ''
+
+      - name: Integration tests
+        working-directory: backend
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: ''
+          DB_NAME: techstore_test
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
+
+      - name: API HTTP tests
+        working-directory: backend
+        run: npm run test:api
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: ''
+          DB_NAME: techstore_test
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
+          EMAIL_USERNAME: test@test.com
+          EMAIL_PASSWORD: test
+
+      - name: E2E tests
+        working-directory: backend
+        run: npm run test:e2e
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: ''
+          DB_NAME: techstore_test
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
+          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
+          EMAIL_USERNAME: test@test.com
+          EMAIL_PASSWORD: test
+
 # ─── FRONTEND ────────────────────────────────────────────────────────────────
   frontend:
     name: Frontend (lint + typecheck + test + build)
@@ -219,17 +309,62 @@ jobs:
           PATCH_BASE: origin/${{ github.event.pull_request.base.ref }}
         run: npm run check:patch-coverage
 
+# ─── CD BUILD ARTIFACT (chỉ main) ───────────────────────────────────────────
+  cd-artifact:
+    name: CD Build Artifact
+    runs-on: ubuntu-latest
+    needs: [backend, frontend, backend-integration]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        working-directory: frontend
+        run: npm ci && npm run build
+        env:
+          VITE_API_URL: /api
+
+      - name: Package release artifact
+        run: |
+          mkdir -p release
+          cp -r frontend/dist release/frontend
+          cp -r backend/src release/backend-src
+          cp backend/package.json backend/package-lock.json release/
+          cp backend/data/migration.sql backend/data/seed_data.sql release/
+          echo "${{ github.sha }}" > release/COMMIT_SHA
+          echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > release/BUILD_TIME
+          tar -czf release.tar.gz -C release .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: release.tar.gz
+          retention-days: 30
+
 # ─── SUMMARY ─────────────────────────────────────────────────────────────────
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [backend, frontend]
+    needs: [backend, frontend, backend-integration]
     if: always()
     steps:
       - name: Check results
         run: |
           BE="${{ needs.backend.result }}"
           FE="${{ needs.frontend.result }}"
-          echo "Backend:  $BE"
-          echo "Frontend: $FE"
+          INT="${{ needs.backend-integration.result }}"
+          echo "Backend:      $BE"
+          echo "Frontend:     $FE"
+          echo "Integration:  $INT"
           [ "$BE" = "success" ] && [ "$FE" = "success" ] && echo "✅ CI passed" || (echo "❌ CI failed"; exit 1)
+          if [ "$INT" != "success" ] && [ "$INT" != "skipped" ]; then echo "⚠️  Integration tests failed"; fi

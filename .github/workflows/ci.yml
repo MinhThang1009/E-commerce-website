@@ -34,7 +34,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -123,7 +123,7 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -197,7 +197,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
@@ -254,7 +254,7 @@ jobs:
     if: github.event_name == 'pull_request'
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # cần lịch sử git để diff vs base ref
 
@@ -318,7 +318,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js 22
         uses: actions/setup-node@v4

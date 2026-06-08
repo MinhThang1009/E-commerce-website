@@ -139,8 +139,8 @@ jobs:
       - name: Seed test database
         working-directory: backend
         run: |
-          mysql -h 127.0.0.1 -u root techstore_test < data/migration.sql
-          mysql -h 127.0.0.1 -u root techstore_test < data/seed_data.sql
+          mysql -h 127.0.0.1 -u root techstore_test -e "SET FOREIGN_KEY_CHECKS=0; SOURCE data/migration.sql; SET FOREIGN_KEY_CHECKS=1;"
+          mysql -h 127.0.0.1 -u root techstore_test -e "SET FOREIGN_KEY_CHECKS=0; SOURCE data/seed_data.sql; SET FOREIGN_KEY_CHECKS=1;"
         env:
           MYSQL_PWD: ''
 

@@ -1,0 +1,50 @@
+name: "Mutation Testing (Weekly)"
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  mutation-critical:
+    name: "Mutation: Critical Modules (break=70)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Run Stryker mutation tests (critical modules)
+        working-directory: backend
+        run: npm run test:mutation:critical
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-minimum-32-chars-long
+          JWT_REFRESH_SECRET: ci-refresh-secret-minimum-32-chars
+          LLM_API_KEY: demo-key
+
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mutation-report-critical
+          path: backend/reports/mutation-critical/
+          retention-days: 14

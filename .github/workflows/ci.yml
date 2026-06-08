@@ -145,7 +145,7 @@ jobs:
           MYSQL_PWD: ''
 
       - name: Create upload dirs (tests expect filesystem paths)
-        run: mkdir -p uploads/images/{products,temp,thumbnails}
+        run: mkdir -p uploads/images/{product,products,temp,thumbnails}
 
       - name: Integration tests
         working-directory: backend

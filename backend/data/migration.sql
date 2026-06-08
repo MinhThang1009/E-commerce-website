@@ -165,6 +165,7 @@ CREATE TABLE `chat_messages` (
   `response_time_ms` int(10) unsigned DEFAULT NULL,
   `is_fallback` tinyint(1) NOT NULL DEFAULT 0,
   `is_archived` tinyint(1) NOT NULL DEFAULT 0,
+  `metadata` text DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),

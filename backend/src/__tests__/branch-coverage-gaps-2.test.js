@@ -490,7 +490,35 @@ describe('cart-service extra branches', () => {
     expect(cartRepo.findCartItemsForMerge).not.toHaveBeenCalled();
   });
 
-  // L453: mergeCart currentPrice — ProductVariant null → Product.basePrice path
+  // L453: mergeCart currentPrice — ProductVariant null + basePrice null → || 0 fallback
+  test('mergeCart: Product.basePrice null → currentPrice fallback 0 (L453 || 0)', async () => {
+    const sessionCart = { id: 2, status: 'active' };
+    cartRepo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 1, items: [] });
+    cartRepo.findActiveCartBySessionId
+      .mockResolvedValueOnce(sessionCart)
+      .mockResolvedValueOnce(sessionCart);
+    cartRepo.findCartItemsForMerge.mockResolvedValue([
+      {
+        id: 10,
+        productId: 1,
+        variantId: null,
+        quantity: 1,
+        Product: { id: 1, basePrice: null, defaultVariant: null },
+        ProductVariant: null,
+      },
+    ]);
+    cartRepo.findCartItemMatching.mockResolvedValue(null);
+    cartRepo.findCartItemsWithDetails.mockResolvedValue([]);
+    await svc.mergeCart({
+      user: { id: 1 },
+      cookieSessionId: 'sess-1',
+      clearSessionCookie: jest.fn(),
+    });
+    const saved = cartRepo.saveCartItem.mock.calls[0][0];
+    expect(saved.unitPrice).toBe(0);
+  });
+
+  // L453: mergeCart currentPrice — ProductVariant null → Product.basePrice truthy path
   test('mergeCart: ProductVariant null → currentPrice from Product.basePrice (L453)', async () => {
     const sessionCart = { id: 2, status: 'active' };
     cartRepo.findOrCreateActiveCartByUserId.mockResolvedValue({ id: 1, items: [] });
@@ -535,16 +563,14 @@ describe('orders-service extra branches', () => {
       decrementVariantStock: jest.fn(),
       decrementProductStock: jest.fn(),
       incrementDiscountCodeUsage: jest.fn(),
-      createOrder: jest
-        .fn()
-        .mockResolvedValue({
-          id: 1,
-          number: 'ORD-001',
-          total: 100,
-          status: 'pending',
-          paymentStatus: 'pending',
-          paymentMethod: 'cod',
-        }),
+      createOrder: jest.fn().mockResolvedValue({
+        id: 1,
+        number: 'ORD-001',
+        total: 100,
+        status: 'pending',
+        paymentStatus: 'pending',
+        paymentMethod: 'cod',
+      }),
       createOrderItem: jest.fn().mockResolvedValue({ id: 1 }),
       clearCartItems: jest.fn(),
       getActiveDiscountByCode: jest.fn(),

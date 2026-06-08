@@ -476,6 +476,198 @@ describe('OrdersService', () => {
     });
   });
 
+  describe('createOrder — nhánh giá fallback và product-only', () => {
+    const baseBody = {
+      shippingFirstName: 'A',
+      shippingLastName: 'B',
+      shippingAddress1: '123',
+      shippingCity: 'HN',
+      shippingZip: '100000',
+      shippingCountry: 'VN',
+      shippingPhone: '0909',
+      paymentMethod: 'cod',
+      items: [],
+    };
+
+    function setupCreateOrderMocks(items) {
+      const cart = { id: 1, items, status: 'active' };
+      repo.findOrCreateActiveCart.mockResolvedValue([cart]);
+      repo.findActiveCartsByUser.mockResolvedValue([]);
+      repo.findCartByPkWithItemsDetails.mockResolvedValue(cart);
+      repo.cancelPendingOrdersByUser.mockResolvedValue(0);
+      const order = {
+        id: 100,
+        number: 'ORD-TEST',
+        userId: 1,
+        createdAt: new Date(),
+        total: 0,
+        shippingFirstName: 'A',
+        shippingLastName: 'B',
+        shippingAddress1: '123',
+        shippingAddress2: '',
+        shippingCity: 'HN',
+        shippingState: '',
+        shippingZip: '100000',
+        shippingCountry: 'VN',
+      };
+      repo.createOrder.mockResolvedValue(order);
+      repo.createOrderItem.mockImplementation(async (data) => ({ ...data }));
+      repo.findUserById.mockResolvedValue({ id: 1, email: 'u@x.y' });
+      return order;
+    }
+
+    test('product-only (no variant) → giá từ lockedProduct.basePrice', async () => {
+      const product = {
+        id: 10,
+        name: 'Test',
+        status: 'active',
+        basePrice: 5000000,
+        stockQuantity: 10,
+      };
+      const items = [
+        { productId: 10, variantId: null, quantity: 1, Product: product, ProductVariant: null },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockProduct.mockResolvedValue({ ...product });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      expect(repo.decrementProductStock).toHaveBeenCalled();
+      expect(repo.restoreProductStock).not.toHaveBeenCalled();
+    });
+
+    test('variant có _lockedPrice null → fallback variant.price', async () => {
+      const product = { id: 10, name: 'Test', status: 'active', basePrice: 5000000 };
+      const variant = { id: 5, price: 6000000, stockQuantity: 10, sku: 'SKU1', name: 'V1' };
+      const items = [
+        { productId: 10, variantId: 5, quantity: 1, Product: product, ProductVariant: variant },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockVariant.mockResolvedValue({ ...variant });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      const itemArg = repo.createOrderItem.mock.calls[0][0];
+      expect(itemArg.unitPrice).toBe(6000000);
+    });
+
+    test('lockedVariant.price null → fallback preVariant.price (dòng 238 nhánh 2)', async () => {
+      const product = { id: 10, name: 'Test', status: 'active', basePrice: 1000000 };
+      const preVariant = { id: 5, price: 7000000, stockQuantity: 10, sku: 'SKU1', name: 'V1' };
+      const items = [
+        { productId: 10, variantId: 5, quantity: 1, Product: product, ProductVariant: preVariant },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockVariant.mockResolvedValue({ id: 5, price: null, stockQuantity: 10, sku: 'SKU1' });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      const itemArg = repo.createOrderItem.mock.calls[0][0];
+      expect(itemArg.unitPrice).toBe(7000000);
+    });
+
+    test('cả lockedVariant.price và preVariant.price null → fallback product.basePrice (dòng 238 nhánh 3)', async () => {
+      const product = { id: 10, name: 'Test', status: 'active', basePrice: 3000000 };
+      const preVariant = { id: 5, price: null, stockQuantity: 10, sku: 'SKU1', name: 'V1' };
+      const items = [
+        { productId: 10, variantId: 5, quantity: 1, Product: product, ProductVariant: preVariant },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockVariant.mockResolvedValue({ id: 5, price: null, stockQuantity: 10, sku: 'SKU1' });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      const itemArg = repo.createOrderItem.mock.calls[0][0];
+      expect(itemArg.unitPrice).toBe(3000000);
+    });
+
+    test('_lockedPrice null + variant null → dùng product.basePrice (dòng 348)', async () => {
+      const product = {
+        id: 10,
+        name: 'Test',
+        status: 'active',
+        basePrice: 4000000,
+        stockQuantity: 10,
+      };
+      const items = [
+        {
+          productId: 10,
+          variantId: null,
+          quantity: 1,
+          Product: product,
+          ProductVariant: null,
+          _lockedPrice: undefined,
+        },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockProduct.mockResolvedValue({ ...product });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      const itemArg = repo.createOrderItem.mock.calls[0][0];
+      expect(itemArg.unitPrice).toBe(4000000);
+    });
+
+    test('productImages không có isThumbnail → dùng ảnh đầu tiên (dòng 504 nhánh 2)', async () => {
+      const product = {
+        id: 10,
+        name: 'Test',
+        status: 'active',
+        basePrice: 5000000,
+        stockQuantity: 10,
+        productImages: [{ imageUrl: 'http://img/first.jpg', isThumbnail: false }],
+      };
+      const items = [
+        { productId: 10, variantId: null, quantity: 1, Product: product, ProductVariant: null },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockProduct.mockResolvedValue({ ...product });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      const itemArg = repo.createOrderItem.mock.calls[0][0];
+      expect(itemArg.image).toBe('http://img/first.jpg');
+    });
+
+    test('productImages rỗng → image = null trong orderItem', async () => {
+      const product = {
+        id: 10,
+        name: 'Test',
+        status: 'active',
+        basePrice: 5000000,
+        stockQuantity: 10,
+        productImages: [],
+      };
+      const items = [
+        { productId: 10, variantId: null, quantity: 1, Product: product, ProductVariant: null },
+      ];
+      setupCreateOrderMocks(items);
+      repo.lockProduct.mockResolvedValue({ ...product });
+
+      await service.createOrder({ user: { id: 1 }, body: baseBody });
+
+      const itemArg = repo.createOrderItem.mock.calls[0][0];
+      expect(itemArg.image).toBeNull();
+    });
+  });
+
+  describe('repayOrder — reload null sau transaction', () => {
+    test('reload trả null sau transaction → 404', async () => {
+      const order = {
+        id: 5,
+        status: 'pending',
+        paymentStatus: 'failed',
+        paymentMethod: 'momo',
+        total: 1000,
+      };
+      repo.findOrderByIdAndUserId.mockResolvedValueOnce(order).mockResolvedValueOnce(null);
+
+      await expect(
+        service.repayOrder({ id: 5, userId: 1, originUrl: 'http://shop' }),
+      ).rejects.toMatchObject({ statusCode: 404 });
+    });
+  });
+
   describe('getAllOrders', () => {
     // Line 540 branch[1]: limit không parse được thành số → fallback về 20
     test('limit không hợp lệ (NaN) → pageLimit mặc định 20', async () => {

@@ -24,12 +24,10 @@ class AIController {
       if (err.statusCode) {
         const level = err.statusCode < 500 ? 'warn' : 'error';
         this.logger[level]('Chatbot error:', { statusCode: err.statusCode, message: err.message });
-        return res
-          .status(err.statusCode)
-          .json({
-            status: 'error',
-            message: t(err.message, req.locale) ?? t('ai.messageFailed', req.locale),
-          });
+        return res.status(err.statusCode).json({
+          status: 'error',
+          message: t(err.message, req.locale) ?? t('ai.messageFailed', req.locale),
+        });
       }
       this.logger.error('Lỗi chatbot:', err);
       res.status(500).json({

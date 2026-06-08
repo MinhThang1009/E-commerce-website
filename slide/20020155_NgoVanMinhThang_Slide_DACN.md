@@ -544,7 +544,7 @@ flowchart TD
 |---|---|---|---|---|
 | Tìm kiếm ngữ nghĩa | 6 | *"laptop học lập trình dưới 20 triệu"* | 5/6 | Dense retrieval tốt cho query mô tả |
 | Tên model cụ thể | 4 | *"iphone 17 pro max bao nhiêu tiền"* | 4/4 | Hybrid Search bắt chính xác tên |
-| Viết tắt / sai chính tả | 4 | *"ip17 pm gb512 gia bh"* | 4/4 | `expandAbbreviations` xử lý đúng |
+| Viết tắt / sai chính tả | 4 | *"ip17 pm 512gb gia bnh"* | 4/4 | `expandAbbreviations` xử lý đúng |
 | Câu hỏi so sánh | 3 | *"so sanh macbook air vs pro"* | 2/3 | Đôi khi thiếu 1 sản phẩm gần ngưỡng |
 | Ngoài phạm vi | 3 | *"thời tiết hôm nay thế nào"* | 3/3 | Từ chối đúng 100%, <10ms |
 | **Tổng** | **20** | | **18/20** | **Tỷ lệ chính xác 90%** |

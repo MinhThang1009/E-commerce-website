@@ -14,7 +14,7 @@ describe('SequelizeOrdersRepository', () => {
   beforeEach(() => {
     mockOrder = { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn() };
     mockProduct = { findByPk: jest.fn(), findOne: jest.fn() };
-    mockProductVariant = { findByPk: jest.fn() };
+    mockProductVariant = { findByPk: jest.fn(), findOne: jest.fn() };
     mockCart = { findOrCreate: jest.fn(), findOne: jest.fn(), findByPk: jest.fn() };
     mockCartItem = { findOne: jest.fn(), destroy: jest.fn() };
     mockDiscountCode = { findOne: jest.fn() };
@@ -36,8 +36,8 @@ describe('SequelizeOrdersRepository', () => {
   });
 
   describe('cancelPendingOrdersByUser', () => {
-    test('đơn COD có discount → gọi decrementDiscountCodeUsage', async () => {
-      const discount = { id: 10, code: 'TEST10' };
+    test('đơn COD có discount → gọi code.decrement (không spy, chạy thật qua dòng 223+372)', async () => {
+      const discount = { id: 10, code: 'TEST10', decrement: jest.fn().mockResolvedValue() };
       const pendingOrder = {
         id: 1,
         status: 'pending',
@@ -49,12 +49,10 @@ describe('SequelizeOrdersRepository', () => {
       mockOrder.findAll.mockResolvedValue([pendingOrder]);
       const tx = { LOCK: { UPDATE: 'FOR UPDATE' } };
 
-      const spy = jest.spyOn(repo, 'decrementDiscountCodeUsage').mockResolvedValue();
       const count = await repo.cancelPendingOrdersByUser(1, { transaction: tx });
 
       expect(count).toBe(1);
-      expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0]).toBe(discount);
+      expect(discount.decrement).toHaveBeenCalledWith('usedCount', { transaction: tx });
       expect(pendingOrder.status).toBe('cancelled');
       expect(pendingOrder.save).toHaveBeenCalledWith({ transaction: tx });
     });
@@ -94,6 +92,60 @@ describe('SequelizeOrdersRepository', () => {
       await repo.cancelPendingOrdersByUser(1, { transaction: tx });
 
       expect(spy).not.toHaveBeenCalled();
+    });
+
+    test('đơn có items variant tồn tại → gọi restoreVariantStock', async () => {
+      const variant = { id: 5, stockQuantity: 10 };
+      const pendingOrder = {
+        id: 5,
+        status: 'pending',
+        paymentMethod: 'momo',
+        appliedDiscount: null,
+        items: [{ variantId: 5, quantity: 2, ProductVariant: variant, Product: null }],
+        save: jest.fn().mockResolvedValue(),
+      };
+      mockOrder.findAll.mockResolvedValue([pendingOrder]);
+
+      const spy = jest.spyOn(repo, 'restoreVariantStock').mockResolvedValue();
+      await repo.cancelPendingOrdersByUser(1, {});
+
+      expect(spy).toHaveBeenCalledWith(variant, 2, expect.any(Object));
+    });
+
+    test('đơn có items product-only → gọi restoreProductStock', async () => {
+      const product = { id: 10 };
+      const pendingOrder = {
+        id: 6,
+        status: 'pending',
+        paymentMethod: 'cod',
+        appliedDiscount: null,
+        items: [{ variantId: null, quantity: 3, ProductVariant: null, Product: product }],
+        save: jest.fn().mockResolvedValue(),
+      };
+      mockOrder.findAll.mockResolvedValue([pendingOrder]);
+
+      const spy = jest.spyOn(repo, 'restoreProductStock').mockResolvedValue();
+      await repo.cancelPendingOrdersByUser(1, {});
+
+      expect(spy).toHaveBeenCalledWith(product, 3, expect.any(Object));
+    });
+  });
+
+  describe('findVariantBasic', () => {
+    test('productId undefined → where chỉ có id', async () => {
+      mockProductVariant.findOne.mockResolvedValue({ id: 5 });
+      await repo.findVariantBasic(5, undefined);
+      expect(mockProductVariant.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 5 } }),
+      );
+    });
+
+    test('productId có giá trị → where có cả id và productId', async () => {
+      mockProductVariant.findOne.mockResolvedValue({ id: 5 });
+      await repo.findVariantBasic(5, 10);
+      expect(mockProductVariant.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 5, productId: 10 } }),
+      );
     });
   });
 

@@ -69,7 +69,9 @@ const logger = winston.createLogger({
   format: process.env.NODE_ENV === 'production' ? PROD_FORMAT : DEV_FORMAT,
   defaultMeta: { service: 'api' },
   transports: [
-    new winston.transports.Console(),
+    new winston.transports.Console({
+      silent: process.env.NODE_ENV === 'test',
+    }),
     // Chỉ ghi file ở production — tránh tạo file log không cần thiết trong dev/test
     ...(process.env.NODE_ENV === 'production'
       ? [

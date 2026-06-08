@@ -424,6 +424,25 @@ describe('deleteImage', () => {
     expect(unlinkCalls.length).toBe(1);
   });
 
+  it('xóa thumbnail thất bại → log error, vẫn tiếp tục xóa DB record', async () => {
+    const record = makeImageRecord({
+      id: 11,
+      filePath: 'images/product/2026/05/abc.jpg',
+      fileName: 'abc.jpg',
+      category: 'product',
+    });
+    mockImageFindByPk.mockResolvedValue(record);
+    let callCount = 0;
+    mockFsPromises.unlink.mockImplementation(() => {
+      callCount++;
+      if (callCount > 1) return Promise.reject(new Error('ENOENT thumbnail'));
+      return Promise.resolve();
+    });
+
+    await expect(imageService.deleteImage(11)).resolves.toEqual({ success: true });
+    expect(mockImageDestroy).toHaveBeenCalled();
+  });
+
   it('fs.unlink thất bại (file đã bị xóa thủ công) → KHÔNG throw, vẫn xóa DB record', async () => {
     const record = makeImageRecord({ category: 'user' });
     mockImageFindByPk.mockResolvedValue(record);
@@ -542,6 +561,30 @@ describe('cleanupOrphanedFiles', () => {
     expect(result.activeFiles).toBe(2);
     expect(result.orphanedFiles).toBe(1);
     expect(mockFsPromises.unlink).toHaveBeenCalledTimes(1);
+  });
+
+  it('file trong images/thumbnails và temp → bỏ qua, không coi là orphan', async () => {
+    const uploadDir = imageService.uploadDir;
+    const path = require('path');
+    mockFsPromises.readdir.mockImplementation(async (dir) => {
+      if (dir === uploadDir)
+        return [
+          { name: 'images', isDirectory: () => true },
+          { name: 'temp', isDirectory: () => true },
+        ];
+      if (dir === path.join(uploadDir, 'images'))
+        return [{ name: 'thumbnails', isDirectory: () => true }];
+      if (dir.includes('thumbnails'))
+        return [{ name: 'thumb_small.jpg', isDirectory: () => false }];
+      if (dir.includes('temp')) return [{ name: 'upload_partial.tmp', isDirectory: () => false }];
+      return [];
+    });
+    mockImageFindAll.mockResolvedValue([]);
+
+    const result = await imageService.cleanupOrphanedFiles();
+
+    expect(result.orphanedFiles).toBe(0);
+    expect(mockFsPromises.unlink).not.toHaveBeenCalled();
   });
 
   it('không có orphan → không gọi fs.unlink', async () => {

@@ -125,9 +125,73 @@ describe('OrdersService', () => {
         expect.objectContaining({ type: 'order.cancelled' }),
       );
     });
+
+    test('variant đã soft-delete → log warn, bỏ qua restore stock', async () => {
+      const order = {
+        id: 2,
+        status: 'pending',
+        userId: 1,
+        number: 'ORD-2',
+        items: [{ productId: 10, variantId: 5, quantity: 2, ProductVariant: null, Product: null }],
+      };
+      repo.findOrderForCancel.mockResolvedValue(order);
+
+      await service.cancelOrder({ id: 2, userId: 1 });
+
+      expect(order.status).toBe('cancelled');
+      expect(repo.restoreVariantStock).not.toHaveBeenCalled();
+      expect(service.logger.warn).toHaveBeenCalledWith(
+        'Variant soft-deleted, bỏ qua restore stock',
+        expect.objectContaining({ variantId: 5 }),
+      );
+    });
+
+    test('đơn COD có mã giảm giá → decrement usedCount khi hủy', async () => {
+      const discount = { id: 10, code: 'SUMMER2026' };
+      const order = {
+        id: 3,
+        status: 'pending',
+        userId: 1,
+        number: 'ORD-3',
+        paymentMethod: 'cod',
+        appliedDiscount: discount,
+        items: [{ productId: 10, variantId: null, quantity: 1, Product: { id: 10 } }],
+      };
+      repo.findOrderForCancel.mockResolvedValue(order);
+      repo.decrementDiscountCodeUsage = jest.fn().mockResolvedValue();
+
+      await service.cancelOrder({ id: 3, userId: 1 });
+
+      expect(repo.decrementDiscountCodeUsage).toHaveBeenCalledWith(discount, expect.any(Object));
+    });
+
+    test('đơn MoMo có mã giảm giá → KHÔNG decrement usedCount (online chưa increment)', async () => {
+      const discount = { id: 10, code: 'SUMMER2026' };
+      const order = {
+        id: 4,
+        status: 'pending',
+        userId: 1,
+        number: 'ORD-4',
+        paymentMethod: 'momo',
+        appliedDiscount: discount,
+        items: [],
+      };
+      repo.findOrderForCancel.mockResolvedValue(order);
+      repo.decrementDiscountCodeUsage = jest.fn().mockResolvedValue();
+
+      await service.cancelOrder({ id: 4, userId: 1 });
+
+      expect(repo.decrementDiscountCodeUsage).not.toHaveBeenCalled();
+    });
   });
 
   describe('repayOrder', () => {
+    test('thiếu originUrl → 400', async () => {
+      await expect(service.repayOrder({ id: 1, userId: 1, originUrl: '' })).rejects.toMatchObject({
+        statusCode: 400,
+      });
+    });
+
     test('không tồn tại → 404', async () => {
       repo.findOrderByIdAndUserId.mockResolvedValue(null);
       await expect(
@@ -347,6 +411,29 @@ describe('OrdersService', () => {
         'http://img/extra.jpg',
       ]);
       expect(result.items[0].Product.productImages).toBeUndefined();
+    });
+
+    test('item.Product không có productImages → giữ nguyên, không lỗi', async () => {
+      const order = {
+        id: 11,
+        userId: 1,
+        items: [{ Product: { name: 'Test' } }],
+      };
+      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+      const result = await service.getOrderById({ id: 11, userId: 1, role: 'customer' });
+      expect(result.items[0].Product.name).toBe('Test');
+      expect(result.items[0].Product.thumbnail).toBeUndefined();
+    });
+
+    test('item.Product là null → giữ nguyên, không lỗi', async () => {
+      const order = {
+        id: 12,
+        userId: 1,
+        items: [{ Product: null }],
+      };
+      repo.findOrderByPkWithItemsAndUser.mockResolvedValue(order);
+      const result = await service.getOrderById({ id: 12, userId: 1, role: 'customer' });
+      expect(result.items[0].Product).toBeNull();
     });
 
     test('productImages không có ảnh thumbnail → dùng ảnh đầu tiên làm thumbnail', async () => {

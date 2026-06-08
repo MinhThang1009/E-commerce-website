@@ -16,3 +16,5 @@ process.env.JWT_SECRET = 'e2e-test-jwt-secret-minimum-32-chars-ok';
 process.env.JWT_REFRESH_SECRET = 'e2e-test-refresh-secret-minimum-32-chars';
 process.env.OPENROUTER_API_KEY = 'demo-key';
 process.env.PORT = '9996';
+
+if (process.env.CI) process.env.LOG_LEVEL = 'silent';

@@ -70,7 +70,7 @@ const logger = winston.createLogger({
   defaultMeta: { service: 'api' },
   transports: [
     new winston.transports.Console({
-      silent: process.env.NODE_ENV === 'test',
+      silent: process.env.NODE_ENV === 'test' || process.env.LOG_LEVEL === 'silent',
     }),
     // Chỉ ghi file ở production — tránh tạo file log không cần thiết trong dev/test
     ...(process.env.NODE_ENV === 'production'

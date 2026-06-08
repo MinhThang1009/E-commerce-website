@@ -144,11 +144,14 @@ jobs:
         env:
           MYSQL_PWD: ''
 
+      - name: Create upload dirs (tests expect filesystem paths)
+        run: mkdir -p uploads/images/{products,temp,thumbnails}
+
       - name: Integration tests
         working-directory: backend
         run: npm run test:integration
         env:
-          NODE_ENV: test
+          CI: true
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_USER: root
@@ -162,7 +165,7 @@ jobs:
         working-directory: backend
         run: npm run test:api
         env:
-          NODE_ENV: test
+          CI: true
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_USER: root
@@ -178,7 +181,7 @@ jobs:
         working-directory: backend
         run: npm run test:e2e
         env:
-          NODE_ENV: test
+          CI: true
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
           DB_USER: root

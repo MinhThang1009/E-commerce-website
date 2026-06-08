@@ -19,3 +19,6 @@ process.env.JWT_SECRET = 'integration-test-jwt-secret-minimum-32-chars';
 process.env.JWT_REFRESH_SECRET = 'integration-test-refresh-secret-min-32-chars';
 process.env.OPENROUTER_API_KEY = 'demo-key';
 process.env.PORT = '9998';
+
+// CI: suppress winston console output (embedding/vector warnings rất noisy)
+if (process.env.CI) process.env.LOG_LEVEL = 'silent';

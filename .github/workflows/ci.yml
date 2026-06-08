@@ -139,7 +139,7 @@ jobs:
       - name: Seed test database
         working-directory: backend
         run: |
-          mysql -h 127.0.0.1 -u root < data/migration.sql
+          mysql -h 127.0.0.1 -u root techstore_test < data/migration.sql
           mysql -h 127.0.0.1 -u root techstore_test < data/seed_data.sql
         env:
           MYSQL_PWD: ''

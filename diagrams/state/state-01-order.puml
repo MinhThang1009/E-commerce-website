@@ -1,7 +1,9 @@
 @startuml state-01-order
 ' Sơ đồ trạng thái — Vòng đời đơn hàng (order.status)
 ' Verify vs backend/src/modules/orders/services/orders-service.js
-'   (STATUS, _canCancel L21, _canConfirmReceived L29, _canRepay L26, updateOrderStatus L578 guards F13/F14/INV-STK-6)
+'   (STATUS, _canCancel L21, _canConfirmReceived L29, updateOrderStatus L616)
+' Verify vs backend/src/modules/admin/services/admin-order-service.js
+'   (updateOrderStatus L199, adminCancelOrder L212)
 hide empty description
 skinparam dpi 300
 skinparam backgroundColor #FFFFFF
@@ -13,7 +15,7 @@ skinparam state {
   ArrowColor #4D4D4D
 }
 
-[*] --> pending : createOrder\n(khách đặt hàng)
+[*] --> pending
 
 state "Chờ xử lý\n(pending)" as pending
 state "Đang xử lý\n(processing)" as processing
@@ -21,23 +23,23 @@ state "Đang giao\n(shipped)" as shipped
 state "Đã giao\n(delivered)" as delivered
 state "Đã hủy\n(cancelled)" as cancelled
 
-pending    --> processing : thanh toán online thành công (IPN/return)\nhoặc staff xác nhận
+pending    --> processing : IPN-return thành công,\nstaff xác nhận đơn
+
 processing --> shipped    : staff cập nhật giao vận
-shipped    --> delivered  : staff cập nhật\nhoặc khách xác nhận nhận hàng
-processing --> delivered  : staff cập nhật\nhoặc khách xác nhận (confirmReceived)
 
-' Hủy đơn CHƯA giao → HOÀN kho (INV-STK-2/6)
-pending    --> cancelled : hủy đơn (khách / staff / đặt đơn mới)\n→ HOÀN kho
-processing --> cancelled : hủy đơn (khách / staff)\n→ HOÀN kho
-' Hủy đơn ĐÃ giao vận → KHÔNG hoàn kho (hàng đã rời kho, INV-STK-6); chỉ staff (back-office)
-shipped    --> cancelled : hủy bởi staff\n→ KHÔNG hoàn kho
+shipped    --> delivered  : staff cập nhật trạng thái,\nkhách xác nhận đã nhận
+processing --> delivered  : staff cập nhật trạng thái,\nkhách xác nhận đã nhận
 
-' Cung BỊ CHẶN (guard nghiệp vụ — không phải transition hợp lệ)
-delivered -[#CC0000,dashed]-> cancelled : <color:#CC0000>✗ từ chối 400</color>\n<color:#CC0000>không hủy đơn đã giao (F13)</color>
+pending    --> cancelled  : khách hủy, staff hủy, tạo đơn mới\n[status ∈ {pending, processing}] / hoàn kho
+processing --> cancelled  : khách hủy, staff hủy\n[status ∈ {pending, processing}] / hoàn kho
+shipped    --> cancelled  : staff hủy / không hoàn kho
+
+delivered -[#CC0000,dashed]-> cancelled : <color:#CC0000>✗ [status = delivered] — 400</color>
 
 delivered --> [*]
 cancelled --> [*]
 
+/'
 note bottom
   • Staff (updateOrderStatus) là back-office, điều chỉnh trạng thái khá tự do,
     NHƯNG bị chặn 2 cung phi nghiệp vụ (sau fix F9–F14):
@@ -49,13 +51,8 @@ note bottom
     (hàng đã rời kho) — INV-STK-6.
   • Thanh toán online late-success trên đơn đã cancelled → payment-service
     GIỮ nguyên cancelled (INV-PAY-3), không hồi sinh đơn.
-  • Xác nhận nhận hàng chỉ từ shipped/processing (_canConfirmReceived);
-    gọi lại khi đã delivered → lỗi 422.
-  • repayOrder (đơn online pending chưa trả tiền): chỉ retry thanh toán —
-    reset paymentStatus failed→pending, KHÔNG đổi order.status
-    (không phải chuyển trạng thái nên không có cạnh trên sơ đồ).
-  • Thanh toán online (MoMo/VNPay) thành công → payment-service
-    đặt status='processing' + paymentStatus='paid' (IPN/return).
+  • Xác nhận nhận hàng chỉ từ shipped/processing (_canConfirmReceived).
   • COD: khi delivered → paymentStatus tự động chuyển 'paid'.
 end note
+'/
 @enduml

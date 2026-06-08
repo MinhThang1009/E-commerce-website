@@ -36,6 +36,7 @@ customer -- UC_estimate
 customer -- UC_order
 UC_order ..> gateway : <<initiate>>\n(nếu online payment)
 
+/'
 note right of UC_validate
   GET /api/cart/validate — optionalAuthenticate.
   Trả { hasIssues, items } per-item flags:
@@ -43,14 +44,18 @@ note right of UC_validate
   KHÔNG lock stock (lock xảy ra ở createOrder).
   Bước kiểm tra tùy chọn trước khi đặt hàng.
 end note
+'/
 
+/'
 note right of UC_estimate
   GET /api/orders/shipping-estimate — authenticate.
   Query params: ?subtotal=N.
   Server tính lại — KHÔNG tin giá FE.
   shippingCost = 0 nếu subtotal ≥ ngưỡng free ship.
 end note
+'/
 
+/'
 note right of UC_order
   POST /api/orders — authenticate.
   Input: { items, shippingAddress, paymentMethod,
@@ -64,4 +69,5 @@ note right of UC_order
     momo/vnpay → gọi payment service, trả paymentUrl
   Xem uc-13 cho MoMo/VNPay IPN + return flow.
 end note
+'/
 @enduml

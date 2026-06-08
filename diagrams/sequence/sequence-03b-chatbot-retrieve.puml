@@ -1,0 +1,75 @@
+@startuml sequence-03b-chatbot-retrieve
+' Sơ đồ sequence — Chatbot RAG (3b): Session & Retrieve (§3.3b)
+' Ground-truth: chatbot-service.js:317-576 (_enrichQueryFromHistory, _retrieveProducts, rewriteQuery)
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 150
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+skinparam defaultFontSize 13
+skinparam noteFontSize 12
+skinparam sequenceParticipantFontSize 13
+
+participant "Backend API" as API
+participant "Vector Store\n(Hybrid Search)" as VS
+participant "LLM API" as LLM
+
+note over API: Tiếp theo sau bước ③ — normalizedQuery + intent đã có
+
+== ④  Load Session History ==
+
+note right of API
+  conversationHistory.get(sessionId) — RAM Map
+  TTL 30 phút, tối đa 500 sessions, mất khi restart
+end note
+
+opt Có history và query chứa đại từ  (cái đó/nó/so sánh/cả hai)
+  note right of API
+    _enrichQueryFromHistory: append tên SP
+    từ 1-2 assistant turns gần nhất vào query
+  end note
+end
+
+== ⑤  Retrieve — Hybrid Search (R trong RAG) ==
+
+note right of API: Strip negation phrases khỏi query trước khi search\n("không cần iPhone" → loại "iPhone" khỏi embedding)
+
+API ->> VS : hybridSearch(enrichedQuery, limit=10)
+API ->> LLM : rewriteQuery(enrichedQuery)  [timeout=8s]
+note right of API: Promise.all — chạy song song
+
+VS -->> API : initialResults  (vector cosine + keyword BM25)
+LLM -->> API : rewrittenQuery  hoặc  null
+
+alt rewrittenQuery khác normalizedQuery
+  API ->> VS : hybridSearch(rewrittenQuery, limit=10)
+  VS -->> API : refinedResults
+  note right of API: dùng refinedResults nếu > 0, fallback initialResults
+end
+
+alt Không có sản phẩm ≥ minScore 0.45
+  API ->> VS : hybridSearch(finalQuery, limit=3, minScore=0)
+  VS -->> API : lowConfidenceResults  (lowConfidence=true)
+end
+
+note right of API
+  Hybrid scoring: vector cosine + keyword overlap boost
+  Sort giảm dần → top 10 → products[]
+end note
+
+note over API: products[] (max 10) + finalQuery → bước ⑥⑦
+
+@enduml

@@ -35,9 +35,14 @@ describe('AIService', () => {
 
   // ─── addToCart (lines 46-55) ──────────────────────────────────────────────
 
+  // Stock check + SELECT FOR UPDATE đã chuyển vào repo.addToCart (tránh TOCTOU).
+  // Service chỉ delegate: gọi repo.addToCart rồi createAnalyticsEvent.
+  // Các error path test qua repo throw AppError → service propagate.
   describe('addToCart', () => {
-    test('sản phẩm không tồn tại → AppError 404', async () => {
-      repo.findProductForCart.mockResolvedValue(null);
+    test('sản phẩm không tồn tại → repo throw AppError 404 → service propagate', async () => {
+      repo.addToCart.mockRejectedValue(
+        Object.assign(new Error('Sản phẩm không tồn tại'), { statusCode: 404 }),
+      );
 
       await expect(
         service.addToCart({
@@ -53,13 +58,10 @@ describe('AIService', () => {
       });
     });
 
-    test('sản phẩm hết hàng (status inactive) → AppError 400', async () => {
-      repo.findProductForCart.mockResolvedValue({
-        id: 1,
-        status: 'inactive',
-        stockQuantity: 0,
-        variants: [],
-      });
+    test('sản phẩm hết hàng → repo throw AppError 400 → service propagate', async () => {
+      repo.addToCart.mockRejectedValue(
+        Object.assign(new Error('Sản phẩm đã hết hàng hoặc ngừng kinh doanh'), { statusCode: 400 }),
+      );
 
       await expect(
         service.addToCart({
@@ -73,12 +75,6 @@ describe('AIService', () => {
     });
 
     test('sản phẩm active + còn hàng → addToCart + createAnalyticsEvent', async () => {
-      repo.findProductForCart.mockResolvedValue({
-        id: 5,
-        status: 'active',
-        stockQuantity: 10,
-        variants: [{ stockQuantity: 5 }],
-      });
       repo.addToCart.mockResolvedValue({ id: 20, productId: 5, quantity: 2 });
 
       const result = await service.addToCart({
@@ -98,21 +94,15 @@ describe('AIService', () => {
       expect(result).toMatchObject({ id: 20 });
     });
 
-    test('variantId cụ thể hết hàng dù total stock > 0 → AppError 400', async () => {
-      repo.findProductForCart.mockResolvedValue({
-        id: 4,
-        status: 'active',
-        stockQuantity: 10,
-        variants: [
-          { id: 10, stockQuantity: 0 }, // Xanh hết
-          { id: 11, stockQuantity: 5 }, // Đỏ còn
-        ],
-      });
+    test('variantId cụ thể hết hàng → repo throw 400 → service propagate', async () => {
+      repo.addToCart.mockRejectedValue(
+        Object.assign(new Error('Biến thể sản phẩm đã hết hàng'), { statusCode: 400 }),
+      );
 
       await expect(
         service.addToCart({
           productId: 4,
-          variantId: 10, // Xanh hết hàng
+          variantId: 10,
           quantity: 1,
           sessionId: 'sess',
           userId: 1,
@@ -120,22 +110,15 @@ describe('AIService', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('hết hàng') });
     });
 
-    test('BUG-MEDIUM-1: variantId không thuộc product → AppError 400 (không skip check)', async () => {
-      // Trước fix: targetVariant = undefined → if(targetVariant && ...) skip → CartItem mismatched
-      // Sau fix: !targetVariant → throw 400
-      repo.findProductForCart.mockResolvedValue({
-        id: 5,
-        status: 'active',
-        stockQuantity: 10,
-        variants: [
-          { id: 20, stockQuantity: 5 }, // variants của product 5
-        ],
-      });
+    test('variantId không thuộc product → repo throw 400 → service propagate', async () => {
+      repo.addToCart.mockRejectedValue(
+        Object.assign(new Error('Biến thể sản phẩm không thuộc sản phẩm này'), { statusCode: 400 }),
+      );
 
       await expect(
         service.addToCart({
           productId: 5,
-          variantId: 999, // variant 999 thuộc product khác, không có trong variants trên
+          variantId: 999,
           quantity: 1,
           sessionId: 'sess',
           userId: 1,
@@ -143,13 +126,10 @@ describe('AIService', () => {
       ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('không thuộc') });
     });
 
-    test('sản phẩm active nhưng stock = 0 ở cả product và variants → AppError 400', async () => {
-      repo.findProductForCart.mockResolvedValue({
-        id: 3,
-        status: 'active',
-        stockQuantity: 0,
-        variants: [{ stockQuantity: 0 }],
-      });
+    test('sản phẩm active nhưng hết stock → repo throw 400 → service propagate', async () => {
+      repo.addToCart.mockRejectedValue(
+        Object.assign(new Error('Sản phẩm đã hết hàng hoặc ngừng kinh doanh'), { statusCode: 400 }),
+      );
 
       await expect(
         service.addToCart({
@@ -181,7 +161,7 @@ describe('AIService', () => {
 
     test('getSessionMessages delegate sang chatbotService', async () => {
       const result = await service.getSessionMessages('sess-1');
-      expect(service.chatbotService.getSessionMessages).toHaveBeenCalledWith('sess-1');
+      expect(service.chatbotService.getSessionMessages).toHaveBeenCalledWith('sess-1', 50, null);
       expect(result).toEqual([]);
     });
 

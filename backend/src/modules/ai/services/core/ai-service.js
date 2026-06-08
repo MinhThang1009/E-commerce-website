@@ -65,8 +65,8 @@ class AIService {
     return this.chatbotService.clearSession(sessionId);
   }
 
-  async getSessionMessages(sessionId) {
-    return this.chatbotService.getSessionMessages(sessionId);
+  async getSessionMessages(sessionId, userId = null) {
+    return this.chatbotService.getSessionMessages(sessionId, 50, userId);
   }
 
   registerSession(sessionId) {
@@ -96,44 +96,21 @@ class AIService {
    * @throws {AppError} 400 nếu sản phẩm hết hàng hoặc đã ngừng kinh doanh.
    */
   async addToCart({ productId, variantId, quantity, sessionId, userId }) {
-    // Kiểm tra sản phẩm tồn tại và lấy thông tin tồn kho
-    const product = await this.repo.findProductForCart(productId);
-    if (!product) throw new AppError('Sản phẩm không tồn tại', 404);
-
-    // Tính tổng tồn kho từ tất cả biến thể
-    const totalStock = (product.variants || []).reduce((s, v) => s + (v.stockQuantity || 0), 0);
-
-    // Từ chối nếu sản phẩm không active HOẶC hết hàng hoàn toàn
-    if (product.status !== 'active' || (totalStock <= 0 && product.stockQuantity <= 0)) {
-      throw new AppError('Sản phẩm đã hết hàng hoặc ngừng kinh doanh', 400);
-    }
-
-    // Kiểm tra tồn kho của variant cụ thể nếu được chỉ định
-    // totalStock > 0 không đảm bảo variant được chọn còn hàng (VD: Xanh hết, Đỏ còn)
-    if (variantId) {
-      const targetVariant = (product.variants || []).find(
-        (v) => String(v.id) === String(variantId),
-      );
-      if (!targetVariant) {
-        throw new AppError('Biến thể sản phẩm không thuộc sản phẩm này', 400);
-      }
-      if (targetVariant.stockQuantity <= 0) {
-        throw new AppError('Biến thể sản phẩm đã hết hàng', 400);
-      }
-    }
-
-    // Thêm vào giỏ hàng
+    // Stock check + CartItem write đều trong cùng 1 transaction với SELECT FOR UPDATE (repo)
+    // tránh TOCTOU: hai request đồng thời không thể cùng vượt qua kiểm tra tồn kho
     const cartItem = await this.repo.addToCart({ userId, productId, variantId, quantity });
 
     // Ghi analytics event — dùng cho báo cáo "sản phẩm được thêm giỏ qua chatbot"
-    await this.repo.createAnalyticsEvent({
-      event: 'product_added_to_cart',
-      userId,
-      sessionId,
-      productId,
-      metadata: { quantity, source: 'chatbot' },
-      timestamp: new Date(),
-    });
+    // Fire-and-forget: không await để không block response
+    this.repo
+      .createAnalyticsEvent({
+        event: 'product_added_to_cart',
+        userId,
+        sessionId,
+        productId,
+        metadata: { quantity, source: 'chatbot' },
+      })
+      .catch((err) => this.logger.warn('[Analytics] addToCart event thất bại:', err.message));
 
     return cartItem;
   }

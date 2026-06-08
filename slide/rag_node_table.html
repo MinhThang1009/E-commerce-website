@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff;
+         font-family: "Segoe UI", Arial, "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  .wrap { display: inline-block; padding: 36px; background: #ffffff; max-width: 1380px; }
+  h2 { margin: 0 0 22px; font-size: 25px; color: #0f172a; font-weight: 800;
+       letter-spacing: -0.3px; display: flex; align-items: center; gap: 12px; }
+  h2::before { content: ""; width: 6px; height: 30px; border-radius: 4px; background: #1565c0; }
+  .card { border-radius: 16px; overflow: hidden; box-shadow: 0 2px 10px rgba(15,23,42,0.08); border: 1px solid #e5e7eb; }
+  table { border-collapse: separate; border-spacing: 0; font-size: 17px; color: #1e293b; width: 100%; }
+  thead th { background: #1565c0; color: #fff; font-size: 15px; font-weight: 700; text-align: left;
+             letter-spacing: 0.4px; padding: 16px 22px; }
+  tbody td { padding: 16px 22px; border-bottom: 1px solid #eef0f6; vertical-align: top; line-height: 1.55; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: #f8f8fc; }
+  .stt { font-weight: 800; font-size: 18px; color: #1565c0; text-align: center; width: 55px; }
+  .node { font-weight: 700; white-space: nowrap; color: #0f172a; width: 190px; }
+
+  .row-retrieve { background: #e3f2fd !important; }
+  .row-augment { background: #fffde7 !important; }
+  .row-generate { background: #e8f5e9 !important; }
+  .row-blocked { background: #fce4ec !important; }
+  .note { margin-top: 16px; font-size: 14.5px; color: #475569; line-height: 1.65; }
+  b.k { color: #0d47a1; font-weight: 700; }
+  .note b { color: #0d47a1; }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <h2>Pipeline RAG Chatbot — Mô tả node</h2>
+  <div class="card"><table>
+    <thead><tr><th style="width:55px">STT</th><th style="width:190px">Node</th><th>Chức năng chính</th></tr></thead>
+    <tbody>
+      <tr>
+        <td class="stt">①</td>
+        <td class="node">📩 User Message</td>
+        <td>Nhận tin nhắn user qua <b class="k">POST /chatbot/message</b> (kèm sessionId)</td>
+      </tr>
+      <tr>
+        <td class="stt">②</td>
+        <td class="node">⚙️ Preprocess</td>
+        <td>Validate (<b class="k">≤500 ký tự</b>, fail → AppError 400) + chuẩn hóa viết tắt (<b class="k">ip→iPhone</b>) + phân loại intent (<b class="k">6 nhóm</b>)</td>
+      </tr>
+      <tr>
+        <td class="stt">③</td>
+        <td class="node">🛡️ Guardrails</td>
+        <td>Chặn prompt injection (<b class="k">OWASP LLM01, 15 nhóm</b>) và câu hỏi <b class="k">off-topic</b></td>
+      </tr>
+      <tr>
+        <td class="stt">④</td>
+        <td class="node">💬 Session Context</td>
+        <td>Nạp lịch sử hội thoại từ session memory (<b class="k">RAM</b>, tối đa <b class="k">10 turns</b>) cho multi-turn</td>
+      </tr>
+      <tr class="row-retrieve">
+        <td class="stt">⑤</td>
+        <td class="node">🔍 Retrieve</td>
+        <td>Bổ sung ngữ cảnh đại từ + song song (<b class="k">LLM rewrite ∥ hybrid search topK=10</b>); 0 kết quả → fallback <b class="k">topK=3</b></td>
+      </tr>
+      <tr class="row-augment">
+        <td class="stt">⑥</td>
+        <td class="node">📋 Augment</td>
+        <td>Nhồi danh sách sản phẩm + thông tin cửa hàng + lịch sử + quy tắc (<b class="k">cấm bịa</b>, output <b class="k">JSON</b>) vào prompt</td>
+      </tr>
+      <tr class="row-generate">
+        <td class="stt">⑦</td>
+        <td class="node">🤖 Generate</td>
+        <td>LLM sinh câu trả lời (<b class="k">provider rotation</b>); timeout / parse fail / hết provider → <b class="k">keyword fallback</b></td>
+      </tr>
+      <tr>
+        <td class="stt">⑧</td>
+        <td class="node">💾 Persist</td>
+        <td>Cập nhật session (<b class="k">LRU</b>, TTL <b class="k">30 phút</b>) + ghi DB analytics (<b class="k">fire-and-forget</b>)</td>
+      </tr>
+      <tr>
+        <td class="stt">⑨</td>
+        <td class="node">📤 Return Response</td>
+        <td>Trả <b class="k">{ response, products, suggestions, intent }</b> về client</td>
+      </tr>
+      <tr class="row-blocked">
+        <td class="stt">—</td>
+        <td class="node">⚠️ Blocked Response</td>
+        <td>Phản hồi cố định khi ③ chặn (injection/off-topic) → ghi DB analytics (<b class="k">fire-and-forget</b>) → ⑨</td>
+      </tr>
+    </tbody>
+  </table></div>
+  <div class="note">
+    <b>Ghi chú:</b> ⑤–⑦ là 3 stage RAG (<b>Retrieve · Augment · Generate</b>). Path fallback (keyword) bỏ qua ⑥⑦ → "RAG with graceful degradation": chatbot luôn trả lời được dù LLM không khả dụng.
+  </div>
+</div>
+</body>
+</html>

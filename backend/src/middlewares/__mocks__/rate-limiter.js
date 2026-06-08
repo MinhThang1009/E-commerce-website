@@ -13,4 +13,5 @@ module.exports = {
   otpLimiter: passthrough,
   chatbotLimiter: passthrough,
   chatLimiter: passthrough,
+  destructiveLimiter: passthrough,
 };

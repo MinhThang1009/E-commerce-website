@@ -94,11 +94,7 @@ describe('saveSearch', () => {
     expect(result.created).toBe(true);
   });
 
-  test('userId và sessionId đều null → vẫn gọi findDuplicate và create', async () => {
-    const newEntry = { id: 3, keyword: 'tv' };
-    repo.findDuplicate.mockResolvedValue(null);
-    repo.create.mockResolvedValue(newEntry);
-
+  test('userId và sessionId đều null → BỎ QUA hoàn toàn (không tạo orphan row)', async () => {
     const result = await service.saveSearch({
       keyword: 'tv',
       resultsCount: 0,
@@ -106,10 +102,11 @@ describe('saveSearch', () => {
       sessionId: null,
     });
 
-    expect(repo.findDuplicate).toHaveBeenCalledWith(
-      expect.objectContaining({ keyword: 'tv', userId: null, sessionId: null }),
-    );
-    expect(result.created).toBe(true);
+    // Không gọi bất kỳ repo nào — row tạo ra sẽ không thể truy cập hay xóa được
+    expect(repo.findDuplicate).not.toHaveBeenCalled();
+    expect(repo.create).not.toHaveBeenCalled();
+    expect(result.created).toBe(false);
+    expect(result.data).toBeNull();
   });
 
   test('keyword rỗng → vẫn gọi repo (validation là tầng trên)', async () => {
@@ -168,12 +165,13 @@ describe('getHistory', () => {
     expect(repo.findByUser).toHaveBeenCalledWith({ userId: 3, limit: 5 });
   });
 
-  test('limit = 0 → parse sang 0', async () => {
+  test('limit = 0 → dùng default 10 (0 là falsy, guard clamping áp dụng)', async () => {
     repo.findByUser.mockResolvedValue([]);
 
     await service.getHistory({ userId: 3, limit: '0' });
 
-    expect(repo.findByUser).toHaveBeenCalledWith({ userId: 3, limit: 0 });
+    // parseInt('0') = 0 là falsy → || 10 → default 10; Math.max(10,1)=10; Math.min(10,100)=10
+    expect(repo.findByUser).toHaveBeenCalledWith({ userId: 3, limit: 10 });
   });
 });
 
@@ -199,7 +197,7 @@ describe('deleteOne', () => {
     await expect(service.deleteOne({ id: 99, userId: 5 })).rejects.toBeInstanceOf(AppError);
     // assert message (kill StringLiteral L27 → "")
     await expect(service.deleteOne({ id: 99, userId: 5 })).rejects.toThrow(
-      'Không tìm thấy lịch sử tìm kiếm',
+      'searchHistory.notFound',
     );
   });
 

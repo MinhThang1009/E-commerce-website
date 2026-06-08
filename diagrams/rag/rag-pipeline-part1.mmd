@@ -1,0 +1,36 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#DAE8FC',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#6C8EBF',
+    'lineColor': '#4D4D4D',
+    'secondaryColor': '#eff6ff',
+    'noteBkgColor': '#fffde7',
+    'noteBorderColor': '#6C8EBF'
+  }
+}}%%
+flowchart TD
+    START([Tin nhắn từ người dùng])
+    V["① Xác thực đầu vào"]
+    ERR([❌ Lỗi 400])
+    N["② Chuẩn hóa & Phân loại intent"]
+    SEC{"③ Kiểm tra bảo mật"}
+    INJ([🛡️ Từ chối — Injection])
+    OFT([ℹ️ Ngoài phạm vi])
+    S["④ Tải lịch sử hội thoại"]
+    R["⑤ Truy xuất sản phẩm\n(Hybrid Search song song)"]
+    RFB["Dự phòng độ tin cậy thấp"]
+    NEXT([→ Phần 2])
+
+    START --> V
+    V -->|Không hợp lệ| ERR
+    V -->|Hợp lệ| N
+    N --> SEC
+    SEC -->|Prompt injection| INJ
+    SEC -->|Ngoài phạm vi| OFT
+    SEC -->|Qua lọc| S
+    S --> R
+    R -->|Có kết quả| NEXT
+    R -->|Không có kết quả| RFB
+    RFB --> NEXT

@@ -43,9 +43,11 @@ customer -- UC_track
 
 guest -- UC_track
 
+/'
 note bottom of UC_track
   Public — KHÔNG cần đăng nhập (nhập order# + email khớp chủ đơn).
   "Guest" = phiên chưa đăng nhập; người tra thực chất là KH đã đặt đơn
   (createOrder bắt buộc auth → guest không tự tạo đơn được).
 end note
+'/
 @enduml

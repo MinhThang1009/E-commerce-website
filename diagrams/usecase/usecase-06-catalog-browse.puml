@@ -49,6 +49,7 @@ pub -- UC_search
 pub -- UC_suggest
 customer -- UC_recent
 
+/'
 note right of UC_list
   GET /api/products — public.
   Filter: category (slug|id), brand (array),
@@ -56,24 +57,31 @@ note right of UC_list
   Sort giá: COALESCE(MIN(variant.price), basePrice).
   Pagination: page=0 → offset=0 (Math.max guard).
 end note
+'/
 
+/'
 note right of UC_search
   GET /api/products/search — public.
   LIKE trên name_vi, name_en, description_vi,
   short_description_vi, tags; filter status='active'.
 end note
+'/
 
+/'
 note right of UC_suggest
   GET /api/products/suggestions — public.
   Prefix match trên name_vi.
   Trả { id, name, slug, thumbnail }.
   Tối đa 10 gợi ý.
 end note
+'/
 
+/'
 note right of UC_recent
   GET /api/products/recently-viewed — authenticate (bắt buộc).
   Mặc định 10 sản phẩm gần nhất (override qua ?limit=).
   Chỉ customer đã đăng nhập mới có history.
   (Track async khi xem chi tiết → uc-07)
 end note
+'/
 @enduml

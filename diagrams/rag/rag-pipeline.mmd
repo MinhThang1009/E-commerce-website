@@ -1,0 +1,50 @@
+%%{init: {
+  'theme': 'base',
+  'flowchart': {'wrappingWidth': 500},
+  'themeVariables': {
+    'primaryColor': '#DAE8FC',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#6C8EBF',
+    'lineColor': '#4D4D4D',
+    'secondaryColor': '#eff6ff',
+    'noteBkgColor': '#fffde7',
+    'noteBorderColor': '#6C8EBF'
+  }
+}}%%
+flowchart TD
+    START([Tin nhắn từ người dùng])
+    V["① Xác thực đầu vào (Validate)"]
+    V_DEC{"Hợp lệ?"}
+    ERR([❌ Lỗi 400])
+    N["② Chuẩn hóa & Phân loại (Normalize & Classify)"]
+    SEC{"③ Lọc nội dung (Injection & Off-topic)"}
+    INJ([🛡️ Từ chối / Injection])
+    OFT([ℹ️ Ngoài phạm vi / Off-topic])
+    S["④ Tải lịch sử hội thoại (Session)"]
+    R["⑤ Truy xuất sản phẩm (Retrieval)"]
+    R_DEC{"Có kết quả?"}
+    RFB["Dự phòng (Low Confidence Fallback)"]
+    G["⑥ Tăng cường & Sinh câu trả lời (Augmentation & Generation)"]
+    G_DEC{"LLM thành công?"}
+    GFB["Từ khóa dự phòng (Keyword Fallback)"]
+    P["⑦ Lưu trữ lịch sử (Persist)"]
+    OUT([Kết quả: message · products])
+
+    START --> V
+    V --> V_DEC
+    V_DEC -->|Không hợp lệ| ERR
+    V_DEC -->|Hợp lệ| N
+    N --> SEC
+    SEC -->|Injection| INJ
+    SEC -->|Ngoài phạm vi| OFT
+    SEC -->|Qua lọc| S
+    S --> R
+    R --> R_DEC
+    R_DEC -->|Có kết quả| G
+    R_DEC -->|Không có kết quả| RFB
+    RFB --> G
+    G --> G_DEC
+    G_DEC -->|Thành công| P
+    G_DEC -->|Timeout / lỗi| GFB
+    GFB --> P
+    P --> OUT

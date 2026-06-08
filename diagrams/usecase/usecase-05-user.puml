@@ -42,6 +42,7 @@ customer -- UC_addr_update
 customer -- UC_addr_delete
 customer -- UC_addr_default
 
+/'
 note right of UC_profile
   PUT /api/users/profile — authenticate.
   Fields: firstName, lastName, phone, avatar (URL).
@@ -50,7 +51,9 @@ note right of UC_profile
   Avatar upload delegate sang /api/uploads/avatars/single
   → nhận URL → gọi endpoint này với { avatar: url }.
 end note
+'/
 
+/'
 note right of UC_password
   POST /api/users/change-password — authenticate.
   1. Verify currentPassword (bcrypt compare).
@@ -58,17 +61,22 @@ note right of UC_password
      beforeUpdate hook tự hash (cost 12).
   confirmPassword phải khớp newPassword (Zod).
 end note
+'/
 
+/'
 note right of UC_addr_add
   POST /api/users/addresses — authenticate.
   Address đầu tiên → isDefault=true tự động.
   isDefault=true trong request → clearDefaultAddresses
   trước rồi tạo mới (chỉ 1 default mỗi lúc).
 end note
+'/
 
+/'
 note right of UC_addr_delete
   DELETE /api/users/addresses/:id — authenticate.
   Xóa default address → address mới nhất còn lại
   được auto-promote làm default (không throw lỗi).
 end note
+'/
 @enduml

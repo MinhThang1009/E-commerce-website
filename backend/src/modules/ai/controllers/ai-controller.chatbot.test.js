@@ -14,7 +14,7 @@
 
 // sequelize.transaction cần mock để tránh kết nối DB thật trong unit test
 jest.mock('@config/sequelize', () => ({
-  transaction: jest.fn((cb) => cb(null)),
+  transaction: jest.fn(async (cb) => cb({ LOCK: { UPDATE: 'UPDATE' } })),
   fn: jest.fn(),
   col: jest.fn(),
   literal: jest.fn((s) => s),
@@ -26,7 +26,7 @@ jest.mock('@models', () => ({
     findByPk: jest.fn().mockResolvedValue({ price: 500_000 }),
     findOne: jest.fn().mockResolvedValue({ id: 1, price: 500_000 }),
   },
-  Cart: { findOne: jest.fn(), create: jest.fn() },
+  Cart: { findOne: jest.fn(), create: jest.fn(), findOrCreate: jest.fn() },
   CartItem: { findOne: jest.fn().mockResolvedValue(null), create: jest.fn() },
   ChatMessage: { create: jest.fn().mockResolvedValue({}) },
   Category: {},
@@ -72,6 +72,7 @@ jest.mock('@middlewares/authenticate', () => authMiddlewareMock);
 
 const rateLimiterMock = {
   chatbotLimiter: (_req, _res, next) => next(),
+  chatLimiter: (_req, _res, next) => next(),
   apiLimiter: (_req, _res, next) => next(),
   authLimiter: (_req, _res, next) => next(),
   otpLimiter: (_req, _res, next) => next(),
@@ -124,7 +125,8 @@ describe('POST /api/chatbot/message', () => {
     const res = await request.post('/api/chatbot/message').send({ message: 'a'.repeat(501) });
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(res.body.message).toMatch(/quá dài|500/);
+    // i18n key 'ai.messageTooLong' (hoặc resolved translation nếu locale được set)
+    expect(res.body.message).toMatch(/quá dài|500|messageTooLong/);
   });
 
   test('200 khi message đúng 500 ký tự', async () => {
@@ -150,9 +152,14 @@ describe('POST /api/chatbot/message', () => {
 describe('POST /api/chatbot/cart/add', () => {
   beforeEach(() => {
     // Mặc định: giỏ hàng tồn tại, sản phẩm active và còn hàng
-    Cart.findOne.mockResolvedValue({ id: 1 });
-    Cart.create.mockResolvedValue({ id: 2 });
-    Product.findByPk.mockResolvedValue({ id: 1, status: 'active', stockQuantity: 10 });
+    Cart.findOrCreate.mockResolvedValue([{ id: 1 }, false]);
+    // Bao gồm variants để resolvedVariantData không null khi resolve default variant
+    Product.findByPk.mockResolvedValue({
+      id: 1,
+      status: 'active',
+      stockQuantity: 10,
+      variants: [{ id: 1, stockQuantity: 5 }],
+    });
     CartItem.findOne.mockResolvedValue(null);
     CartItem.create.mockResolvedValue({ id: 10, cartId: 1, productId: 1, quantity: 1 });
   });
@@ -185,7 +192,7 @@ describe('POST /api/chatbot/cart/add', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.status).toBe('error');
-    expect(res.body.message).toMatch(/hết hàng/);
+    expect(res.body.message).toMatch(/hết hàng|productOutOfStock/);
   });
 
   test('400 khi sản phẩm không active (status !== active)', async () => {
@@ -209,13 +216,14 @@ describe('POST /api/chatbot/cart/add', () => {
     expect(res.body.status).toBe('success');
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ productId: 1, quantity: 2 }),
-      expect.objectContaining({ transaction: null }),
+      expect.objectContaining({
+        transaction: expect.objectContaining({ LOCK: { UPDATE: 'UPDATE' } }),
+      }),
     );
   });
 
-  test('tạo mới giỏ hàng khi user chưa có cart', async () => {
-    Cart.findOne.mockResolvedValue(null); // chưa có cart
-    Cart.create.mockResolvedValue({ id: 5 });
+  test('tạo mới giỏ hàng khi user chưa có cart (findOrCreate atomic)', async () => {
+    Cart.findOrCreate.mockResolvedValue([{ id: 5 }, true]); // created=true
 
     const res = await request
       .post('/api/chatbot/cart/add')
@@ -223,9 +231,8 @@ describe('POST /api/chatbot/cart/add', () => {
       .send({ productId: 1, quantity: 1 });
 
     expect(res.status).toBe(200);
-    expect(Cart.create).toHaveBeenCalledWith(
-      { userId: 1, status: 'active' },
-      expect.objectContaining({ transaction: null }),
+    expect(Cart.findOrCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 1, status: 'active' } }),
     );
   });
 });

@@ -1,131 +1,219 @@
-\chapter{Phân tích và thiết kế hệ thống}
+\chapter{Thiết kế và xây dựng hệ thống TechStore}
 \label{chap:c3_design}
 
-Chương này trình bày toàn bộ quá trình phân tích yêu cầu và thiết kế hệ thống TechStore, bao gồm: xác định các yêu cầu chức năng và phi chức năng, thiết kế kiến trúc tổng thể, mô tả các luồng xử lý quan trọng thông qua biểu đồ tuần tự, thiết kế chi tiết pipeline RAG cho chatbot AI và thiết kế cơ sở dữ liệu. Trọng tâm của chương là pipeline RAG vì đây là thành phần cốt lõi và sáng tạo nhất của hệ thống.
+Chương này trình bày quá trình phân tích yêu cầu, thiết kế kiến trúc tổng thể, cơ sở dữ liệu, sơ đồ trạng thái, các luồng xử lý chính và pipeline RAG cho chatbot AI. Trọng tâm của chương là pipeline RAG vì đây là thành phần cốt lõi và sáng tạo nhất của hệ thống.
 
 \section{Phân tích yêu cầu}
 \label{sec:c3_requirements}
 
+Phần này xác định các tác nhân, yêu cầu chức năng và phi chức năng của hệ thống.
+
 \subsection{Xác định tác nhân}
 
-Hệ thống TechStore phục vụ ba nhóm tác nhân chính. \textbf{Khách vãng lai} (guest) là người dùng chưa đăng nhập, có thể duyệt sản phẩm, tìm kiếm, xem chi tiết sản phẩm, thêm vào giỏ hàng tạm thời (lưu trên trình duyệt), và đặc biệt là tương tác với chatbot AI mà không cần tài khoản. \textbf{Khách hàng} (customer) là người dùng đã đăng nhập, có đầy đủ quyền như khách vãng lai cộng thêm khả năng đặt hàng, thanh toán trực tuyến, theo dõi đơn hàng, viết đánh giá sản phẩm, và quản lý thông tin cá nhân. \textbf{Quản trị viên} (admin) có quyền truy cập toàn diện vào bảng điều khiển quản trị để quản lý sản phẩm, danh mục, đơn hàng, người dùng và xem báo cáo thống kê.
+Hệ thống TechStore phục vụ bốn nhóm tác nhân chính:
+\begin{itemize}
+  \item \textbf{Khách vãng lai} (guest): duyệt sản phẩm, tìm kiếm, xem chi tiết, thêm vào giỏ hàng tạm thời (lưu trên trình duyệt), và tương tác với chatbot AI mà không cần tài khoản.
+  \item \textbf{Khách hàng} (customer): có đầy đủ quyền như khách vãng lai, cộng thêm đặt hàng, thanh toán trực tuyến, theo dõi đơn hàng, viết đánh giá và quản lý thông tin cá nhân.
+  \item \textbf{Nhân viên} (staff): truy cập back-office để quản lý sản phẩm, danh mục, đơn hàng, tồn kho, hoàn tiền và kiểm duyệt đánh giá.
+  \item \textbf{Quản trị viên} (admin): truy cập back-office ở chế độ xem đối với dữ liệu nghiệp vụ, độc quyền quản lý tài khoản người dùng và xem báo cáo thống kê.
+\end{itemize}
 
 \subsection{Yêu cầu chức năng}
 
-Hệ thống được chia thành ba nhóm chức năng chính tương ứng với ba nhóm tác nhân.
-
-Nhóm chức năng dành cho người dùng cuối (khách vãng lai và khách hàng) bao gồm: duyệt danh mục sản phẩm với bộ lọc đa chiều (giá, hãng, cấu hình), tìm kiếm sản phẩm theo từ khóa, xem chi tiết sản phẩm kèm biến thể, thêm và quản lý giỏ hàng, đăng ký và đăng nhập tài khoản với xác thực email OTP, đặt hàng và chọn địa chỉ giao hàng, thanh toán qua cổng MoMo hoặc VNPay, theo dõi trạng thái đơn hàng, viết đánh giá và xếp hạng sản phẩm, và tương tác với chatbot AI để được tư vấn sản phẩm.
-
-Nhóm chức năng chatbot AI là phần trọng tâm của dự án và có các yêu cầu đặc thù: tiếp nhận câu hỏi bằng ngôn ngữ tự nhiên tiếng Việt và tiếng Anh, hiểu ý định người dùng kể cả khi câu hỏi viết tắt hoặc sai chính tả, truy xuất sản phẩm liên quan từ vector store, sinh phản hồi tiếng Việt tự nhiên kèm danh sách sản phẩm gợi ý, duy trì ngữ cảnh hội thoại trong phiên làm việc, thêm sản phẩm vào giỏ hàng trực tiếp qua chat, và từ chối các câu hỏi không liên quan đến sản phẩm một cách lịch sự.
-
-Nhóm chức năng quản trị bao gồm: quản lý toàn bộ danh mục sản phẩm và biến thể (thêm, sửa, xóa mềm), quản lý tồn kho với ngăn chặn race condition, xử lý đơn hàng và cập nhật trạng thái, quản lý tài khoản người dùng, xem thống kê doanh thu.
+Hệ thống có 28 ca sử dụng chia thành 7 nhóm: duyệt sản phẩm (4 UC), xác thực (5 UC), giỏ hàng (3 UC), đặt hàng và thanh toán (5 UC), chatbot AI (2 UC), quản trị nghiệp vụ cho staff (6 UC), và quản trị hệ thống cho admin (3 UC). Chatbot AI là trọng tâm với yêu cầu: hiểu câu hỏi tiếng Việt kể cả viết tắt, truy xuất sản phẩm từ vector store, sinh phản hồi tự nhiên kèm sản phẩm gợi ý, và từ chối câu hỏi ngoài phạm vi. Phân quyền RBAC: staff có toàn quyền CRUD nghiệp vụ nhưng không truy cập tài khoản người dùng; admin độc quyền quản lý users và analytics.
 
 \subsection{Yêu cầu phi chức năng}
 
-Về hiệu năng, API phải phản hồi trong vòng 200ms với ít hơn 100 người dùng đồng thời cho các thao tác CRUD thông thường. Chatbot AI có thể mất 2 đến 5 giây do phụ thuộc vào API của nhà cung cấp LLM, điều này được chấp nhận và thông báo với người dùng thông qua trạng thái loading. Vector store JSON phải phục vụ hybrid search trong vòng 50ms cho catalog dưới 10.000 sản phẩm.
+Về hiệu năng, API phải phản hồi trong vòng 200ms với ít hơn 100 người dùng đồng thời cho các thao tác CRUD thông thường. Chatbot AI có thể mất 2 đến 5 giây do phụ thuộc vào API của nhà cung cấp LLM, điều này được chấp nhận và thông báo với người dùng thông qua trạng thái loading. Vector store JSON phải phục vụ Hybrid Search trong vòng 100ms cho catalog dưới 10.000 sản phẩm.
 
-Về bảo mật, hệ thống phải triển khai xác thực JWT dual-token với access token ngắn hạn (15 phút), hash mật khẩu bằng bcrypt với cost factor 12, bảo vệ chống CSRF qua cơ chế httpOnly cookie, giới hạn tốc độ request (rate limiting) cho mọi endpoint nhạy cảm đặc biệt chatbot (20 request/60 giây), và mã hóa HMAC cho callback từ cổng thanh toán.
+Về bảo mật, hệ thống phải triển khai xác thực JWT dual-token với access token 7 ngày và refresh token 30 ngày, hash mật khẩu bằng bcrypt với cost factor 12, bảo vệ chống CSRF qua cơ chế httpOnly cookie với thuộc tính \texttt{SameSite=Strict}, và mã hóa HMAC cho callback từ cổng thanh toán. Rate limiting được áp dụng theo từng nhóm endpoint: API chung giới hạn 100 request/15 phút, xác thực 10 request/60 phút, OTP 5 request/15 phút mỗi email, và chatbot 20 request/60 giây mỗi IP.
 
-Về độ tin cậy, giao dịch đặt hàng và trừ tồn kho phải đảm bảo tính nguyên tử (ACID) để tránh overselling. Cơ chế idempotency cho IPN callback ngăn xử lý trùng lặp khi cổng thanh toán gửi lại thông báo. Chatbot phải có cơ chế dự phòng (fallback) khi LLM API không khả dụng.
+Về độ tin cậy, giao dịch đặt hàng và trừ tồn kho phải đảm bảo tính nguyên tử (ACID) để tránh overselling. Cơ chế idempotency cho IPN callback ngăn xử lý trùng lặp khi cổng thanh toán gửi lại thông báo. Chatbot phải có cơ chế dự phòng (fallback) khi LLM API không khả dụng, với chain fallback qua ba nhà cung cấp embedding để đảm bảo tính sẵn sàng cao.
 
-Về khả năng bảo trì, kiến trúc Modular Monolith với ranh giới rõ ràng giữa 17 module giúp từng module có thể phát triển và kiểm thử độc lập. Pipeline embedding có cơ chế chain fallback qua ba nhà cung cấp để đảm bảo tính sẵn sàng cao.
+Về khả năng kiểm thử, coverage tối thiểu đạt statements và branches $\geq$99,7\%, mutation score $\geq$70\% (Stryker).
 
 \subsection{Biểu đồ ca sử dụng tổng quan}
 
-Hình~\ref{fig:usecase_overview} thể hiện biểu đồ ca sử dụng tổng quan của hệ thống với ba tác nhân chính. Các use case được nhóm theo ranh giới hệ thống, thể hiện rõ sự phân quyền giữa các nhóm tác nhân. Khách vãng lai có tập use case nhỏ nhất nhưng vẫn bao gồm quyền truy cập chatbot AI, qua đó giúp chuyển đổi họ thành khách hàng. Quản trị viên không sử dụng chức năng mua hàng mà chỉ quản lý hệ thống thông qua giao diện riêng biệt.
+Biểu đồ ca sử dụng được chia thành ba sơ đồ theo nhóm tác nhân (Hình~\ref{fig:usecase_overview_guest}, \ref{fig:usecase_overview_customer}, \ref{fig:usecase_overview_admin}). Khách vãng lai duyệt catalog và tương tác chatbot AI không cần tài khoản. Khách hàng có thêm đặt hàng, thanh toán và đánh giá. Back-office áp dụng kế thừa actor: staff độc quyền CRUD nghiệp vụ, admin độc quyền quản lý users.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[height=0.88\textheight,keepaspectratio]{figures/c3/usecase_overview.png}
-  \caption{Biểu đồ ca sử dụng tổng quan của hệ thống TechStore}
-  \label{fig:usecase_overview}
+  \fitfig[0.88]{figures/c3/usecase_overview_guest.pdf}
+  \caption{Biểu đồ ca sử dụng -- Khách vãng lai (Guest)}
+  \label{fig:usecase_overview_guest}
 \end{figure}
 
-Điểm đáng lưu ý trong thiết kế use case là chatbot AI được xem như một ca sử dụng độc lập, không phụ thuộc vào trạng thái đăng nhập. Điều này giúp hạ thấp rào cản tương tác và cho phép thu thập tín hiệu quan tâm sản phẩm ngay từ lần truy cập đầu tiên.
+\begin{figure}[H]
+  \centering
+  \fitfig[0.82]{figures/c3/usecase_overview_customer.pdf}
+  \caption{Biểu đồ ca sử dụng -- Khách hàng (Customer)}
+  \label{fig:usecase_overview_customer}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fitfig[0.88]{figures/c3/usecase_overview_admin.pdf}
+  \caption{Biểu đồ ca sử dụng -- Back-office (Nhân viên và Quản trị viên)}
+  \label{fig:usecase_overview_admin}
+\end{figure}
 
 \section{Thiết kế kiến trúc hệ thống}
 \label{sec:c3_architecture}
 
 \subsection{Kiến trúc tổng quan}
 
-Hình~\ref{fig:system_architecture} minh họa kiến trúc tổng quan của hệ thống TechStore. Hệ thống được triển khai theo mô hình client-server ba tầng với các thành phần tích hợp thêm cho chức năng AI.
+Hình~\ref{fig:system_architecture} minh họa kiến trúc tổng quan của hệ thống TechStore. Hệ thống được triển khai theo kiến trúc bốn tầng.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.85\textwidth]{figures/c3/system_architecture.png}
+  \fitfig[0.95]{figures/c3/system_architecture.pdf}
   \caption{Kiến trúc tổng quan hệ thống TechStore}
   \label{fig:system_architecture}
 \end{figure}
 
-\textbf{Tầng Client} gồm trình duyệt web chạy ứng dụng React SPA. Giao tiếp với backend qua giao thức HTTP REST, sử dụng TanStack Query để caching dữ liệu phía client (staleTime 5 phút, gcTime 10 phút). Floating chat widget hiển thị trên mọi trang, cho phép người dùng tương tác với chatbot mà không cần rời khỏi trang hiện tại.
-
-\textbf{Tầng API Server} là ứng dụng Node.js/Express triển khai dưới dạng Modular Monolith với 17 module nghiệp vụ. Server nhận request, áp dụng chuỗi middleware (CORS, rate limiting, xác thực JWT, validation Zod), điều hướng đến module tương ứng, thực thi logic nghiệp vụ và trả về phản hồi JSON chuẩn.
-
-\textbf{Tầng dữ liệu} bao gồm hai thành phần lưu trữ: cơ sở dữ liệu MySQL 8 cho dữ liệu quan hệ (sản phẩm, đơn hàng, người dùng) và vector store dạng file JSON (\texttt{data/vector-db.json}) cho dữ liệu embedding phục vụ tìm kiếm ngữ nghĩa của chatbot.
-
-\textbf{Dịch vụ ngoài} gồm ba nhóm: nhà cung cấp LLM (API tương thích OpenAI), nhà cung cấp embedding (Jina AI và HuggingFace), và cổng thanh toán (MoMo và VNPay). Các phụ thuộc ngoài này được bọc trong abstraction layer để dễ thay thế và xử lý lỗi.
+Hệ thống gồm bốn tầng:
+\begin{itemize}
+  \item \textbf{Client}: React 19 SPA, TanStack Query + 6 Zustand stores, floating chat widget.
+  \item \textbf{API Server}: Node.js\slash Express, 17 module Modular Monolith, middleware bảo mật + rate limiting.
+  \item \textbf{Dữ liệu}: MySQL 8 với 25 model + vector store JSON 1024 chiều.
+  \item \textbf{Dịch vụ ngoài}: LLM API, embedding chain fallback, MoMo\slash VNPay, Gmail SMTP, Google OAuth.
+\end{itemize}
 
 \subsection{Kiến trúc backend: Modular Monolith}
 
-Hình~\ref{fig:modular_architecture} minh họa cách các module trong backend TechStore được tổ chức và giao tiếp với nhau.
+Hình~\ref{fig:modular_architecture} minh họa kiến trúc backend. Mỗi module là một vertical slice khép kín (Controller → Service → Repository). Các module giao tiếp qua ba cơ chế: \textbf{DI} (phụ thuộc truyền qua constructor trong \texttt{app.js})~\cite{richter2020modular}, \textbf{EventBus} (pub/sub bất đồng bộ, dùng \texttt{Promise.allSettled})~\cite{hohpe2004enterprise}, và \textbf{Shared Models} (inject model thay vì gọi API nội bộ). Lựa chọn Modular Monolith thay vì Microservices vì dự án ở giai đoạn khởi đầu với nhóm nhỏ, chưa cần scale từng module riêng lẻ.
 
-\begin{sidewaysfigure}
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textheight]{figures/c3/modular_architecture.png}
-  \caption{Kiến trúc Modular Monolith của backend TechStore với EventBus và UnitOfWork}
+  \fitfig{figures/c3/modular_architecture.pdf}
+  \caption{Kiến trúc Modular Monolith của backend TechStore}
   \label{fig:modular_architecture}
-\end{sidewaysfigure}
-
-Mỗi module trong hệ thống là một vertical slice khép kín, bao gồm: Controller (tiếp nhận HTTP request, validate, gọi service), Service (chứa business logic), Repository (truy vấn database qua Sequelize), và Event Handlers (lắng nghe sự kiện từ các module khác). Sự phụ thuộc giữa các lớp này chỉ đi theo một chiều từ trên xuống, không có module nào import trực tiếp từ module khác.
-
-Kết nối giữa các module được thực hiện qua ba cơ chế. Thứ nhất là \textbf{Dependency Injection (DI)}: toàn bộ các phụ thuộc (service, repository, shared services) được khởi tạo một lần trong \texttt{src/app.js} và truyền vào constructor của từng lớp -- không có singleton tự tạo hay global state ngoài EventBus. Thứ hai là \textbf{EventBus (pub/sub nội bộ)}~\cite{hohpe2004enterprise}: khi một sự kiện quan trọng xảy ra (ví dụ \texttt{order.cancelled}), module phát sự kiện mà không cần biết ai đang lắng nghe, giúp giảm coupling giữa module order và inventory. Thứ ba là \textbf{Shared Models}: khi module B cần đọc dữ liệu từ module A, model của A được inject vào B thay vì gọi API nội bộ, tránh chi phí HTTP và vẫn đảm bảo transaction đồng nhất.
+\end{figure}
 
 Cơ chế \textbf{UnitOfWork}~\cite{fowler2003patterns} đặc biệt quan trọng trong luồng đặt hàng. Pattern này bọc toàn bộ chuỗi thao tác (tạo order, tạo order items, trừ tồn kho) trong một transaction duy nhất với \texttt{runInTransaction}. Khi cần trừ tồn kho, \texttt{lockRow} thực thi câu lệnh \texttt{SELECT FOR UPDATE} để khóa hàng dữ liệu, ngăn hai request đồng thời cùng mua sản phẩm cuối cùng trong kho (race condition phổ biến trong hệ thống thương mại điện tử).
 
-17 module backend được tổ chức như sau: \textit{auth} (xác thực và phân quyền), \textit{users} (quản lý tài khoản và địa chỉ), \textit{catalog} (duyệt sản phẩm, danh mục, thương hiệu), \textit{attribute} (nhóm thuộc tính và giá trị sản phẩm), \textit{cart} (giỏ hàng), \textit{orders} (đặt hàng và trạng thái), \textit{payment} (tích hợp cổng thanh toán), \textit{reviews} (đánh giá sản phẩm), \textit{inventory} (quản lý tồn kho), \textit{discount-code} (mã giảm giá), \textit{upload} (quản lý tệp và ảnh), \textit{image} (xử lý ảnh sản phẩm), \textit{content} (feedback và liên hệ khách hàng), \textit{search-history} (lịch sử tìm kiếm), \textit{wishlist} (danh sách yêu thích), \textit{ai} (chatbot RAG), và \textit{admin} (thống kê và quản trị toàn diện).
+17 module backend chia thành hai nhóm: 12 Full DI modules (phụ thuộc truyền qua constructor, isolation tốt) và 5 Singleton modules (wrapper mỏng). Các module chính: \textit{auth}, \textit{users}, \textit{catalog}, \textit{cart}, \textit{orders}, \textit{payment}, \textit{inventory}, \textit{ai} (chatbot RAG), \textit{reviews}, \textit{wishlist}, \textit{content}, \textit{upload}, \textit{admin}, \textit{attribute}, \textit{image}, \textit{search-history}, \textit{discount-code}.
 
 \subsection{Kiến trúc frontend: Feature-Based}
 
-Frontend TechStore được xây dựng theo mô hình Feature-Based thay vì mô hình Layer-Based truyền thống (components/pages/hooks tách biệt). Trong Feature-Based, mỗi feature là một thư mục tự đóng gói chứa tất cả: pages, components, hooks, API calls, types, và store liên quan đến tính năng đó. Quy tắc cốt lõi là không có cross-feature imports, tức là feature A không được import trực tiếp từ feature B. Mọi chia sẻ logic đều đi qua thư mục \texttt{shared/} chứa UI components, utility functions và API client dùng chung.
+Frontend được xây dựng bằng React 19 và TypeScript theo mô hình Feature-Based với 13 feature folders, mỗi folder tự đóng gói (\texttt{api/}, \texttt{components/}, \texttt{hooks/}, \texttt{pages/}, \texttt{types/}) và không import chéo giữa các feature. TanStack Query v5 quản lý server state, 6 Zustand stores quản lý client state (auth, cart, chat, catalog, wishlist, ui). Axios singleton với hai interceptor xử lý tự động JWT injection và refresh token deduplication.
 
-Kiến trúc này mang lại lợi ích rõ ràng: khi phát triển tính năng AI chat, nhà phát triển chỉ cần làm việc trong thư mục \texttt{features/ai/} mà không lo ảnh hưởng đến các tính năng khác. 13 feature được phân tách gồm: \textit{auth} (đăng nhập, đăng ký, OTP), \textit{catalog} (duyệt và lọc sản phẩm), \textit{cart} (giỏ hàng), \textit{checkout} (xác nhận đặt hàng theo wizard 3 bước, tách thành bốn sub-component \texttt{CheckoutStepIndicator}, \texttt{CheckoutShippingForm}, \texttt{CheckoutPaymentMethod} và \texttt{CheckoutOrderSummary}), \textit{orders} (quản lý đơn hàng), \textit{payment} (thanh toán), \textit{reviews} (đánh giá sản phẩm), \textit{users} (hồ sơ và địa chỉ), \textit{wishlist} (danh sách yêu thích), \textit{upload} (tải ảnh), \textit{content} (trang nội dung), \textit{ai} (chatbot AI -- floating widget), và \textit{admin} (bảng điều khiển quản trị toàn diện).
+\subsection{Tổng quan API endpoints}
+\label{sec:c3_api_summary}
 
-Để quản lý state, hệ thống sử dụng sự kết hợp giữa TanStack Query (cho server state, tức dữ liệu từ API) và 6 Zustand stores (cho client state: auth-store, cart-store, chat-store, ui-store, catalog-store, wishlist-store). Sự tách biệt rõ ràng này tránh việc dùng một store duy nhất cho mọi loại state, vốn là nguyên nhân phổ biến gây re-render không cần thiết trong các ứng dụng React lớn.
+Hệ thống cung cấp REST API chia thành 7 nhóm chính: xác thực (6 endpoints), danh mục sản phẩm (4 endpoints public), giỏ hàng (5 endpoints), đơn hàng (4 endpoints), thanh toán (5 endpoints bao gồm IPN callback), chatbot AI (3 endpoints), và quản trị back-office (10 endpoints). Mỗi endpoint được bảo vệ bởi mức xác thực phù hợp: \textit{Public}, \textit{Customer}, \textit{Staff}, \textit{Admin} hoặc \textit{Back-office} (Staff hoặc Admin). Phân quyền RBAC thực thi qua middleware \texttt{adminAuthenticate} (cho cả admin và staff vào back-office), \texttt{requireRole('staff')} và \texttt{requireSuperAdmin} phân quyền chi tiết từng route. Tài liệu API đầy đủ được sinh tự động tại \texttt{/api-docs} qua Swagger/OpenAPI 3.0.
+
+\section{Thiết kế cơ sở dữ liệu}
+\label{sec:c3_database}
+
+\subsection{Tổng quan cấu trúc}
+
+Cơ sở dữ liệu TechStore sử dụng MySQL 8 với charset utf8mb4 để hỗ trợ đầy đủ Unicode bao gồm tiếng Việt và emoji. Hệ thống có 25 model Sequelize tương ứng 25 bảng chính (model Image tồn tại dạng file nhưng đã loại khỏi \texttt{index.js}, không đăng ký vào ứng dụng), được quản lý qua 62 migration files theo nguyên tắc không bao giờ chỉnh sửa migration đã chạy. Tất cả bảng có trường \texttt{created\_at}, \texttt{updated\_at} và phần lớn có \texttt{deleted\_at} (paranoid/soft delete) để tránh mất dữ liệu không thể khôi phục.
+
+\subsection{Thiết kế bảng cốt lõi}
+
+Hình~\ref{fig:erd_core} trình bày sơ đồ ERD của 10 bảng cốt lõi.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c3/erd_core.pdf}
+  \caption{Sơ đồ ERD các bảng cốt lõi hệ thống TechStore}
+  \label{fig:erd_core}
+\end{figure}
+
+Product là thực thể trung tâm có quan hệ với hầu hết các bảng khác. Bảng \texttt{products} lưu thông tin chung của sản phẩm: tên, mô tả, thương hiệu, danh mục, ảnh đại diện, và trạng thái (active, inactive, hoặc draft). Mỗi sản phẩm có thể có nhiều biến thể trong bảng \texttt{product\_variants} với các thuộc tính khác nhau như RAM, dung lượng, màu sắc. Bảng variant lưu giá bán (\texttt{price}), số lượng tồn kho và mã \texttt{sku} duy nhất; giá gốc (\texttt{base\_price}) được lưu ở bảng \texttt{products} vì là đặc tính của sản phẩm, không phải của từng biến thể. Thiết kế này tách biệt thông tin sản phẩm chung (tên, ảnh, mô tả) và thông tin biến thể (giá, kho), cho phép một sản phẩm có nhiều mức giá khác nhau.
+
+10 bảng cốt lõi sử dụng khóa chính INTEGER auto-increment. Thiết kế đáng chú ý: \texttt{orders} nhúng trực tiếp thông tin thanh toán (tránh JOIN), \texttt{order\_items} snapshot giá tại thời điểm mua, \texttt{carts} hỗ trợ cả guest (qua \texttt{session\_id}) và user, \texttt{chat\_messages} lưu lịch sử chatbot kèm intent và thời gian xử lý.
+
+\subsection{Thiết kế hệ thống sản phẩm và biến thể}
+\label{sec:c3_product_variant}
+
+Hệ thống sản phẩm theo mô hình \textbf{Product--Variant--Attribute} ba tầng: \texttt{products} (thông tin chung), \texttt{product\_variants} (giá, kho, SKU riêng), và hệ thống thuộc tính (\texttt{attribute\_groups} + \texttt{attribute\_values}) cho phép gán bộ thuộc tính riêng từng sản phẩm. Cơ chế sinh tên biến thể tự động từ \texttt{baseName} + các giá trị có \texttt{affectsName=true} đảm bảo đặt tên nhất quán.
+
+\subsection{Bảng phục vụ AI Chatbot và ghi log}
+
+Hình~\ref{fig:erd_ai_log} trình bày sơ đồ ERD của bốn bảng phục vụ AI Chatbot và hệ thống ghi log.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c3/erd_ai_log.pdf}
+  \caption{Sơ đồ ERD các bảng AI Chatbot và ghi log hệ thống}
+  \label{fig:erd_ai_log}
+\end{figure}
+
+Bảng \texttt{chat\_messages} lưu từng tin nhắn chatbot kèm \texttt{session\_id}, \texttt{role}, \texttt{intent}, \texttt{response\_time\_ms} và \texttt{is\_fallback} phục vụ analytics (context phiên lưu trong RAM Map, database chỉ ghi log). Bảng \texttt{search\_histories} và \texttt{recently\_viewed} ghi lịch sử tìm kiếm và xem sản phẩm. Bảng \texttt{inventory\_logs} là immutable audit log mọi thay đổi tồn kho với \texttt{change\_type}, \texttt{change\_amount}, \texttt{previous\_stock} và \texttt{new\_stock}.
+
+\section{Thiết kế sơ đồ trạng thái}
+\label{sec:c3_state_diagrams}
+
+Hệ thống TechStore mô hình hóa bốn thực thể nghiệp vụ quan trọng dưới dạng sơ đồ trạng thái để kiểm soát chặt chẽ các chuyển trạng thái hợp lệ và ngăn các lỗi logic do thay đổi trạng thái tùy tiện.
+
+\subsection{Trạng thái đơn hàng}
+\label{sec:c3_order_states}
+
+Vòng đời của đơn hàng trong TechStore được mô hình hóa như một máy trạng thái hữu hạn (FSM -- Finite State Machine)~\cite{fowler2003patterns} với 5 trạng thái và các chuyển trạng thái được kiểm soát chặt chẽ. Hình~\ref{fig:order_states} thể hiện biểu đồ trạng thái đơn hàng.
+
+\clearpage
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c3/order_states.pdf}
+  \caption{Biểu đồ trạng thái vòng đời đơn hàng TechStore}
+  \label{fig:order_states}
+\end{figure}
+
+Đơn hàng đi qua 5 trạng thái: \texttt{pending} → \texttt{processing} (IPN thành công) → \texttt{shipped} → \texttt{delivered}. Hủy (\texttt{cancelled}) có thể từ 3 trạng thái đầu, kèm hoàn tồn kho trong transaction. Mọi chuyển trạng thái đều có validation ngăn chuyển bất hợp lệ.
+
+\subsection{Trạng thái thanh toán}
+\label{sec:c3_payment_states}
+
+Trạng thái thanh toán tách biệt qua trường \texttt{payment\_status} với bốn giá trị: \texttt{pending}, \texttt{paid}, \texttt{failed}, \texttt{refunded} (Hình~\ref{fig:payment_states}). Thiết kế tách hai trường trạng thái phản ánh đúng thực tế: đơn hàng có thể đang \texttt{processing} trong khi thanh toán đã \texttt{paid}. Cơ chế idempotency ngăn xử lý trùng lặp khi cổng gửi lại IPN nhiều lần.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c3/payment_states.pdf}
+  \caption{Biểu đồ trạng thái thanh toán TechStore}
+  \label{fig:payment_states}
+\end{figure}
+
+\subsection{Trạng thái sản phẩm và tài khoản người dùng}
+\label{sec:c3_product_user_states}
+
+Ngoài đơn hàng và thanh toán, hệ thống mô hình hóa thêm hai thực thể đơn giản hơn. Sản phẩm có ba trạng thái (\texttt{active}, \texttt{inactive}, \texttt{draft}) chuyển đổi tự do qua lại; chỉ sản phẩm \texttt{active} được phép đặt hàng, xóa sản phẩm là soft delete. Tài khoản người dùng có bốn trạng thái (\texttt{unverified}, \texttt{active}, \texttt{disabled}, \texttt{deleted}); đăng ký email bắt đầu ở \texttt{unverified} (cần OTP), đăng nhập Google OAuth vào thẳng \texttt{active}; trạng thái \texttt{disabled} chặn cả đăng nhập lẫn làm mới token.
 
 \section{Thiết kế các luồng xử lý chính}
 \label{sec:c3_sequences}
 
+Phần này trình bày ba luồng xử lý chính: xác thực người dùng, giỏ hàng và đặt hàng thanh toán.
+
 \subsection{Luồng xác thực người dùng}
 
-Hệ thống sử dụng chiến lược xác thực hai bước kết hợp OTP email và JWT dual-token. Hình~\ref{fig:seq_auth} mô tả biểu đồ tuần tự cho ba luồng xác thực liên kết nhau: đăng ký, xác thực OTP và đăng nhập.
+Hệ thống hỗ trợ hai phương thức xác thực với chiến lược dual-token: access token (JWT, 7 ngày) trong body response và refresh token (30 ngày) trong \texttt{httpOnly} cookie chống XSS. Đăng ký qua email yêu cầu xác thực OTP 6 số (sinh bằng \texttt{crypto.randomInt}, so sánh bằng \texttt{timingSafeEqual} chống timing attack, thông báo lỗi chung chống user enumeration). Google OAuth cho phép bỏ qua OTP, tạo hoặc merge tài khoản tự động.
 
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=\textwidth]{figures/c3/seq_auth.png}
-  \caption{Biểu đồ tuần tự luồng đăng ký, xác thực OTP và đăng nhập}
-  \label{fig:seq_auth}
-\end{figure}
+\subsection{Luồng giỏ hàng và merge khi đăng nhập}
 
-Trong luồng đăng ký, người dùng gửi thông tin (email, mật khẩu, họ tên) đến Auth Service. Service kiểm tra email chưa tồn tại, hash mật khẩu bằng bcrypt (cost=12), tạo tài khoản với trạng thái \texttt{isVerified=false}, sinh mã OTP 6 chữ số ngẫu nhiên có thời hạn 10 phút, và gửi email qua Notification Service. OTP 6 chữ số được lưu trực tiếp trong bảng \texttt{users} ở hai trường \texttt{otpCode} và \texttt{otpExpires}, đơn giản hóa truy vấn và tận dụng transaction đang mở khi tạo tài khoản.
-
-Khi xác thực OTP, hệ thống kiểm tra mã gửi lên với bản ghi trong database, xác nhận chưa hết hạn và chưa được dùng, sau đó cập nhật \texttt{isVerified=true} và đánh dấu OTP đã sử dụng. Thiết kế này ngăn tấn công replay trong đó kẻ tấn công dùng lại OTP đã sử dụng.
-
-Sau khi đăng nhập thành công, server tạo hai token: access token (JWT, 15 phút, chứa userId và role trong payload) được trả về trong body response, còn refresh token (JWT, 7 ngày) được set vào httpOnly cookie để JavaScript phía client không thể đọc được, bảo vệ chống tấn công XSS.
+Giỏ hàng phục vụ cả khách vãng lai (localStorage + session cookie) và khách đã đăng nhập (đồng bộ server). Khi đăng nhập, hook \texttt{useCartMerge} tự động gộp giỏ hàng guest vào tài khoản trong transaction với \texttt{SELECT FOR UPDATE}, cộng dồn số lượng cho items trùng và cập nhật giá hiện tại.
 
 \subsection{Luồng đặt hàng và thanh toán trực tuyến}
 
-Đây là luồng phức tạp nhất trong hệ thống, liên quan đến nhiều module và dịch vụ ngoài. Hình~\ref{fig:seq_checkout} trình bày biểu đồ tuần tự đầy đủ từ khi người dùng xác nhận giỏ hàng đến khi đơn hàng được xác nhận qua IPN callback.
+Luồng đặt hàng và thanh toán là luồng phức tạp nhất trong hệ thống, liên quan đến Order Service, Payment Service và cổng thanh toán bên ngoài. Luồng được chia thành ba giai đoạn: tạo đơn hàng, sinh URL thanh toán, và xử lý kết quả từ cổng.
+
+\clearpage
+Hình~\ref{fig:seq_checkout_create_order} mô tả giai đoạn tạo đơn hàng từ khi người dùng xác nhận giỏ hàng.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{figures/c3/seq_checkout.png}
-  \caption{Biểu đồ tuần tự luồng đặt hàng và thanh toán qua cổng VNPay/MoMo}
-  \label{fig:seq_checkout}
+  \fitfig{figures/c3/seq_checkout_create_order.pdf}
+  \caption{Biểu đồ tuần tự luồng tạo đơn hàng}
+  \label{fig:seq_checkout_create_order}
 \end{figure}
 
-Khi người dùng xác nhận thanh toán, Order Service mở một transaction database. Trong transaction đó, với từng sản phẩm trong giỏ hàng, hệ thống thực hiện \texttt{SELECT FOR UPDATE} để khóa hàng tồn kho, kiểm tra số lượng còn lại đủ không, trừ số lượng và ghi log vào \texttt{inventory\_logs}. Nếu bất kỳ sản phẩm nào hết hàng, toàn bộ transaction bị rollback và người dùng nhận thông báo lỗi cụ thể. Nếu thành công, đơn hàng được tạo với trạng thái \texttt{pending} (kèm \texttt{paymentStatus=pending}) và Payment Service tạo URL thanh toán từ cổng tương ứng (VNPay dùng chữ ký HMAC-SHA512, MoMo dùng HMAC-SHA256).
+\begin{sloppypar}
+Order Service mở transaction và thực hiện đầu tiên trong transaction đó là hủy các đơn hàng \texttt{pending} cũ của người dùng kèm hoàn tồn kho tương ứng -- bước này nằm trong transaction để đảm bảo tính nguyên tử, tránh tình huống hủy thành công nhưng transaction chính rollback. Tiếp theo, hệ thống thực hiện \texttt{SELECT FOR UPDATE} cho từng biến thể sản phẩm trong giỏ hàng để khóa hàng, kiểm tra số lượng còn đủ, trừ tồn kho và ghi \texttt{inventory\_logs}. Nếu bất kỳ sản phẩm nào hết hàng hoặc ngừng bán, toàn bộ transaction bị rollback ngay lập tức.
 
-Sau khi người dùng hoàn tất thanh toán trên cổng, cổng thanh toán gọi IPN endpoint của hệ thống. Payment Service kiểm tra chữ ký HMAC để xác thực nguồn gốc, sau đó dùng cơ chế idempotency: nếu \texttt{paymentStatus} của đơn hàng đã là \texttt{paid}, bỏ qua hoàn toàn để tránh xử lý trùng lặp. Nếu hợp lệ, Payment Service cập nhật \texttt{paymentStatus=paid} rồi chuyển trạng thái đơn hàng sang \texttt{processing} và thực hiện các bước xử lý sau thanh toán (gửi email xác nhận, ghi log) ngay trong cùng luồng xử lý, không qua EventBus, để đảm bảo tính nhất quán dữ liệu.
+Nếu có mã giảm giá, hệ thống cũng khóa bản ghi mã bằng \texttt{SELECT FOR UPDATE} để kiểm tra điều kiện (còn lượt, chưa hết hạn, đủ giá trị đơn tối thiểu) trước khi áp dụng. Cuối cùng, đơn hàng được tạo với \texttt{status=pending} và \linebreak[0]\texttt{paymentStatus=pending}, kèm \texttt{order\_items} snapshot giá tại thời điểm đặt. Với thanh toán thủ công (COD, chuyển khoản, trả góp), giỏ hàng xóa ngay sau COMMIT và email xác nhận được gửi bất đồng bộ. Với thanh toán online, giỏ hàng và bộ đếm mã giảm giá được giữ lại chờ xác nhận từ IPN callback.
+\end{sloppypar}
+
+Sau khi tạo đơn, frontend gọi API sinh URL thanh toán (MoMo dùng HMAC-SHA256, VNPay dùng HMAC-SHA512). Kết quả trả về qua IPN callback (server-to-server) và Return URL. Payment Service xác thực chữ ký HMAC, kiểm tra idempotency (dựa trên \texttt{paymentTransactionId}), và cập nhật trạng thái trong transaction. Sau COMMIT, các tác vụ hậu thanh toán (xóa giỏ hàng, tăng bộ đếm mã giảm giá, gửi email) chạy fire-and-forget.
 
 \section{Thiết kế pipeline RAG cho chatbot AI}
 \label{sec:c3_rag_pipeline}
@@ -134,216 +222,78 @@ Sau khi người dùng hoàn tất thanh toán trên cổng, cổng thanh toán 
 
 Chatbot AI là thành phần phân biệt TechStore với các hệ thống thương mại điện tử thông thường. Yêu cầu đặt ra là chatbot phải trả lời câu hỏi tiếng Việt tự nhiên về sản phẩm, kể cả câu hỏi viết tắt, sai chính tả hoặc mơ hồ, đồng thời chỉ sử dụng thông tin sản phẩm thực tế trong hệ thống chứ không suy diễn từ kiến thức chung của LLM.
 
-Kiến trúc thuần LLM (prompt-based) không đáp ứng được yêu cầu này vì LLM không biết danh mục sản phẩm thực tế. Kiến trúc RAG cơ bản (chỉ tìm kiếm ngữ nghĩa) có thể bỏ sót sản phẩm khi người dùng gõ tên model cụ thể (``iPhone 15 Pro''). Do đó, hệ thống được thiết kế theo kiến trúc \textbf{RAG Hybrid} kết hợp tìm kiếm ngữ nghĩa (dense retrieval) và tìm kiếm từ khóa (sparse retrieval) để tận dụng ưu điểm của cả hai phương pháp.
+Kiến trúc thuần LLM (prompt-based) không đáp ứng được yêu cầu này vì LLM không biết danh mục sản phẩm thực tế. Kiến trúc RAG cơ bản (chỉ tìm kiếm ngữ nghĩa) có thể bỏ sót sản phẩm khi người dùng gõ tên model cụ thể (``iPhone 17 Pro''). Do đó, hệ thống được thiết kế theo kiến trúc \textit{Advanced RAG} kết hợp tìm kiếm ngữ nghĩa (dense retrieval) và tìm kiếm từ khóa (sparse retrieval) để tận dụng ưu điểm của cả hai phương pháp, đồng thời bổ sung cơ chế tiền xử lý query và rewrite bằng LLM trước khi truy xuất.
+
+Về lưu trữ vector, hệ thống chọn file JSON (\texttt{vector-db.json}) thay vì cơ sở dữ liệu vector chuyên dụng như Pinecone, Weaviate hay pgvector. Với catalog dưới 10.000 sản phẩm, toàn bộ tập vector (ước tính $10.000 \times 1.024$ chiều $\times$ 4 byte $\approx$ 40MB) có thể nạp vào RAM một lần và tính cosine similarity bằng phép nhân ma trận, đạt độ trễ dưới 50ms mà không cần thêm dịch vụ bên ngoài. Nhược điểm là tìm kiếm theo thứ tự $O(n)$ tuyến tính vì không có chỉ mục HNSW; khi catalog vượt ngưỡng 100.000 sản phẩm hoặc cần độ trễ dưới 10ms, hệ thống có thể chuyển sang pgvector hoặc Qdrant mà chỉ cần thay thế lớp \texttt{HybridVectorStore} mà không ảnh hưởng đến phần còn lại của pipeline.
 
 \subsection{Sơ đồ luồng xử lý pipeline}
 
-Pipeline RAG của TechStore được chia thành hai phần để trình bày rõ ràng. Phần đầu (Hình~\ref{fig:rag_pipeline_part1}) mô tả giai đoạn tiền xử lý, kiểm tra bảo mật, load lịch sử và truy xuất thông tin (Bước 1--5). Phần hai (Hình~\ref{fig:rag_pipeline_part2}) mô tả giai đoạn sinh phản hồi, xử lý dự phòng và lưu trữ lịch sử (Bước 6--7).
+Hình~\ref{fig:rag_pipeline_flow} trình bày toàn bộ luồng xử lý 7 bước của pipeline RAG TechStore, từ xác thực đầu vào đến lưu trữ lịch sử hội thoại.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[height=0.82\textheight,keepaspectratio]{figures/c3/rag_pipeline_flow_part1.png}
-  \caption{Sơ đồ pipeline RAG -- Phần 1: Tiền xử lý, kiểm tra bảo mật, load lịch sử và truy xuất (Bước 1--5)}
-  \label{fig:rag_pipeline_part1}
+  \fitfig[0.95]{figures/c3/rag_pipeline_flow.pdf}
+  \caption{Sơ đồ luồng xử lý pipeline RAG TechStore (7 bước)}
+  \label{fig:rag_pipeline_flow}
+\end{figure}
+
+\subsection{Biểu đồ tuần tự pipeline RAG}
+\label{sec:c3_rag_sequence}
+
+Pipeline RAG được chia thành ba giai đoạn: tiền xử lý (Hình~\ref{fig:seq_chatbot_preprocess}), truy xuất (Hình~\ref{fig:seq_chatbot_retrieve}), và sinh phản hồi (Hình~\ref{fig:seq_chatbot_generate}).
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c3/seq_chatbot_preprocess.pdf}
+  \caption{Biểu đồ tuần tự chatbot RAG -- Bước 1--3: Tiền xử lý, phân loại và kiểm tra bảo mật}
+  \label{fig:seq_chatbot_preprocess}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[height=0.82\textheight,keepaspectratio]{figures/c3/rag_pipeline_flow_part2.png}
-  \caption{Sơ đồ pipeline RAG -- Phần 2: Sinh phản hồi, dự phòng và lưu trữ lịch sử (Bước 6--7)}
-  \label{fig:rag_pipeline_part2}
+  \fitfig{figures/c3/seq_chatbot_retrieve.pdf}
+  \caption{Biểu đồ tuần tự chatbot RAG -- Bước 4--5: Load session và Hybrid Search}
+  \label{fig:seq_chatbot_retrieve}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c3/seq_chatbot_generate.pdf}
+  \caption{Biểu đồ tuần tự chatbot RAG -- Bước 6--7: Sinh phản hồi và lưu trữ}
+  \label{fig:seq_chatbot_generate}
 \end{figure}
 
 \subsection{Các bước trong pipeline RAG}
 
-Pipeline RAG của TechStore gồm 7 bước chính, thực hiện tuần tự với ngoại lệ là bước 5 có hai tác vụ chạy song song.
+Pipeline RAG gồm 7 bước tuần tự với 4 điểm phân nhánh (validate, lọc nội dung, retrieval rỗng, LLM timeout):
 
-\textbf{Bước 1 -- Xác thực đầu vào (validate):} Kiểm tra request có hợp lệ không. Rate limiter ChatbotLimiter đã được áp dụng ở tầng middleware (20 request/60 giây mỗi IP) trước khi request đến đây. Bước này kiểm tra thêm độ dài tin nhắn (tối đa 500 ký tự) và yêu cầu tin nhắn chứa ít nhất một chữ cái hoặc chữ số.
+\textbf{Bước 1--3 (Tiền xử lý):} Validate đầu vào (không rỗng, $\leq$500 ký tự). Chuẩn hóa 71 mẫu regex viết tắt ($<$1ms) và phân loại 6 intent. Lọc prompt injection (15 nhóm, 24 mẫu regex) và off-topic bằng regex ($<$10ms), kết thúc sớm không gọi LLM.
 
-\textbf{Bước 2 -- Chuẩn hóa query (expandAbbreviations + classifyIntent):} Hàm \texttt{expandAbbreviations} trong AIPolicy xử lý 16 mẫu viết tắt thương hiệu/model phổ biến. Ví dụ: ``ip'' mở rộng thành ``iPhone'', ``ss'' thành ``Samsung'', ``mb'' thành ``MacBook''. Bước này không dùng LLM mà dùng bảng ánh xạ tĩnh để tránh độ trễ. Regex pattern khớp cả từ viết tắt đứng độc lập và viết tắt trong câu. Song song, \texttt{classifyIntent} phân loại câu hỏi vào một trong 6 intent: \texttt{off\_topic}, \texttt{order\_inquiry}, \texttt{policy}, \texttt{pricing}, \texttt{product\_search}, và \texttt{general}. Kết quả intent được truyền vào phản hồi cuối để frontend có thể hiển thị gợi ý phù hợp.
+\textbf{Bước 4 (Session):} Lấy lịch sử từ in-memory Map (tối đa 10 lượt, TTL 30 phút, LRU 500 phiên). Nếu câu hỏi chứa đại từ (``cái đó'', ``nó''), bổ sung tên sản phẩm từ tin nhắn trước vào query.
 
-\textbf{Bước 3 -- Kiểm tra bảo mật và ngoài phạm vi:} Bước này thực hiện hai kiểm tra theo thứ tự, cả hai đều dùng regex thuần và hoàn thành trong dưới 10ms. Trước tiên, hàm \texttt{isPromptInjection} phát hiện các chuỗi cố ý chứa lệnh để thao túng LLM (ví dụ: ``ignore previous instructions'', ``act as an unrestricted AI'') và trả về phản hồi từ chối ngay lập tức. Tiếp theo, hàm \texttt{isOffTopic} phân tích câu hỏi để xác định có liên quan đến sản phẩm công nghệ không. Nếu câu hỏi rõ ràng ngoài phạm vi (ví dụ: hỏi về thời tiết, làm toán), hệ thống trả về thông báo lịch sự từ chối. Cả hai đường dẫn đều kết thúc sớm mà không gọi LLM, giúp tránh lạm dụng và kiểm soát chi phí API.
+\textbf{Bước 5 (Retrieval):} \texttt{Promise.all} chạy đồng thời \texttt{hybridSearch(query, topK=10, minScore=0.45)} và \texttt{rewriteQuery} (LLM, timeout 8s). Nếu rỗng, fallback \texttt{hybridSearch(query, 3, 0)} với \texttt{lowConfidence=true}.
 
-\textbf{Bước 4 -- Load lịch sử hội thoại (session memory):} Hệ thống lấy lịch sử hội thoại của phiên hiện tại từ \texttt{Map<sessionId, \{messages, lastAccess\}>} trong bộ nhớ server, tối đa \texttt{MAX\_HISTORY\_TURNS=10} lượt gần nhất. Lịch sử này sẽ được \texttt{createPrompt} đưa vào context ở bước sinh phản hồi để chatbot trả lời nhất quán theo ngữ cảnh cuộc trò chuyện. Nếu chưa có phiên, Map trả về mảng rỗng và pipeline tiếp tục bình thường.
+\textbf{Bước 6 (Generation):} \texttt{buildAugmentedPrompt} ghép sản phẩm + lịch sử + system prompt gửi LLM (\texttt{temperature=0.3}, JSON output). \texttt{parseLLMOutput} khớp sản phẩm qua 4 mức (exact → version → model number → 80\% từ). Timeout hoặc lỗi → \texttt{simpleKeywordMatch} làm fallback.
 
-\textbf{Bước 5 -- Song song: Rewrite Query và Hybrid Search:} Đây là bước then chốt nhất trong pipeline. \texttt{Promise.all} chạy đồng thời hai tác vụ: (a) \texttt{rewriteQuery} gửi câu hỏi gốc đến LLM để nhận về câu hỏi được viết lại rõ ràng hơn cho mục đích tìm kiếm; (b) \texttt{hybridSearch} tìm kiếm ngay trên câu hỏi gốc đã qua expandAbbreviations. Sau khi cả hai hoàn thành, nếu câu hỏi được viết lại cho kết quả tìm kiếm tốt hơn (nhiều kết quả có điểm cao hơn), kết quả đó được sử dụng thay thế.
-
-\textbf{Bước 6 -- Sinh phản hồi (generate):} \texttt{buildAugmentedPrompt} xây dựng prompt gửi đến LLM gồm ba phần: system prompt định nghĩa vai trò trợ lý bán hàng, ngữ cảnh hội thoại (tối đa 10 lượt gần nhất từ session memory đã load ở bước 4), và user message kèm danh sách sản phẩm truy xuất được. LLM trả về JSON có cấu trúc (\texttt{response\_format: json\_object}) gồm \texttt{message} (văn bản trả lời) và \texttt{products} (mảng tên sản phẩm muốn hiển thị). Sau khi nhận phản hồi, \texttt{parseLLMOutput} xử lý chuỗi JSON: parse thô, xác thực cấu trúc, khớp tên sản phẩm với catalog (ưu tiên khớp chính xác tên, rồi đến khớp từ khóa model, cuối cùng khớp theo độ tương đồng 80\% từ), và bổ sung thông tin đầy đủ (tên, giá, ảnh) từ catalog cache làm mới mỗi 5 phút. Nếu bất kỳ bước nào từ 5 đến 6 thất bại (LLM timeout, JSON parse lỗi, không tìm thấy sản phẩm), \texttt{simpleKeywordMatch} trong \texttt{keyword-fallback.js} được kích hoạt là cơ chế dự phòng, thực hiện tìm kiếm thuần từ khóa trực tiếp trên catalog memory.
-
-\textbf{Bước 7 -- Lưu trữ lịch sử (persist):} Sau khi có phản hồi, hệ thống cập nhật đồng thời hai nơi theo kiểu fire-and-forget. Session memory Map được cập nhật ngay lập tức với cặp tin nhắn mới (user + assistant), giữ tối đa \texttt{MAX\_HISTORY\_TURNS=10} lượt, \texttt{MAX\_SESSIONS=500} phiên đồng thời với LRU eviction và TTL 30 phút. Song song, \texttt{ChatMessage.bulkCreate} ghi cả hai tin nhắn vào database để phục vụ phân tích sau; thao tác này không block phản hồi trả về cho người dùng.
+\textbf{Bước 7 (Persist):} Fire-and-forget cập nhật session Map và \texttt{ChatMessage.bulkCreate} vào MySQL.
 
 \subsection{Thiết kế Hybrid Search}
 \label{sec:c3_hybrid_search}
 
-Hàm \texttt{hybridSearch} trong \texttt{HybridVectorStore} nhận ba tham số: query, topK (số kết quả tối đa cần lấy) và minScore (ngưỡng lọc tối thiểu). RAG pipeline gọi hàm này theo ba chế độ khác nhau tùy tình huống. Chế độ tìm kiếm chính (bước 5 -- search ban đầu và search lại với LLM-rewrite): \texttt{hybridSearch(query, 10)} với topK=10 và minScore mặc định 0.45. Chế độ dự phòng khi không có kết quả nào vượt ngưỡng: \texttt{hybridSearch(finalQuery, 3, 0)} với topK=3 và minScore=0, lấy ba sản phẩm gần nhất dù điểm thấp và đánh dấu \texttt{lowConfidence=true} để LLM biết kết quả ít tin cậy. Tham số default topK=5 trong khai báo hàm không được dùng trong thực tế vì pipeline luôn truyền explicit. Quy trình tìm kiếm diễn ra như sau.
+\texttt{hybridSearch(query, topK, minScore)} thực hiện ba bước: (1) embedding query thành vector 1024 chiều qua chain fallback, tính cosine similarity với toàn bộ product vectors (chỉ giữ $\geq$ minScore); (2) tìm kiếm từ khóa BM25-inspired với trọng số tên sản phẩm $\times$3; (3) hợp nhất kết quả, overlap boost +0.05 cho sản phẩm xuất hiện ở cả hai, đánh dấu \texttt{lowConfidence} cho kết quả chỉ từ keyword. Pipeline gọi ở hai chế độ: chính (topK=10, minScore=0.45) và dự phòng (topK=3, minScore=0).
 
-Đầu tiên, \texttt{UnifiedEmbeddingService} vector hóa query thành vector 1024 chiều với tiền tố ``query:'' (theo quy ước của các mô hình e5). Dịch vụ embedding sử dụng chiến lược chain fallback: thử Jina v3 trước (ưu tiên vì chất lượng cao và tối ưu cho retrieval), nếu lỗi chuyển sang HuggingFace multilingual-e5-large-instruct, nếu lỗi tiếp tục chuyển sang multilingual-e5-large. Cả ba nhà cung cấp đều tạo ra vector 1024 chiều, đảm bảo tương thích với data đã index.
+\subsection{Session memory, vector sync và embedding fallback}
 
-Tiếp theo, tìm kiếm ngữ nghĩa tính cosine similarity giữa query vector và toàn bộ product vector trong \texttt{vector-db.json}. Chỉ giữ lại sản phẩm có cosine similarity $\geq 0.45$. Đồng thời, tìm kiếm từ khóa phân tách query thành các token, tính điểm cho từng sản phẩm theo công thức lấy cảm hứng từ BM25~\cite{robertson1994okapi}: token khớp trong tên sản phẩm được tính trọng số 3 lần so với token khớp trong mô tả.
+Session memory lưu trong \texttt{Map} (tối đa 500 phiên, TTL 30 phút, LRU eviction) — phù hợp quy mô hiện tại nhưng mất khi server restart. Vector store tự động rebuild khi chênh lệch $>$5\% so với catalog, và cập nhật tăng dần qua Sequelize model hooks (\texttt{afterCreate/Update/Destroy}).
 
-Cuối cùng, hàm hợp nhất kết quả từ hai nguồn: sản phẩm xuất hiện ở cả hai được tăng thêm 0.05 điểm (overlap boost) vì có mặt ở cả hai danh sách là tín hiệu mạnh về độ liên quan. Sản phẩm chỉ từ tìm kiếm từ khóa được đánh dấu \texttt{lowConfidence=true} để LLM có thêm ngữ cảnh khi sinh phản hồi. Kết quả được sắp xếp giảm dần theo điểm tổng hợp và trả về tối đa \texttt{topK} sản phẩm.
-
-\subsection{Quản lý phiên hội thoại và tự động cập nhật vector}
-
-\textbf{Session Memory:} TechStore lưu lịch sử hội thoại trong bộ nhớ server thay vì database để tối ưu tốc độ truy cập. \texttt{ChatbotService} duy trì một \texttt{Map<sessionId, \{messages, lastAccess\}>} với các tham số: \texttt{MAX\_HISTORY\_TURNS=10} (giữ tối đa 10 lượt hỏi đáp gần nhất cho mỗi phiên), \texttt{MAX\_SESSIONS=500} (giới hạn tổng số phiên đồng thời trên server), và \texttt{TTL=30} phút (phiên không hoạt động quá 30 phút sẽ bị xóa). Khi Map đạt giới hạn 500 phiên, phiên ít hoạt động nhất (LRU -- Least Recently Used) sẽ bị loại bỏ. Thiết kế này phù hợp với quy mô triển khai hiện tại và tránh chi phí truy cập database cho mỗi tin nhắn.
-
-\textbf{Tự động cập nhật vector store:} Khi server khởi động, hệ thống so sánh số lượng vector trong \texttt{vector-db.json} với số lượng sản phẩm active trong MySQL. Nếu chênh lệch vượt quá 5\%, quá trình rebuild toàn bộ vector store được kích hoạt tự động. Ngoài ra, Sequelize model hooks trên bảng \texttt{products} và \texttt{product\_variants} lắng nghe các sự kiện \texttt{afterCreate}, \texttt{afterUpdate}, \texttt{afterDestroy} để cập nhật tăng dần (\texttt{upsertProduct}) ngay khi có thay đổi sản phẩm, đảm bảo vector store luôn đồng bộ với dữ liệu thực.
-
-\subsection{Thiết kế embedding chain fallback}
-\label{sec:c3_embedding_chain}
-
-Dịch vụ embedding là thành phần then chốt quyết định chất lượng bước Retrieval trong pipeline RAG. Do hoàn toàn phụ thuộc vào API bên ngoài, hệ thống thiết kế cơ chế \textbf{chain fallback} qua ba nhà cung cấp trong \texttt{src/services/embedding/unified-embedding.js}, được kích hoạt tự động theo thứ tự ưu tiên khi provider trước đó gặp lỗi.
-
-Provider ưu tiên cao nhất là \textbf{Jina Embeddings v3}, được chọn vì chất lượng retrieval tốt nhất trong các bài kiểm tra nội bộ và hỗ trợ tham số \texttt{task type} riêng biệt cho hai vai trò: \texttt{retrieval.passage} khi index sản phẩm vào vector store và \texttt{retrieval.query} khi vector hóa câu hỏi tìm kiếm. Việc phân biệt ngữ cảnh này giúp model tối ưu biểu diễn vector cho đúng mục đích, cải thiện độ chính xác của cosine similarity. Provider dự phòng thứ nhất là \textbf{HuggingFace multilingual-e5-large-instruct}, sử dụng tiền tố \texttt{passage: } khi index và chuỗi instruction dài hơn khi tìm kiếm để hướng dẫn model hiểu ngữ cảnh truy xuất sản phẩm thương mại điện tử tiếng Việt. Provider dự phòng cuối cùng là \textbf{HuggingFace multilingual-e5-large} (phiên bản base), sử dụng tiền tố đơn giản \texttt{query: } và \texttt{passage: } theo đặc tả kỹ thuật của model.
-
-Điểm quan trọng trong thiết kế là cả ba provider đều xuất ra vector \textbf{1024 chiều}, và hệ thống thực hiện kiểm tra kích thước này ngay sau khi nhận kết quả -- nếu kích thước sai, ngoại lệ được ném ngay để phát hiện lỗi cấu hình sớm. Sự thống nhất về số chiều đảm bảo rằng các vector được tạo ra bởi provider khác nhau vẫn tương thích với toàn bộ dữ liệu đã index trước đó trong \texttt{vector-db.json}. Khi một provider gặp lỗi (timeout, hết hạn API key, vượt rate limit), hệ thống tự động chuyển sang provider tiếp theo mà không cần can thiệp thủ công. Nếu tất cả provider đều thất bại, service ném ngoại lệ và pipeline RAG kích hoạt cơ chế dự phòng từ khóa (\texttt{simpleKeywordMatch}) để vẫn trả được kết quả cho người dùng, tránh hoàn toàn trường hợp chatbot không phản hồi.
-
-\section{Thiết kế cơ sở dữ liệu}
-\label{sec:c3_database}
-
-\subsection{Tổng quan cấu trúc}
-
-Cơ sở dữ liệu TechStore sử dụng MySQL 8 với charset utf8mb4 để hỗ trợ đầy đủ Unicode bao gồm tiếng Việt và emoji. Hệ thống có 25 model Sequelize tương ứng 25 bảng chính (model Image tồn tại dạng file nhưng đã loại khỏi \texttt{index.js}, không đăng ký vào ứng dụng), được quản lý qua 61 migration files theo nguyên tắc không bao giờ chỉnh sửa migration đã chạy. Tất cả bảng có trường \texttt{created\_at}, \texttt{updated\_at} và phần lớn có \texttt{deleted\_at} (paranoid/soft delete) để tránh mất dữ liệu không thể khôi phục.
-
-\subsection{Thiết kế bảng cốt lõi}
-
-Hình~\ref{fig:erd_core} trình bày sơ đồ ERD của 14 bảng cốt lõi. Product là thực thể trung tâm có quan hệ với hầu hết các bảng khác.
+Embedding chain fallback qua ba provider đều xuất vector 1024 chiều (Hình~\ref{fig:embedding_fallback}): Jina v3 (ưu tiên, hỗ trợ task type riêng cho query/passage) → HuggingFace e5-large-instruct → e5-large. Nếu tất cả thất bại, pipeline fallback về \texttt{simpleKeywordMatch}.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{figures/c3/erd_core.png}
-  \caption{Sơ đồ ERD các bảng cốt lõi hệ thống TechStore}
-  \label{fig:erd_core}
+  \fitfig[0.90]{figures/c3/embedding_fallback.pdf}
+  \caption{Sơ đồ luồng chuỗi fallback embedding với ba nhà cung cấp}
+  \label{fig:embedding_fallback}
 \end{figure}
 
-Bảng \texttt{products} lưu thông tin chung của sản phẩm: tên, mô tả, thương hiệu, danh mục, ảnh đại diện, và trạng thái (active/inactive). Mỗi sản phẩm có thể có nhiều biến thể trong bảng \texttt{product\_variants} với các thuộc tính khác nhau như RAM, dung lượng, màu sắc. Bảng variant lưu giá bán, giá gốc, và số lượng tồn kho. Thiết kế này tách biệt thông tin sản phẩm chung (tên, ảnh, mô tả) và thông tin biến thể (giá, kho), cho phép một sản phẩm có nhiều mức giá khác nhau.
-
-Bảng \texttt{orders} ghi lại đơn hàng với địa chỉ giao hàng (snapshot tại thời điểm đặt hàng, không reference đến bảng addresses để tránh ảnh hưởng khi khách hàng sửa địa chỉ sau), tổng tiền, trạng thái đơn hàng, và toàn bộ thông tin thanh toán được nhúng trực tiếp vào bảng này qua các cột \texttt{payment\_method}, \texttt{payment\_status}, \texttt{payment\_transaction\_id} và \texttt{payment\_provider} -- thiết kế này tránh JOIN không cần thiết vì mỗi đơn hàng chỉ có một giao dịch thanh toán. \texttt{order\_items} lưu snapshot giá tại thời điểm mua -- quan trọng vì giá sản phẩm có thể thay đổi sau khi mua. Bảng \texttt{discount\_codes} lưu mã giảm giá với loại (percent/fixed), giá trị, điều kiện áp dụng và số lượt đã dùng; khi đơn hàng áp dụng mã giảm giá, \texttt{orders.discount\_code\_id} sẽ reference đến bảng này.
-
-Bảng \texttt{inventory\_logs} ghi lại mọi thay đổi tồn kho (nhập hàng, bán hàng, điều chỉnh) với cột \texttt{change\_type} và \texttt{change\_amount}. Thiết kế immutable log (không update, không delete) cho phép tái tính số dư tồn kho tại bất kỳ thời điểm nào và truy vết nguồn gốc thay đổi.
-
-\begin{longtable}{|p{4.0cm}|p{4.0cm}|p{5.5cm}|}
-  \caption{Mô tả các bảng cốt lõi trong cơ sở dữ liệu TechStore}
-  \label{tab:core_tables} \\
-  \hline
-  \textbf{Bảng} & \textbf{Khóa chính / ngoại} & \textbf{Mục đích và đặc điểm thiết kế} \\
-  \hline
-  \endfirsthead
-  \hline
-  \textbf{Bảng} & \textbf{Khóa chính / ngoại} & \textbf{Mục đích và đặc điểm thiết kế} \\
-  \hline
-  \endhead
-  \hline
-  \endfoot
-  \hline
-  \endlastfoot
-  \texttt{users} & PK: id (INT) & Tài khoản người dùng; \texttt{isVerified} phân biệt đã xác thực OTP \\
-  \hline
-  \texttt{products} & PK: id; FK: category\_id & Thông tin sản phẩm chung; paranoid (soft delete) \\
-  \hline
-  \texttt{product\_variants} & PK: id; FK: product\_id & Biến thể giá/kho; snapshot thuộc tính \\
-  \hline
-  \texttt{categories} & PK: id; FK: parent\_id & Cây danh mục tự tham chiếu (self-join) \\
-  \hline
-  \texttt{orders} & PK: id (INT); FK: user\_id & Snapshot địa chỉ tại thời điểm đặt hàng; trường \texttt{number} (VARCHAR) là mã đơn hàng hiển thị \\
-  \hline
-  \texttt{order\_items} & PK: id; FK: order\_id, variant\_id & Snapshot giá tại thời điểm mua \\
-  \hline
-  \texttt{discount\_codes} & PK: id; FK: (được ref từ orders) & Mã giảm giá; lưu loại, giá trị và số lượt đã dùng \\
-  \hline
-  \texttt{cart\_items} & PK: id; FK: cart\_id, variant\_id & Item trong giỏ hàng; quản lý qua bảng \texttt{carts} riêng biệt \\
-  \hline
-  \texttt{product\_reviews} & PK: id; FK: user\_id, product\_id & Đánh giá 1-5 sao; unique(user, product) \\
-  \hline
-  \texttt{addresses} & PK: id; FK: user\_id & Sổ địa chỉ; \texttt{isDefault} cho địa chỉ mặc định \\
-  \hline
-  \texttt{inventory\_logs} & PK: id; FK: product\_id, variant\_id (nullable), order\_id (nullable), created\_by (nullable) & Immutable log; không update, không delete \\
-  \hline
-  \texttt{brands} & PK: id & Thương hiệu sản phẩm; \texttt{name\_vi} và \texttt{slug} unique \\
-  \hline
-  \texttt{carts} & PK: id; FK: user\_id (nullable) & Giỏ hàng; hỗ trợ cả khách vãng lai (session\_id) và người dùng đã đăng nhập \\
-  \hline
-  \texttt{product\_images} & PK: id; FK: product\_id, variant\_id (nullable) & Ảnh sản phẩm và biến thể; \texttt{is\_thumbnail} đánh dấu ảnh đại diện \\
-\end{longtable}
-
-Bảng~\ref{tab:core_tables} tóm tắt vai trò và đặc điểm thiết kế của 14 bảng cốt lõi. Tất cả các bảng sử dụng khóa chính INTEGER auto-increment để tối ưu hiệu năng JOIN và index. Riêng đơn hàng có thêm trường \texttt{number} (VARCHAR, unique) là mã đơn hàng thân thiện hiển thị cho người dùng, tránh lộ thông tin ID nội bộ qua URL.
-
-\subsection{Thiết kế hệ thống sản phẩm và biến thể}
-\label{sec:c3_product_variant}
-
-Hệ thống sản phẩm TechStore được thiết kế theo mô hình \textbf{Product--Variant--Attribute} ba tầng nhằm đáp ứng tính đa dạng đặc thù của thiết bị công nghệ, nơi cùng một sản phẩm có thể tồn tại dưới hàng chục biến thể khác nhau về RAM, dung lượng, màu sắc và cấu hình.
-
-Tầng đầu tiên là bảng \texttt{products} lưu thông tin chung của sản phẩm: tên, mô tả, ảnh đại diện, thương hiệu, danh mục và trạng thái (active/inactive/draft/archived). Tầng thứ hai là bảng \texttt{product\_variants} lưu từng biến thể cụ thể với giá bán riêng, số lượng tồn kho và mã SKU duy nhất. Tầng thứ ba là hệ thống thuộc tính gồm hai bảng: \texttt{attribute\_groups} định nghĩa nhóm thuộc tính (Màu sắc, RAM, Dung lượng, Kích cỡ, với các kiểu tương ứng \texttt{color}, \texttt{config}, \texttt{storage}, \texttt{size}, \texttt{custom}) và \texttt{attribute\_values} chứa các giá trị cụ thể bên trong mỗi nhóm (ví dụ: Đỏ, 8GB, 256GB). Bảng liên kết \texttt{product\_attribute\_groups} cho phép gán bộ thuộc tính riêng cho từng sản phẩm vì không phải mọi danh mục đều chia sẻ cùng nhóm thuộc tính -- laptop cần CPU/RAM/ổ cứng trong khi điện thoại cần RAM/dung lượng/màu sắc.
-
-Điểm thiết kế đáng chú ý là cơ chế sinh tên biến thể tự động. Mỗi \texttt{attribute\_value} có cờ \texttt{affectsName} quyết định giá trị đó có được đưa vào tên hiển thị hay không, và trường \texttt{nameTemplate} cho phép tùy chỉnh chuỗi xuất hiện trong tên (ví dụ \texttt{nameTemplate="256GB"} thay vì \texttt{name="256"}). Khi admin tạo biến thể mới, hệ thống ghép \texttt{baseName} của sản phẩm với các \texttt{attribute\_value} có \texttt{affectsName=true}, sắp xếp theo \texttt{sortOrder} của nhóm rồi đến \texttt{sortOrder} của từng giá trị. Ví dụ, sản phẩm có \texttt{baseName="iPhone 15"} với ba thuộc tính \textit{Pro Max}, \textit{256GB}, \textit{Titan Tự Nhiên} sẽ tự động sinh tên biến thể ``iPhone 15 Pro Max 256GB Titan Tự Nhiên'', loại bỏ hoàn toàn việc nhập tên thủ công và đảm bảo quy chuẩn đặt tên nhất quán trong toàn bộ danh mục.
-
-\subsection{Bảng phục vụ AI Chatbot và ghi log}
-
-Hình~\ref{fig:erd_ai_log} trình bày sơ đồ ERD của các bảng liên quan đến AI Chatbot và hệ thống ghi log.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.85\textwidth]{figures/c3/erd_ai_log.png}
-  \caption{Sơ đồ ERD các bảng AI Chatbot và ghi log hệ thống}
-  \label{fig:erd_ai_log}
-\end{figure}
-
-Bảng \texttt{chat\_messages} lưu từng tin nhắn trong cuộc trò chuyện với các trường chính: \texttt{sessionId} (chuỗi định danh phiên, dùng chung cho cả khách vãng lai và người dùng đã đăng nhập), \texttt{role} (\texttt{user}/\texttt{assistant}), \texttt{content} (nội dung tin nhắn), \texttt{intent} (ý định phát hiện được), \texttt{responseTimeMs} (thời gian phản hồi tính bằng millisecond), và \texttt{isFallback} (đánh dấu câu trả lời dự phòng). Trường \texttt{userId} có thể null để hỗ trợ cả khách vãng lai. Lưu ý rằng lịch sử hội thoại phục vụ context trong phiên được lưu trong memory Map trên server, còn database chỉ ghi lại để phân tích sau.
-
-Bảng \texttt{search\_histories} ghi lại từng lượt tìm kiếm của người dùng với \texttt{keyword} và \texttt{resultsCount}, phục vụ phân tích xu hướng tìm kiếm. Bảng \texttt{recently\_viewed} ghi lại lịch sử xem sản phẩm với \texttt{userId}, \texttt{productId} và \texttt{viewedAt}, cho phép hiển thị danh sách ``Đã xem gần đây'' và phục vụ gợi ý cá nhân hóa.
-
-\section{Thiết kế luồng giỏ hàng}
-\label{sec:c3_cart_flow}
-
-Giỏ hàng trong TechStore được thiết kế để phục vụ cả khách vãng lai và khách hàng đã đăng nhập với trải nghiệm liền mạch, đặc biệt khi người dùng chuyển từ trạng thái guest sang đã đăng nhập.
-
-Với \textbf{khách vãng lai}, giỏ hàng được lưu trên trình duyệt thông qua localStorage (key \texttt{cartItems}) do Zustand \texttt{cart-store} quản lý, đảm bảo dữ liệu tồn tại qua các lần tải lại trang. Đồng thời, một cookie \texttt{sessionId} (chuỗi UUID) được sinh và lưu phía server khi khách thêm sản phẩm đầu tiên, tạo bản ghi \texttt{Cart} trong database với trường \texttt{session\_id} tương ứng. Cơ chế hai lớp này cho phép server theo dõi giỏ hàng ẩn danh mà không yêu cầu xác thực.
-
-Với \textbf{khách hàng đã đăng nhập}, mọi thao tác thêm, sửa, xóa sản phẩm đều được đồng bộ tức thì với server thông qua các endpoint REST tương ứng, kết quả được cache bởi TanStack Query và invalidate ngay sau mỗi mutation để giao diện luôn phản ánh trạng thái mới nhất.
-
-Cơ chế quan trọng nhất là \textbf{merge giỏ hàng khi đăng nhập}. Khi người dùng đăng nhập thành công, cờ \texttt{justLoggedIn} trong \texttt{authStore} được bật. Hook \texttt{useCartMerge} phát hiện cờ này và thực hiện quy trình hai bước: trước tiên, với từng sản phẩm còn trong localStorage, hệ thống gọi API \texttt{addToCart} để thêm lên server -- lý do dùng \texttt{addToCart} thay vì \texttt{syncCart} là vì \texttt{syncCart} sẽ ghi đè hoàn toàn, xóa mất các sản phẩm người dùng đã thêm từ thiết bị khác trước đó; sau đó, API \texttt{mergeCart} được gọi để server hợp nhất giỏ hàng guest (theo cookie \texttt{sessionId}) vào giỏ hàng của tài khoản, trong đó các sản phẩm trùng \texttt{productId} và \texttt{variantId} được cộng dồn số lượng thay vì tạo trùng lặp, giỏ hàng guest chuyển sang trạng thái \texttt{merged}. Sau khi hoàn tất, giỏ hàng cục bộ được xóa và cờ \texttt{justLoggedIn} được reset. Lưu ý rằng \texttt{getCart} cũng tự động merge inline khi phát hiện người dùng đã đăng nhập có cookie \texttt{sessionId} còn tồn tại, nên việc merge không chỉ phụ thuộc vào hook phía client.
-
-Về kiểm tra tồn kho, API \texttt{validateCart} chỉ thực hiện ở mức \textbf{cảnh báo}: trả về danh sách các vấn đề cho từng sản phẩm (hết hàng \texttt{outOfStock}, vượt số lượng tồn kho \texttt{quantityExceedsStock}, giá thay đổi \texttt{priceChanged}) mà không khóa tồn kho. Frontend gọi endpoint này ngay trước bước xác nhận đặt hàng để thông báo cho người dùng. Việc khóa thực sự bằng câu lệnh \texttt{SELECT FOR UPDATE} chỉ xảy ra trong module orders trong quá trình tạo đơn, đảm bảo tính nhất quán dữ liệu mà không ảnh hưởng đến trải nghiệm duyệt giỏ hàng.
-
-\section{Thiết kế trạng thái đơn hàng}
-\label{sec:c3_order_states}
-
-Vòng đời của đơn hàng trong TechStore được mô hình hóa như một máy trạng thái hữu hạn (FSM -- Finite State Machine)~\cite{fowler2003patterns} với 5 trạng thái và các chuyển trạng thái được kiểm soát chặt chẽ. Hình~\ref{fig:order_states} thể hiện biểu đồ trạng thái đơn hàng.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.85\textwidth]{figures/c3/order_states.png}
-  \caption{Biểu đồ trạng thái vòng đời đơn hàng TechStore}
-  \label{fig:order_states}
-\end{figure}
-
-Đơn hàng bắt đầu ở trạng thái \texttt{pending} ngay sau khi tạo, chờ xác nhận thanh toán từ cổng (trường \texttt{paymentStatus=pending}). Khi nhận IPN callback thành công, đơn hàng chuyển sang \texttt{processing}, cho biết thanh toán đã được xác nhận và hệ thống đang chuẩn bị hàng. Admin sau đó gán mã vận đơn để đẩy sang trạng thái \texttt{shipped}. Khi khách nhận hàng và xác nhận, đơn hàng hoàn thành (\texttt{delivered}).
-
-Đơn hàng có thể bị huỷ (\texttt{cancelled}) từ hai trạng thái: \texttt{pending} (thanh toán thất bại, hết timeout, hoặc khách hủy trước khi thanh toán) và \texttt{processing} (admin hủy hoặc lý do vận hành). Khi huỷ, Order Service khôi phục tồn kho \textbf{trực tiếp ngay trong transaction} (qua \texttt{restoreVariantStock}/\texttt{restoreProductStock}) \textit{trước khi} phát sự kiện \texttt{order.cancelled} qua EventBus. Inventory Service lắng nghe sự kiện này chỉ để ghi lại \texttt{inventory\_log} (với \texttt{previousStock}/\texttt{newStock=0} dạng placeholder phục vụ truy vết), chứ không thực hiện khôi phục tồn kho.
-
-Thiết kế máy trạng thái này có một đặc điểm quan trọng: mọi chuyển trạng thái đều có validation -- Order Service kiểm tra trạng thái hiện tại có phép chuyển sang trạng thái mới không trước khi thực hiện, tránh tình trạng đơn hàng đã giao lại bị chuyển về \texttt{pending} do lỗi logic.
-
-\section{Thiết kế trạng thái thanh toán}
-\label{sec:c3_payment_states}
-
-Bên cạnh trạng thái đơn hàng, hệ thống quản lý riêng trạng thái thanh toán thông qua trường \texttt{payment\_status} trong bảng \texttt{orders} với bốn giá trị ENUM: \texttt{pending}, \texttt{paid}, \texttt{failed}, và \texttt{refunded}. Việc tách biệt hai trạng thái này phản ánh đúng thực tế vận hành: một đơn hàng có thể đang ở trạng thái \texttt{processing} (đang chuẩn bị hàng) trong khi thanh toán đã \texttt{paid}, hoặc đơn hàng bị \texttt{cancelled} nhưng đã hoàn tiền thành công (\texttt{refunded}). Hình~\ref{fig:payment_states} thể hiện biểu đồ trạng thái của vòng đời thanh toán.
-
-\begin{figure}[H]
-  \centering
-  \includegraphics[width=0.85\textwidth]{figures/c3/payment_states.png}
-  \caption{Biểu đồ trạng thái thanh toán TechStore}
-  \label{fig:payment_states}
-\end{figure}
-
-Thanh toán bắt đầu ở trạng thái \texttt{pending} ngay khi đơn hàng được tạo và URL thanh toán được sinh ra. Khi cổng thanh toán gửi IPN callback xác nhận thành công, Payment Service kiểm tra chữ ký HMAC, xác minh số tiền khớp (dung sai 0.01đ), rồi cập nhật \texttt{paymentStatus=paid} và \texttt{order.status=processing} trong cùng một transaction. Sau khi transaction commit, hệ thống thực hiện các tác vụ hậu thanh toán theo kiểu fire-and-forget: xóa giỏ hàng của người dùng, tăng bộ đếm sử dụng mã giảm giá (nếu có), và gửi email xác nhận đơn hàng. Ngược lại, nếu IPN báo mã lỗi, trạng thái chuyển sang \texttt{failed}. Từ trạng thái \texttt{failed}, người dùng có thể khởi tạo lại luồng thanh toán bằng cách yêu cầu URL mới, đưa đơn hàng về \texttt{pending} để thử lại.
-
-Trạng thái \texttt{refunded} là trạng thái cuối cùng, chỉ áp dụng khi admin thực hiện hoàn tiền qua VNPay (cổng MoMo chưa hỗ trợ API hoàn tiền tại thời điểm phát triển). Trước khi gọi API hoàn tiền, hệ thống kiểm tra điều kiện: đơn hàng phải đang ở \texttt{paymentStatus=paid}, phải có \texttt{paymentTransactionId}, và \texttt{paymentProvider} phải là \texttt{vnpay}; vi phạm bất kỳ điều kiện nào đều trả về lỗi nghiệp vụ cụ thể.
-
-Cơ chế idempotency được triển khai trong hàm \texttt{\_canProcessPayment}: trước khi cập nhật bất kỳ trạng thái nào, hàm kiểm tra đồng thời \texttt{paymentStatus !== 'paid'} và transaction ID chưa được xử lý. Điều này ngăn việc xử lý trùng lặp khi cổng thanh toán gửi lại IPN callback nhiều lần do timeout -- một tình huống phổ biến trong thực tế vận hành cổng thanh toán.
-
-\section{Tóm tắt chương}
-\label{sec:c3_summary}
-
-Chương này đã trình bày toàn bộ quá trình phân tích và thiết kế hệ thống TechStore trên các khía cạnh chính. Phần phân tích yêu cầu xác định rõ ba nhóm tác nhân và các yêu cầu chức năng, phi chức năng tương ứng. Phần thiết kế kiến trúc làm rõ lý do lựa chọn Modular Monolith cho backend và Feature-Based cho frontend, cùng với các cơ chế giao tiếp giữa module qua DI, EventBus và UnitOfWork. Phần thiết kế pipeline RAG là trọng tâm của chương, trình bày chi tiết 7 bước xử lý từ validate đến persist, thiết kế Hybrid Search kết hợp cosine similarity và BM25, cơ chế session memory, và cơ chế chain fallback qua ba nhà cung cấp embedding đảm bảo tính sẵn sàng cao. Phần thiết kế cơ sở dữ liệu giải thích các quyết định thiết kế quan trọng như mô hình Product--Variant--Attribute ba tầng với sinh tên tự động, snapshot pattern cho order items, immutable log cho inventory, và auto-increment integer làm khóa chính cho các bảng cốt lõi. Phần thiết kế luồng giỏ hàng mô tả cơ chế hỗ trợ cả khách vãng lai và người dùng đã đăng nhập với quy trình merge tự động khi đăng nhập. Cuối cùng, thiết kế FSM cho vòng đời đơn hàng và trạng thái thanh toán riêng biệt, kết hợp cơ chế idempotency cho IPN callback, đảm bảo tính toàn vẹn dữ liệu xuyên suốt các giao dịch.
-
-Các thiết kế này tạo nền tảng cho Chương 4, nơi trình bày cách các thành phần được cài đặt cụ thể, kết quả kiểm thử, và đánh giá hiệu quả của chatbot RAG.
+\bigskip
+Chương này đã trình bày thiết kế hệ thống TechStore từ phân tích yêu cầu, kiến trúc Modular Monolith và Feature-Based, cơ sở dữ liệu, sơ đồ trạng thái, các luồng xử lý chính, đến pipeline RAG Hybrid 7 bước với Hybrid Search và embedding chain fallback. Chương~4 sẽ trình bày kết quả cài đặt, kiểm thử và đánh giá hiệu quả thực tế của hệ thống.

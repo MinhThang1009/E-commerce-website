@@ -72,6 +72,19 @@ const runDailyCleanup = async () => {
     logger.warn('[Cleanup] Lỗi trim search history:', err.message);
   }
 
+  // 2b. Xóa guest search history (userId=null) cũ hơn 7 ngày để tránh orphan accumulation
+  try {
+    const [, guestMeta] = await sequelize.query(`
+      DELETE FROM search_histories
+      WHERE user_id IS NULL AND created_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
+    `);
+    const guestTrimmed = guestMeta?.affectedRows || 0;
+    if (guestTrimmed > 0)
+      logger.info(`[Cleanup] Đã xóa ${guestTrimmed} guest search history records`);
+  } catch (err) {
+    logger.warn('[Cleanup] Lỗi xóa guest search history:', err.message);
+  }
+
   // 3. Xóa OTP hết hạn — null-out để không chiếm dung lượng
   try {
     const [, otpMeta] = await User.update(

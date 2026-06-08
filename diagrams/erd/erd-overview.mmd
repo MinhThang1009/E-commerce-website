@@ -1,0 +1,124 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#bfdbfe'
+    primaryTextColor: '#1e3a8a'
+    primaryBorderColor: '#3b82f6'
+    lineColor: '#2563eb'
+    attributeBackgroundColorEven: '#eff6ff'
+    attributeBackgroundColorOdd: '#ffffff'
+  er:
+    layoutDirection: TB
+    diagramPadding: 30
+    minEntityWidth: 130
+    entityPadding: 10
+    nodeSpacing: 60
+    rankSpacing: 50
+---
+erDiagram
+    %% ERD Overview — 10 bảng chính
+    %% Ground-truth: backend/data/migration.sql
+    %% -- = FK NOT NULL   .. = FK nullable
+
+    categories  |o..o{  products         : "chứa sản phẩm"
+    brands      |o..o{  products         : "thương hiệu"
+    products    ||--o{  product_variants : "biến thể"
+    users       ||--o{  orders           : "đặt hàng"
+    users       |o..o{  carts            : "có giỏ hàng"
+    users       |o..o{  chat_messages    : "nhắn tin"
+    orders      ||--o{  order_items      : "gồm"
+    products    ||--o{  order_items      : "trong đơn hàng"
+    product_variants |o..o{ order_items  : "biến thể đặt"
+    carts       ||--o{  cart_items       : "chứa"
+    products    ||--o{  cart_items       : "trong giỏ hàng"
+    product_variants |o..o{ cart_items   : "biến thể giỏ"
+
+    categories {
+        int id PK
+        varchar(100) name_vi UK
+        varchar(255) slug UK
+        int parent_id
+    }
+
+    brands {
+        int id PK
+        varchar(100) name_vi UK
+        varchar(255) slug UK
+    }
+
+    products {
+        int id PK
+        int category_id FK
+        int brand_id FK
+        varchar(200) name_vi
+        decimal(15-2) base_price
+        enum status
+        int stock_quantity
+    }
+
+    product_variants {
+        int id PK
+        int product_id FK
+        varchar(100) sku UK
+        varchar(255) variant_name
+        decimal(15-2) price
+        int stock_quantity
+        bool is_default
+    }
+
+    users {
+        int id PK
+        varchar(255) email UK
+        varchar(255) first_name
+        varchar(255) last_name
+        enum role
+        bool is_active
+    }
+
+    orders {
+        int id PK
+        varchar(50) number UK
+        int user_id FK
+        enum status
+        varchar(50) payment_method
+        enum payment_status
+        decimal(15-2) total
+    }
+
+    carts {
+        int id PK
+        int user_id FK
+        varchar(255) session_id
+        enum status
+    }
+
+    chat_messages {
+        int id PK
+        int user_id FK
+        varchar(128) session_id
+        text content
+        enum role
+        enum message_type
+        varchar(50) intent
+        bool is_fallback
+    }
+
+    order_items {
+        int id PK
+        int order_id FK
+        int product_id FK
+        int variant_id FK
+        varchar(200) name
+        decimal(15-2) unit_price
+        int quantity
+    }
+
+    cart_items {
+        int id PK
+        int cart_id FK
+        int product_id FK
+        int variant_id FK
+        int quantity
+        decimal(15-2) unit_price
+    }

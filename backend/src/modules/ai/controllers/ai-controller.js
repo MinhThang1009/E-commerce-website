@@ -14,23 +14,22 @@ class AIController {
 
   handleMessage = async (req, res) => {
     try {
-      const { message, sessionId, userId: bodyUserId } = req.body;
-      // Ưu tiên userId từ JWT token (đã xác thực bởi server) để tránh analytics spoofing;
-      // fallback về body cho anonymous user không có token
-      const userId = req.user?.id ?? bodyUserId ?? null;
-      if (!message || typeof message !== 'string') {
-        return res
-          .status(400)
-          .json({ status: 'error', message: t('ai.messageInvalid', req.locale) });
-      }
+      const { message, sessionId } = req.body;
+      const userId = req.user?.id ?? null; // chỉ trust JWT, không nhận userId từ body
       this.logger.info('Chatbot', { messageLength: message.length, userId, sessionId });
       const data = await this.aiService.handleMessage({ message, userId, sessionId });
       res.json({ status: 'success', data });
     } catch (err) {
       // 400 = expected user error (validation) → WARN; 5xx = unexpected → ERROR
-      if (err.statusCode === 400) {
-        this.logger.warn('Chatbot input không hợp lệ:', { message: err.message });
-        return res.status(400).json({ status: 'error', message: err.message });
+      if (err.statusCode) {
+        const level = err.statusCode < 500 ? 'warn' : 'error';
+        this.logger[level]('Chatbot error:', { statusCode: err.statusCode, message: err.message });
+        return res
+          .status(err.statusCode)
+          .json({
+            status: 'error',
+            message: t(err.message, req.locale) ?? t('ai.messageFailed', req.locale),
+          });
       }
       this.logger.error('Lỗi chatbot:', err);
       res.status(500).json({
@@ -48,23 +47,34 @@ class AIController {
     }
   };
 
-  clearSession = async (req, res) => {
-    const { sessionId } = req.body;
-    const cleared = this.aiService.clearSession(sessionId);
-    res.json({ status: 'success', message: cleared ? 'Session đã xóa' : 'Session không tồn tại' });
+  clearSession = async (req, res, next) => {
+    try {
+      const { sessionId } = req.body;
+      // Idempotent: always clear (DB + Map). 404 chỉ dùng cho session không tồn tại thật sự,
+      // không dùng cho Map miss sau restart (DB rows vẫn được xóa bất kể Map state).
+      await this.aiService.clearSession(sessionId);
+      res.json({ status: 'success', message: t('ai.sessionCleared', req.locale) });
+    } catch (err) {
+      next(err);
+    }
   };
 
-  registerSession = async (req, res) => {
-    const { sessionId } = req.body;
-    if (!sessionId) return res.json({ status: 'fail', message: 'sessionId required' });
-    this.aiService.registerSession(sessionId);
-    res.json({ status: 'success' });
+  registerSession = async (req, res, next) => {
+    try {
+      const { sessionId } = req.body;
+      this.aiService.registerSession(sessionId);
+      res.json({ status: 'success' });
+    } catch (err) {
+      next(err);
+    }
   };
 
   getSessionMessages = async (req, res, next) => {
     try {
       const { sessionId } = req.params;
-      const messages = await this.aiService.getSessionMessages(sessionId);
+      // userId scope: authenticated users chỉ thấy messages của session mình; guest (null) không filter
+      const userId = req.user?.id ?? null;
+      const messages = await this.aiService.getSessionMessages(sessionId, userId);
       res.json({ status: 'success', data: { sessionId, messages } });
     } catch (err) {
       next(err);

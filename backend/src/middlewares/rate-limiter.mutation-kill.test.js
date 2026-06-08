@@ -51,9 +51,11 @@ describe('limiter configs', () => {
     expect(limiters.chatLimiter.max).toBe(30);
   });
 
-  it('message body có status "error"', () => {
-    expect(limiters.apiLimiter.message.status).toBe('error');
-    expect(limiters.apiLimiter.message.message).toContain('Quá nhiều');
+  it('tất cả limiters dùng handler (không dùng message static — đã chuyển sang i18n)', () => {
+    // Sau khi chuyển sang handler callback, limiters không còn thuộc tính message
+    expect(typeof limiters.apiLimiter.handler).toBe('function');
+    expect(typeof limiters.authLimiter.handler).toBe('function');
+    expect(typeof limiters.chatbotLimiter.handler).toBe('function');
   });
 });
 
@@ -104,18 +106,18 @@ describe('ProxyStore', () => {
 
 // ── authLimiter handler + otpLimiter keyGenerator ───────────────────────────
 describe('authLimiter handler', () => {
-  it('log warn + res.status(options.statusCode).json(options.message)', () => {
-    const req = { ip: '1.2.3.4', body: { email: 'a@b.com' } };
+  it('log warn + res.status(options.statusCode).json({status,message}) với i18n', () => {
+    const req = { ip: '1.2.3.4', body: { email: 'a@b.com' }, locale: 'vi' };
     const json = jest.fn();
     const res = { status: jest.fn(() => ({ json })) };
-    const options = { statusCode: 429, message: { status: 'error' } };
+    const options = { statusCode: 429 };
     limiters.authLimiter.handler(req, res, jest.fn(), options);
     expect(logger.warn).toHaveBeenCalledWith('[AUTH] Rate limited', {
       ip: '1.2.3.4',
       email: 'a@b.com',
     });
     expect(res.status).toHaveBeenCalledWith(429);
-    expect(json).toHaveBeenCalledWith({ status: 'error' });
+    expect(json).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
   });
 });
 

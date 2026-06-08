@@ -64,7 +64,7 @@
 **Ví dụ:**
 - `{ message: "ip17 pro bnh", sessionId: "abc-123" }` → bắt đầu pipeline 7 bước
 
-### PREP — _preprocessMessage(message) `chatbot-service.js:363`
+### PREP — _preprocessMessage(message) `chatbot-service.js:390`
 **Tại sao:** Gom 4 phép kiểm tra (validate + expand + classify + injection) vào 1 hàm thuần (pure function) trả `{ valid, normalizedQuery, intent, injection, offTopic }`. Tách riêng khỏi `handleMessage` để dễ test và tái sử dụng.
 
 **Ví dụ:**
@@ -79,12 +79,12 @@
 - `"a"×501` → ❌ >500
 - `"iPhone 17?"` → ✅
 
-### BERR — ❌ AppError 400 `chatbot-service.js:248`
+### BERR — ❌ AppError 400 `chatbot-service.js:265`
 **Tại sao:** Khi N1 validate fail → `handleMessage` throw `AppError(reason, 400)` → controller trả HTTP 400 (bad request) cho client. Pipeline dừng hoàn toàn — không tốn resource cho expand/search/LLM.
 
 **Ví dụ:**
-- `"   "` → `AppError("Tin nhắn không được để trống", 400)` → HTTP 400
-- `"a"×501` → `AppError("Tin nhắn quá dài (tối đa 500 ký tự)", 400)` → HTTP 400
+- `"   "` → `AppError('ai.messageEmpty', 400)` → controller dịch qua `t()` → HTTP 400
+- `"a"×501` → `AppError('ai.messageTooLong', 400)` → controller dịch qua `t()` → HTTP 400
 
 ### N2 — ② expandAbbreviations `ai-policy.js:161`
 **Tại sao:** User VN hay viết tắt (`ip17`, `ss`, `bnh`) — nếu không expand, cả vector search lẫn keyword match đều không nhận diện được sản phẩm.
@@ -380,7 +380,7 @@ messages = [
 **Tại sao:** AppError = lỗi "dự kiến" → re-throw → controller trả HTTP status đúng. Không persist (không lưu DB).
 
 **Ví dụ:**
-- `validateMessage("a"×501)` → `AppError("Tin nhắn quá dài", 400)` → catch → re-throw → HTTP 400 (bad request — input không hợp lệ)
+- `validateMessage("a"×501)` → `AppError('ai.messageTooLong', 400)` → catch → re-throw → controller `t()` → HTTP 400 (bad request — input không hợp lệ)
 
 ### ERR-b — catch unknown `chatbot-service.js:350-351`
 **Tại sao:** Lỗi "không dự kiến" → log + fallback thay vì HTTP 500 (server lỗi nội bộ). **KHÔNG persist (không lưu DB)** (khác N6d-fb). Không update session (không lưu RAM) — tránh garbage.

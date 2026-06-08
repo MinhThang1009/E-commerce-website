@@ -66,7 +66,7 @@ Giao tiếp giữa backend và frontend: HTTP REST API, JSON, JWT Bearer token. 
 | ORM | Sequelize | 6.37 |
 | Database | MySQL | 8.x |
 | Auth | JWT (access 15m + refresh env `JWT_REFRESH_EXPIRES_IN`, cookie default 7d) + Google OAuth 2.0 + bcrypt | — |
-| Email | Nodemailer (Gmail SMTP) | 7.x |
+| Email | Nodemailer (Gmail SMTP) | 8.x |
 | Validation | Zod | 4.x |
 | API docs | Swagger UI + swagger-jsdoc (OpenAPI 3.0) | — |
 | Rate limiting | express-rate-limit | — |
@@ -101,17 +101,22 @@ Giao tiếp giữa backend và frontend: HTTP REST API, JSON, JWT Bearer token. 
 
 ```
 e-commerce-website/
-├── backend/                 # Node.js API server
-├── frontend/                # React SPA
-├── scripts/                 # Root scripts: audit-architecture.sh, lint-migrations.sh
-├── .github/workflows/       # CI pipeline
-├── .husky/                  # Git hooks
+├── backend/                    # Node.js API server
+├── frontend/                   # React SPA
+├── diagrams/                   # UML diagrams output (usecase/, state/, sequence/, erd/, component/, deployment/, pipeline/)
+├── verify-workflow/            # verify-then-draw framework (PROJECT.yaml, invariants.ecommerce.md, diagram-manifest.yaml)
+├── scripts/                    # Root scripts: audit-architecture.sh, lint-migrations.sh
+├── .github/workflows/          # CI pipeline
+├── .husky/                     # Git hooks
 ├── .gitignore
-├── CLAUDE.md                # AI agent navigation entry point
-├── STRUCTURE.md             # File này
-├── TESTING_STRATEGY.md      # Chiến lược test
-├── README.md                # Project README
-└── DIAGRAMS.md              # Mermaid diagrams
+├── CLAUDE.md                   # AI agent navigation entry point
+├── STRUCTURE.md                # File này
+├── README.md                   # Project README
+├── TESTING_STRATEGY.md         # Chiến lược test 5 tầng
+├── QUALITY_CHECKS.md           # Mutation testing (Stryker) + property-based (fast-check) scores
+├── RAG_CHATBOT_PIPELINE.md     # RAG pipeline 7 bước + 53 edge case
+├── PIPELINE_TRACE_EXAMPLES.md  # Trace 22 path + Node Reference 43 node
+└── DIAGRAMS.md                 # Mermaid diagrams (Use Case, Sequence, ERD, Flow)
 ```
 
 ## 3.2 Backend
@@ -148,7 +153,7 @@ backend/
 │   │   ├── authenticate.js  # JWT verify + optional variant
 │   │   ├── admin-auth.js    # JWT verify dành riêng cho admin panel (adminAuthenticate)
 │   │   ├── authorize.js     # Role-based access (RBAC 4-actor: guest/customer/staff/admin)
-│   │   ├── rate-limiter.js  # apiLimiter, authLimiter, otpLimiter, chatbotLimiter, chatLimiter
+│   │   ├── rate-limiter.js  # apiLimiter, authLimiter, otpLimiter, chatbotLimiter, chatLimiter, destructiveLimiter
 │   │   ├── detect-locale.js # Accept-Language → req.locale
 │   │   ├── validate-request.js  # Zod validation middleware
 │   │   └── error-handler.js # Global error middleware
@@ -395,7 +400,7 @@ Sequelize models, MySQL 8, charset utf8mb4, timezone +07:00. Tất cả tables d
 | `attribute_groups` | AttributeGroup | Nhóm thuộc tính (màu sắc, dung lượng...) |
 | `attribute_values` | AttributeValue | Giá trị trong nhóm thuộc tính |
 
-**Lưu ý quan trọng về models đã xóa**: `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, và model `Image` (file tồn tại nhưng đã xóa khỏi `index.js` associations) — không reference lại.
+**Lưu ý quan trọng về models đã xóa**: `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, `ReviewFeedback`, `AuditLog`, `BrandCategory`, và model `Image` (file tồn tại nhưng đã xóa khỏi `index.js` associations) — không reference lại.
 
 ---
 

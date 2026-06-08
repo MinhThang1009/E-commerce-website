@@ -117,7 +117,14 @@ const Header: React.FC = () => {
   const { t } = useTranslation();
 
   // Hook xác thực và lấy thông tin user
-  const { isAuthenticated, user, logout: handleLogout, isAdmin, getUserFullName } = useAuth();
+  const {
+    isAuthenticated,
+    user,
+    logout: handleLogout,
+    isAdmin,
+    isStaff,
+    getUserFullName,
+  } = useAuth();
 
   // Lấy trạng thái menu mobile và search từ Zustand store
   const isMobileMenuOpen = useUiStore((s) => s.isMobileMenuOpen);
@@ -382,8 +389,8 @@ const Header: React.FC = () => {
                     {t('header.dropdown.wishlist')}
                   </Link>
 
-                  {/* Liên kết Admin Panel - chỉ hiển thị cho admin */}
-                  {isAdmin() && (
+                  {/* Liên kết Admin Panel - hiển thị cho admin và staff */}
+                  {(isAdmin() || isStaff()) && (
                     <>
                       <div className="border-t border-neutral-200 dark:border-neutral-700 my-2"></div>
                       <Link

@@ -1,0 +1,70 @@
+@startuml seq_cart_merge
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontSize 11
+skinparam defaultFontName Arial
+
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+  FontColor #000000
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam sequenceArrowColor #4D4D4D
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+
+actor "Người dùng" as User
+participant "Frontend\n(React)" as FE
+participant "useCartMerge\nhook" as Hook
+participant "API Server\n(cart-service)" as API
+database "MySQL" as DB
+
+== Đăng nhập thành công ==
+
+User -> FE : đăng nhập
+FE -> FE : authStore.loginSuccess()\njustLoggedIn = true
+
+== useCartMerge phát hiện flag ==
+
+FE -> Hook : isAuthenticated=true\njustLoggedIn=true
+Hook -> Hook : đọc localStorage\ncartItems
+
+alt Có item trong localStorage
+  note over Hook : Strategy 1:\naddToCart tuần tự từng item
+  Hook -> API : GET /api/cart\n(refetch trước)
+  API -> DB : findOrCreateCart(userId)
+  API --> Hook : cart hiện tại
+  loop mỗi item trong localStorage
+    Hook -> API : POST /api/cart\n(addToCart)
+    API -> DB : upsert CartItem\n(cộng dồn quantity)
+    API --> Hook : cart đã cập nhật
+  end
+  Hook -> API : GET /api/cart\n(refetch sau)
+  API --> Hook : cart mới nhất
+  Hook -> FE : setServerCart(cart)
+
+else Không có item localStorage
+  note over Hook : Strategy 2:\nmergeCart server-side
+  Hook -> API : POST /api/cart/merge\n(sessionId cookie)
+  API -> DB : BEGIN TRANSACTION\nSELECT FOR UPDATE\nguest cart items
+  loop mỗi item guest cart
+    API -> DB : trùng productId+variantId?\ncộng dồn quantity (cap theo stock)\ncập nhật giá hiện tại
+  end
+  API -> DB : guest cart.status = 'merged'\nCOMMIT
+  API -> API : clearSessionCookie()
+  API --> Hook : cart đã gộp
+  Hook -> FE : setServerCart(cart)
+end
+
+== Dọn dẹp sau khi gộp ==
+
+Hook -> FE : localStorage.removeItem\n('cartItems')
+Hook -> FE : clearJustLoggedIn()
+FE -> User : thông báo gộp\nthành công
+
+@enduml

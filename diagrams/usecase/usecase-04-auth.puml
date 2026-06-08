@@ -52,20 +52,25 @@ guest -- UC_reset
 customer -- UC_logout
 customer -- UC_me
 
+/'
 note right of UC_register
   POST /auth/register — public.
   Tạo User, gửi OTP qua email (non-blocking).
   Email đã tồn tại → 400 (intentionally lộ —
   UX trade-off, khác forgot/resend).
 end note
+'/
 
+/'
 note right of UC_verify_otp
   POST /auth/verify-otp — public, otpLimiter.
   OTP 6 số, TTL 10 phút, timing-safe compare.
   Thành công → isEmailVerified=true, clear OTP.
   OTP hết hạn → 400 otpExpired (≠ OTP sai).
 end note
+'/
 
+/'
 note right of UC_google
   POST /auth/google — public.
   Thử verifyIdToken (id_token mobile) →
@@ -73,7 +78,9 @@ note right of UC_google
   email_verified=false tường minh → 401.
   User chưa tồn tại → tạo mới (isEmailVerified=true).
 end note
+'/
 
+/'
 note right of UC_logout
   POST /auth/logout — authenticate.
   Server xóa httpOnly cookie refreshToken
@@ -81,7 +88,9 @@ note right of UC_logout
   Access token KHÔNG revoke — vẫn valid đến TTL.
   Client tự xóa access token khỏi storage.
 end note
+'/
 
+/'
 note right of UC_refresh
   POST /auth/refresh-token — public.
   JSON body trả { token } (access token mới).
@@ -89,14 +98,18 @@ note right of UC_refresh
   Token cũ vẫn valid (stateless, không blacklist).
   isActive=false → 401.
 end note
+'/
 
+/'
 note right of UC_forgot
   POST /auth/forgot-password — public, otpLimiter.
   Luôn 200 (chống enumeration).
   CHỈ khi user tồn tại: tạo hex token 64 char,
   TTL 15 phút, gửi email reset.
 end note
+'/
 
+/'
 note right of UC_reset
   POST /auth/reset-password — public (không rate limit).
   Token 64 char hex (crypto.randomBytes(32)).
@@ -104,4 +117,5 @@ note right of UC_reset
   Thành công → hash password mới (bcrypt cost 12
   tại User model hook), clear token fields.
 end note
+'/
 @enduml

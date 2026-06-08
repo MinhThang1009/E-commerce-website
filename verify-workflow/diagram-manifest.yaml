@@ -26,7 +26,7 @@ usecase:
   - { seq: 14, scope: orders-admin,               section: "§2.4c", module: orders,   notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06: T1 MATCH — UC_cancel staff khớp admin/routes.js:343; admin xem-only đúng guards. GATE-D signed 2026-06-06.
   - { seq: 15, scope: reviews,                     section: "§2.5",  module: reviews,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (0 bugs; 9 routes→8 UC cross-module); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 16, scope: inventory,                   section: "§2.6",  module: inventory, notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (fix changeType 'cancellation'→'return'); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
-  - { seq: 17, scope: ai-chatbot,                 section: "§2.7",  module: ai,       notation: UML, tool: plantuml, status: pending }
+  - { seq: 17, scope: ai-chatbot,                 section: "§2.7",  module: ai,       notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: 6 UC (chatbot+search-history). Guards verified vs routes.js. PNG+PDF render OK.
   - { seq: 18, scope: wishlist-upload-discount,   section: "§2.8",  module: "wishlist+upload+discount-code", notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (fix admin--UC_up_xoa); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 19, scope: attribute,                   section: "§2.8b", module: attribute, notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (0 bugs; 13 routes→8 UC); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
   - { seq: 20, scope: content,                     section: "§2.9",  module: content,  notation: UML, tool: plantuml, status: signed }   # 2026-06-06: T0 pass (1 endpoint); T1 MATCH; T2 pass. GATE-D signed 2026-06-06.
@@ -44,27 +44,29 @@ component:
 
 # ===== NHÓM B — state (4): PlantUML =====
 state:
-  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: signed }   # Re-verify 2026-06-06: T1 MATCH — 13 transition, fix label processing→delivered thêm staff path. GATE-D signed 2026-06-06.
-  - { seq: 2, scope: payment, section: "§7.2", module: payment, notation: UML, tool: plantuml, status: pending }
-  - { seq: 3, scope: product, section: "§7.3", module: catalog, notation: UML, tool: plantuml, status: pending }
-  - { seq: 4, scope: user,    section: "§7.4", module: auth,    notation: UML, tool: plantuml, status: pending }
+  - { seq: 1, scope: order,   section: "§7.1", module: orders,  notation: UML, tool: plantuml, status: drawn }    # Re-verify 2026-06-07: strict UML 2.x — trigger xóa khỏi [*], <<choice>> pseudostate, guards []. PNG+PDF.
+  - { seq: 2, scope: payment, section: "§7.2", module: payment, notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: strict UML 2.x — [*] no trigger, IPN-return fix, guards []. PNG+PDF.
+  - { seq: 3, scope: product, section: "§7.3", module: catalog, notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: strict UML 2.x — <<choice>> pseudostate, 6 transitions, archived unused. PNG+PDF.
+  - { seq: 4, scope: user,    section: "§7.4", module: auth,    notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: strict UML 2.x — <<choice>> pseudostate, unverified→deleted fix. PNG+PDF.
 
 # ===== NHÓM B — sequence (6): PlantUML =====
 sequence:
-  - { seq: 1, scope: auth-login,        section: "§3.1", module: auth,    notation: UML, tool: plantuml, status: pending }
-  - { seq: 2, scope: checkout,          section: "§3.2", module: "orders+cart+payment", notation: UML, tool: plantuml, status: pending }
-  - { seq: 3, scope: ai-chatbot-rag,    section: "§3.3", module: ai,      notation: UML, tool: plantuml, status: pending }
+  - { seq: 1, scope: auth-login,        section: "§3.1", module: auth,    notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: 01a-register + 01b-login + 01c-oauth (tách từ file gộp). T1/T2 chưa chạy formal.
+  - { seq: 2, scope: checkout,          section: "§3.2", module: "orders+cart+payment", notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: tách 3 sub: 02a-create-order + 02b-payment-url + 02c-ipn. Đối chiếu code xong, 9-point pass.
+  - { seq: 3, scope: ai-chatbot-rag,    section: "§3.3", module: ai,      notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: tách 3 sub: 03a-preprocess + 03b-retrieve + 03c-generate. Đối chiếu code xong, 9-point pass.
   - { seq: 4, scope: upload,            section: "§3.4", module: upload,   notation: UML, tool: plantuml, status: pending }
   - { seq: 5, scope: admin-product,     section: "§3.5", module: admin,    notation: UML, tool: plantuml, status: pending }
-  - { seq: 6, scope: token-refresh,     section: "§3.6", module: auth,     notation: UML, tool: plantuml, status: pending }
+  - { seq: 6, scope: token-refresh,     section: "§3.6", module: auth,     notation: UML, tool: plantuml, status: drawn }    # 2026-06-07: single file, đọc đủ code, 9-point pass.
 
 # ===== NHÓM B — ERD (1 mục §4, tách 5 sub-image theo 5 nhóm) : DBML -> dbdiagram.io =====
 erd:
-  - { seq: 1, scope: users,           section: "§4.1", module: _schema, notation: ERD, tool: dbml, status: pending }
-  - { seq: 2, scope: product,         section: "§4.2", module: _schema, notation: ERD, tool: dbml, status: pending }
-  - { seq: 3, scope: order-payment,   section: "§4.3", module: _schema, notation: ERD, tool: dbml, status: pending }
-  - { seq: 4, scope: content-support, section: "§4.4", module: _schema, notation: ERD, tool: dbml, status: pending }
-  - { seq: 5, scope: ai-log,          section: "§4.5", module: _schema, notation: ERD, tool: dbml, status: pending }
+  - { seq: 0, scope: overview,        section: "§4",   module: _schema, notation: ERD, tool: mermaid, status: drawn }    # 2026-06-07: 10 bảng chính (không có addresses/inventory_logs). Cardinality |o cho FK nullable. PNG+PDF. dbml tool không available nên dùng mermaid.
+  - { seq: 1, scope: users,           section: "§4.1", module: _schema, notation: ERD, tool: dbml, status: skipped }     # merged vào erd-overview
+  - { seq: 2, scope: product,         section: "§4.2", module: _schema, notation: ERD, tool: dbml, status: skipped }
+  - { seq: 3, scope: order-payment,   section: "§4.3", module: _schema, notation: ERD, tool: dbml, status: skipped }
+  - { seq: 4, scope: content-support, section: "§4.4", module: _schema, notation: ERD, tool: dbml, status: skipped }
+  - { seq: 5, scope: ai-log,          section: "§4.5", module: _schema, notation: ERD, tool: mermaid, status: pending }    # FIX: đổi skipped→pending. erd-overview KHÔNG có search_histories/recently_viewed/inventory_logs. 4 bảng: chat_messages+search_histories+recently_viewed+inventory_logs. Cần vẽ riêng bằng Mermaid erDiagram.
+  - { seq: 6, scope: attribute-system, section: "§4.6", module: attribute, notation: table, tool: latex, status: pending } # THÊM MỚI: 4 bảng attribute (attribute_groups/values, product_attribute_groups, product_specifications). Không vẽ ERD riêng vì quá nhỏ khi in A4 — dùng bảng LaTeX mô tả (tab:attribute_tables) trong §"Thiết kế hệ thống sản phẩm và biến thể".
 
 # ===== NHÓM B — deployment (1) : PlantUML =====
 deployment:
@@ -77,6 +79,11 @@ pipeline:
 
 # ===== NHÓM C — artifact khác (KHÔNG nằm trong 42; tool §0) =====
 misc:
-  - { scope: testing-pyramid, tool: drawio, status: pending }
-  - { scope: nfr-table,       tool: latex,  status: pending }
-  - { scope: functional-req,  tool: latex,  status: pending }
+  - { scope: testing-pyramid,            tool: drawio, status: pending }
+  - { scope: nfr-table,                  tool: latex,  status: pending }
+  - { scope: functional-req,             tool: latex,  status: pending }
+  - { scope: frontend-architecture,      tool: drawio,  status: pending }   # THÊM MỚI D8: block diagram Feature-Based (13 features, 6 stores, TanStack Query, API Client). output: docs/figures/c3/frontend_architecture.pdf. Vừa 1/3 A4.
+  - { scope: rag-overview-c2,            tool: mermaid, status: pending }   # THÊM MỚI D7: RAG pipeline tổng quan cho C2 (Indexing offline + Runtime retrieval). output: docs/figures/c2/RAG.pdf. Thay thế RAG.png stale.
+  - { scope: cart-merge-sequence,        tool: mermaid, status: pending }   # THÊM MỚI D9: sequence diagram giỏ hàng merge khi đăng nhập (guest→user, useCartMerge, addToCart + mergeCart + invalidate cache). output: docs/figures/c3/seq_cart_merge.pdf.
+  - { scope: embedding-chain-fallback,   tool: mermaid, status: pending }   # THÊM MỚI D10: flowchart 3-provider chain (Jina v3 → HF-e5-instruct → HF-e5-large, tất cả 1024-dim). output: docs/figures/c3/embedding_fallback.pdf.
+  - { scope: screenshot-admin-users-v2,  tool: screenshot, status: pending } # ⚠️ CHỤP LẠI: screenshot_admin_users.png hiện tại thiếu badge "Nhân viên (Staff)". Cần chạy app + seed staff user + chụp lại. Không phải vẽ diagram.

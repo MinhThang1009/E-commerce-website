@@ -1,0 +1,53 @@
+%%{init: {
+  'theme': 'base',
+  'flowchart': {'padding': 20, 'nodeSpacing': 50, 'rankSpacing': 60, 'wrappingWidth': 400},
+  'themeVariables': {
+    'primaryColor': '#DAE8FC',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#6C8EBF',
+    'lineColor': '#4D4D4D',
+    'secondaryColor': '#eff6ff',
+    'noteBkgColor': '#fffde7',
+    'noteBorderColor': '#6C8EBF'
+  }
+}}%%
+flowchart TD
+    START([Input: text + type])
+    CHECK{providers = 0 ?}
+    NOKEY([Throw: chưa cấu hình provider])
+
+    P1["① Jina Embeddings v3"]
+    D1{Thành công?}
+
+    P2["② HF multilingual-e5-large-instruct"]
+    D2{Thành công?}
+
+    P3["③ HF multilingual-e5-large (base)"]
+    D3{Thành công?}
+
+    OUT([Output: vector 1024 chiều])
+    ERR([Throw: tất cả providers thất bại])
+
+    NOTE["JINA_API_KEY → ① Jina v3\nHF_API_KEY → ② e5-large-instruct\nHF_API_KEY → ③ e5-large (base)"]
+
+    START --> CHECK
+    CHECK -->|Có| NOKEY
+    CHECK -->|Không| P1
+    CHECK -.- NOTE
+
+    P1 --> D1
+    D1 -->|Có| OUT
+    D1 -->|Không| P2
+
+    P2 --> D2
+    D2 -->|Có| OUT
+    D2 -->|Không| P3
+
+    P3 --> D3
+    D3 -->|Có| OUT
+    D3 -->|Không| ERR
+
+    style NOTE fill:#fffde7,stroke:#6C8EBF
+    style OUT fill:#d4edda,stroke:#28a745
+    style NOKEY fill:#f8d7da,stroke:#dc3545
+    style ERR fill:#f8d7da,stroke:#dc3545

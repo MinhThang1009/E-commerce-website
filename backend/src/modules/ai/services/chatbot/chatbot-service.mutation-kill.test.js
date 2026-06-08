@@ -54,7 +54,7 @@ beforeAll(() => {
 beforeEach(() => {
   jest.clearAllMocks();
   svc.conversationHistory.clear();
-  svc._registeredSession = null;
+  // _registeredSession đã xóa — FE compat only
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -84,28 +84,26 @@ describe('_sanitizeMessage', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('clearSession', () => {
-  it('có sessionId tồn tại → delete, trả true', () => {
+  it('có sessionId tồn tại → delete, trả true', async () => {
     svc.conversationHistory.set('s1', { messages: [], lastAccess: 1 });
-    expect(svc.clearSession('s1')).toBe(true);
+    expect(await svc.clearSession('s1')).toBe(true);
     expect(svc.conversationHistory.has('s1')).toBe(false);
   });
 
-  it('sessionId không tồn tại → trả false', () => {
-    expect(svc.clearSession('nope')).toBe(false);
+  it('sessionId không tồn tại → trả false', async () => {
+    expect(await svc.clearSession('nope')).toBe(false);
   });
 
-  it('không truyền sessionId → clear toàn bộ, trả true', () => {
+  it('không truyền sessionId → throw Error (guard tránh xóa toàn server Map)', async () => {
     svc.conversationHistory.set('s1', { messages: [], lastAccess: 1 });
-    svc.conversationHistory.set('s2', { messages: [], lastAccess: 2 });
-    expect(svc.clearSession()).toBe(true);
-    expect(svc.conversationHistory.size).toBe(0);
+    await expect(svc.clearSession()).rejects.toThrow('ai.sessionIdRequired');
+    expect(svc.conversationHistory.size).toBe(1); // không bị xóa
   });
 });
 
 describe('registerSession', () => {
-  it('registerSession lưu _registeredSession', () => {
-    svc.registerSession('sess-ui');
-    expect(svc._registeredSession).toBe('sess-ui');
+  it('registerSession không throw (dead-state field đã xóa)', () => {
+    expect(() => svc.registerSession('sess-ui')).not.toThrow();
   });
 });
 

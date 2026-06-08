@@ -5,6 +5,7 @@ jest.mock('@models', () => ({
   Cart: {
     findOne: jest.fn(),
     create: jest.fn(),
+    findOrCreate: jest.fn(),
   },
   CartItem: {
     findOne: jest.fn(),
@@ -25,16 +26,33 @@ function makeProductVariant(overrides = {}) {
   };
 }
 
-function makeRepo(pvOverrides = {}) {
+// Product mặc định: active, có stock, và có các variant id phổ biến dùng trong tests
+const DEFAULT_PRODUCT = {
+  status: 'active',
+  stockQuantity: 10,
+  variants: [
+    { id: 1, stockQuantity: 5 },
+    { id: 5, stockQuantity: 5 },
+    { id: 999, stockQuantity: 5 }, // cho phép test price-fetch returning null
+  ],
+};
+
+function makeRepo(pvOverrides = {}, productMock = DEFAULT_PRODUCT) {
   const deps = {
-    Product: { findAll: jest.fn(), findByPk: jest.fn(), findOne: jest.fn(), create: jest.fn() },
+    Product: {
+      findAll: jest.fn(),
+      findByPk: jest.fn().mockResolvedValue(productMock),
+      findOne: jest.fn(),
+      create: jest.fn(),
+    },
     ProductVariant: makeProductVariant(pvOverrides),
     Category: { findAll: jest.fn(), findByPk: jest.fn() },
     sequelize: {
       fn: jest.fn(),
       col: jest.fn(),
       literal: jest.fn((s) => s),
-      transaction: jest.fn((cb) => cb(null)),
+      // transaction mock truyền đúng object có LOCK (giống orders tests)
+      transaction: jest.fn(async (cb) => cb({ LOCK: { UPDATE: 'UPDATE' } })),
     },
   };
   return { repo: new SequelizeAiRepository(deps), deps };
@@ -42,8 +60,8 @@ function makeRepo(pvOverrides = {}) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  Cart.findOne.mockResolvedValue({ id: 'cart1' });
-  Cart.create.mockResolvedValue({ id: 'new-cart' });
+  // findOrCreate returns [cart, created] — mặc định trả cart sẵn (created=false)
+  Cart.findOrCreate.mockResolvedValue([{ id: 'cart1' }, false]);
   CartItem.findOne.mockResolvedValue(null);
   CartItem.create.mockResolvedValue({ id: 'item1' });
 });
@@ -62,7 +80,9 @@ describe('SequelizeAiRepository.addToCart', () => {
     );
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ unitPrice: '299000', quantity: 2 }),
-      expect.objectContaining({ transaction: null }),
+      expect.objectContaining({
+        transaction: expect.objectContaining({ LOCK: { UPDATE: 'UPDATE' } }),
+      }),
     );
   });
 
@@ -79,25 +99,28 @@ describe('SequelizeAiRepository.addToCart', () => {
     );
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ unitPrice: 0 }),
-      expect.objectContaining({ transaction: null }),
+      expect.objectContaining({
+        transaction: expect.objectContaining({ LOCK: { UPDATE: 'UPDATE' } }),
+      }),
     );
   });
 
-  test('chưa có cart → Cart.create được gọi', async () => {
-    Cart.findOne.mockResolvedValue(null);
+  test('chưa có cart → findOrCreate tạo cart mới (atomic)', async () => {
+    Cart.findOrCreate.mockResolvedValue([{ id: 'new-cart' }, true]); // created=true
     const { repo } = makeRepo({
       findByPk: jest.fn().mockResolvedValue({ price: '100000' }),
     });
 
     await repo.addToCart({ userId: 2, productId: 5, variantId: 1, quantity: 1 });
 
-    expect(Cart.create).toHaveBeenCalledWith(
-      { userId: 2, status: 'active' },
-      expect.objectContaining({ transaction: null }),
+    expect(Cart.findOrCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 2, status: 'active' } }),
     );
     expect(CartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ cartId: 'new-cart' }),
-      expect.objectContaining({ transaction: null }),
+      expect.objectContaining({
+        transaction: expect.objectContaining({ LOCK: { UPDATE: 'UPDATE' } }),
+      }),
     );
   });
 
@@ -117,7 +140,9 @@ describe('SequelizeAiRepository.addToCart', () => {
     // Phải gọi update thay vì create
     expect(existingItem.update).toHaveBeenCalledWith(
       { quantity: 5 },
-      expect.objectContaining({ transaction: null }),
+      expect.objectContaining({
+        transaction: expect.objectContaining({ LOCK: { UPDATE: 'UPDATE' } }),
+      }),
     ); // 3 + 2 = 5
     expect(CartItem.create).not.toHaveBeenCalled();
     expect(result.quantity).toBe(5);

@@ -1,0 +1,55 @@
+@startuml state-04-user
+' Sơ đồ trạng thái — Vòng đời tài khoản người dùng
+' Verify vs backend/src/modules/auth/services/auth-service.js
+'   (register L26, verifyOtp L154, googleLogin L83, login L55, refreshToken L214)
+' Verify vs backend/src/modules/admin/services/admin-user-service.js
+'   (updateUser L70, deleteUser L114)
+hide empty description
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+  ArrowColor #4D4D4D
+}
+
+state "đăng ký / OAuth" as init <<choice>>
+[*] --> init
+
+state "Chưa xác thực\n(unverified)" as unverified
+state "Hoạt động\n(active)" as active
+state "Bị vô hiệu\n(disabled)" as disabled
+state "Đã xóa\n(deleted)" as deleted
+
+init --> unverified : [register — email/password]
+init --> active     : [googleLogin — Google OAuth]
+
+unverified --> active     : verifyOtp [OTP hợp lệ, chưa hết hạn]
+unverified --> unverified : resendVerification
+
+active   --> disabled : admin updateUser [isActive=false]
+disabled --> active   : admin updateUser [isActive=true]
+
+active     --> deleted : deleteUser [user ≠ self]
+disabled   --> deleted : deleteUser [user ≠ self]
+unverified --> deleted : deleteUser [user ≠ self]
+
+deleted --> [*]
+
+' Transition bị chặn
+unverified -[#CC0000,dashed]-> active : <color:#CC0000>✗ login [isEmailVerified=false] — 401</color>
+disabled   -[#CC0000,dashed]-> active : <color:#CC0000>✗ login, refreshToken [isActive=false] — 401</color>
+
+/'
+note bottom
+  • register: tạo user với isEmailVerified=false, isActive=true; OTP hết hạn 10 phút.
+  • googleLogin: bỏ qua OTP — isEmailVerified tự động true.
+  • resendVerification: tạo OTP mới, reset hạn 10 phút.
+  • isActive=false chặn CẢ login lẫn refreshToken (L70, L136, L236).
+  • Admin không thể tự vô hiệu hóa hoặc đổi role của chính mình (L81, L85).
+  • Xóa là soft delete (deletedAt), dữ liệu vẫn còn trong DB.
+end note
+'/
+@enduml

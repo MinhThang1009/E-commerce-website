@@ -6,9 +6,13 @@
  */
 const express = require('express');
 const { optionalAuthenticate, authenticate } = require('@middlewares/authenticate');
-const { chatbotLimiter } = require('@middlewares/rate-limiter');
+const { chatbotLimiter, chatLimiter } = require('@middlewares/rate-limiter');
 const { validateRequest } = require('@middlewares/validate-request');
-const { chatMessageSchema } = require('@modules/ai/validators/ai-validator');
+const {
+  chatMessageSchema,
+  cartAddSchema,
+  sessionSchema,
+} = require('@modules/ai/validators/ai-validator');
 
 // AI module routes — basePath '/chatbot'. Đã migrate đầy đủ từ routes/chatbot.js.
 module.exports = ({ aiController }) => {
@@ -37,7 +41,14 @@ module.exports = ({ aiController }) => {
    *     security:
    *       - bearerAuth: []
    */
-  router.post('/cart/add', authenticate, aiController.addToCart);
+  // authenticate trước validateRequest: unauthenticated request nhận 401 trước khi parse body
+  router.post(
+    '/cart/add',
+    chatbotLimiter,
+    authenticate,
+    validateRequest(cartAddSchema),
+    aiController.addToCart,
+  );
 
   /**
    * @swagger
@@ -46,9 +57,33 @@ module.exports = ({ aiController }) => {
    *     summary: Xóa lịch sử session chatbot (demo/debug)
    *     tags: [AI Chatbot]
    */
-  router.post('/session/clear', aiController.clearSession);
-  router.post('/session/register', aiController.registerSession);
-  router.get('/session/:sessionId/messages', aiController.getSessionMessages);
+  // SECURITY MODEL (capability-based): sessionId là opaque UUID do client sinh — đây là access token
+  // cho session đó. Guest và authenticated user đều dùng sessionId làm credential truy cập session
+  // của mình. Không cần ownership check bổ sung vì sessionId không thể đoán (UUID v4, entropy 122 bit).
+  // sessionSchema bắt buộc sessionId min(1) để ngăn clearSession(null) xóa toàn bộ server Map.
+  router.post(
+    '/session/clear',
+    chatbotLimiter,
+    optionalAuthenticate,
+    validateRequest(sessionSchema),
+    aiController.clearSession,
+  );
+  router.post(
+    '/session/register',
+    chatbotLimiter,
+    optionalAuthenticate,
+    validateRequest(sessionSchema),
+    aiController.registerSession,
+  );
+  // chatLimiter (30 req/5 min) chuyên chống brute-force enumeration sessionId.
+  // sessionSchema validate path param max(128) — ngăn oversized input tới DB query.
+  router.get(
+    '/session/:sessionId/messages',
+    chatLimiter,
+    optionalAuthenticate,
+    validateRequest(sessionSchema, 400, 'params'),
+    aiController.getSessionMessages,
+  );
 
   return router;
 };

@@ -38,7 +38,7 @@ actor "Khách / Bất kỳ\n(Public)" as pub
 actor "Nhân viên\n(Staff)" as staff
 actor "Quản trị viên\n(Admin)" as admin
 
-package "Danh sách yêu thích   /api/wishlists" {
+package "Danh sách yêu thích" {
   usecase "Xem danh sách\nyêu thích" as UC_wl_xem
   usecase "Thêm sản phẩm\nvào yêu thích" as UC_wl_them
   usecase "Kiểm tra sản phẩm\ntrong yêu thích" as UC_wl_check
@@ -46,12 +46,12 @@ package "Danh sách yêu thích   /api/wishlists" {
   usecase "Xóa toàn bộ\nyêu thích" as UC_wl_clear
 }
 
-package "Upload file   /api/uploads" {
+package "Upload file" {
   usecase "Upload file\n(single / multiple)" as UC_up_upload
   usecase "Xóa file\n(back-office)" as UC_up_xoa
 }
 
-package "Mã giảm giá   /api/discount-codes" {
+package "Mã giảm giá" {
   usecase "Xem mã giảm giá\nkhả dụng" as UC_dc_xem
   usecase "Áp dụng\nmã giảm giá" as UC_dc_apply
   usecase "Xem & tìm mã\n(back-office)" as UC_dc_bo_xem
@@ -79,6 +79,7 @@ staff -- UC_dc_bo_xem
 staff -- UC_dc_crud
 admin -- UC_dc_bo_xem
 
+/'
 note right of UC_wl_them
   POST: non-throwing nếu đã có (alreadyExists: true).
   Unique: uq_wishlists_user_product (chống duplicate).
@@ -86,7 +87,9 @@ note right of UC_wl_them
   DELETE /: xóa toàn bộ (không confirm từ server).
   Guest wishlist: Zustand local — không có API.
 end note
+'/
 
+/'
 note right of UC_up_upload
   2 routes gộp (authenticate — bất kỳ role đã đăng nhập):
   POST /:type/single, POST /:type/multiple.
@@ -95,14 +98,18 @@ note right of UC_up_upload
   Validate magic bytes JPEG/PNG/WebP.
   Giới hạn: 5MB/file, max 10 files (reviews max 5).
 end note
+'/
 
+/'
 note right of UC_up_xoa
   DELETE /:type/:filename — authenticate.
   Role check role∈['admin','staff'] tại service
   (không dùng authorize middleware).
   Path traversal guard: basename + startsWith.
 end note
+'/
 
+/'
 note right of UC_dc_apply
   POST /discount-codes/apply — public.
   Validate: isActive→startDate→endDate→
@@ -110,12 +117,15 @@ note right of UC_dc_apply
   KHÔNG tăng usedCount (orders/payment làm sau).
   type: percent (cap maxDiscountAmount) | fixed.
 end note
+'/
 
+/'
 note right of UC_dc_crud
   3 routes (staffOnly):
   POST, PUT, DELETE /admin/discount-codes/:id.
   Admin xem-only qua UC_dc_bo_xem (backoffice).
   Staff: CRUD đầy đủ.
 end note
+'/
 
 @enduml

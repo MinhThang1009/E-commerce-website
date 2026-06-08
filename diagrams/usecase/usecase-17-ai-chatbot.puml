@@ -1,0 +1,97 @@
+@startuml usecase-17-ai-chatbot
+' Sơ đồ use case — AI Chatbot + Search History (§2.7)
+' Ground-truth:
+'   ai/routes.js — 5 routes (basePath /api/chatbot):
+'     POST /chatbot/message                  — chatbotLimiter + optionalAuthenticate
+'     POST /chatbot/cart/add                 — authenticate
+'     POST /chatbot/session/clear            — chatbotLimiter + optionalAuthenticate
+'     POST /chatbot/session/register         — chatbotLimiter + optionalAuthenticate
+'     GET  /chatbot/session/:sessionId/messages — chatLimiter + optionalAuthenticate
+'   search-history/routes.js — 4 routes (basePath /api/search-histories):
+'     POST   /search-histories               — destructiveLimiter + optionalAuthenticate
+'     GET    /search-histories               — apiLimiter + authenticate
+'     DELETE /search-histories/:id           — apiLimiter + authenticate
+'     DELETE /search-histories               — destructiveLimiter + authenticate
+' Denominator: 9 routes → 6 UC
+'   (session clear+register+messages gộp — cùng guard optionalAuthenticate;
+'    search DELETE /:id + DELETE / gộp — cùng guard authenticate)
+left to right direction
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+}
+skinparam note {
+  BackgroundColor #fffde7
+  BorderColor #6C8EBF
+}
+skinparam actorStyle awesome
+
+actor "Khách vãng lai\n(Guest)" as guest
+actor "Khách hàng\n(Customer)" as customer
+
+package "AI Chatbot" {
+  usecase "Nhắn tin\nchatbot AI" as UC_ai_msg
+  usecase "Thêm vào giỏ\nqua chatbot" as UC_ai_cart
+  usecase "Quản lý session\nchatbot" as UC_ai_session
+}
+
+package "Lịch sử tìm kiếm" {
+  usecase "Lưu từ khóa\ntìm kiếm" as UC_sh_luu
+  usecase "Xem lịch sử\ntìm kiếm" as UC_sh_xem
+  usecase "Xóa lịch sử\ntìm kiếm" as UC_sh_xoa
+}
+
+' AI Chatbot — optionalAuthenticate (guest + customer)
+guest -- UC_ai_msg
+customer -- UC_ai_msg
+
+' AI Chatbot — authenticate (customer only)
+customer -- UC_ai_cart
+
+' AI Chatbot — session management (public)
+guest -- UC_ai_session
+customer -- UC_ai_session
+
+' Search History — optionalAuthenticate (guest + customer)
+guest -- UC_sh_luu
+customer -- UC_sh_luu
+
+' Search History — authenticate (customer only)
+customer -- UC_sh_xem
+customer -- UC_sh_xoa
+
+/'
+note right of UC_ai_msg
+  POST /chatbot/message — chatbotLimiter + optionalAuthenticate.
+  RAG pipeline: validate → vector search → LLM.
+  userId từ JWT; null nếu Guest.
+end note
+
+note right of UC_ai_cart
+  POST /chatbot/cart/add — chatbotLimiter + authenticate.
+  productId + variantId + quantity + sessionId.
+end note
+
+note right of UC_ai_session
+  POST /session/clear — chatbotLimiter + optionalAuthenticate.
+  POST /session/register — chatbotLimiter + optionalAuthenticate (no-op).
+  GET  /session/:sessionId/messages — chatLimiter + optionalAuthenticate.
+end note
+
+note right of UC_sh_luu
+  POST /search-histories — destructiveLimiter + optionalAuthenticate.
+  Validate: keyword min(1)/max(200). Trả saved:false khi
+  không có userId lẫn sessionId.
+end note
+
+note right of UC_sh_xoa
+  DELETE /search-histories/:id — apiLimiter + ownership check userId.
+  DELETE /search-histories — destructiveLimiter + authenticate.
+end note
+'/
+
+@enduml

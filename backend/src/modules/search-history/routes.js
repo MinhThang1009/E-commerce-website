@@ -7,9 +7,14 @@
 const express = require('express');
 const router = express.Router();
 const searchHistoryController = require('@modules/search-history/controllers/search-history-controller');
-const { authenticate } = require('@middlewares/authenticate');
+const { authenticate, optionalAuthenticate } = require('@middlewares/authenticate');
+const { apiLimiter, destructiveLimiter } = require('@middlewares/rate-limiter');
 const { validateRequest } = require('@middlewares/validate-request');
-const { saveSearchSchema } = require('@modules/search-history/validators/search-history-validator');
+const {
+  saveSearchSchema,
+  deleteSearchParamSchema,
+  getHistoryQuerySchema,
+} = require('@modules/search-history/validators/search-history-validator');
 
 /**
  * @swagger
@@ -40,17 +45,32 @@ const { saveSearchSchema } = require('@modules/search-history/validators/search-
  *         schema:
  *           type: integer
  */
-// Khách có thể lưu tìm kiếm — validate query trước khi xử lý
-router.post('/', validateRequest(saveSearchSchema, 422), (req, res, next) => {
-  // Thử xác thực nhưng không báo lỗi nếu chưa đăng nhập
-  authenticate(req, res, () => {
-    searchHistoryController.saveSearch(req, res, next);
-  });
-});
+// Khách có thể lưu tìm kiếm — dùng destructiveLimiter (10 req/15min) thay vì apiLimiter
+// vì endpoint là public write, cần bảo vệ chặt hơn để tránh flood search_history table
+router.post(
+  '/',
+  destructiveLimiter,
+  optionalAuthenticate,
+  validateRequest(saveSearchSchema, 400),
+  searchHistoryController.saveSearch,
+);
 
 // Các route riêng tư (yêu cầu đăng nhập)
-router.get('/', authenticate, searchHistoryController.getSearchHistory);
-router.delete('/:id', authenticate, searchHistoryController.deleteSearchHistory);
-router.delete('/', authenticate, searchHistoryController.clearAllSearchHistory);
+router.get(
+  '/',
+  apiLimiter,
+  authenticate,
+  validateRequest(getHistoryQuerySchema, 400, 'query'),
+  searchHistoryController.getSearchHistory,
+);
+router.delete(
+  '/:id',
+  apiLimiter,
+  authenticate,
+  validateRequest(deleteSearchParamSchema, 400, 'params'),
+  searchHistoryController.deleteSearchHistory,
+);
+// destructiveLimiter (10 req/15min) thay vì apiLimiter cho bulk delete endpoint
+router.delete('/', destructiveLimiter, authenticate, searchHistoryController.clearAllSearchHistory);
 
 module.exports = router;

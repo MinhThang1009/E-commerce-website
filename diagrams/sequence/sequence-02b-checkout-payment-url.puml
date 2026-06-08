@@ -1,0 +1,64 @@
+@startuml sequence-02b-checkout-payment-url
+' Sơ đồ sequence — Checkout (2b): Tạo URL thanh toán online (§3.2b)
+' Ground-truth: payment-service.js:120-131, 216-227 + momo-service.js + vnpay-service.js
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 150
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+skinparam defaultFontSize 13
+skinparam noteFontSize 12
+skinparam sequenceParticipantFontSize 13
+
+actor "Người dùng" as User
+participant "Frontend (React)" as FE
+participant "Backend API" as API
+participant "MySQL DB" as DB
+participant "Payment Gateway" as GW
+
+== Tạo URL thanh toán online ==
+
+note over User, GW
+  Bước này chỉ xảy ra khi paymentMethod = momo hoặc vnpay
+  (sau khi POST /api/orders trả về 201 thành công)
+end note
+
+FE ->> API : POST /api/payments/{momo|vnpay}/create-url
+note left of FE: [authenticate → validateRequest]  { orderId }
+API ->> DB : SELECT orders  WHERE id = ? AND userId = ?
+DB -->> API : order row
+API ->> GW : createPaymentUrl(orderId, amount, orderInfo)
+note right of API
+  MoMo: gọi MoMo API (HMAC-SHA256)
+  VNPay: ký URL (HMAC-SHA512)
+end note
+GW -->> API : MoMo: { payUrl, resultCode, ... }
+note left of GW: VNPay: paymentUrl (string)
+API -->> FE : 200  { paymentUrl }
+FE -->> User : Redirect → cổng thanh toán (MoMo / VNPay)
+
+note over User, GW: Người dùng xác nhận thanh toán tại cổng
+
+User ->> GW : Xác nhận thanh toán
+GW -->> User : Xử lý thanh toán...
+
+note over FE, API
+  Kết quả xử lý qua 2 kênh song song:
+  (1) IPN callback (server-to-server)
+  (2) Return URL (trình duyệt quay về)
+end note
+
+@enduml

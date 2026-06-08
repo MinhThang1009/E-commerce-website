@@ -74,10 +74,12 @@ staff -- UC_review
 staff -- UC_attr
 staff -- UC_refund
 
+/'
 note as N1
   • Admin & Staff đều kế thừa "Người dùng back-office" → cùng XEM (giám sát).
   • Admin = XEM-ONLY back-office + ĐỘC QUYỀN quản lý users; Staff = nghiệp vụ bán hàng (CRUD).
   • Guard: backoffice = requireRole('admin','staff'); staffOnly = requireRole('staff');
     adminOnly = requireSuperAdmin (admin). FE: AdminRoute allowedRoles + isStaff() ẩn nút write.
 end note
+'/
 @enduml

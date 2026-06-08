@@ -241,31 +241,22 @@ describe('classifyIntent', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('validateMessage', () => {
-  it('rỗng → invalid + reason để trống', () => {
-    expect(validateMessage('')).toEqual({
-      valid: false,
-      reason: 'Tin nhắn không được để trống',
-    });
+  it('rỗng → invalid + i18n key ai.messageEmpty', () => {
+    expect(validateMessage('')).toEqual({ valid: false, reason: 'ai.messageEmpty' });
   });
 
-  it('chỉ khoảng trắng → invalid + reason để trống', () => {
-    expect(validateMessage('   ')).toEqual({
-      valid: false,
-      reason: 'Tin nhắn không được để trống',
-    });
+  it('chỉ khoảng trắng → invalid + i18n key ai.messageEmpty', () => {
+    expect(validateMessage('   ')).toEqual({ valid: false, reason: 'ai.messageEmpty' });
   });
 
-  it('chỉ dấu câu → invalid + reason không hợp lệ', () => {
-    expect(validateMessage('!!!???')).toEqual({
-      valid: false,
-      reason: 'Tin nhắn không hợp lệ',
-    });
+  it('chỉ dấu câu → invalid + i18n key ai.messageInvalid', () => {
+    expect(validateMessage('!!!???')).toEqual({ valid: false, reason: 'ai.messageInvalid' });
   });
 
-  it('quá dài → invalid + reason quá dài kèm MAX', () => {
+  it('quá dài → invalid + i18n key ai.messageTooLong', () => {
     expect(validateMessage('a'.repeat(MAX_MESSAGE_LENGTH + 1))).toEqual({
       valid: false,
-      reason: `Tin nhắn quá dài (tối đa ${MAX_MESSAGE_LENGTH} ký tự)`,
+      reason: 'ai.messageTooLong',
     });
   });
 

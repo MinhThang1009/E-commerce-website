@@ -53,13 +53,16 @@ staff -- UC_crud_gia_tri
 staff -- UC_gan_nhom
 staff -- UC_batch
 
+/'
 note right of UC_xem_nhom
   GET /api/attributes/groups — public.
   Trả AttributeGroup (isActive=true)
   kèm AttributeValue (isActive=true),
   sort theo sortOrder.
 end note
+'/
 
+/'
 note right of UC_sinh_ten_public
   2 endpoint public (admin UI dùng khi tạo variant):
   POST /attributes/preview-name (preview tên).
@@ -67,7 +70,9 @@ note right of UC_sinh_ten_public
     (realtime + suggestions từ 10 variant gần nhất).
   Cả 2 delegate sang nameGenerator (AI module, setter injection).
 end note
+'/
 
+/'
 note right of UC_crud_nhom
   3 routes gộp — Staff only:
   POST /groups (tạo); PUT /groups/:id (cập nhật);
@@ -75,7 +80,9 @@ note right of UC_crud_nhom
   AttributeGroup.type: color|config|storage|size|custom.
   Không có validateRequest — low-risk (staff trusted).
 end note
+'/
 
+/'
 note right of UC_crud_gia_tri
   3 routes gộp — Staff only:
   POST /groups/:id/values; PUT /values/:id;
@@ -83,11 +90,14 @@ note right of UC_crud_gia_tri
   AttributeValue: affectsName (flag tên SP),
   nameTemplate (override hiển thị trong tên).
 end note
+'/
 
+/'
 note right of UC_batch
   POST /attributes/batch-generate-names — Staff only.
   Input: [{ baseName, selectedAttributes, id }].
   Đầu ra: tên sản phẩm cho từng item.
 end note
+'/
 
 @enduml

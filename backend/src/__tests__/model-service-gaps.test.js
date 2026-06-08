@@ -140,7 +140,7 @@ describe('product.js line 11 — catch branch khi require vectorStore thất b�
 describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)', () => {
   afterEach(() => jest.resetModules()); // restore module registry sau mỗi test dùng resetModules
 
-  it('khi ChatMessage.create reject → catch trả về null, không throw (line 103)', async () => {
+  it('khi ChatMessage.create reject → promise reject (caller dùng fire-and-forget .catch())', async () => {
     // The module uses require('@models') internally.
     // We mock '@models' (from test root perspective) so it resolves correctly.
     jest.resetModules();
@@ -171,18 +171,19 @@ describe('SequelizeAiRepository — createAnalyticsEvent catch branch (line 103)
       sequelize: {},
     });
 
-    // Should resolve to null — .catch(() => null) at line 103
-    const result = await repo.createAnalyticsEvent({
-      event: 'page_view',
-      userId: 'u-1',
-      sessionId: 'sess-1',
-      productId: 'p-1',
-      value: 1,
-      metadata: {},
-      timestamp: new Date().toISOString(),
-    });
-
-    expect(result).toBeNull();
+    // Inner .catch() đã bị xóa — createAnalyticsEvent giờ propagate rejection về caller
+    // Caller (ai-service.js) dùng fire-and-forget: .catch(err => this.logger.warn(...))
+    await expect(
+      repo.createAnalyticsEvent({
+        event: 'page_view',
+        userId: 'u-1',
+        sessionId: 'sess-1',
+        productId: 'p-1',
+        value: 1,
+        metadata: {},
+        timestamp: new Date().toISOString(),
+      }),
+    ).rejects.toThrow('DB error');
   });
 });
 

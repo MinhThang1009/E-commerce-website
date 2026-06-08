@@ -34,6 +34,7 @@ staff -- UC_status
 staff -- UC_cancel
 admin -- UC_all
 
+/'
 note bottom of UC_cancel
   Chỉ Staff thao tác (cập nhật trạng thái, hủy đơn);
   hủy đơn hoàn kho + chặn đơn đã giao/đã hủy.
@@ -41,4 +42,5 @@ note bottom of UC_cancel
   (Cập nhật trạng thái + xem có ở cả module orders và admin;
    bản admin còn sửa được paymentStatus/note.)
 end note
+'/
 @enduml

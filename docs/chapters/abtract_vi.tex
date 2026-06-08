@@ -5,11 +5,13 @@
 
 \begin{small}
 
-Thương mại điện tử đang phát triển mạnh mẽ tại Việt Nam, tuy nhiên phần lớn các nền tảng hiện tại vẫn thiếu khả năng tư vấn sản phẩm thông minh, phụ thuộc vào việc người dùng tự tìm kiếm và lọc sản phẩm. Khóa luận này trình bày quá trình xây dựng hệ thống website thương mại điện tử \textbf{TechStore} chuyên bán thiết bị công nghệ, tích hợp AI Chatbot sử dụng kỹ thuật RAG (Retrieval-Augmented Generation) để tư vấn sản phẩm theo thời gian thực.
+Thị trường thương mại điện tử Việt Nam đạt 32 tỷ USD vào năm 2024 với mảng thiết bị công nghệ chiếm tỷ trọng lớn nhất, nhưng hầu hết nền tảng hiện tại chưa hỗ trợ tư vấn sản phẩm theo ngôn ngữ tự nhiên. Người tiêu dùng phải tự lọc sản phẩm qua bộ lọc tĩnh dù nhu cầu thường được diễn đạt theo kiểu đa tiêu chí, trong khi kỹ thuật Retrieval-Augmented Generation (RAG) đã được kiểm chứng hiệu quả nhưng chưa được hiện thực đầy đủ cho tiếng Việt với các thách thức đặc thù như viết tắt thương hiệu và đồng bộ catalog theo thời gian thực.
 
-Hệ thống được xây dựng theo kiến trúc Modular Monolith với 17 module backend độc lập, giao tiếp nội bộ qua Event-Driven pattern. Frontend được phát triển theo mô hình Feature-Based với 13 features riêng biệt. AI Chatbot là thành phần trọng tâm, sử dụng pipeline RAG kết hợp giữa Hybrid Search (cosine similarity và BM25) với mô hình ngôn ngữ lớn tương thích OpenAI để sinh phản hồi tiếng Việt tự nhiên. Hệ thống embedding sử dụng chiến lược chain fallback qua ba nhà cung cấp (Jina v3, HuggingFace e5-instruct, HuggingFace e5-base) với vector 1024 chiều.
+Dự án đề xuất và hiện thực kiến trúc RAG Hybrid kết hợp tìm kiếm ngữ nghĩa (cosine similarity) và tìm kiếm từ khóa theo cơ chế bổ trợ lẫn nhau, tích hợp trong hệ thống thương mại điện tử TechStore xây dựng theo mô hình Modular Monolith (17 module backend) và Feature-Based (13 feature frontend). Pipeline RAG bao gồm bước chuẩn hóa ngôn ngữ viết tắt tiếng Việt, đồng bộ vector store tự động khi catalog thay đổi và cơ chế dự phòng đa tầng bảo đảm tính sẵn sàng của chatbot.
 
-Hệ thống cung cấp đầy đủ các chức năng thương mại điện tử: quản lý sản phẩm và danh mục, giỏ hàng cho cả khách vãng lai và người dùng đã đăng nhập, quy trình đặt hàng và thanh toán trực tuyến qua MoMo và VNPay, đánh giá sản phẩm, quản lý tồn kho, và trang quản trị toàn diện. Bộ kiểm thử gồm 5.487 test case phân bố trên 5 tầng (unit, integration, API HTTP, E2E và component test), đạt mức coverage 100\% lines và 99,81\% branches cho unit tests.
+Đánh giá qua 20 kịch bản thực tế thuộc 5 nhóm cho thấy chatbot đạt khoảng 90\% độ chính xác ở nhóm truy vấn ngữ nghĩa, xử lý thành công các truy vấn theo tên model cụ thể nhờ Hybrid Search, chuẩn hóa được các viết tắt phổ biến trong tiếng Việt, và từ chối chính xác 100\% câu hỏi ngoài phạm vi trong dưới 10ms. Thời gian phản hồi trung bình đạt 2--5 giây. Bộ kiểm thử gồm khoảng 7.303 ca kiểm thử trên 5 tầng đạt coverage trên 99\% ở tầng unit test.
+
+Kết quả kiểm chứng tính khả thi của kiến trúc RAG Hybrid trong bối cảnh thương mại điện tử tiếng Việt và đóng góp các giải pháp kỹ thuật cụ thể cho các thách thức ngôn ngữ đặc thù, làm nền tảng tham khảo cho các ứng dụng tư vấn sản phẩm dựa trên AI tại Việt Nam.
 
 \vspace*{0.5cm}
 \textbf{Từ khóa}: Thương mại điện tử, RAG (Retrieval-Augmented Generation), AI Chatbot, Modular Monolith, Hybrid Vector Search.

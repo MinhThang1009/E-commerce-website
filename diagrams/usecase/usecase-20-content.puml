@@ -23,6 +23,7 @@ rectangle "Liên hệ — TechStore" {
 
 user -- UC_feedback
 
+/'
 note right of UC_feedback
   Public — không yêu cầu đăng nhập.
   Body bắt buộc: name (≥2 ký tự), email (valid),
@@ -32,4 +33,5 @@ note right of UC_feedback
     + gửi email thông báo đến admin
     (fire-and-forget; lỗi email chỉ log, không fail request → 201).
 end note
+'/
 @enduml

@@ -6,6 +6,7 @@
  */
 const rateLimit = require('express-rate-limit');
 const logger = require('@utils/logger');
+const { t } = require('@utils/i18n');
 
 // Rate limit store — express-rate-limit gọi store.increment() khi request đến
 class ProxyStore {
@@ -50,6 +51,7 @@ const PROXY_STORES = {
   otp: new ProxyStore(),
   chatbot: new ProxyStore(),
   chat: new ProxyStore(),
+  destructive: new ProxyStore(),
 };
 
 // Rate limiter chung cho API
@@ -59,10 +61,10 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: PROXY_STORES.api,
-  message: {
-    status: 'error',
-    message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.',
-  },
+  handler: (req, res, _next, options) =>
+    res
+      .status(options.statusCode)
+      .json({ status: 'error', message: t('rateLimit.tooManyRequests', req.locale) }),
 });
 
 // Rate limiter cho các endpoint xác thực (nghiêm ngặt hơn)
@@ -72,14 +74,12 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: PROXY_STORES.auth,
-  message: {
-    status: 'error',
-    message: 'Quá nhiều lần đăng nhập thất bại, vui lòng thử lại sau.',
-  },
   // Ghi business event log khi IP bị rate limit để monitoring brute force
   handler: (req, res, _next, options) => {
     logger.warn('[AUTH] Rate limited', { ip: req.ip, email: req.body?.email });
-    res.status(options.statusCode).json(options.message);
+    res
+      .status(options.statusCode)
+      .json({ status: 'error', message: t('rateLimit.authTooMany', req.locale) });
   },
 });
 
@@ -91,10 +91,10 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
   store: PROXY_STORES.otp,
   keyGenerator: (req) => req.body.email || req.ip,
-  message: {
-    status: 'error',
-    message: 'Quá nhiều yêu cầu, vui lòng thử lại sau 15 phút.',
-  },
+  handler: (req, res, _next, options) =>
+    res
+      .status(options.statusCode)
+      .json({ status: 'error', message: t('rateLimit.otpTooMany', req.locale) }),
 });
 
 // Rate limiter riêng cho chatbot (chống spam API key)
@@ -104,10 +104,23 @@ const chatbotLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: PROXY_STORES.chatbot,
-  message: {
-    status: 'error',
-    message: 'Quá nhiều yêu cầu chatbot, vui lòng thử lại sau.',
-  },
+  handler: (req, res, _next, options) =>
+    res
+      .status(options.statusCode)
+      .json({ status: 'error', message: t('rateLimit.chatbotTooMany', req.locale) }),
+});
+
+// Rate limiter cho destructive operations (DELETE bulk) — nghiêm hơn apiLimiter
+const destructiveLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  store: PROXY_STORES.destructive,
+  handler: (req, res, _next, options) =>
+    res
+      .status(options.statusCode)
+      .json({ status: 'error', message: t('rateLimit.tooManyRequests', req.locale) }),
 });
 
 // Rate limiter cho chat history — chống brute-force enumeration sessionId
@@ -117,10 +130,10 @@ const chatLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   store: PROXY_STORES.chat,
-  message: {
-    status: 'error',
-    message: 'Quá nhiều yêu cầu, vui lòng thử lại sau.',
-  },
+  handler: (req, res, _next, options) =>
+    res
+      .status(options.statusCode)
+      .json({ status: 'error', message: t('rateLimit.tooManyRequests', req.locale) }),
 });
 
 module.exports = {
@@ -129,4 +142,5 @@ module.exports = {
   otpLimiter,
   chatbotLimiter,
   chatLimiter,
+  destructiveLimiter,
 };

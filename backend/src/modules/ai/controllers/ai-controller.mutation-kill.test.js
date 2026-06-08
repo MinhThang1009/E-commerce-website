@@ -46,31 +46,15 @@ describe('AIController — mutation kill', () => {
   // handleMessage — validation guard `if (!message || typeof !== 'string')`
   // ──────────────────────────────────────────────────────────────
 
-  describe('validation message không hợp lệ → 400, không gọi service', () => {
-    it('message rỗng "" → 400 với body lỗi chuẩn', async () => {
-      const req = { body: { message: '', userId: 1, sessionId: 's' } };
+  // Guard !message đã bị xóa — Zod chatMessageSchema (route layer) chặn trước khi vào controller.
+  // Test này verify controller forward thẳng vào service khi message hợp lệ.
+  describe('controller không có manual validation guard (Zod ở route layer)', () => {
+    it('message hợp lệ → gọi aiService.handleMessage, không có guard ở controller', async () => {
+      aiService.handleMessage.mockResolvedValue({ response: 'ok', suggestions: [] });
+      const req = { body: { message: 'Mua laptop', sessionId: 's' }, user: { id: 1 } };
       const res = makeRes();
       await controller.handleMessage(req, res, jest.fn());
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'Tin nhắn không hợp lệ',
-      });
-      expect(aiService.handleMessage).not.toHaveBeenCalled();
-    });
-
-    it('message là số (truthy nhưng không phải string) → 400 (kill `||`→`&&` + typeof)', async () => {
-      const req = { body: { message: 123, userId: 1, sessionId: 's' } };
-      const res = makeRes();
-      await controller.handleMessage(req, res, jest.fn());
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'error',
-        message: 'Tin nhắn không hợp lệ',
-      });
-      expect(aiService.handleMessage).not.toHaveBeenCalled();
+      expect(aiService.handleMessage).toHaveBeenCalled();
     });
   });
 
@@ -81,7 +65,7 @@ describe('AIController — mutation kill', () => {
   describe('happy path → log info + truyền đúng arg cho service', () => {
     it('gọi logger.info("Chatbot", meta) và aiService.handleMessage đúng arg', async () => {
       aiService.handleMessage.mockResolvedValue({ response: 'ok', suggestions: [] });
-      const req = { body: { message: 'Mua laptop', userId: 9, sessionId: 'sess-9' } };
+      const req = { body: { message: 'Mua laptop', sessionId: 'sess-9' }, user: { id: 9 } };
       const res = makeRes();
       await controller.handleMessage(req, res, jest.fn());
 
@@ -111,11 +95,13 @@ describe('AIController — mutation kill', () => {
       const res = makeRes();
       await controller.handleMessage(req, res, jest.fn());
 
-      expect(logger.warn).toHaveBeenCalledWith('Chatbot input không hợp lệ:', {
+      expect(logger.warn).toHaveBeenCalledWith('Chatbot error:', {
+        statusCode: 400,
         message: 'Tin nhắn quá dài',
       });
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ status: 'error', message: 'Tin nhắn quá dài' });
+      // t('Tin nhắn quá dài') = null → fallback t('ai.messageFailed')
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
     });
   });
 

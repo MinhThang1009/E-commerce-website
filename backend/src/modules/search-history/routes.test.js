@@ -52,6 +52,8 @@ jest.mock('@middlewares/authenticate', () => ({
 
 jest.mock('@middlewares/rate-limiter', () => ({
   chatbotLimiter: (_req, _res, next) => next(),
+  apiLimiter: (_req, _res, next) => next(),
+  destructiveLimiter: (_req, _res, next) => next(),
 }));
 
 // ---------- Require sau mock ----------
@@ -92,7 +94,7 @@ describe('POST /api/search-histories — saveSearch', () => {
       .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({});
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
   });
 
   test('422 khi keyword rỗng', async () => {
@@ -100,22 +102,22 @@ describe('POST /api/search-histories — saveSearch', () => {
       .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
       .send({ keyword: '' });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
   });
 
-  test('422 khi keyword > 500 ký tự', async () => {
+  test('422 khi keyword > 200 ký tự (DB column VARCHAR(200))', async () => {
     const res = await request
       .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
-      .send({ keyword: 'a'.repeat(501) });
-    expect(res.status).toBe(422);
+      .send({ keyword: 'a'.repeat(201) });
+    expect(res.status).toBe(400);
   });
 
-  test('201 khi keyword đúng 500 ký tự (boundary hợp lệ)', async () => {
+  test('201 khi keyword đúng 200 ký tự (boundary hợp lệ)', async () => {
     const res = await request
       .post('/api/search-histories')
       .set('Authorization', 'Bearer token')
-      .send({ keyword: 'a'.repeat(500) });
+      .send({ keyword: 'a'.repeat(200) });
     expect(res.status).toBe(201);
   });
 

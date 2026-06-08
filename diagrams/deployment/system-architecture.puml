@@ -1,0 +1,73 @@
+@startuml system_architecture
+left to right direction
+skinparam dpi 150
+skinparam nodesep 20
+skinparam ranksep 25
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontSize 11
+skinparam defaultFontName Arial
+
+skinparam node {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+}
+skinparam artifact {
+  BackgroundColor #eff6ff
+  BorderColor #6C8EBF
+  FontColor #000000
+}
+skinparam database {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+}
+skinparam cloud {
+  BackgroundColor #fff2cc
+  BorderColor #d6b656
+  FontColor #000000
+}
+skinparam ArrowColor #4D4D4D
+skinparam noteBackgroundColor #fffde7
+skinparam noteBorderColor #6C8EBF
+
+actor "Người dùng" as User
+
+node "Tầng Client\n(React 19 · Vite · port 5175)" as Client {
+  artifact "TanStack Query v5\n(server state · staleTime 5p)" as TQ
+  artifact "6 Zustand Stores\n(auth · cart · chat · catalog · wishlist · ui)" as Zustand
+  artifact "Floating Chat Widget" as ChatW
+}
+
+node "Tầng API Server\n(Node.js 20 · Express 4 · port 8888)" as API {
+  artifact "Middleware\n(Helmet · CORS · CSRF · Rate Limit\nbody parse · sanitize · compress)" as MW
+
+  node "17 Modules — Modular Monolith" as Mod {
+    artifact "auth · users · catalog · cart · orders\npayment · inventory · ai · reviews\nwishlist · discount-code · attribute\ncontent · upload · image\nsearch-history · admin" as ML
+  }
+
+  artifact "EventBus (pub/sub)" as EB
+  artifact "UnitOfWork\n(SELECT FOR UPDATE)" as UoW
+  artifact "Cron Jobs (node-cron)\n2AM daily · 3AM Sunday" as Cron
+}
+
+node "Tầng Dữ liệu" as Data {
+  database "MySQL 8\n(25 model · 62 migrations)" as DB
+  artifact "JSON Vector Store\n(vector-db.json · 1024 chiều)" as VS
+}
+
+cloud "Dịch vụ Ngoài" as Ext {
+  artifact "LLM API\n(OpenAI-compatible)" as LLM
+  artifact "Embedding\n(Jina v3 → e5-instruct → e5-base)" as Emb
+  artifact "Cổng thanh toán\n(MoMo · VNPay)" as Pay
+  artifact "Gmail SMTP" as Mail
+  artifact "Google OAuth 2.0" as GOAuth
+}
+
+User --> Client : HTTPS
+Client --> API : HTTP REST\nJSON + JWT
+API --> Data : SQL / JSON
+API --> Ext : HTTPS / SMTP
+
+@enduml

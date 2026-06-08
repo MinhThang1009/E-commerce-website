@@ -3244,28 +3244,25 @@ describe('ChatbotService.handleMessage — outer catch block fallback (lines 505
 // ════════════════════════════════════════════════════════════════════════════════
 
 describe('ChatbotService.clearSession', () => {
-  test('clearSession(sessionId) xóa đúng session → trả true', () => {
+  test('clearSession(sessionId) xóa đúng session → trả true', async () => {
     chatbotService.conversationHistory.set('sess-1', { messages: [], lastAccess: Date.now() });
-    expect(chatbotService.clearSession('sess-1')).toBe(true);
+    expect(await chatbotService.clearSession('sess-1')).toBe(true);
     expect(chatbotService.conversationHistory.has('sess-1')).toBe(false);
   });
 
-  test('clearSession(sessionId) trả false nếu session không tồn tại', () => {
-    expect(chatbotService.clearSession('nonexistent')).toBe(false);
+  test('clearSession(sessionId) trả false nếu session không tồn tại', async () => {
+    expect(await chatbotService.clearSession('nonexistent')).toBe(false);
   });
 
-  test('clearSession() không có sessionId → xóa toàn bộ', () => {
-    chatbotService.conversationHistory.set('a', { messages: [], lastAccess: Date.now() });
-    chatbotService.conversationHistory.set('b', { messages: [], lastAccess: Date.now() });
-    expect(chatbotService.clearSession()).toBe(true);
-    expect(chatbotService.conversationHistory.size).toBe(0);
+  test('clearSession() không có sessionId → throw Error (guard: tránh xóa toàn bộ server Map)', async () => {
+    await expect(chatbotService.clearSession()).rejects.toThrow('ai.sessionIdRequired');
+    await expect(chatbotService.clearSession(null)).rejects.toThrow('ai.sessionIdRequired');
   });
 });
 
 describe('ChatbotService.registerSession', () => {
-  test('lưu sessionId vào _registeredSession', () => {
-    chatbotService.registerSession('sess-ui');
-    expect(chatbotService._registeredSession).toBe('sess-ui');
+  test('gọi được mà không throw (dead-state field đã xóa, giữ FE compat)', () => {
+    expect(() => chatbotService.registerSession('sess-ui')).not.toThrow();
   });
 });
 

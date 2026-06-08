@@ -1,0 +1,66 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#bfdbfe',
+    'primaryTextColor': '#1e3a8a',
+    'primaryBorderColor': '#3b82f6',
+    'lineColor': '#3b82f6',
+    'secondaryColor': '#eff6ff',
+    'attributeBackgroundColorEven': '#eff6ff',
+    'attributeBackgroundColorOdd': '#ffffff'
+  }
+}}%%
+erDiagram
+  users |o--o{ chat_messages : "user_id (nullable)"
+  users |o--o{ search_histories : "user_id (nullable)"
+  users ||--o{ recently_viewed : "user_id"
+  users |o--o{ inventory_logs : "created_by (nullable)"
+  products ||--o{ recently_viewed : "product_id"
+  products ||--o{ inventory_logs : "product_id"
+  product_variants |o--o{ inventory_logs : "variant_id (nullable)"
+  orders |o--o{ inventory_logs : "order_id (nullable)"
+
+  chat_messages {
+    int id PK
+    int user_id FK "nullable"
+    varchar session_id "128 chars"
+    text content
+    enum role "user / assistant"
+    enum message_type "ai_chatbot / support_chat"
+    varchar intent
+    int response_time_ms
+    boolean is_fallback
+    boolean is_archived
+    text metadata
+  }
+
+  search_histories {
+    int id PK
+    int user_id FK "nullable"
+    varchar session_id "nullable"
+    varchar keyword
+    int results_count
+    datetime created_at
+  }
+
+  recently_viewed {
+    int id PK
+    int user_id FK
+    int product_id FK
+    datetime viewed_at
+    datetime created_at
+  }
+
+  inventory_logs {
+    int id PK
+    int product_id FK
+    int variant_id FK "nullable"
+    int order_id FK "nullable"
+    int created_by FK "nullable"
+    enum change_type "sale/restock/adjustment/return"
+    int change_amount
+    int previous_stock
+    int new_stock
+    varchar note "nullable"
+    datetime created_at
+  }

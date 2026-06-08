@@ -43,7 +43,7 @@ describe('validateMessage', () => {
     // Line 112: !/[\p{L}\p{N}]/u.test(trimmed) → false branch
     const r = validateMessage('!!! ???');
     expect(r.valid).toBe(false);
-    expect(r.reason).toContain('không hợp lệ');
+    expect(r.reason).toBe('ai.messageInvalid');
   });
 
   test('không hợp lệ khi chỉ là dấu phẩy và khoảng trắng', () => {

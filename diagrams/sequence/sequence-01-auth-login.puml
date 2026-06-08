@@ -1,0 +1,155 @@
+@startuml sequence-01-auth-login
+' Sơ đồ sequence — Đăng ký / Đăng nhập / Google OAuth (§3.1)
+' Ground-truth:
+'   auth/routes.js: register, login, google, logout, verify-otp,
+'     resend-verification, refresh-token, forgot-password, reset-password, me
+'   auth/services/auth-service.js — business logic
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 180
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+
+actor "Người dùng" as User
+participant "Frontend (React)" as FE
+participant "Backend API" as API
+participant "MySQL DB" as DB
+participant "Gmail SMTP" as Mail
+
+== Luồng 1 — Đăng ký ==
+
+User ->> FE : Nhập email + password + họ tên
+FE ->> API : POST /api/auth/register [validateRequest]
+API ->> DB : SELECT users WHERE email = ?
+alt Email đã tồn tại
+    DB -->> API : existing user
+    API -->> FE : 400 auth.emailInUse
+else Email chưa tồn tại
+    DB -->> API : null
+    note right of API
+      crypto.randomInt: OTP 6 chữ số
+      otpExpires = now + 10 phút
+    end note
+    API ->> DB : INSERT users
+    note right of DB
+      isEmailVerified = false
+      password băm bcrypt cost=12 (beforeCreate hook)
+      otpCode, otpExpires
+    end note
+    API ->> Mail : sendOtpEmail
+    note right of Mail
+      Await trong try/catch — lỗi chỉ log,\nKHÔNG block register
+      → User nhận email OTP qua hộp thư
+    end note
+    API -->> FE : 201 { message: auth.registerSuccess }
+    FE -->> User : Màn hình nhập OTP
+end
+
+User ->> FE : Nhập mã OTP 6 số
+FE ->> API : POST /api/auth/verify-otp [otpLimiter]
+API ->> DB : SELECT users WHERE email = ?
+DB -->> API : user row hoặc null (otpCode, otpExpires)
+note right of API
+  crypto.timingSafeEqual — chống timing attack
+  Generic error cho mọi trường hợp thất bại
+  (bảo vệ khỏi user enumeration)
+end note
+alt OTP sai, user không tồn tại, hoặc đã xác thực
+    API -->> FE : 400 auth.otpInvalidOrExpired
+else OTP đúng nhưng hết hạn
+    API -->> FE : 400 auth.otpExpired
+else OTP đúng và còn hiệu lực
+    API ->> DB : UPDATE users
+    note right of DB
+      isEmailVerified = true
+      otpCode = NULL
+      otpExpires = NULL
+    end note
+    API -->> FE : 200 { message: auth.emailVerified }
+    FE -->> User : Xác thực thành công
+end
+
+== Luồng 2 — Đăng nhập ==
+
+User ->> FE : Nhập email + password
+FE ->> API : POST /api/auth/login [validateRequest]
+API ->> DB : SELECT users WHERE email = ?
+DB -->> API : user row hoặc null
+alt User không tồn tại hoặc password sai
+    note right of API
+      user.comparePassword (bcrypt) = false
+      hoặc user = null — cùng 1 error message
+    end note
+    API -->> FE : 401 auth.invalidCredentials
+else Email chưa xác thực
+    API -->> FE : 401 auth.emailNotVerified
+else Tài khoản bị vô hiệu hóa
+    API -->> FE : 401 auth.accountDisabled
+else Đăng nhập thành công
+    note right of API
+      signAccessToken — TTL = JWT_EXPIRES_IN
+      signRefreshToken — stateless JWT
+    end note
+    API -->> FE : 200 { token, refreshToken, user }
+    note right of API
+      Set-Cookie: refreshToken (httpOnly, Secure)\nin HTTP response header
+    end note
+    FE -->> User : Đăng nhập thành công
+end
+
+== Luồng 3 — Google OAuth ==
+
+User ->> FE : Nhấn "Đăng nhập bằng Google"
+FE ->> API : POST /api/auth/google { token: googleIdToken }
+note right of API
+  Thử verifyIdToken() trước
+  Fallback verifyAccessToken() nếu lỗi
+end note
+alt Token Google không hợp lệ
+    API -->> FE : 401 auth.googleAuthFailed
+else email_verified = false (Google báo tường minh)
+    API -->> FE : 401 auth.googleAuthFailed
+else Token hợp lệ
+    API ->> DB : SELECT users WHERE googleId=? OR email=?
+    DB -->> API : user row hoặc null
+    alt User chưa tồn tại
+        API ->> DB : INSERT users
+        note right of DB
+          googleId, email, firstName, lastName
+          avatar, isEmailVerified = true
+        end note
+    else User đã tồn tại — merge thông tin Google
+        note right of API
+          Cập nhật googleId, avatar, isEmailVerified
+          nếu chưa có (không ghi đè dữ liệu sẵn có)
+        end note
+        API ->> DB : UPDATE users (nếu cần merge)
+    end
+    alt Tài khoản bị vô hiệu hóa
+        API -->> FE : 401 auth.accountDisabled
+    else Thành công
+        note right of API
+          signAccessToken + signRefreshToken
+        end note
+        API -->> FE : 200 { token, refreshToken, user }
+        note right of FE
+          Set-Cookie: refreshToken (httpOnly, Secure)
+        end note
+        FE -->> User : Đăng nhập thành công
+    end
+end
+
+@enduml

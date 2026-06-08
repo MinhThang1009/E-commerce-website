@@ -1,0 +1,54 @@
+@startuml state-03-product
+' Sơ đồ trạng thái — Trạng thái sản phẩm (products.status)
+' Verify vs backend/src/modules/admin/services/admin-product-service.js
+'   (createProduct L114 default active, duplicateProduct L1065 force draft,
+'    updateProduct L439 passthrough, toggleProductStatus L1127 validStatuses)
+' Verify vs backend/src/modules/admin/validators/admin-validator.js
+'   (updateProductSchema L44 passthrough — không validate status)
+hide empty description
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+  ArrowColor #4D4D4D
+}
+
+state "tạo sản phẩm" as init <<choice>>
+[*] --> init
+
+state "Đang bán\n(active)" as active
+state "Không bán\n(inactive)" as inactive
+state "Nháp\n(draft)" as draft
+
+init --> active : [createProduct — mặc định]
+init --> draft  : [duplicateProduct — nhân bản]
+
+active   --> inactive : staff update [target=inactive]
+inactive --> active   : staff update [target=active]
+
+active   --> draft    : staff update [target=draft]
+draft    --> active   : staff update [target=active]
+
+inactive --> draft    : staff update [target=draft]
+draft    --> inactive : staff update [target=inactive]
+
+active   --> [*] : deleteProduct / soft delete
+inactive --> [*] : deleteProduct / soft delete
+draft    --> [*] : deleteProduct / soft delete
+
+/'
+note bottom
+  • createProduct: status mặc định 'active' nếu không truyền (L114).
+  • duplicateProduct (nhân bản): luôn khởi tạo 'draft' (L1065).
+  • toggleProductStatus (L1127): validStatuses = ['active','inactive','draft'].
+    Default toggle (không truyền status): active→inactive; draft/inactive→active.
+  • updateProduct (L439): cho phép set bất kỳ status nào vì
+    updateProductSchema dùng .passthrough() — không validate status field.
+  • 'archived' tồn tại trong DB ENUM nhưng không có code path nào set.
+  • Sản phẩm status != 'active' bị chặn đặt hàng tại createOrder (L186/L214).
+end note
+'/
+@enduml

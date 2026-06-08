@@ -1,0 +1,47 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#DAE8FC',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#6C8EBF',
+    'lineColor': '#4D4D4D'
+  },
+  'block': {'padding': 12}
+}}%%
+block-beta
+  columns 9
+
+  space:4
+  E2E["BE E2E\n5 suites · 100 tests\n~22s | MySQL thật"]:1
+  space:4
+
+  space:3
+  API["BE API HTTP\n39 suites · 675 tests\n~160s | MySQL thật"]:3
+  space:3
+
+  space:2
+  INT["BE Integration\n38 suites · 210 tests\n~57s | MySQL thật"]:5
+  space:2
+
+  space:1
+  UNIT["BE Unit\n215 suites · 5.381 tests\n~12s | Mock"]:7
+  space:1
+
+  FE["FE Component\n28 suites · 937 tests\n~14s | jsdom"]:9
+
+  TOTAL["Tổng: 325 suites · ~7.303 tests"]:9
+
+  space:1
+  MUT["Mutation Testing\nStryker · ngưỡng 70%"]:3
+  space:1
+  PROP["Property-based\nfast-check · 25 invariants"]:3
+  space:1
+
+  style E2E fill:#dbeafe,stroke:#93c5fd
+  style API fill:#bfdbfe,stroke:#60a5fa
+  style INT fill:#93c5fd,stroke:#3b82f6
+  style UNIT fill:#60a5fa,stroke:#2563eb
+  style FE fill:#3b82f6,stroke:#1d4ed8,color:#ffffff
+  style TOTAL fill:#f0f9ff,stroke:#0284c7
+  style MUT fill:#fef9c3,stroke:#ca8a04
+  style PROP fill:#fef9c3,stroke:#ca8a04

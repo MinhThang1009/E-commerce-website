@@ -6,6 +6,7 @@
  */
 const { z } = require('zod');
 const { AppError } = require('@middlewares/error-handler');
+const { t } = require('@utils/i18n');
 
 /**
  * Middleware validate request body với Zod schema.
@@ -19,7 +20,11 @@ const validateRequest = (schema, statusCode = 400, source = 'body') => {
     const result = schema.safeParse(req[source]);
 
     if (!result.success) {
-      const errorMessage = result.error.issues.map((issue) => issue.message).join(', ');
+      // Translate từng issue riêng lẻ trước khi join — tránh composite key không hợp lệ
+      const locale = req.locale || 'vi';
+      const errorMessage = result.error.issues
+        .map((issue) => t(issue.message, locale) || issue.message)
+        .join(', ');
       return next(new AppError(errorMessage, statusCode));
     }
 

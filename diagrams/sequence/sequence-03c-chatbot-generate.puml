@@ -1,0 +1,78 @@
+@startuml sequence-03c-chatbot-generate
+' Sơ đồ sequence — Chatbot RAG (3c): Generate & Persist (§3.3c)
+' Ground-truth: chatbot-service.js:327-379, augmentAndGenerate:685-800
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 150
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+skinparam defaultFontSize 13
+skinparam noteFontSize 12
+skinparam sequenceParticipantFontSize 13
+
+actor "Người dùng" as User
+participant "Frontend (React)" as FE
+participant "Backend API" as API
+participant "MySQL DB" as DB
+participant "LLM API\n(OpenAI-compatible)" as LLM
+
+note over API: Tiếp theo sau bước ⑤ — products[] + finalQuery đã có
+
+== ⑥  Generate (A+G trong RAG) ==
+
+note right of API: Promise.race(augmentAndGenerate, budget timer 30s)
+
+alt LLM DOWN — không có provider
+  note right of API: simpleKeywordMatch: tokenize → filter → intent format (💰📋🔍🌟)
+  API -->> FE : 200  keyword fallback response
+else LLM UP
+  API ->> DB : _getCatalogData  (cache TTL 5 phút)
+  DB -->> API : brands + categories
+
+  note right of API
+    ⑥a Augment — buildAugmentedPrompt:
+    inject products + store info → JSON output schema
+  end note
+
+  API ->> LLM : ⑥b POST /chat/completions\n[system + history + RAG prompt]\ntemperature=0.3  max_tokens=800  json_object
+  alt Thành công
+    LLM -->> API : JSON response
+    note right of API: parseLLMOutput: hallucination detect + dedup
+  else 429 / 402 / 500 / 503 — lỗi tạm thời
+    note right of API: Provider rotation → thử provider tiếp theo
+    API ->> LLM : POST /chat/completions  [provider 2, ...]
+    alt Tất cả providers thất bại
+      note right of API: simpleKeywordMatch fallback
+    end
+  else 400 / 401 — lỗi cố định
+    note right of API: Dừng ngay → simpleKeywordMatch fallback
+  end
+else Budget timer hết
+  note right of API: simpleKeywordMatch fallback — không để user chờ
+  API -->> FE : 200  keyword fallback response
+end
+
+== ⑦  Persist ==
+
+opt sessionId tồn tại
+  note right of API: update RAM Map — giữ tối đa 10 turns · _evictStaleSessions
+end
+
+API ->> DB : ChatMessage.bulkCreate  (fire-and-forget)
+API -->> FE : 200  { response, products[], suggestions[], intent }
+FE -->> User : Hiển thị câu trả lời + sản phẩm gợi ý
+
+@enduml

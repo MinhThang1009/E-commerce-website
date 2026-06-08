@@ -1,0 +1,54 @@
+%%{init: {"flowchart": {"wrappingWidth": 215, "padding": 10}, "themeVariables": {"fontSize": "16px"}}}%%
+flowchart TB
+    User(["👤 Khách / Khách hàng<br/>(Browser)"])
+    Admin(["👤 Staff / Admin<br/>(Back-office)"])
+
+    subgraph SYS["Hệ thống TechStore"]
+        FE["Frontend — React 19 + Vite 8<br/>13 features · floating chat widget"]
+        subgraph APIBOX["API Server — Express 4 + Node.js 22 LTS · Modular Monolith · 17 modules"]
+            API["Router + Controller<br/>Middleware · DI"]
+            RAG["Module AI — RAG Chatbot<br/>Retrieve (Hybrid Search) → Generate (LLM)"]
+        end
+        DB[("MySQL 8<br/>Sequelize · 25 models")]
+        VEC[("Vector store<br/>vector-db.json · 1024d")]
+        EMBSVC["Embedding Service<br/>(unified · 1024d)"]
+        DISK[("/uploads/")]
+    end
+
+    LLM["LLM<br/>(OpenAI-compatible)"]
+    PROV["Embedding Provider<br/>Jina v3 → e5-large-instruct → e5-large"]
+    PAY["Thanh toán<br/>MoMo (IPN) · VNPay (IPN)"]
+    EXT["Google OAuth · Gmail SMTP"]
+
+    User <-->|"HTTP"| FE
+    Admin <-->|"HTTP"| FE
+    FE <-->|"HTTP REST / JSON · Bearer JWT"| API
+    API <-->|"Sequelize ORM"| DB
+    API -->|"upsert (Sequelize model hooks)"| VEC
+    API <-->|"user message · kết quả tư vấn"| RAG
+    RAG <-->|"hybrid search (cosine + BM25)"| VEC
+    RAG <-->|"rewrite query · generate response"| LLM
+    RAG <-->|"đọc catalog · ghi ChatMessage"| DB
+    VEC -->|"embed (query + passage)"| EMBSVC
+    EMBSVC -.->|"1024d vector"| VEC
+    EMBSVC -->|"HTTP (chain + fallback)"| PROV
+    PROV -.->|"1024d vector"| EMBSVC
+    API <-->|"fs read/write"| DISK
+    API <-->|"HMAC sign + IPN callback"| PAY
+    API <-->|"OAuth verify + SMTP"| EXT
+
+    style SYS fill:#f8fafc,stroke:#94a3b8,color:#0f172a
+    style FE fill:#e3f2fd,stroke:#1565c0,color:#0f172a
+    style APIBOX fill:#dbeafe,stroke:#1565c0,color:#0f172a
+    style API fill:#1565c0,stroke:#0d47a1,color:#fff
+    style RAG fill:#e8eefb,stroke:#0d47a1,color:#0f172a
+    style DB fill:#e1f0fb,stroke:#1976d2,color:#0f172a
+    style VEC fill:#e1f0fb,stroke:#1976d2,color:#0f172a
+    style DISK fill:#eef2f7,stroke:#94a3b8,color:#0f172a
+    style EMBSVC fill:#e0f2f1,stroke:#00897b,color:#0f172a
+    style PROV fill:#e8f5e9,stroke:#2e7d32,color:#0f172a
+    style LLM fill:#e8f5e9,stroke:#2e7d32,color:#0f172a
+    style PAY fill:#fff4e5,stroke:#b76e00,color:#0f172a
+    style EXT fill:#fff4e5,stroke:#b76e00,color:#0f172a
+    style User fill:#1976d2,stroke:#0d47a1,color:#fff
+    style Admin fill:#0d47a1,stroke:#0d47a1,color:#fff

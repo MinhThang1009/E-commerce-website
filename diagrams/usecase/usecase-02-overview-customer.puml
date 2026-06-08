@@ -60,6 +60,7 @@ customer -- UC_searchhist
 customer -- UC_feedback
 customer -- UC_upload
 
+/'
 note left of customer
   • Customer kế thừa toàn bộ năng lực Guest (duyệt/tìm/chat/đăng ký/đăng nhập;
     gửi phản hồi là endpoint công khai — guest cũng dùng được).
@@ -72,4 +73,5 @@ note left of customer
   • Ước tính phí ship + thêm SP vào giỏ qua chatbot: chi tiết ở use case
     per-module (uc-12 orders, uc-17 AI).
 end note
+'/
 @enduml

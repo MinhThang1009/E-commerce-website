@@ -325,6 +325,7 @@ describe('authLimiter handler (lines 96-97)', () => {
     jest.resetModules();
 
     capturedAuthOptions = null;
+    const capturedAll = [];
     mockLoggerInstance = {
       info: jest.fn(),
       warn: jest.fn(),
@@ -334,9 +335,7 @@ describe('authLimiter handler (lines 96-97)', () => {
 
     jest.doMock('express-rate-limit', () => {
       return jest.fn().mockImplementation((options) => {
-        if (options?.handler) {
-          capturedAuthOptions = options;
-        }
+        if (options?.handler) capturedAll.push(options);
         if (options?.store?.init) {
           options.store.init({ windowMs: options.windowMs || 60000 });
         }
@@ -349,9 +348,12 @@ describe('authLimiter handler (lines 96-97)', () => {
     });
 
     jest.doMock('@utils/logger', () => mockLoggerInstance);
+    jest.doMock('@utils/i18n', () => ({ t: (key) => key }));
 
     require('./rate-limiter');
     await new Promise((r) => setImmediate(r));
+    // authLimiter có windowMs = 60 * 60 * 1000 (1 giờ) — unique trong tất cả limiters
+    capturedAuthOptions = capturedAll.find((o) => o.windowMs === 60 * 60 * 1000) || null;
   });
 
   afterAll(() => {
@@ -379,22 +381,19 @@ describe('authLimiter handler (lines 96-97)', () => {
     });
   });
 
-  it('handler trả về statusCode và message từ options', () => {
+  it('handler trả về statusCode và i18n message (không dùng options.message)', () => {
     const handler = capturedAuthOptions.handler;
-    const req = { ip: '192.168.1.1', body: {} };
+    const req = { ip: '192.168.1.1', body: {}, locale: 'vi' };
     const res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
     };
-    const options = {
-      statusCode: 429,
-      message: { status: 'error', message: 'Quá nhiều lần đăng nhập thất bại' },
-    };
+    const options = { statusCode: 429 };
 
     handler(req, res, jest.fn(), options);
 
     expect(res.status).toHaveBeenCalledWith(429);
-    expect(res.json).toHaveBeenCalledWith(options.message);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
   });
 
   it('handler hoạt động khi req.body không có email (undefined)', () => {
@@ -611,7 +610,8 @@ describe('rateLimiter — NODE_ENV=development ternary branches (lines 73, 86)',
   });
 
   it('authLimiter max = 100 khi NODE_ENV=development', () => {
-    const authConfig = capturedLimiters.find((l) => l.hasHandler);
+    // Sau khi tất cả limiters dùng handler, tìm authLimiter bằng max=100 (chỉ authLimiter có 100)
+    const authConfig = capturedLimiters.find((l) => l.max === 100);
     expect(authConfig).toBeDefined();
     expect(authConfig.max).toBe(100);
   });

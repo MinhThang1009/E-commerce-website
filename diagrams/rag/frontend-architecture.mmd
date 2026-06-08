@@ -1,0 +1,38 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#DAE8FC',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#6C8EBF',
+    'lineColor': '#4D4D4D',
+    'secondaryColor': '#eff6ff',
+    'clusterBkg': '#eff6ff',
+    'clusterBorder': '#6C8EBF'
+  }
+}}%%
+flowchart TB
+  subgraph F["13 Feature Folders — React 19 + TypeScript"]
+    direction LR
+    F1["api/ — TanStack Query hooks + apiClient"]
+    F2["components/ + hooks/ + pages/ + types/"]
+    F3["auth · catalog · cart · checkout · orders\npayment · reviews · ai · users · wishlist\ncontent · upload · admin"]
+    RULE["Quy tắc: Không có cross-feature imports"]
+  end
+
+  subgraph S["State Management"]
+    direction LR
+    TQ["TanStack Query v5\nserver state · staleTime 5p · gcTime 10p"]
+    ZS["6 Zustand Stores + Immer\nauth · cart · chat · catalog · wishlist · ui"]
+  end
+
+  subgraph SH["Shared Infrastructure"]
+    direction LR
+    SC["src/components/\ncommon · layout · routing · ui · icons · sections"]
+    SU["src/hooks/ · src/utils/"]
+  end
+
+  AC["API Client — Axios singleton\nRequest interceptor: đính kèm Bearer token\nResponse interceptor: bắt 401 và xử lý logout"]
+
+  F --> S
+  S --> SH
+  SH --> AC

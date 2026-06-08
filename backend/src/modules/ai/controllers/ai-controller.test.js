@@ -89,11 +89,10 @@ describe('AIController', () => {
       await controller.handleMessage(req, res, next);
 
       // Lines 29-30: logger.warn được gọi và trả về 400
-      expect(logger.warn).toHaveBeenCalledWith('Chatbot input không hợp lệ:', expect.any(Object));
+      expect(logger.warn).toHaveBeenCalledWith('Chatbot error:', expect.any(Object));
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'error', message: 'Tin nhắn quá dài hoặc không hợp lệ' }),
-      );
+      // t(err.message) = null (không phải i18n key) → fallback t('ai.messageFailed')
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }));
     });
 
     test('success → trả về status success và data', async () => {
@@ -184,15 +183,12 @@ describe('AIController', () => {
       expect(res.json).toHaveBeenCalledWith({ status: 'success', message: 'Session đã xóa' });
     });
 
-    test('clearSession trả về "Session không tồn tại" khi cleared=false', async () => {
-      aiService.clearSession = jest.fn().mockReturnValue(false);
-      const req = { body: { sessionId: 'not-exist' } };
+    test('clearSession → 200 idempotent dù session không trong Map (DB cleanup vẫn chạy)', async () => {
+      aiService.clearSession = jest.fn().mockResolvedValue(false);
+      const req = { body: { sessionId: 'not-exist' }, locale: 'vi' };
       const res = makeRes();
-      await controller.clearSession(req, res);
-      expect(res.json).toHaveBeenCalledWith({
-        status: 'success',
-        message: 'Session không tồn tại',
-      });
+      await controller.clearSession(req, res, jest.fn());
+      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }));
     });
   });
 
@@ -210,13 +206,15 @@ describe('AIController', () => {
       expect(res.json).toHaveBeenCalledWith({ status: 'success' });
     });
 
-    test('sessionId falsy → trả về fail', async () => {
+    test('sessionId falsy → route-layer Zod schema chặn trước khi vào controller (không test tại controller)', async () => {
+      // sessionSchema yêu cầu sessionId min(1) — validateRequest middleware reject trước.
+      // Test này chỉ xác nhận controller không tự reject khi thiếu sessionId.
       aiService.registerSession = jest.fn();
       const req = { body: {} };
       const res = makeRes();
       await controller.registerSession(req, res);
-      expect(aiService.registerSession).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({ status: 'fail', message: 'sessionId required' });
+      expect(aiService.registerSession).toHaveBeenCalledWith(undefined);
+      expect(res.json).toHaveBeenCalledWith({ status: 'success' });
     });
   });
 

@@ -48,17 +48,21 @@ staff -- UC_refund
 '   params đã ký qua redirect (verifyReturnUrl là HMAC cục bộ, hệ thống không gọi ra cổng).
 UC_ipn -- gateway
 
+/'
 note bottom of UC_ipn
   IPN xác nhận thanh toán (server-to-server: verify chữ ký + khớp số tiền, idempotent):
   - Thành công: order.status = 'processing' + paymentStatus = 'paid'
     → tăng discount.usedCount, xóa giỏ hàng, gửi email xác nhận.
   - Thất bại: chỉ paymentStatus = 'failed' (order.status KHÔNG đổi).
 end note
+'/
 
+/'
 note bottom of UC_return
   Cổng redirect trình duyệt KH về site (KH gọi endpoint; cổng cung cấp params đã ký).
   MoMo: chỉ redirect (đổi trạng thái ở IPN).
   VNPay: CÓ mutate state — verify số tiền + mark paid, rồi tăng
     discount.usedCount, xóa giỏ, gửi email (giống IPN success).
 end note
+'/
 @enduml

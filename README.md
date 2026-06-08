@@ -28,7 +28,7 @@
 **Điểm nổi bật:**
 - Kiến trúc Modular Monolith — 17 backend modules, DI pattern, Event-Driven Communication
 - AI Chatbot với Hybrid RAG (cosine similarity + BM25 keyword, 1024-dim vectors)
-- **5.487 test cases** (259 suites, 5 tầng), coverage 100% lines / 99,81% branches unit, CI/CD với GitHub Actions
+- **~7.303 test cases** (325 suites, 5 tầng), coverage 99.7%+ lines/statements (local), CI/CD với GitHub Actions
 - Hỗ trợ đa ngôn ngữ (vi/en), dark mode, responsive
 
 ---
@@ -60,7 +60,7 @@ Route → Page (lazy-loaded) → Components
 
 | Biện pháp | Chi tiết |
 |---|---|
-| **5.487 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
+| **~7.303 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
 | **Coverage thresholds** | Statements ≥97%, Lines ≥97%, Branches ≥85%, Functions ≥95% |
 | **ESLint strict** | `--max-warnings 0` — không cho phép warning tồn tại |
 | **Pre-commit hooks** | Secret scan + architecture audit (chặn service import ORM trực tiếp) + lint-staged |
@@ -141,7 +141,7 @@ cp frontend/.env.example frontend/.env
 
 ```bash
 cd backend
-npm run db:migrate    # Tạo schema từ 61 migrations
+npm run db:migrate    # Tạo schema từ 62 migrations
 npm run db:seed       # Import seed data (sản phẩm, danh mục, users mẫu)
 ```
 
@@ -243,14 +243,15 @@ validate → normalize (expandAbbreviations) → injection/off-topic check
 
 | Suite | Suites | Tests | DB | Runtime |
 |---|---|---|---|---|
-| BE Unit Tests | 158 | 3.745 | Mock | ~20s |
-| BE Integration Tests | 36 | 184 | MySQL thật | ~55s |
-| BE API HTTP Tests | 39 | 700 | MySQL thật | ~230s |
-| BE E2E Tests | 5 | 100 | MySQL thật | ~25s |
-| FE Component Tests | 21 | 758 | jsdom | ~12s |
-| **Tổng** | **259** | **5.487** | | |
+| BE Unit Tests | 215 | 5.381 | Mock | ~12s |
+| BE Integration Tests | 38 | 210 | MySQL thật | ~57s |
+| BE API HTTP Tests | 39 | 675 | MySQL thật | ~160s |
+| BE E2E Tests | 5 | 100 | MySQL thật | ~22s |
+| FE Component Tests | 28 | 937 | jsdom | ~14s |
+| **Tổng** | **325** | **~7.303** | | |
 
 Coverage threshold (CI): Statements >= 97%, Lines >= 97%, Branches >= 85%, Functions >= 95%.
+Coverage threshold (local): Statements/Lines/Branches >= 99.7%, Functions >= 99.4%.
 
 Test descriptions viết bằng **tiếng Việt** theo quy định đồ án.
 
@@ -298,7 +299,7 @@ e-commerce-website/
 │   │   ├── config/             # database.js, sequelize.js, swagger.js
 │   │   ├── constants/          # shipping, OTP, pagination limits
 │   │   ├── locales/            # vi.json / en.json
-│   │   └── migrations/         # 61 Sequelize migrations
+│   │   └── migrations/         # 62 Sequelize migrations
 │   ├── data/                   # vector-db.json, SQL dumps
 │   ├── docs/                   # openapi.json (auto-generated)
 │   └── scripts/                # rebuild-db.js, index-products.js, export-seed.js
@@ -327,6 +328,8 @@ e-commerce-website/
 │   ├── index.html
 │   └── vite.config.ts
 │
+├── diagrams/                   # UML diagrams (usecase/, state/, sequence/, erd/, component/, deployment/)
+├── verify-workflow/            # verify-then-draw framework
 ├── scripts/                    # audit-architecture.sh, lint-migrations.sh
 ├── .github/workflows/ci.yml    # GitHub Actions CI
 ├── .husky/                     # pre-commit, commit-msg, pre-push hooks
@@ -385,5 +388,8 @@ Export JSON: `cd backend && npm run docs:openapi` → tạo `docs/openapi.json`
 |---|---|
 | [`STRUCTURE.md`](STRUCTURE.md) | Kiến trúc chi tiết, DB schema, data flow, cross-module deps |
 | [`TESTING_STRATEGY.md`](TESTING_STRATEGY.md) | Chiến lược test 5 tầng, patterns, CI constraints |
+| [`QUALITY_CHECKS.md`](QUALITY_CHECKS.md) | Mutation testing (Stryker) + property-based (fast-check) scores per-module |
+| [`RAG_CHATBOT_PIPELINE.md`](RAG_CHATBOT_PIPELINE.md) | RAG pipeline 7 bước + 53 edge case chi tiết |
+| [`PIPELINE_TRACE_EXAMPLES.md`](PIPELINE_TRACE_EXAMPLES.md) | Trace 22 path + Node Reference 43 node (chatbot) |
 | [`CLAUDE.md`](CLAUDE.md) | Navigation entry point cho AI agents |
 | [`DIAGRAMS.md`](DIAGRAMS.md) | Mermaid diagrams (Use Case, Sequence, ERD, Flow) |

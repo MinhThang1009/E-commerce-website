@@ -53,6 +53,7 @@ customer -- UC_validate
 customer -- UC_sync
 customer -- UC_merge
 
+/'
 note right of UC_get
   GET /api/cart — optionalAuthenticate.
   User đã login + có cookie sessionId guest
@@ -60,7 +61,9 @@ note right of UC_get
   Guest không có sessionId → trả giỏ trống.
   GET /api/cart/count — gộp chung UC.
 end note
+'/
 
+/'
 note right of UC_add
   POST /api/cart — optionalAuthenticate.
   Validate stock trước khi add (2 lần).
@@ -69,20 +72,26 @@ note right of UC_add
   Guest không có sessionId → tạo UUID mới,
   set cookie sessionId qua response.
 end note
+'/
 
+/'
 note right of UC_validate
   GET /api/cart/validate — optionalAuthenticate.
   Trả { hasIssues, items } với per-item flags:
   priceChanged, outOfStock, quantityExceedsStock.
   KHÔNG lock stock (lock thật ở orders module).
 end note
+'/
 
+/'
 note right of UC_sync
   POST /api/cart/sync — optionalAuthenticate.
   Yêu cầu user đăng nhập (guest → 401).
   Replace toàn bộ items bằng danh sách từ client.
 end note
+'/
 
+/'
 note right of UC_merge
   POST /api/cart/merge — optionalAuthenticate.
   Yêu cầu user đăng nhập (guest → 401).
@@ -90,4 +99,5 @@ note right of UC_merge
   (cap maxStock khi maxStock>0; maxStock=0 giữ qty).
   Idempotent: gọi nhiều lần = no-op lần 2+.
 end note
+'/
 @enduml

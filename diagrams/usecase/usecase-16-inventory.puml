@@ -30,6 +30,7 @@ staff -- UC_restock
 staff -- UC_logs
 admin -- UC_logs
 
+/'
 note right of UC_restock
   POST /api/inventory/products/:productId/restock — chỉ Staff.
   Body: quantity (số nguyên dương, bắt buộc),
@@ -39,7 +40,9 @@ note right of UC_restock
   ⚠ Known (INV-2): load variant ngoài transaction, chưa SELECT FOR UPDATE
     → concurrent restock cùng variant có thể lost-update (rủi ro thấp).
 end note
+'/
 
+/'
 note right of UC_logs
   GET /api/inventory/logs — Admin + Staff (cả hai).
   Filter: productId?, changeType?. Max 100 records/page.
@@ -47,4 +50,5 @@ note right of UC_logs
     'return' (hoàn kho khi đơn bị hủy), 'adjustment' (điều chỉnh thủ công).
   InventoryLog là immutable (chỉ INSERT, không UPDATE/DELETE).
 end note
+'/
 @enduml

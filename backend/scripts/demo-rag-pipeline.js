@@ -88,7 +88,7 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
   const axios   = require('axios');
   const baseUrl = process.env.LLM_BASE_URL;
   const demoProviders = [];
-  if (process.env.LLM_API_KEY && baseUrl && process.env.LLM_MODEL_1) {
+  if (process.env.LLM_API_KEY && baseUrl) {
     demoProviders.push({ key: process.env.LLM_API_KEY, url: `${baseUrl}/chat/completions`, model: process.env.LLM_MODEL_1 });
   }
   if (process.env.LLM_MODEL_2) {
@@ -121,7 +121,10 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
   console.log(step(1, 'Validate Message'));
   const v = validateMessage(query);
   if (!v.valid) {
-    console.log(fail(`Không hợp lệ: ${v.reason}`));
+    // v.reason là i18n key (vd: 'ai.messageEmpty') — resolve để hiển thị VN text
+    const { t: tDemo } = require('@utils/i18n');
+    const reasonText = tDemo(v.reason, 'vi') || v.reason;
+    console.log(fail(`Không hợp lệ: ${reasonText}`));
     console.log(sub('Pipeline dừng → trả HTTP 400 cho client'));
     return;
   }
@@ -219,9 +222,10 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
   }
 
   const PRONOUN_RE = /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
-  const hasPronoun = PRONOUN_RE.test(normalized);
   const BRAND_RE = /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
-  const isImplicitFollowup = !hasPronoun && normalized.trim().length <= 50 && !BRAND_RE.test(normalized);
+  const hasBrand = BRAND_RE.test(normalized);
+  const hasPronoun = PRONOUN_RE.test(normalized) && !hasBrand;
+  const isImplicitFollowup = !hasPronoun && normalized.trim().length <= 50 && !hasBrand;
   const needsEnrich = hasPronoun || isImplicitFollowup;
 
   console.log(kv('  Đại từ chỉ định:', hasPronoun
@@ -268,7 +272,7 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
 
   // stripNegation CHỈ cho embedding (hybridSearch). rewriteQuery + finalQuery (LLM) giữ phủ định.
   const stripNeg = (q) => q
-    .replace(/(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/igu, ' ')
+    .replace(/(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|hay|hoặc|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)\b|\s*$)/igu, ' ')
     .trim() || q;
   const queryForRetrieval = stripNeg(enrichedQuery);
 
@@ -463,11 +467,11 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
       try {
         const { Brand, Category } = require('../src/models');
         const [brands, cats] = await Promise.all([
-          Brand.findAll({ attributes: ['nameVi'], raw: true }),
-          Category.findAll({ attributes: ['nameVi'], where: { parentId: null }, raw: true }),
+          Brand.findAll({ attributes: ['nameVi', 'nameEn'], raw: true }),
+          Category.findAll({ attributes: ['nameVi', 'nameEn'], raw: true }),
         ]);
-        if (brands.length) brandsStr    = brands.map(b => b.nameVi).filter(Boolean).join(', ');
-        if (cats.length)   categoriesStr = cats.map(c => c.nameVi).filter(Boolean).join(', ');
+        if (brands.length) brandsStr    = brands.map(b => b.nameVi || b.nameEn).filter(Boolean).join(', ');
+        if (cats.length)   categoriesStr = cats.map(c => c.nameVi || c.nameEn).filter(Boolean).join(', ');
       } catch { /* fallback empty — giống real code khi DB lỗi */ }
 
       const systemContent = `Bạn là nhân viên tư vấn của ${storeName} — cửa hàng công nghệ chuyên điện thoại, máy tính bảng và laptop.
@@ -759,18 +763,16 @@ function printServerResponse(res) {
     if (watchSessionId) {
       await initSession(watchSessionId);
     } else {
-      // Auto-detect session mới nhất
-      const res = await httpGet('http://localhost:8888/api/chatbot/session/latest');
-      if (res?.data?.sessionId) await initSession(res.data.sessionId);
-      else console.log(sub('Chưa có session nào — chờ UI gửi tin đầu tiên...'));
+      // /session/latest đã bị xóa — cần truyền --session-id=<id> thủ công
+      console.log(warn('Auto-detect session không còn hỗ trợ. Dùng: node demo-rag-pipeline.js --watch --session-id=<sessionId>'));
+      console.log(sub('Chờ UI gửi tin và truyền session ID qua --session-id...'));
     }
 
     const poll = async () => {
-      // Kiểm tra xem UI có tạo session mới không (khi user xóa chat)
-      const latestRes = await httpGet('http://localhost:8888/api/chatbot/session/latest');
-      const latestSid = latestRes?.data?.sessionId;
+      // /session/latest đã bị xóa — không thể auto-detect session mới
+      // Chỉ poll session đang theo dõi (nếu có)
+      const latestSid = null; // endpoint removed
       if (latestSid && latestSid !== watchSessionId) {
-        // Session đổi → follow session mới, reset count
         console.log(`\n${C.yellow}[Watch]${C.reset} Session UI đổi → follow session mới: ${C.dim}${latestSid}${C.reset}`);
         await initSession(latestSid);
         return;

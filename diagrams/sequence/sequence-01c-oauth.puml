@@ -1,0 +1,70 @@
+@startuml sequence-01c-oauth
+' Sơ đồ sequence — Đăng nhập Google OAuth (§3.1c)
+' Ground-truth: auth/routes.js + auth/services/auth-service.js
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 180
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+
+actor "Người dùng" as User
+participant "Frontend (React)" as FE
+participant "Backend API" as API
+participant "MySQL DB" as DB
+
+== Luồng 3 — Google OAuth ==
+
+User ->> FE : Nhấn "Đăng nhập bằng Google"
+FE ->> API : POST /api/auth/google { token: googleIdToken }
+note right of API
+  Thử verifyIdToken() trước
+  Fallback verifyAccessToken() nếu lỗi
+end note
+alt Token Google không hợp lệ
+    API -->> FE : 401 auth.googleAuthFailed
+else email_verified = false (Google báo tường minh)
+    API -->> FE : 401 auth.googleAuthFailed
+else Token hợp lệ
+    API ->> DB : SELECT users WHERE googleId=? OR email=?
+    DB -->> API : user row hoặc null
+    alt User chưa tồn tại
+        API ->> DB : INSERT users
+        note right of DB
+          googleId, email, firstName, lastName
+          avatar, isEmailVerified = true
+        end note
+    else User đã tồn tại — merge thông tin Google
+        note right of API
+          Cập nhật googleId, avatar, isEmailVerified
+          nếu chưa có (không ghi đè dữ liệu sẵn có)
+        end note
+        API ->> DB : UPDATE users (nếu cần merge)
+    end
+    alt Tài khoản bị vô hiệu hóa
+        API -->> FE : 401 auth.accountDisabled
+    else Thành công
+        note right of API
+          signAccessToken + signRefreshToken
+        end note
+        API -->> FE : 200 { token, refreshToken, user }
+        note right of API
+          Set-Cookie: refreshToken (httpOnly, Secure)\nin HTTP response header
+        end note
+        FE -->> User : Đăng nhập thành công
+    end
+end
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml state-02-payment
+' Sơ đồ trạng thái — Trạng thái thanh toán (payment_status)
+' Verify vs backend/src/modules/payment/services/payment-service.js
+'   (handleMomoIPN L142, handleVnPayIPN L301, handleVnPayReturn L229,
+'    createRefund L366, _canRefund L18)
+' Verify vs backend/src/modules/orders/services/orders-service.js
+'   (createOrder L330, repayOrder L726, confirmReceived L758, updateOrderStatus L643)
+hide empty description
+skinparam dpi 300
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam state {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+  ArrowColor #4D4D4D
+}
+
+[*] --> pending
+
+state "Chờ thanh toán\n(pending)" as pending
+state "Đã thanh toán\n(paid)" as paid
+state "Thất bại\n(failed)" as failed
+state "Đã hoàn tiền\n(refunded)" as refunded
+
+pending --> paid    : IPN thành công\nCOD giao hàng\nadmin thủ công
+
+pending --> failed  : IPN thất bại\nadmin thủ công
+
+failed  --> pending : repayOrder (online)\nadmin thủ công
+
+paid    --> refunded : createRefund (VNPay)\nstaff hoặc admin
+
+paid     --> [*]
+refunded --> [*]
+
+/'
+note bottom
+  • Khởi tạo: paymentStatus = 'pending' với MỌI phương thức thanh toán (createOrder).
+  • COD delivered → paymentStatus tự động 'paid' (confirmReceived L758
+    và updateOrderStatus L647 khi staff mark delivered).
+  • repayOrder chỉ áp dụng cho đơn online pending chưa paid, KHÔNG dùng cho COD.
+    Chỉ reset paymentStatus failed→pending; KHÔNG đổi order.status.
+  • Hoàn tiền (refunded) chỉ hỗ trợ VNPay (_SUPPORTED_REFUND_PROVIDERS).
+    MoMo chưa hỗ trợ hoàn tiền tự động.
+  • Đơn đã hủy (order.status = cancelled) là TERMINAL cho payment:
+    IPN thành công đến sau bị bỏ qua (INV-PAY-3), tránh mark paid đơn không còn hàng.
+  • Admin có thể cập nhật thủ công qua PATCH /admin/orders/:id/status,
+    bị ràng buộc bởi enum validator ['pending','paid','failed','refunded'].
+end note
+'/
+@enduml

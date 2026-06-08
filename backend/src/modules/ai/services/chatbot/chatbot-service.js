@@ -419,14 +419,15 @@ class ChatbotService {
     // Pattern "[\p{L}\p{N}]*(?:đó|này|kia)" bắt MỌI cụm "X đó/này/kia" mà không cần liệt kê prefix.
     const PRONOUN_RE =
       /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
-    const hasPronoun = PRONOUN_RE.test(query);
+    const BRAND_RE =
+      /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
+    const hasBrand = BRAND_RE.test(query);
+    const hasPronoun = PRONOUN_RE.test(query) && !hasBrand;
 
     // Implicit follow-up: câu hỏi ngắn không có subject rõ ràng nhưng rõ ràng hỏi về SP vừa đề cập.
     // Ví dụ: "có màu gì?", "giá bao nhiêu?", "còn hàng không?", "bảo hành mấy năm?"
     // Điều kiện: query ngắn (<= 50 ký tự) + không chứa brand/product name + history có data.
-    const BRAND_RE =
-      /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
-    const isImplicitFollowup = !hasPronoun && query.trim().length <= 50 && !BRAND_RE.test(query);
+    const isImplicitFollowup = !hasPronoun && query.trim().length <= 50 && !hasBrand;
 
     if (!hasPronoun && !isImplicitFollowup) return query;
 
@@ -503,7 +504,7 @@ class ChatbotService {
       const stripNegation = (q) =>
         q
           .replace(
-            /(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/giu,
+            /(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|hay|hoặc|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)\b|\s*$)/giu,
             ' ',
           )
           .trim() || q;
@@ -533,7 +534,8 @@ class ChatbotService {
             score: r.score,
             ...(r.lowConfidence && { lowConfidence: true }),
           }));
-        } catch {
+        } catch (err) {
+          logger.warn('[Chatbot] Rewrite hybridSearch thất bại, dùng initialResults:', err.message);
           products = initialResults.map((r) => ({
             ...r.metadata,
             score: r.score,
@@ -558,7 +560,8 @@ class ChatbotService {
             score: r.score,
             lowConfidence: true,
           }));
-        } catch {
+        } catch (err) {
+          logger.warn('[Chatbot] Low-score hybridSearch thất bại:', err.message);
           products = [];
         }
       }
@@ -904,29 +907,37 @@ QUY TẮC BẮT BUỘC:
     }
   }
 
-  /** Xóa session khỏi conversationHistory Map. sessionId=null → xóa tất cả. */
-  clearSession(sessionId) {
-    if (!sessionId) {
-      this.conversationHistory.clear();
-      return true;
+  /** Xóa session khỏi in-memory Map VÀ await DB ChatMessage rows để getSessionMessages nhất quán. */
+  async clearSession(sessionId) {
+    if (!sessionId) throw new AppError('ai.sessionIdRequired', 400);
+    const cleared = this.conversationHistory.delete(sessionId);
+    // Await destroy để tránh inconsistency: Map cleared nhưng DB rows còn → getSessionMessages trả stale data
+    // Nếu DB lỗi: log warn nhưng vẫn return (Map đã cleared = session effectively gone)
+    if (this.ChatMessage && typeof this.ChatMessage.destroy === 'function') {
+      await this.ChatMessage.destroy({ where: { sessionId, messageType: 'ai_chatbot' } }).catch(
+        (err) => logger.warn('[Session] clearSession DB cleanup thất bại:', err.message),
+      );
     }
-    return this.conversationHistory.delete(sessionId);
+    return cleared;
   }
 
-  // Session đang active trên UI — set khi FE gọi POST /chatbot/session/register.
-  // Giữ cho FE contract (registerSession vẫn được FE gọi); không còn reader nội bộ
-  // sau khi getLatestSession (endpoint /session/latest) bị gỡ.
-  _registeredSession = null;
-
+  // registerSession: endpoint giữ cho FE backward-compat (FE vẫn gọi).
+  // TODO: xóa khi FE không còn gọi POST /chatbot/session/register nữa.
   registerSession(sessionId) {
-    this._registeredSession = sessionId;
     logger.debug(`[Session] UI registered session: ${sessionId}`);
   }
 
-  async getSessionMessages(sessionId, limit = 50) {
+  async getSessionMessages(sessionId, limit = 50, userId = null) {
     if (!sessionId || !this.ChatMessage) return [];
+    // userId scope: authenticated users chỉ thấy messages của session mình; guest (null) không filter
+    const where = {
+      sessionId,
+      role: { [Op.in]: ['user', 'assistant'] },
+      messageType: 'ai_chatbot',
+    };
+    if (userId) where.userId = userId;
     return this.ChatMessage.findAll({
-      where: { sessionId, role: { [Op.in]: ['user', 'assistant'] }, messageType: 'ai_chatbot' },
+      where,
       order: [['createdAt', 'ASC']],
       limit,
       attributes: ['role', 'content', 'intent', 'metadata', 'createdAt'],

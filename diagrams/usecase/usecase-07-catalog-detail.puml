@@ -35,6 +35,7 @@ pub -- UC_related
 pub -- UC_variants
 pub -- UC_reviews_summary
 
+/'
 note right of UC_detail_id
   GET /api/products/:id — optionalAuthenticate.
   Nếu đã đăng nhập: track recently-viewed async
@@ -42,22 +43,29 @@ note right of UC_detail_id
   Variant resolve: skuId → color → isDefault → variants[0].
   status='active' bắt buộc (404 nếu inactive).
 end note
+'/
 
+/'
 note right of UC_detail_slug
   GET /api/products/slug/:slug — optionalAuthenticate.
   Chấp nhận cả slug lẫn numeric id (backward compat).
   Cùng logic variant resolve và tracking như /:id.
 end note
+'/
 
+/'
 note right of UC_related
   GET /api/products/:id/related — public.
   Cùng category → fallback newest active nếu không có.
   status='active' bắt buộc (404 nếu inactive).
 end note
+'/
 
+/'
 note right of UC_reviews_summary
   GET /api/products/:id/reviews-summary — public.
   Trả: average, count, distribution {1:N, 2:N, ...5:N}.
   status='active' bắt buộc (404 nếu inactive).
 end note
+'/
 @enduml

@@ -184,15 +184,15 @@ function expandAbbreviations(text) {
  */
 function validateMessage(message) {
   if (!message || !message.trim()) {
-    return { valid: false, reason: 'Tin nhắn không được để trống' };
+    return { valid: false, reason: 'ai.messageEmpty' };
   }
   const trimmed = message.trim();
   if (trimmed.length > MAX_MESSAGE_LENGTH) {
-    return { valid: false, reason: `Tin nhắn quá dài (tối đa ${MAX_MESSAGE_LENGTH} ký tự)` };
+    return { valid: false, reason: 'ai.messageTooLong' };
   }
   // Phải có ít nhất 1 chữ cái hoặc chữ số (tránh chỉ gửi dấu câu như ", !, ?, ...)
   if (!/[\p{L}\p{N}]/u.test(trimmed)) {
-    return { valid: false, reason: 'Tin nhắn không hợp lệ' };
+    return { valid: false, reason: 'ai.messageInvalid' };
   }
   return { valid: true };
 }

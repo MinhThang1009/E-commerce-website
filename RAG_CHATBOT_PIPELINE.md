@@ -150,7 +150,7 @@ flowchart TD
     P --> R["R · 📤 return response"]
 
     R -.-> ERR{"catch error"}
-    ERR -->|có statusCode| ERR1["ERR-a · re-throw 400/404"]
+    ERR -->|có statusCode| ERR1["ERR-a · re-throw bất kỳ statusCode"]
     ERR -->|lỗi khác| ERR2["ERR-b · getFallbackResponse"]
 
     %% ── RAG color coding (subgraph nền) ──
@@ -165,8 +165,8 @@ flowchart TD
 
 #### Bước 1-3: `_preprocessMessage(message)`
 
-> File: [`chatbot-service.js:382-392`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L382-L392)
-> Gọi tại: [`handleMessage:256`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L256)
+> File: [`chatbot-service.js:390-400`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L390-L400)
+> Gọi tại: [`handleMessage:259`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L259)
 
 Hàm thuần (pure function) thực hiện 4 bước (validate, normalize, classify, injection) + derive `offTopic` từ `intent`, trả về object `{ valid, normalizedQuery, intent, injection, offTopic }`:
 
@@ -263,7 +263,7 @@ const conversationHistory = sessionEntry ? sessionEntry.messages : [];
 
 Gồm 2 sub-steps:
 
-**5a. `_enrichQueryFromHistory(normalizedQuery, conversationHistory)`** — [`chatbot-service.js:407`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L407)
+**5a. `_enrichQueryFromHistory(normalizedQuery, conversationHistory)`** — [`chatbot-service.js:415`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L415)
 
 Nếu query chứa đại từ (`cái đó`, `cái này`, `cái kia`, `nó`, `so sánh`, `cả hai`, `2 cái`, `hai cái`):
 - Lấy tên sản phẩm đầu tiên từ 1-2 assistant messages gần nhất
@@ -271,7 +271,7 @@ Nếu query chứa đại từ (`cái đó`, `cái này`, `cái kia`, `nó`, `so
 
 Regex: `PRONOUN_RE` dùng `[\p{L}\p{N}]*` (Unicode) thay vì `\w*` để match tiếng Việt có dấu.
 
-**5b. `_retrieveProducts(enrichedQuery, normalizedQuery)`** — [`chatbot-service.js:482`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L482)
+**5b. `_retrieveProducts(enrichedQuery, normalizedQuery)`** — [`chatbot-service.js:495`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L495)
 
 1. Strip negation phrases khỏi query (tránh embedding bias)
 2. `Promise.all`: LLM `rewriteQuery` (timeout 8s, `.catch(→null)`) + `hybridSearch(query, 10)`
@@ -294,7 +294,7 @@ Output: `{ products[], finalQuery }` — max 10 items, sorted by hybrid score.
 
 > **Ngân sách tổng (`LLM_TOTAL_TIMEOUT_MS`):** `handleMessage` bọc lời gọi `augmentAndGenerate()` trong `Promise.race` với một budget timer. Mặc định = `LLM_REQUEST_TIMEOUT_MS` (30s), override qua env. Nếu LLM (cộng dồn provider rotation, vd 2 provider × 30s) vượt ngân sách → resolve sớm bằng `simpleKeywordMatch(finalQuery, relevantProducts)` thay vì để user chờ/treo. Mỗi axios provider vẫn tự timeout `LLM_REQUEST_TIMEOUT_MS` bên trong `augmentAndGenerate`.
 
-**`augmentAndGenerate(finalQuery, products, history)`** — [`chatbot-service.js:659`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L659)
+**`augmentAndGenerate(finalQuery, products, history)`** — [`chatbot-service.js:685`](backend/src/modules/ai/services/chatbot/chatbot-service.js#L685)
 
 **Path A — LLM DOWN** (`this.providers.length === 0`):
 - Return `simpleKeywordMatch(userMessage, products)` ngay lập tức
@@ -392,7 +392,7 @@ Vector results  → score = cosine_similarity
                         + 0.05 nếu sản phẩm CŨNG có trong keyword results (overlap boost)
 
 Keyword-only results (không có trong vector results):
-  score = minScore + (keywordScore / maxKeywordScore) × 0.15
+  score = minScore + (keywordScore / maxKeywordScore) × 0.05  (KEYWORD_INJECTION_MAX_BOOST)
   (minScore = 0.45 cho normal search, = 0 cho fallback search)
   flag: lowConfidence = true
 ```
@@ -688,7 +688,7 @@ Mọi pattern trong ABBREV_MAP đều được áp dụng với `new RegExp(patt
 | `fuzzyExpandQuery()` | query/fuzzy-expander.js | LLM DOWN path | ✅ typo + prefix expansion |
 | `clearSession()` | chatbot-service.js | — | `POST /chatbot/session/clear` |
 | `getSessionMessages()` | chatbot-service.js | — | `GET /chatbot/session/:id/messages` — fetch từ DB (kể cả sau server restart) |
-| `registerSession()` | chatbot-service.js | — | `POST /chatbot/session/register` — UI đăng ký session đang active (ChatWidget) |
+| `registerSession()` | chatbot-service.js | — | `POST /chatbot/session/register` — no-op (chỉ log debug), giữ backward-compat với FE |
 
 ---
 

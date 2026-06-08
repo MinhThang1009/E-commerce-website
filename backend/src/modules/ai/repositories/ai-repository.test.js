@@ -15,15 +15,25 @@ function makeModel(defaults = {}) {
 
 function makeRepo(overrides = {}) {
   const deps = {
-    Product: makeModel(),
+    Product: makeModel({
+      // Default: product active, có đủ stock và variants phổ biến (id 7, 10) để stock check pass
+      findByPk: {
+        status: 'active',
+        stockQuantity: 10,
+        variants: [
+          { id: 7, stockQuantity: 5 },
+          { id: 10, stockQuantity: 5 },
+        ],
+      },
+    }),
     ProductVariant: makeModel(),
     Category: makeModel(),
     sequelize: {
       fn: jest.fn(),
       col: jest.fn(),
       literal: jest.fn((s) => s),
-      // transaction: thực thi callback trực tiếp với null transaction (unit test, không cần DB)
-      transaction: jest.fn((cb) => cb(null)),
+      // transaction mock truyền object có LOCK (giống orders repository tests)
+      transaction: jest.fn(async (cb) => cb({ LOCK: { UPDATE: 'UPDATE' } })),
     },
     ...overrides,
   };
@@ -69,6 +79,7 @@ describe('SequelizeAiRepository.findProductForCart', () => {
 const mockCart = {
   findOne: jest.fn(),
   create: jest.fn(),
+  findOrCreate: jest.fn(),
 };
 const mockCartItem = {
   findOne: jest.fn(),
@@ -85,8 +96,7 @@ describe('SequelizeAiRepository.addToCart', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCart.findOne.mockResolvedValue(defaultCart);
-    mockCart.create.mockResolvedValue(defaultCart);
+    mockCart.findOrCreate.mockResolvedValue([defaultCart, false]);
     mockCartItem.findOne.mockResolvedValue(null); // không có item sẵn → tạo mới
     mockCartItem.create.mockResolvedValue({ id: 99 });
   });
@@ -130,7 +140,9 @@ describe('SequelizeAiRepository.addToCart', () => {
     // CartItem.create được gọi với variantId=null (unitPrice=0) + transaction option
     expect(mockCartItem.create).toHaveBeenCalledWith(
       expect.objectContaining({ productId: 10, variantId: null }),
-      expect.objectContaining({ transaction: null }),
+      expect.objectContaining({
+        transaction: expect.objectContaining({ LOCK: { UPDATE: 'UPDATE' } }),
+      }),
     );
   });
 });

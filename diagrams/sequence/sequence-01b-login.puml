@@ -1,0 +1,56 @@
+@startuml sequence-01b-login
+' Sơ đồ sequence — Đăng nhập email/password (§3.1b)
+' Ground-truth: auth/routes.js + auth/services/auth-service.js
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 180
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+
+actor "Người dùng" as User
+participant "Frontend (React)" as FE
+participant "Backend API" as API
+participant "MySQL DB" as DB
+
+== Luồng 2 — Đăng nhập ==
+
+User ->> FE : Nhập email + password
+FE ->> API : POST /api/auth/login [validateRequest]
+API ->> DB : SELECT users WHERE email = ?
+DB -->> API : user row hoặc null
+alt User không tồn tại hoặc password sai
+    note right of API
+      user.comparePassword (bcrypt) = false
+      hoặc user = null — cùng 1 error message
+    end note
+    API -->> FE : 401 auth.invalidCredentials
+else Email chưa xác thực
+    API -->> FE : 401 auth.emailNotVerified
+else Tài khoản bị vô hiệu hóa
+    API -->> FE : 401 auth.accountDisabled
+else Đăng nhập thành công
+    note right of API
+      signAccessToken — TTL = JWT_EXPIRES_IN
+      signRefreshToken — stateless JWT
+    end note
+    API -->> FE : 200 { token, refreshToken, user }
+    note right of API
+      Set-Cookie: refreshToken (httpOnly, Secure)\nin HTTP response header
+    end note
+    FE -->> User : Đăng nhập thành công
+end
+
+@enduml

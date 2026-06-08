@@ -53,6 +53,7 @@ staff -- UC_xoa_admin
 
 admin -- UC_xem_tat_ca
 
+/'
 note right of UC_tao
   Yêu cầu đã mua hàng:
   Order.status = 'delivered'
@@ -63,24 +64,31 @@ note right of UC_tao
   Sau CRUD: tính lại Product.rating
   và reviewCount.
 end note
+'/
 
+/'
 note right of UC_xem_tat_ca
   2 endpoint đồng nghĩa (gộp 1 UC):
   GET /api/reviews/admin/all (authorize admin+staff)
   GET /api/admin/reviews (backoffice).
   Admin = xem-only; Staff = xem + kiểm duyệt + xóa.
 end note
+'/
 
+/'
 note right of UC_kiem_duyet
   Toggle isVerified (true/false).
   Staff only — PATCH /api/reviews/admin/:id/verify.
   Không ảnh hưởng Product.rating / reviewCount.
 end note
+'/
 
+/'
 note right of UC_xoa_admin
   Staff only — DELETE /api/admin/reviews/:id.
   Xóa bất kỳ review (không giới hạn owner).
   Khác UC_xoa_ca_nhan: owner-only (/reviews/:id).
 end note
+'/
 
 @enduml

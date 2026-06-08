@@ -1,0 +1,51 @@
+@startuml frontend_architecture
+top to bottom direction
+skinparam dpi 150
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontSize 11
+skinparam defaultFontName Arial
+skinparam nodesep 15
+skinparam ranksep 20
+
+skinparam rectangle {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  FontColor #000000
+}
+skinparam frame {
+  BackgroundColor #eff6ff
+  BorderColor #6C8EBF
+  FontColor #000000
+}
+skinparam ArrowColor #4D4D4D
+
+' === Tầng 1: Features ===
+frame "13 Feature Folders — React 19 + TypeScript" as Features {
+  rectangle "auth · catalog · cart · checkout · orders\npayment · reviews · ai · users · wishlist\ncontent · upload · admin" as FeatureList
+  rectangle "Mỗi feature: api/ + components/ + hooks/ + pages/ + types/\nQuy tắc: Không có cross-feature imports" as FeatureRule
+}
+
+' === Tầng 2: State (2 cột) ===
+frame "State Management" as State {
+  rectangle "TanStack Query v5\n(server state · staleTime 5p · gcTime 10p)" as TQ
+  rectangle "6 Zustand Stores + Immer\n(auth · cart · chat · catalog · wishlist · ui)" as ZS
+  TQ -[hidden]right-> ZS
+}
+
+' === Tầng 3: Shared ===
+frame "Shared Infrastructure" as Shared {
+  rectangle "src/components/\n(common · layout · routing · ui · icons · sections)" as SC
+  rectangle "src/hooks/ (5 hooks) · src/utils/ (13 utils)" as SU
+  SC -[hidden]right-> SU
+}
+
+' === Tầng 4: API Client ===
+rectangle "API Client — Axios singleton\nRequest interceptor: đính kèm Bearer token qua getValidToken()\nResponse interceptor: bắt 401 → handleUnauthorizedError" as ApiClient
+
+' === Arrows giữa tầng ===
+Features -down-> State
+State -down-> Shared
+Shared -down-> ApiClient
+
+@enduml

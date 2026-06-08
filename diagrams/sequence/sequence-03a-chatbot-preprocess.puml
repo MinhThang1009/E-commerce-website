@@ -1,0 +1,76 @@
+@startuml sequence-03a-chatbot-preprocess
+' Sơ đồ sequence — Chatbot RAG (3a): Tiền xử lý & Gate check (§3.3a)
+' Ground-truth: chatbot-service.js:259-314, ai-policy.js, ai-controller.js, ai/routes.js
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 150
+skinparam sequenceArrowThickness 2
+skinparam sequenceGroupBorderThickness 1.5
+skinparam sequenceGroupBorderColor #999999
+skinparam sequenceParticipant {
+  BorderColor #6C8EBF
+  BackgroundColor #DAE8FC
+}
+skinparam sequenceActor {
+  BackgroundColor #f5f5f5
+  BorderColor #6C8EBF
+}
+skinparam noteBorderColor #6C8EBF
+skinparam noteBackgroundColor #fffde7
+skinparam responseMessageBelowArrow true
+skinparam defaultFontSize 13
+skinparam noteFontSize 12
+skinparam sequenceParticipantFontSize 13
+
+actor "Người dùng" as User
+participant "Frontend (React)" as FE
+participant "Backend API" as API
+
+== Gửi tin nhắn ==
+
+User ->> FE : Nhập câu hỏi tư vấn sản phẩm
+FE ->> API : POST /api/chatbot/message
+note right of API: chatbotLimiter · optionalAuthenticate · validateRequest
+
+== ①  Validate ==
+
+note right of API: rỗng / độ dài > 500 / không có chữ-số → AppError 400
+
+alt Validate thất bại
+  API -->> FE : 400  AppError
+  FE -->> User : Hiển thị lỗi nhập liệu
+end
+
+== ②  Normalize ==
+
+note right of API
+  expandAbbreviations: ip→iPhone, ss→Samsung, mb→MacBook
+  bnh→bao nhiêu, smartphone→điện thoại, không dấu→có dấu (50+ patterns)
+end note
+
+== ③  Classify & Gate check ==
+
+note right of API
+  classifyIntent(normalizedQuery): 6 intent theo ưu tiên
+  off_topic > order_inquiry > policy > pricing > product_search > general
+end note
+
+note right of API
+  isPromptInjection(message gốc): 15 loại, 24 regex (OWASP LLM01)
+  ignore/act as/forget/jailbreak/ký tự ẩn...
+end note
+
+alt Phát hiện Prompt Injection
+  API -->> FE : 200  🛡️ Từ chối — chỉ hỗ trợ tư vấn sản phẩm
+  note right of API: _persistMessages (fire-and-forget)
+  FE -->> User : Từ chối phục vụ
+else Off-topic  (intent = off_topic)
+  API -->> FE : 200  ℹ️ Ngoài phạm vi hỗ trợ
+  note right of API: _persistMessages (fire-and-forget)
+  FE -->> User : Gợi ý tìm hiểu sản phẩm
+else Hợp lệ — tiếp tục RAG pipeline
+  note right of API: normalizedQuery + intent → bước ④⑤
+end
+
+@enduml

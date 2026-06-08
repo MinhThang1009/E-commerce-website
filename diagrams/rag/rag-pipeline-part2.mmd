@@ -1,0 +1,24 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#DAE8FC',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#6C8EBF',
+    'lineColor': '#4D4D4D',
+    'secondaryColor': '#eff6ff',
+    'noteBkgColor': '#fffde7',
+    'noteBorderColor': '#6C8EBF'
+  }
+}}%%
+flowchart TD
+    START([Từ Phần 1: sản phẩm + truy vấn])
+    G["⑥ Sinh câu trả lời\n(LLM Generate)"]
+    GFB["Fallback — Keyword Match"]
+    P["⑦ Lưu trữ lịch sử\n(fire-and-forget)"]
+    OUT([Kết quả: message · products · sessionId])
+
+    START --> G
+    G -->|Thành công| P
+    G -->|Timeout / lỗi| GFB
+    GFB --> P
+    P --> OUT

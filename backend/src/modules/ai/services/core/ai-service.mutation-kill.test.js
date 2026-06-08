@@ -85,7 +85,6 @@ describe('AIService.addToCart — mutation kill', () => {
         sessionId: 'sess-1',
         productId: 5,
         metadata: { quantity: 4, source: 'chatbot' },
-        timestamp: expect.any(Date),
       }),
     );
   });

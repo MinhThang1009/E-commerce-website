@@ -100,7 +100,7 @@
     "slugify": "^1.6.6",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.0",
-    "uuid": "^11.1.0",
+    "uuid": "^14.0.0",
     "winston": "^3.17.0",
     "zod": "^4.4.3"
   },

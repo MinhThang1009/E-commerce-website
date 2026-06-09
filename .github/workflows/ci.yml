@@ -57,7 +57,6 @@ jobs:
       - name: Security audit
         working-directory: backend
         run: npm audit --audit-level=high --omit=dev
-        continue-on-error: true
 
       - name: Run tests + coverage
         working-directory: backend
@@ -163,7 +162,6 @@ jobs:
 
       - name: API HTTP tests
         working-directory: backend
-        continue-on-error: true
         run: npm run test:api
         env:
           CI: true
@@ -180,7 +178,6 @@ jobs:
 
       - name: E2E tests
         working-directory: backend
-        continue-on-error: true
         run: npm run test:e2e
         env:
           CI: true
@@ -230,7 +227,6 @@ jobs:
       - name: Security audit
         working-directory: frontend
         run: npm audit --audit-level=high --omit=dev
-        continue-on-error: true
 
       - name: Build
         working-directory: frontend
@@ -286,7 +282,6 @@ jobs:
       - name: Doc-vs-code values — check-docs (informational)
         working-directory: backend
         run: npm run check-docs
-        continue-on-error: true
 
       - name: i18n key parity vi/en (gate)
         run: node scripts/check-i18n.js

@@ -1,7 +1,5 @@
-// Branch coverage tests cho SequelizeCatalogRepository.
-// Nhắm vào các nhánh chưa được cover trong catalogRepository.test.js
-// và catalogRepositoryExtra.test.js (lines 98-101, 160, 206-233, 303,
-// 421-435, 552, 622, 657, 678, 714-718, 737-741).
+// Edge-case tests cho SequelizeCatalogRepository — branch coverage,
+// variants, ratings, price range, attributes, deals, recently viewed.
 
 const { Op } = require('sequelize');
 const SequelizeCatalogRepository = require('./sequelize-catalog-repository');
@@ -399,5 +397,198 @@ describe('findRecentlyViewedByUser — line 678: happy path với RecentlyViewed
 
     const call = deps.RecentlyViewed.findAll.mock.calls[0][0];
     expect(call.limit).toBe(10); // default
+  });
+});
+
+// ─── findProductVariantsByProductId — happy path ──────────────────────────────
+
+describe('findProductVariantsByProductId — happy path', () => {
+  it('gọi ProductVariant.findAll với where productId', async () => {
+    const { repo, deps } = makeRepo();
+    const variants = [
+      { id: 1, productId: 5 },
+      { id: 2, productId: 5 },
+    ];
+    deps.ProductVariant.findAll.mockResolvedValue(variants);
+    const result = await repo.findProductVariantsByProductId(5);
+    expect(deps.ProductVariant.findAll).toHaveBeenCalledWith({
+      where: { productId: 5, isAvailable: true },
+    });
+    expect(result).toBe(variants);
+  });
+
+  it('trả về [] khi sản phẩm không có variant', async () => {
+    const { repo, deps } = makeRepo();
+    deps.ProductVariant.findAll.mockResolvedValue([]);
+    const result = await repo.findProductVariantsByProductId(99);
+    expect(result).toEqual([]);
+  });
+});
+
+// ─── findProductRatingsRows — happy path ─────────────────────────────────────
+
+describe('findProductRatingsRows — happy path', () => {
+  it('gọi Review.findAll với where productId và attributes rating', async () => {
+    const { repo, deps } = makeRepo();
+    const reviews = [{ rating: 5 }, { rating: 4 }];
+    deps.Review.findAll.mockResolvedValue(reviews);
+    const result = await repo.findProductRatingsRows(3);
+    expect(deps.Review.findAll).toHaveBeenCalledWith({
+      where: { productId: 3, isVerified: true },
+      attributes: ['rating'],
+    });
+    expect(result).toBe(reviews);
+  });
+});
+
+// ─── getProductPriceRange — với categoryId ────────────────────────────────────
+
+describe('getProductPriceRange — khi có categoryId', () => {
+  it('dùng where.categoryId thay vì include để filter đúng products', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findAll.mockResolvedValue([{ min: '50.00', max: '200.00' }]);
+    const result = await repo.getProductPriceRange({ categoryId: 3 });
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.where).toEqual({ status: 'active', categoryId: 3 });
+    expect(result).toEqual({ min: 50, max: 200 });
+  });
+
+  it('không có categoryId → where chỉ có status=active', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findAll.mockResolvedValue([{ min: '10.00', max: '100.00' }]);
+    await repo.getProductPriceRange({});
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.where).toEqual({ status: 'active' });
+  });
+});
+
+// ─── findAttributeValuesByName — với categoryId ───────────────────────────────
+
+describe('findAttributeValuesByName — với categoryId', () => {
+  it('build where productId Op.in subquery khi có categoryId', async () => {
+    const { repo, deps, sequelize } = makeRepo();
+    sequelize.literal.mockReturnValue('__subquery__');
+    deps.ProductAttribute.findAll.mockResolvedValue([]);
+    await repo.findAttributeValuesByName('color', { categoryId: 5 });
+    const call = deps.ProductAttribute.findAll.mock.calls[0][0];
+    expect(call.where.productId[Op.in]).toBe('__subquery__');
+  });
+
+  it('không có categoryId → where chỉ có name', async () => {
+    const { repo, deps } = makeRepo();
+    deps.ProductAttribute.findAll.mockResolvedValue([]);
+    await repo.findAttributeValuesByName('size');
+    const call = deps.ProductAttribute.findAll.mock.calls[0][0];
+    expect(call.where).toEqual({ name: 'size' });
+  });
+});
+
+// ─── findOtherAttributes — với categoryId ─────────────────────────────────────
+
+describe('findOtherAttributes — với categoryId', () => {
+  it('build where productId Op.in khi có categoryId', async () => {
+    const { repo, deps, sequelize } = makeRepo();
+    sequelize.literal.mockReturnValue('__sub__');
+    deps.ProductAttribute.findAll.mockResolvedValue([]);
+    await repo.findOtherAttributes({ categoryId: 7 });
+    const call = deps.ProductAttribute.findAll.mock.calls[0][0];
+    expect(call.where.productId[Op.in]).toBe('__sub__');
+  });
+
+  it('không có categoryId → where chỉ có name notIn', async () => {
+    const { repo, deps } = makeRepo();
+    deps.ProductAttribute.findAll.mockResolvedValue([]);
+    await repo.findOtherAttributes({});
+    const call = deps.ProductAttribute.findAll.mock.calls[0][0];
+    expect(call.where.name[Op.notIn]).toEqual(['brand', 'color', 'size']);
+  });
+});
+
+// ─── findDeals — sort price_desc ──────────────────────────────────────────────
+
+describe('findDeals — sort price_desc', () => {
+  it('sort price_desc → orderClause [[basePrice, DESC]]', async () => {
+    const { repo, deps, sequelize } = makeRepo();
+    sequelize.literal.mockReturnValue('__expr__');
+    deps.Product.findAll.mockResolvedValue([]);
+    await repo.findDeals({ minDiscount: 5, sort: 'price_desc', limit: 3 });
+    const call = deps.Product.findAll.mock.calls[0][0];
+    expect(call.order).toEqual([['basePrice', 'DESC']]);
+  });
+});
+
+// ─── _buildProductWhereConditions — filter.categoryId ────────────────────────
+
+describe('_buildProductWhereConditions — filter.categoryId', () => {
+  it('filter.categoryId → where.categoryId được set', () => {
+    const { repo } = makeRepo();
+    expect(repo._buildProductWhereConditions({ categoryId: 10 }).categoryId).toBe(10);
+  });
+
+  it('filter.featured false → isFeatured false', () => {
+    const { repo } = makeRepo();
+    expect(repo._buildProductWhereConditions({ featured: false }).isFeatured).toBe(false);
+    expect(repo._buildProductWhereConditions({ featured: 'false' }).isFeatured).toBe(false);
+  });
+});
+
+// ─── findRecentlyViewedByUser — thiếu RecentlyViewed → throw ────────────────
+
+describe('findRecentlyViewedByUser — thiếu RecentlyViewed model', () => {
+  it('throw khi RecentlyViewed không được inject', async () => {
+    const { repo } = makeRepo({ RecentlyViewed: undefined });
+    await expect(repo.findRecentlyViewedByUser(1, 10)).rejects.toThrow(
+      'RecentlyViewed model bắt buộc',
+    );
+  });
+});
+
+// ─── upsertRecentlyViewed — guard null → return early ───────────────────────
+
+describe('upsertRecentlyViewed — guard null', () => {
+  it('return sớm khi RecentlyViewed undefined', async () => {
+    const { repo } = makeRepo({ RecentlyViewed: undefined });
+    const result = await repo.upsertRecentlyViewed(1, 5);
+    expect(result).toBeUndefined();
+  });
+});
+
+// ─── pruneRecentlyViewed — guard null → return early ────────────────────────
+
+describe('pruneRecentlyViewed — guard null', () => {
+  it('return sớm khi RecentlyViewed undefined', async () => {
+    const { repo } = makeRepo({ RecentlyViewed: undefined });
+    const result = await repo.pruneRecentlyViewed(1, 5);
+    expect(result).toBeUndefined();
+  });
+});
+
+// ─── findProductByIdWithFullDetails ─────────────────────────────────────────
+
+describe('findProductByIdWithFullDetails', () => {
+  it('gọi Product.findOne với id và đầy đủ associations', async () => {
+    const { repo, deps } = makeRepo();
+    const fakeProduct = { id: 5, name: 'iPhone 15' };
+    deps.Product.findOne.mockResolvedValue(fakeProduct);
+    const result = await repo.findProductByIdWithFullDetails(5);
+    expect(deps.Product.findOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 5 },
+        include: expect.arrayContaining([
+          expect.objectContaining({ association: 'category' }),
+          expect.objectContaining({ association: 'variants' }),
+          expect.objectContaining({ association: 'reviews' }),
+        ]),
+      }),
+    );
+    expect(result).toBe(fakeProduct);
+  });
+
+  it('trả về null khi sản phẩm không tồn tại', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Product.findOne.mockResolvedValue(null);
+    deps.Product.findByPk.mockResolvedValue(null);
+    const result = await repo.findProductByIdWithFullDetails(999);
+    expect(result).toBeNull();
   });
 });

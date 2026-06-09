@@ -37,17 +37,15 @@ describe('SequelizeCatalogRepository — branch coverage', () => {
       Category: {},
       Brand: {},
       Review: {
-        findOne: jest
-          .fn()
-          .mockResolvedValue({
-            count: '25',
-            average: '4.23456',
-            r1: '1',
-            r2: '2',
-            r3: '3',
-            r4: '9',
-            r5: '10',
-          }),
+        findOne: jest.fn().mockResolvedValue({
+          count: '25',
+          average: '4.23456',
+          r1: '1',
+          r2: '2',
+          r3: '3',
+          r4: '9',
+          r5: '10',
+        }),
         findAll: jest.fn(),
       },
       ProductAttribute: {},

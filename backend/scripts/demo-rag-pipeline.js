@@ -78,14 +78,14 @@ const sessionArg = args.find(a => a.startsWith('--session-id='))?.split('=')[1] 
 const watchMode  = args.includes('--watch');
 const compact    = args.includes('--compact');
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// ── Compute Pipeline (pure computation, returns trace + aiResponse) ──────────
 
-async function runPipeline(query, llmMode, providedSessionId = null) {
-  const isUp    = llmMode === 'up';
-  const tStart  = Date.now(); // ⏱ đo tổng thời gian pipeline
+async function computePipeline(query, llmMode, providedSessionId = null) {
+  const trace = {};
+  const tStart = Date.now();
+  const isUp = llmMode === 'up';
 
-  // Build providers giống chatbot-service.js constructor
-  const axios   = require('axios');
+  const axios = require('axios');
   const baseUrl = process.env.LLM_BASE_URL;
   const demoProviders = [];
   if (process.env.LLM_API_KEY && baseUrl) {
@@ -105,76 +105,30 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
       model: process.env.LLM_MODEL_3,
     });
   }
-  const modeTag = isUp
-    ? `${C.bold}${C.green}[ LLM UP  ]${C.reset}`
-    : `${C.bold}${C.yellow}[ LLM DOWN ]${C.reset}`;
 
-  const formatTag = compact
-    ? `${C.dim}[compact]${C.reset}`
-    : `${C.dim}[detailed]${C.reset}`;
-  console.log('\n' + dividerHi('='));
-  console.log(`${C.bold}  RAG PIPELINE DEMO  |  Mode: ${modeTag}  ${formatTag}${C.reset}`);
-  console.log(dividerHi('='));
-  console.log(kv('Query đầu vào:', `"${query}"`));
-
-  // ── BƯỚC 1/7: VALIDATE ──────────────────────────────────────────────────────
-  console.log(step(1, 'Validate Message'));
+  // ── STEP 1: VALIDATE ──────────────────────────────────────────────────────
   const v = validateMessage(query);
+  trace.step1_validate = { valid: v.valid, length: query.length };
   if (!v.valid) {
-    // v.reason là i18n key (vd: 'ai.messageEmpty') — resolve để hiển thị VN text
     const { t: tDemo } = require('@utils/i18n');
-    const reasonText = tDemo(v.reason, 'vi') || v.reason;
-    console.log(fail(`Không hợp lệ: ${reasonText}`));
-    console.log(sub('Pipeline dừng → trả HTTP 400 cho client'));
-    return;
+    trace.step1_validate.reason = tDemo(v.reason, 'vi') || v.reason;
+    return { trace, aiResponse: null };
   }
-  console.log(ok(`Hợp lệ`));
-  console.log(kv('  Độ dài:', `${query.length} ký tự  (giới hạn: 500)`));
-  console.log(kv('  Có ký tự hợp lệ:', 'Có (chữ cái / chữ số Unicode)'));
 
-  // ── BƯỚC 2/7: EXPAND ABBREVIATIONS ──────────────────────────────────────────
-  console.log(step(2, 'Expand Abbreviations  (Normalize)'));
+  // ── STEP 2: NORMALIZE ─────────────────────────────────────────────────────
   const normalized = expandAbbreviations(query);
-  const changed = normalized !== query;
-  if (changed) {
-    console.log(ok('Phát hiện và mở rộng viết tắt'));
-    console.log(kv('  Trước:', `"${query}"`));
-    console.log(kv('  Sau:', `"${normalized}"`));
-    // Chỉ hiện Trước/Sau — đủ để hội đồng thấy normalize hoạt động
-  } else {
-    console.log(sub('Không có viết tắt cần mở rộng — giữ nguyên query'));
-  }
+  trace.step2_normalize = { changed: normalized !== query, before: query, after: normalized };
 
-  // ── BƯỚC 3/7: CLASSIFY INTENT + SECURITY GATES ──────────────────────────────
-  console.log(step(3, 'Classify Intent  +  Security Gates'));
-  const intent    = classifyIntent(normalized);
+  // ── STEP 3: CLASSIFY INTENT + SECURITY ────────────────────────────────────
+  const intent = classifyIntent(normalized);
   const injection = isPromptInjection(query);
-  const offTopic  = intent === 'off_topic';
+  const offTopic = intent === 'off_topic';
+  trace.step3_security = { intent, injection, offTopic };
+  if (injection) { trace.blocked = 'injection'; return { trace, aiResponse: null }; }
+  if (offTopic) { trace.blocked = 'off_topic'; return { trace, aiResponse: null }; }
 
-  console.log(kv('  Intent phân loại:', `${C.cyan}${C.bold}${intent}${C.reset}`));
-  console.log(kv('  Prompt injection:', injection
-    ? `${C.red}${C.bold}PHÁT HIỆN  ->  BLOCK${C.reset}`
-    : `${C.green}Không phát hiện${C.reset}`));
-  console.log(kv('  Off-topic check:', offTopic
-    ? `${C.yellow}${C.bold}NGOÀI PHẠM VI  ->  BLOCK${C.reset}`
-    : `${C.green}Trong phạm vi${C.reset}`));
-
-  if (injection) {
-    console.log(warn('Prompt injection → trả về phản hồi bảo vệ, kết thúc pipeline'));
-    return;
-  }
-  if (offTopic) {
-    console.log(warn('Off-topic → trả về thông báo phạm vi hỗ trợ, kết thúc pipeline'));
-    return;
-  }
-  console.log(ok(`Đạt tất cả security gates  ->  tiếp tục vào RAG pipeline`));
-
-  // ── BƯỚC 4/7: SESSION HISTORY ────────────────────────────────────────────────
-  console.log(step(4, 'Load Session History'));
+  // ── STEP 4: SESSION HISTORY ───────────────────────────────────────────────
   const sessionId = providedSessionId || 'demo-' + Date.now();
-  console.log(kv('  Session ID:', sessionId));
-
-  // Fetch history thật từ server nếu có providedSessionId
   let conversationHistory = [];
   if (providedSessionId) {
     try {
@@ -188,293 +142,167 @@ async function runPipeline(query, llmMode, providedSessionId = null) {
       });
       const dbMessages = histRes?.data?.messages || [];
       if (dbMessages.length > 0) {
-        // Convert DB format → conversationHistory format cho pipeline
-        conversationHistory = dbMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })).slice(-20); // MAX_HISTORY_TURNS * 2 = 10 * 2 (chatbot-service.js:304)
-        const turns = Math.floor(conversationHistory.length / 2);
-        console.log(kv('  Trạng thái:', `${C.green}Có lịch sử từ DB${C.reset}`));
-        console.log(kv('  conversationHistory:', `${turns} turns  (${conversationHistory.length} messages)`));
-        conversationHistory.slice(-4).forEach((m) => {
-          const preview = (m.content || '').replace(/\n/g, ' ').substring(0, 60);
-          console.log(`  ${C.gray}  ${m.role.padEnd(9)}${C.reset} "${preview}${preview.length >= 60 ? '...' : ''}"`);
-        });
-      } else {
-        console.log(kv('  Trạng thái:', 'Session chưa có lịch sử'));
-        console.log(kv('  conversationHistory:', '[]  (0 turns)'));
+        conversationHistory = dbMessages.map(m => ({ role: m.role, content: m.content })).slice(-20);
       }
-    } catch {
-      console.log(kv('  Trạng thái:', 'Session mới  (server không phản hồi)'));
-      console.log(kv('  conversationHistory:', '[]  (0 turns)'));
-    }
-  } else {
-    console.log(kv('  Trạng thái:', 'Session mới  (chưa có lịch sử)'));
-    console.log(kv('  conversationHistory:', '[]  (0 turns)'));
+    } catch { /* server không phản hồi */ }
   }
-  console.log(sub('Lưu trong Map RAM  |  Tối đa 500 sessions  |  TTL 30 phút'));
+  const turns = Math.floor(conversationHistory.length / 2);
+  trace.step4_history = {
+    sessionId,
+    turns,
+    messages: conversationHistory.slice(-4).map(m => ({ role: m.role, content: m.content || '' })),
+  };
 
-  // ── BƯỚC 5a/5 ───────────────────────────────────────────────────────────────
-  if (compact) {
-    console.log(step(5, 'Enrich Query  +  Retrieve Products'));
-  } else {
-    console.log(step('5a', 'Enrich Query From History'));
-  }
-
+  // ── STEP 5a: ENRICH QUERY FROM HISTORY ────────────────────────────────────
   const PRONOUN_RE = /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
   const BRAND_RE = /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
   const hasBrand = BRAND_RE.test(normalized);
   const hasPronoun = PRONOUN_RE.test(normalized) && !hasBrand;
   const isImplicitFollowup = !hasPronoun && normalized.trim().length <= 50 && !hasBrand;
   const needsEnrich = hasPronoun || isImplicitFollowup;
+  trace.step5_enrich = { hasPronoun, isImplicitFollowup };
 
-  console.log(kv('  Đại từ chỉ định:', hasPronoun
-    ? `${C.yellow}Có  ->  cần append context từ history${C.reset}`
-    : isImplicitFollowup
-      ? `${C.yellow}Implicit follow-up (query ngắn, không có brand)  ->  enrich${C.reset}`
-      : `${C.green}Không  ->  giữ nguyên query${C.reset}`));
-
-  // _enrichQueryFromHistory: replicate logic từ chatbot-service.js:362-405
   let enrichedQuery = normalized;
   if (needsEnrich && conversationHistory.length > 0) {
     const extractTopProduct = (text) => {
       if (text.startsWith('🚫') || /Cửa hàng hiện chưa có|không tìm thấy|ngoài phạm vi/i.test(text.substring(0, 80))) return null;
-      // Nhận diện cả bullet "•" (keyword fallback) lẫn gạch đầu dòng "- " (LLM thật).
-      // Không tìm được dòng SP → null (không enrich), tránh nhồi câu dẫn rác vào query.
       const firstItem = text.split('\n').find(l => /^\s*[•-]\s/.test(l));
       if (!firstItem) return null;
-      return firstItem
-        .replace(/^\s*[•-]\s*/, '')
-        .replace(/\s*[-:]\s*(?:giá|từ)?\s*[\d.,]+.*$/i, '')
-        .replace(/:\s.*$/, '')
-        .trim();
+      return firstItem.replace(/^\s*[•-]\s*/, '').replace(/\s*[-:]\s*(?:giá|từ)?\s*[\d.,]+.*$/i, '').replace(/:\s.*$/, '').trim();
     };
     const recentContext = conversationHistory
-      .filter(m => m.role === 'assistant')
-      .slice(-2)
-      .map(m => extractTopProduct(m.content))
-      .filter(Boolean)
-      .join(' ');
-    if (recentContext.trim()) {
-      enrichedQuery = `${normalized} ${recentContext}`;
-      console.log(sub(`_enrichQueryFromHistory: append "${recentContext.substring(0, 50)}"`));
-    } else {
-      console.log(sub('History có nhưng không trích được tên SP → giữ nguyên'));
-    }
-  } else if (needsEnrich) {
-    console.log(sub('History rỗng -> không có tên SP để append'));
-  }
-  console.log(kv('  Enriched query:', `"${enrichedQuery}"`));
-  console.log('');
-
-  // ── BƯỚC 5b (chỉ hiện khi không compact) ────────────────────────────────────
-  if (!compact) console.log(step('5b', 'Retrieve Products  (Hybrid Search)'));
-
-  // stripNegation CHỈ cho embedding (hybridSearch). rewriteQuery + finalQuery (LLM) giữ phủ định.
-  const stripNeg = (q) => q
-    .replace(/(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|hay|hoặc|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)\b|\s*$)/igu, ' ')
-    .trim() || q;
-  const queryForRetrieval = stripNeg(enrichedQuery);
-
-  if (queryForRetrieval !== enrichedQuery) {
-    console.log(warn('Strip mệnh đề phủ định trước khi embedding (chỉ embedding, LLM giữ gốc):'));
-    console.log(kv('  Trước:', `"${enrichedQuery}"`));
-    console.log(kv('  Sau:', `"${queryForRetrieval}"`));
-  } else {
-    console.log(kv('  Strip negation:', 'Không có mệnh đề phủ định'));
+      .filter(m => m.role === 'assistant').slice(-2)
+      .map(m => extractTopProduct(m.content)).filter(Boolean).join(' ');
+    if (recentContext.trim()) enrichedQuery = `${normalized} ${recentContext}`;
   }
 
-  console.log('');
-  console.log(`  ${C.dim}Cách tính Score  (DEFAULT_MIN_SCORE=0.45 • OVERLAP_BOOST=0.05 • KEYWORD_INJECTION_MAX_BOOST=0.05):${C.reset}`);
-  console.log(`  ${C.dim}  • Conf=ok  (vector match):  score = cosine + OVERLAP_BOOST (nếu trùng cả từ khóa)${C.reset}`);
-  console.log(`  ${C.dim}  • Conf=low (keyword-only):  score = DEFAULT_MIN_SCORE + (kwScore / maxKwScore) × KEYWORD_INJECTION_MAX_BOOST${C.reset}`);
-  console.log('');
-  console.log(sub('Promise.all( rewriteQuery(LLM)  ||  hybridSearch(topK=10) )'));
-
-  // rewriteQuery — thử từng provider (chatbot-service.js:437-440)
-  let llmRewrite = null;
-  if (isUp && demoProviders.length > 0) {
-    for (let pi = 0; pi < demoProviders.length; pi++) {
-      const p = demoProviders[pi];
-      try {
-        const tRw = Date.now();
-        const rwRes = await axios.post(p.url, {
-          model: p.model,
-          messages: [
-            { role: 'system', content: 'You are a query normalizer for a tech store. Expand abbreviations and fix typos in the user\'s shopping query. Return ONLY 1 line of normalized text in the SAME language as input, NO explanation. Examples: "ip17 pro bnh" → "iPhone 17 Pro bao nhiêu", "ss s25 how much" → "Samsung S25 how much".' },
-            { role: 'user', content: enrichedQuery },
-          ],
-          max_tokens: 80, temperature: 0,
-        }, { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: Number(process.env.LLM_REWRITE_TIMEOUT_MS) || 8000 });
-        const rw = rwRes.data.choices?.[0]?.message?.content?.trim();
-        // Tầng A — rewriteQuery (chatbot-service.js:634): so với INPUT (enrichedQuery GỐC,
-        // có phủ định) case-SENSITIVE. Nếu LLM trả y hệt input → coi như "no change" → null.
-        if (rw && rw !== enrichedQuery) llmRewrite = rw;
-        console.log(kv('  rewriteQuery:', llmRewrite
-          ? `${C.green}"${llmRewrite}"${C.reset}  ${C.gray}(${p.model})  ⏱ ${Date.now() - tRw}ms${C.reset}`
-          : `${C.dim}[no change]${C.reset}  ${C.gray}(${p.model})  ⏱ ${Date.now() - tRw}ms${C.reset}`));
-        break;
-      } catch (e) {
-        const tag = `provider ${pi + 1}/${demoProviders.length} (${p.model})`;
-        if (pi + 1 < demoProviders.length)
-          console.log(kv('  rewriteQuery:', `${C.yellow}[lỗi ${tag}] → thử tiếp${C.reset}`));
-        else
-          console.log(kv('  rewriteQuery:', `${C.yellow}[tất cả providers lỗi] → dùng query gốc${C.reset}`));
-      }
-    }
-  } else if (isUp) {
-    console.log(kv('  rewriteQuery:', `${C.yellow}[SKIP] Chưa cấu hình LLM_MODEL_1 / 2 / 3${C.reset}`));
-  } else {
-    // LLM DOWN: rewriteQuery dùng fuzzyExpandQuery (prefix + edit-distance vs catalog)
-    // thay vì gọi LLM — mirror chatbot-service.js:590-601 (providers.length === 0).
-    const { fuzzyExpandQuery } = require('@modules/ai/services/chatbot/query/fuzzy-expander');
-    await vectorStoreService.loadPromise;
-    const productNames = vectorStoreService.items.map(i => i.metadata?.name).filter(Boolean);
-    const { expanded, changed } = fuzzyExpandQuery(enrichedQuery, productNames);
-    if (changed) {
-      llmRewrite = expanded;
-      console.log(kv('  rewriteQuery:', `${C.green}"${expanded}"${C.reset}  ${C.gray}(fuzzyExpand: prefix + edit-distance, không gọi LLM)${C.reset}`));
-    } else {
-      console.log(kv('  rewriteQuery:', `${C.dim}[fuzzyExpand: no change]${C.reset}  ${C.gray}(LLM DOWN — không sửa được qua catalog)${C.reset}`));
-    }
-  }
-  console.log(kv('  hybridSearch lần 1:', `query: "${queryForRetrieval}"  |  semantic (cosine) + keyword (BM25)  |  topK=10`));
-
-  // hybridSearch lần 1 (chatbot-service.js:439)
-  const t0 = Date.now();
-  await vectorStoreService.loadPromise;
-  const initialResults = await vectorStoreService.hybridSearch(queryForRetrieval, 10);
-  const t1 = Date.now();
-
-  console.log(ok(`hybridSearch lần 1 hoàn thành  ->  ${initialResults.length} kết quả  ${C.gray}⏱ ${t1 - t0}ms${C.reset}`));
-  console.log('');
-  console.log(`  ${C.bold}${C.dim}  #   ${'Tên sản phẩm'.padEnd(42)}  Score   Conf${C.reset}`);
-  console.log(`  ${C.gray}  ${'-'.repeat(60)}${C.reset}`);
-  if (initialResults.length === 0) {
-    console.log(`  ${C.dim}  (không có sản phẩm nào vượt ngưỡng 0.45 — query gốc có thể lỗi chính tả; chờ lần 2 rewrite)${C.reset}`);
-  }
-  initialResults.forEach((r, i) => {
-    const name  = (r.metadata?.name || '?').substring(0, 42).padEnd(42);
-    const score = fmtScore(r.score);
-    const conf  = r.lowConfidence ? `${C.yellow}low${C.reset}` : `${C.green}ok ${C.reset}`;
-    console.log(`  ${C.gray}${String(i+1).padStart(3)}.${C.reset} ${name}  ${C.cyan}${score}${C.reset}  ${conf}`);
-  });
-
-  // hybridSearch lần 2 khi rewrite khác query (chatbot-service.js:513)
-  // Tầng B — _retrieveProducts: chỉ lần 2 khi llmRewrite KHÁC normalizedQuery.
-  // finalQuery (gửi LLM ở bước 6) = enrichedQuery GỐC khi không rewrite → giữ phủ định.
-  let products;
+  // ── STEP 5b: RETRIEVE PRODUCTS ────────────────────────────────────────────
+  const needsSearch = intent === 'pricing' || intent === 'product_search';
+  let products = [];
   let finalQuery = enrichedQuery;
-  if (llmRewrite && llmRewrite.toLowerCase() !== normalized.toLowerCase()) {
-    finalQuery = llmRewrite;
-    console.log('');
-    console.log(sub(`rewriteQuery KHÁC query gốc ("${normalized}" → "${llmRewrite}") → chạy refined search (lần 2)`));
-    console.log(sub('finalQuery (gửi LLM ở bước 6) = bản rewrite — GIỮ phủ định nếu có'));
-    console.log(kv('  hybridSearch lần 2:', `query: "${stripNeg(llmRewrite)}"  (strip từ rewrite "${llmRewrite}")  |  topK=10`));
-    const t2 = Date.now();
-    const refinedResults = await vectorStoreService.hybridSearch(stripNeg(llmRewrite), 10);
-    const useRefined = refinedResults.length > 0;
-    console.log(ok(`hybridSearch lần 2 hoàn thành  ->  ${refinedResults.length} kết quả  ${C.gray}⏱ ${Date.now() - t2}ms${C.reset}`));
-    if (refinedResults.length > 0) {
-      console.log('');
-      console.log(`  ${C.bold}${C.dim}  #   ${'Tên sản phẩm'.padEnd(42)}  Score   Conf${C.reset}`);
-      console.log(`  ${C.gray}  ${'-'.repeat(60)}${C.reset}`);
-      refinedResults.forEach((r, i) => {
-        const name  = (r.metadata?.name || '?').substring(0, 42).padEnd(42);
-        const score = fmtScore(r.score);
-        const conf  = r.lowConfidence ? `${C.yellow}low${C.reset}` : `${C.green}ok ${C.reset}`;
-        console.log(`  ${C.gray}${String(i+1).padStart(3)}.${C.reset} ${name}  ${C.cyan}${score}${C.reset}  ${conf}`);
-      });
-    }
-    if (!useRefined) console.log(sub('Lần 2 rỗng → fallback dùng initialResults (lần 1)'));
-    const results = useRefined ? refinedResults : initialResults;
-    console.log('');
-    console.log(sub(useRefined
-      ? `Dùng kết quả lần 2 (rewrite) cho Generation  →  ${refinedResults.length} sản phẩm`
-      : `Dùng kết quả lần 1 (query gốc) cho Generation  →  ${initialResults.length} sản phẩm`));
-    products = results.map(r => ({ ...r.metadata, score: r.score, ...(r.lowConfidence && { lowConfidence: true }) }));
+
+  if (!needsSearch) {
+    trace.step5_retrieve = { enrichedQuery, skipped: true, reason: `Intent "${intent}" không cần Hybrid Search`, productsFound: 0 };
   } else {
-    console.log('');
-    console.log(sub(`rewriteQuery không đổi query → bỏ qua lần 2, dùng kết quả lần 1 cho Generation  →  ${initialResults.length} sản phẩm`));
-    products = initialResults.map(r => ({ ...r.metadata, score: r.score, ...(r.lowConfidence && { lowConfidence: true }) }));
+    const stripNeg = (q) => q
+      .replace(/(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|hay|hoặc|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)\b|\s*$)/igu, ' ')
+      .trim() || q;
+    const queryForRetrieval = stripNeg(enrichedQuery);
+
+    const s5 = { enrichedQuery };
+    s5.stripNegation = { changed: queryForRetrieval !== enrichedQuery, before: enrichedQuery, after: queryForRetrieval };
+
+    let llmRewrite = null;
+    const rwTrace = { result: null, timeMs: 0 };
+    if (isUp && demoProviders.length > 0) {
+      for (let pi = 0; pi < demoProviders.length; pi++) {
+        const p = demoProviders[pi];
+        try {
+          const tRw = Date.now();
+          const rwRes = await axios.post(p.url, {
+            model: p.model,
+            messages: [
+              { role: 'system', content: 'You are a query normalizer for a tech store. Expand abbreviations and fix typos in the user\'s shopping query. Return ONLY 1 line of normalized text in the SAME language as input, NO explanation. Examples: "ip17 pro bnh" → "iPhone 17 Pro bao nhiêu", "ss s25 how much" → "Samsung S25 how much".' },
+              { role: 'user', content: enrichedQuery },
+            ],
+            max_tokens: 80, temperature: 0,
+          }, { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: Number(process.env.LLM_REWRITE_TIMEOUT_MS) || 8000 });
+          const rw = rwRes.data.choices?.[0]?.message?.content?.trim();
+          if (rw && rw !== enrichedQuery) llmRewrite = rw;
+          rwTrace.result = llmRewrite;
+          rwTrace.timeMs = Date.now() - tRw;
+          rwTrace.model = p.model;
+          break;
+        } catch {
+          if (pi + 1 >= demoProviders.length) rwTrace.allFailed = true;
+        }
+      }
+    } else if (isUp) {
+      rwTrace.skipped = 'no_providers';
+    } else {
+      const { fuzzyExpandQuery } = require('@modules/ai/services/chatbot/query/fuzzy-expander');
+      await vectorStoreService.loadPromise;
+      const productNames = vectorStoreService.items.map(i => i.metadata?.name).filter(Boolean);
+      const { expanded, changed } = fuzzyExpandQuery(enrichedQuery, productNames);
+      if (changed) llmRewrite = expanded;
+      rwTrace.result = llmRewrite;
+      rwTrace.fuzzy = true;
+    }
+    s5.rewrite = rwTrace;
+
+    const t0 = Date.now();
+    await vectorStoreService.loadPromise;
+    const initialResults = await vectorStoreService.hybridSearch(queryForRetrieval, 10);
+    const t1 = Date.now();
+    s5.search1 = {
+      query: queryForRetrieval,
+      results: initialResults.map(r => ({ name: r.metadata?.name || '?', score: r.score, lowConfidence: !!r.lowConfidence })),
+      timeMs: t1 - t0,
+    };
+
+    s5.rewriteChanged = !!(llmRewrite && llmRewrite.toLowerCase() !== normalized.toLowerCase());
+    if (s5.rewriteChanged) {
+      finalQuery = llmRewrite;
+      const t2 = Date.now();
+      const refinedResults = await vectorStoreService.hybridSearch(stripNeg(llmRewrite), 10);
+      const useRefined = refinedResults.length > 0;
+      s5.search2 = {
+        query: stripNeg(llmRewrite),
+        results: refinedResults.map(r => ({ name: r.metadata?.name || '?', score: r.score, lowConfidence: !!r.lowConfidence })),
+        timeMs: Date.now() - t2,
+        usedForFinal: useRefined,
+      };
+      const results = useRefined ? refinedResults : initialResults;
+      products = results.map(r => ({ ...r.metadata, score: r.score, ...(r.lowConfidence && { lowConfidence: true }) }));
+    } else {
+      products = initialResults.map(r => ({ ...r.metadata, score: r.score, ...(r.lowConfidence && { lowConfidence: true }) }));
+    }
+
+    if (products.length === 0) {
+      s5.usedLowFallback = true;
+      try {
+        const lowResults = await vectorStoreService.hybridSearch(stripNeg(finalQuery), 3, 0);
+        products = lowResults.map(r => ({ ...r.metadata, score: r.score, lowConfidence: true }));
+      } catch { products = []; }
+    }
+    s5.productsFound = products.length;
+    trace.step5_retrieve = s5;
   }
 
-  // K1 fallback khi 0 kết quả (chatbot-service.js:468-476)
-  if (products.length === 0) {
-    console.log(warn('0 kết quả trên threshold → hạ minScore=0, lấy top-3 (fallback)'));
-    try {
-      const t3 = Date.now();
-      const lowResults = await vectorStoreService.hybridSearch(stripNeg(finalQuery), 3, 0);
-      products = lowResults.map(r => ({ ...r.metadata, score: r.score, lowConfidence: true }));
-      console.log(ok(`Fallback hoàn thành  ->  ${products.length} kết quả  ${C.gray}⏱ ${Date.now() - t3}ms${C.reset}`));
-    } catch { products = []; }
-  }
-
-  // ── BƯỚC 6/7: GENERATION ─────────────────────────────────────────────────────
-  console.log(step(6, `Generation`));
-
+  // ── STEP 6: GENERATION ────────────────────────────────────────────────────
   let aiResponse;
+  const s6 = { llmMode: isUp ? 'up' : 'down' };
+  const tGen = Date.now();
 
   if (!isUp) {
-    // LLM DOWN path
-    const skipLines = compact
-      ? [`${C.yellow}Không có LLM provider${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
-      : [
-          `${C.yellow}Không có LLM provider  ->  các sub-steps LLM bị SKIP:${C.reset}`,
-          `  ${C.gray}[SKIP] A. _sanitizeMessage     (không cần khi không gọi LLM)${C.reset}`,
-          `  ${C.gray}[SKIP] B. buildAugmentedPrompt (không cần khi không gọi LLM)${C.reset}`,
-          `  ${C.gray}[SKIP] C. build messages[]     (không cần khi không gọi LLM)${C.reset}`,
-          `  ${C.gray}[SKIP] D. LLM HTTP POST        (không có provider)${C.reset}`,
-          `  ${C.gray}[SKIP] E. parseLLMOutput       (không có response để parse)${C.reset}`,
-          '',
-        ];
-    console.log(box(`LLM DOWN  —  simpleKeywordMatch  (keyword fallback)`, [
-      ...skipLines,
-      `  ${C.yellow}-> Fallback: simpleKeywordMatch (8 bước nội bộ):${C.reset}`,
-      `  1. Tokenize + scoring     name match +10  |  description match +5`,
-      `  2. Version number filter  extract số model, loại SP sai phiên bản`,
-      `  3. Brand coherence check  loại kết quả sai brand`,
-      `  4. Negation filter        parse "không muốn/tránh X" -> loại`,
-      `  5. Price range filter     tầm/dưới/trên X triệu -> filter theo giá`,
-      `  6. Category prefix filter detect "laptop/điện thoại" -> filter loại SP`,
-      `  7. Sort + dedup           sort by matchScore giảm dần, loại trùng`,
-      `  8. Intent-aware response  pricing->💰  policy->📋  search->🔍  new->🌟`,
-    ], C.yellow));
-
     const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
-    console.log('');
-    const tKw0 = Date.now();
-    console.log(sub('Đang chạy simpleKeywordMatch...'));
     aiResponse = simpleKeywordMatch(finalQuery, products);
-    console.log(ok(`Hoàn thành  ${C.gray}⏱ ${Date.now() - tKw0}ms${C.reset}`));
-
+    s6.usedFallback = true;
+    s6.timeMs = Date.now() - tGen;
+  } else if (demoProviders.length === 0) {
+    const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
+    aiResponse = simpleKeywordMatch(finalQuery, products);
+    s6.usedFallback = true;
+    s6.timeMs = Date.now() - tGen;
   } else {
-    // LLM UP path
-    const promptBuilder  = require('@modules/ai/services/chatbot/prompt/prompt-builder');
+    const promptBuilder = require('@modules/ai/services/chatbot/prompt/prompt-builder');
     const responseParser = require('@modules/ai/services/chatbot/prompt/response-parser');
+    const sanitized = finalQuery.replace(/"/g, "'").replace(/\n{2,}/g, '\n').trim().substring(0, 500);
+    const augPrompt = promptBuilder.buildAugmentedPrompt(sanitized, products);
+    const storeName = process.env.STORE_NAME || 'TechStore';
 
-    if (demoProviders.length === 0) {
-      console.log(warn('Chưa cấu hình LLM_MODEL_1 / 2 / 3 → fallback simpleKeywordMatch'));
-      const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
-      aiResponse = simpleKeywordMatch(finalQuery, products);
-    } else {
-      const sanitized = finalQuery.replace(/"/g, "'").replace(/\n{2,}/g, '\n').trim().substring(0, 500);
-      const augPrompt = promptBuilder.buildAugmentedPrompt(sanitized, products);
-      const storeName = process.env.STORE_NAME || 'TechStore';
+    let brandsStr = '', categoriesStr = '';
+    try {
+      const { Brand, Category } = require('../src/models');
+      const [brands, cats] = await Promise.all([
+        Brand.findAll({ attributes: ['nameVi', 'nameEn'], raw: true }),
+        Category.findAll({ attributes: ['nameVi', 'nameEn'], raw: true }),
+      ]);
+      if (brands.length) brandsStr = brands.map(b => b.nameVi || b.nameEn).filter(Boolean).join(', ');
+      if (cats.length) categoriesStr = cats.map(c => c.nameVi || c.nameEn).filter(Boolean).join(', ');
+    } catch { /* fallback empty */ }
 
-      // _getCatalogData: query DB trực tiếp (giống chatbot-service.js:604-608, không phụ thuộc server HTTP)
-      let brandsStr = '', categoriesStr = '';
-      try {
-        const { Brand, Category } = require('../src/models');
-        const [brands, cats] = await Promise.all([
-          Brand.findAll({ attributes: ['nameVi', 'nameEn'], raw: true }),
-          Category.findAll({ attributes: ['nameVi', 'nameEn'], raw: true }),
-        ]);
-        if (brands.length) brandsStr    = brands.map(b => b.nameVi || b.nameEn).filter(Boolean).join(', ');
-        if (cats.length)   categoriesStr = cats.map(c => c.nameVi || c.nameEn).filter(Boolean).join(', ');
-      } catch { /* fallback empty — giống real code khi DB lỗi */ }
-
-      const systemContent = `Bạn là nhân viên tư vấn của ${storeName} — cửa hàng công nghệ chuyên điện thoại, máy tính bảng và laptop.
+    const systemContent = `Bạn là nhân viên tư vấn của ${storeName} — cửa hàng công nghệ chuyên điện thoại, máy tính bảng và laptop.
 QUY TẮC BẮT BUỘC:
 1. CHỈ tư vấn sản phẩm có trong DANH SÁCH SẢN PHẨM được cung cấp trong tin nhắn.
 2. TUYỆT ĐỐI không bịa tên sản phẩm, giá, hoặc thông số kỹ thuật ngoài danh sách.
@@ -483,151 +311,116 @@ QUY TẮC BẮT BUỘC:
 5. Trả về đúng định dạng JSON được yêu cầu trong tin nhắn.
 6. Danh mục: ${categoriesStr} — Thương hiệu: ${brandsStr}`;
 
-      const messages  = [
-        { role: 'system', content: systemContent },
-        ...conversationHistory,
-        { role: 'user', content: augPrompt },
-      ];
+    const messages = [
+      { role: 'system', content: systemContent },
+      ...conversationHistory,
+      { role: 'user', content: augPrompt },
+    ];
 
-      console.log(kv('  _getCatalogData:', brandsStr ? `brands: ${brandsStr.substring(0, 40)}` : `${C.dim}(empty — server không phản hồi)${C.reset}`));
-      console.log(kv('  A. _sanitizeMessage(finalQuery):', `"${sanitized.substring(0, 55)}..."`));
-      console.log(kv('  B. buildAugmentedPrompt:', `${augPrompt.length} ký tự  (${products.length} SP + store info)`));
-      console.log(kv('  C. messages[]:', `[system(6 rules), ${conversationHistory.length} history, user+RAG_context]`));
+    s6.sanitized = sanitized.substring(0, 55);
+    s6.promptLength = augPrompt.length;
+    s6.productCount = products.length;
+    s6.historyMsgCount = conversationHistory.length;
+    s6.brandsStr = brandsStr;
 
-      // Timeout per-call (axios mỗi provider) + ngân sách TỔNG (Promise.race quanh toàn bộ generation)
-      // — mirror chatbot-service.js handleMessage:319-334. Env-configurable, fallback default.
-      const LLM_REQUEST_TIMEOUT_MS = Number(process.env.LLM_REQUEST_TIMEOUT_MS) || 30000;
-      const LLM_TOTAL_TIMEOUT_MS = Number(process.env.LLM_TOTAL_TIMEOUT_MS) || LLM_REQUEST_TIMEOUT_MS;
-      const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
-      console.log(kv('  Ngân sách tổng:', `LLM_TOTAL_TIMEOUT_MS=${LLM_TOTAL_TIMEOUT_MS}ms  (Promise.race bọc provider rotation)`));
+    const LLM_REQUEST_TIMEOUT_MS = Number(process.env.LLM_REQUEST_TIMEOUT_MS) || 30000;
+    const LLM_TOTAL_TIMEOUT_MS = Number(process.env.LLM_TOTAL_TIMEOUT_MS) || LLM_REQUEST_TIMEOUT_MS;
+    s6.totalBudgetMs = LLM_TOTAL_TIMEOUT_MS;
+    s6.providerAttempts = [];
 
-      // Provider rotation loop tách thành hàm để Promise.race với budget timer
-      const runGeneration = async () => {
-        for (let pi = 0; pi < demoProviders.length; pi++) {
-          const p = demoProviders[pi];
-          console.log(kv('  D. LLM call:', `${p.model}  (provider ${pi + 1}/${demoProviders.length})  |  temp=0.3  |  max_tokens=800`));
-          console.log(sub(`POST -> ${p.url}  (đang chờ...)`));
-          const t2 = Date.now();
-          try {
-            const res = await axios.post(p.url,
-              { model: p.model, messages, response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 800 },
-              { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: LLM_REQUEST_TIMEOUT_MS }
-            );
-            const raw = res.data.choices?.[0]?.message?.content || '';
-            if (!raw) { console.log(warn(`Provider ${pi + 1} trả về rỗng → thử tiếp`)); continue; }
-            console.log(ok(`Nhận phản hồi  (${Date.now() - t2}ms  |  ${raw.length} ký tự JSON)`));
-            console.log(kv('  E. parseLLMOutput:', 'extractJSON -> map names -> dedup -> extractProductsFromText'));
-            console.log(ok('Hoàn thành'));
-            return responseParser.parseLLMOutput(raw, products, finalQuery);
-          } catch (err) {
-            const status = err.response?.status;
-            // Lỗi tạm thời (429/402/500/503/network) → thử provider tiếp (chatbot-service.js:766-777)
-            if (status === 429 || status === 402 || status === 500 || status === 503 || !err.response) {
-              if (pi + 1 < demoProviders.length)
-                console.log(warn(`Provider ${pi + 1} lỗi (${status || err.code}) → thử provider ${pi + 2}`));
-              else
-                console.log(warn(`Tất cả providers lỗi → fallback simpleKeywordMatch`));
-              continue;
-            }
-            // Lỗi không phục hồi (400/401/khác) → break ngay (chatbot-service.js:779-785)
-            console.log(warn(`Provider ${pi + 1} lỗi cố định (${status}) → dừng retry`));
-            break;
+    const { simpleKeywordMatch } = require('@modules/ai/services/chatbot/keyword/keyword-fallback');
+
+    const runGeneration = async () => {
+      for (let pi = 0; pi < demoProviders.length; pi++) {
+        const p = demoProviders[pi];
+        const attempt = { model: p.model, index: pi + 1, total: demoProviders.length, url: p.url };
+        const t2 = Date.now();
+        try {
+          const res = await axios.post(p.url,
+            { model: p.model, messages, response_format: { type: 'json_object' }, temperature: 0.3, max_tokens: 800 },
+            { headers: { Authorization: `Bearer ${p.key}`, 'Content-Type': 'application/json' }, timeout: LLM_REQUEST_TIMEOUT_MS }
+          );
+          const raw = res.data.choices?.[0]?.message?.content || '';
+          if (!raw) {
+            attempt.status = 'retry'; attempt.timeMs = Date.now() - t2; attempt.errorCode = 'empty';
+            s6.providerAttempts.push(attempt);
+            continue;
           }
+          attempt.status = 'ok'; attempt.timeMs = Date.now() - t2; attempt.rawLength = raw.length;
+          s6.providerAttempts.push(attempt);
+          return responseParser.parseLLMOutput(raw, products, finalQuery);
+        } catch (err) {
+          const status = err.response?.status;
+          attempt.timeMs = Date.now() - t2;
+          if (status === 429 || status === 402 || status === 500 || status === 503 || !err.response) {
+            attempt.status = 'retry'; attempt.errorCode = status || err.code;
+            s6.providerAttempts.push(attempt);
+            continue;
+          }
+          attempt.status = 'break'; attempt.errorCode = status;
+          s6.providerAttempts.push(attempt);
+          break;
         }
-        // Hết providers (lỗi hoặc 400/401 break) → fallback keyword
-        return simpleKeywordMatch(finalQuery, products);
-      };
-
-      // Ngân sách tổng: generation vượt LLM_TOTAL_TIMEOUT_MS → fallback keyword (chống treo)
-      let _budgetTimer;
-      aiResponse = await Promise.race([
-        runGeneration(),
-        new Promise((resolve) => {
-          _budgetTimer = setTimeout(() => {
-            console.log(warn(`LLM vượt ngân sách ${LLM_TOTAL_TIMEOUT_MS}ms → fallback simpleKeywordMatch`));
-            resolve(simpleKeywordMatch(finalQuery, products));
-          }, LLM_TOTAL_TIMEOUT_MS);
-        }),
-      ]).finally(() => clearTimeout(_budgetTimer));
-    }
-  }
-
-  // ── BƯỚC 7/7: PERSIST ────────────────────────────────────────────────────────
-  console.log(step(7, 'Persist  —  Session Memory  +  Database'));
-  console.log(kv('  7a. Session memory:', `updatedMessages = ${[...conversationHistory,{},{}].slice(-20).length} msgs  (giới hạn 20 = 10 turns)`));
-  console.log(kv('     lastAccess:', new Date().toLocaleTimeString('vi-VN')));
-  console.log(sub('_evictStaleSessions():  xóa TTL > 30 phút  +  LRU khi > 500 sessions'));
-  console.log('');
-  console.log(kv('  7b. DB persist:', 'ChatMessage.bulkCreate([userMsg, assistantMsg])  —  1 DB call'));
-  console.log(sub('Fire-and-forget: .catch() chỉ log warning  ->  chatbot vẫn trả lời khi DB lỗi'));
-
-  // ── KẾT QUẢ TRẢ VỀ ──────────────────────────────────────────────────────────
-  const tTotal = Date.now() - tStart;
-  console.log('\n' + dividerHi('-'));
-  console.log(`${C.bold}  KẾT QUẢ TRẢ VỀ CHO FRONTEND  ${C.gray}⏱ tổng ${tTotal}ms${C.reset}`);
-  console.log(dividerHi('-'));
-  if (aiResponse) {
-    console.log(kv('  intent:', `${C.cyan}${aiResponse.intent}${C.reset}`));
-    console.log('');
-    console.log(`  ${C.bold}Response đầy đủ:${C.reset}`);
-    // Word-wrap tại 90 ký tự để không bị overflow terminal
-    (aiResponse.response || '').split('\n').forEach(line => {
-      if (line.length <= 90) { console.log(`    ${line}`); return; }
-      const words = line.split(' ');
-      let cur = '    ';
-      for (const w of words) {
-        if (cur.length + w.length > 94) { console.log(cur); cur = '    ' + w + ' '; }
-        else cur += w + ' ';
       }
-      if (cur.trim()) console.log(cur);
-    });
-    console.log('');
-    console.log(kv('  products:', `${aiResponse.products?.length || 0} card(s)`));
-    (aiResponse.products || []).forEach((p, i) =>
-      console.log(item(i+1, `${C.bold}${p.name}${C.reset}  —  ${C.cyan}${fmtPrice(p.price)}${C.reset}`))
-    );
-    if (aiResponse.suggestions?.length) {
-      // Mỗi suggestion trên 1 dòng, cắt ở 80 ký tự nếu quá dài
-      // Mỗi suggestion 1 dòng — tránh wrap sai ký tự tiếng Việt
-      aiResponse.suggestions.slice(0, 3).forEach((s, i) => {
-        const label = i === 0 ? '  suggestions:' : '              ';
-        const short = s.length > W - 18 ? s.substring(0, W - 21) + '...' : s;
-        console.log(`  ${C.dim}${label.padEnd(20)}${C.reset}${C.gray}${i + 1}.${C.reset} ${short}`);
-      });
-    }
+      s6.usedFallback = true;
+      return simpleKeywordMatch(finalQuery, products);
+    };
+
+    let _budgetTimer;
+    aiResponse = await Promise.race([
+      runGeneration(),
+      new Promise((resolve) => {
+        _budgetTimer = setTimeout(() => {
+          s6.usedFallback = true;
+          resolve(simpleKeywordMatch(finalQuery, products));
+        }, LLM_TOTAL_TIMEOUT_MS);
+      }),
+    ]).finally(() => clearTimeout(_budgetTimer));
   }
-  console.log(dividerHi('=') + '\n');
+  s6.timeMs = s6.timeMs || (Date.now() - tGen);
+  trace.step6_generate = s6;
+
+  // ── STEP 7: PERSIST ───────────────────────────────────────────────────────
+  trace.step7_persist = {
+    updatedMsgCount: [...conversationHistory, {}, {}].slice(-20).length,
+    lastAccessTime: new Date().toLocaleTimeString('vi-VN'),
+    responseTimeMs: Date.now() - tStart,
+  };
+
+  return { trace, aiResponse };
 }
 
-// ── Hiển thị trace từ server (dùng chung helpers với runPipeline) ────────────
+// ── Display Pipeline (unified display from trace data) ───────────────────────
 
-function displayServerTrace(t, query, aiResponse = null) {
+function displayPipeline(t, query, aiResponse = null, { showBanner = false } = {}) {
   const s5 = t.step5_retrieve;
   const s6 = t.step6_generate;
 
-  // ── Header box (giống gốc) ───────────────────────────────────────────
-  const hdrInner = W - 2;
-  const centerLine = (text) => {
-    const pad = hdrInner - text.length;
-    const left = Math.floor(pad / 2);
-    const right = pad - left;
-    return '|' + ' '.repeat(left) + text + ' '.repeat(right) + '|';
-  };
-  const hdrBorder = '+' + '='.repeat(hdrInner) + '+';
-  console.log('\n' + C.bold + C.teal + hdrBorder);
-  console.log(centerLine('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
-  console.log(centerLine('Luận văn tốt nghiệp'));
-  console.log(hdrBorder + C.reset);
+  // ── Header box (optional banner) ──────────────────────────────────────
+  if (showBanner) {
+    const hdrInner = W - 2;
+    const centerLine = (text) => {
+      const pad = hdrInner - text.length;
+      const left = Math.floor(pad / 2);
+      const right = pad - left;
+      return '|' + ' '.repeat(left) + text + ' '.repeat(right) + '|';
+    };
+    const hdrBorder = '+' + '='.repeat(hdrInner) + '+';
+    console.log('\n' + C.bold + C.teal + hdrBorder);
+    console.log(centerLine('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
+    console.log(centerLine('Luận văn tốt nghiệp'));
+    console.log(hdrBorder + C.reset);
+
+    const isUp = (s6?.llmMode || 'up') === 'up';
+    console.log(`  Query:${' '.repeat(16)}"${query}"`);
+    console.log(`  Mode:${' '.repeat(17)}${isUp ? 'up' : 'down'}`);
+  }
 
   const isUp = (s6?.llmMode || 'up') === 'up';
-  const modeStr = isUp ? 'up' : 'down';
   const modeTag = isUp
     ? `${C.bold}${C.green}[ LLM UP  ]${C.reset}`
     : `${C.bold}${C.yellow}[ LLM DOWN ]${C.reset}`;
   const formatTag = compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`;
-
-  console.log(`  Query:${' '.repeat(16)}"${query}"`);
-  console.log(`  Mode:${' '.repeat(17)}${modeStr}`);
 
   console.log('\n' + dividerHi('='));
   console.log(`${C.bold}  RAG PIPELINE DEMO  |  Mode: ${modeTag}  ${formatTag}${C.reset}`);
@@ -637,7 +430,7 @@ function displayServerTrace(t, query, aiResponse = null) {
   // ── Step 1: Validate ────────────────────────────────────────────────────
   console.log(step(1, 'Validate Message'));
   if (!t.step1_validate?.valid && t.step1_validate?.valid !== undefined) {
-    console.log(fail(`Không hợp lệ`));
+    console.log(fail(`Không hợp lệ: ${t.step1_validate.reason || ''}`));
     console.log(sub('Pipeline dừng → trả HTTP 400 cho client'));
     return;
   }
@@ -703,7 +496,6 @@ function displayServerTrace(t, query, aiResponse = null) {
     console.log(step(5, 'Retrieve  (SKIP)'));
     console.log(sub(s5.reason));
     console.log(sub('Không chạy Hybrid Search — chuyển thẳng sang Generation'));
-    // Vẫn tiếp tục step 6, 7
   } else {
 
   // ── Step 5a: Enrich Query From History ──────────────────────────────────
@@ -717,7 +509,6 @@ function displayServerTrace(t, query, aiResponse = null) {
   const enriched = s5.enrichedQuery || normalized;
   const enrichDiff = enriched !== normalized;
 
-  // Dùng server trace nếu có, fallback tính local
   const enrich = t.step5_enrich || {};
   const hasPronoun = enrich.hasPronoun || false;
   const isImplicit = enrich.isImplicitFollowup || false;
@@ -740,7 +531,6 @@ function displayServerTrace(t, query, aiResponse = null) {
   // ── Step 5b: Retrieve Products (Hybrid Search) ─────────────────────────
   if (!compact) console.log(step('5b', 'Retrieve Products  (Hybrid Search)'));
 
-  // Strip negation
   const sn = s5.stripNegation;
   if (sn?.changed) {
     console.log(warn('Strip mệnh đề phủ định trước khi embedding (chỉ embedding, LLM giữ gốc):'));
@@ -757,14 +547,26 @@ function displayServerTrace(t, query, aiResponse = null) {
   console.log('');
   console.log(sub('Promise.all( rewriteQuery(LLM)  ||  hybridSearch(topK=10) )'));
 
-  // rewriteQuery
+  // rewriteQuery display
   const rw = s5.rewrite;
   if (rw) {
-    const rwModel = s6?.providerAttempts?.[0]?.model || 'LLM';
-    if (rw.result) {
-      console.log(kv('  rewriteQuery:', `${C.green}"${rw.result}"${C.reset}  ${C.gray}(${rwModel})  ⏱ ${rw.timeMs}ms${C.reset}`));
+    if (rw.fuzzy) {
+      if (rw.result) {
+        console.log(kv('  rewriteQuery:', `${C.green}"${rw.result}"${C.reset}  ${C.gray}(fuzzyExpand: prefix + edit-distance, không gọi LLM)${C.reset}`));
+      } else {
+        console.log(kv('  rewriteQuery:', `${C.dim}[fuzzyExpand: no change]${C.reset}  ${C.gray}(LLM DOWN — không sửa được qua catalog)${C.reset}`));
+      }
+    } else if (rw.skipped) {
+      console.log(kv('  rewriteQuery:', `${C.yellow}[SKIP] Chưa cấu hình LLM_MODEL_1 / 2 / 3${C.reset}`));
+    } else if (rw.allFailed) {
+      console.log(kv('  rewriteQuery:', `${C.yellow}[tất cả providers lỗi] → dùng query gốc${C.reset}`));
     } else {
-      console.log(kv('  rewriteQuery:', `${C.dim}[no change]${C.reset}  ${C.gray}(${rwModel})  ⏱ ${rw.timeMs}ms${C.reset}`));
+      const rwModel = rw.model || s6?.providerAttempts?.[0]?.model || 'LLM';
+      if (rw.result) {
+        console.log(kv('  rewriteQuery:', `${C.green}"${rw.result}"${C.reset}  ${C.gray}(${rwModel})  ⏱ ${rw.timeMs}ms${C.reset}`));
+      } else {
+        console.log(kv('  rewriteQuery:', `${C.dim}[no change]${C.reset}  ${C.gray}(${rwModel})  ⏱ ${rw.timeMs}ms${C.reset}`));
+      }
     }
   }
 
@@ -791,9 +593,10 @@ function displayServerTrace(t, query, aiResponse = null) {
   if (s5.rewriteChanged && s5.search2) {
     const sr2 = s5.search2;
     console.log('');
-    console.log(sub(`rewriteQuery KHÁC query gốc ("${normalized}" → "${rw?.result}") → chạy refined search (lần 2)`));
+    console.log(sub(`rewriteQuery KHÁC query gốc → chạy refined search (lần 2)`));
+    console.log(sub(`  "${normalized}"  →  "${rw?.result}"`));
     console.log(sub('finalQuery (gửi LLM ở bước 6) = bản rewrite — GIỮ phủ định nếu có'));
-    console.log(kv('  hybridSearch lần 2:', `query: "${sr2.query}"  (strip từ rewrite "${rw?.result}")  |  topK=10`));
+    console.log(kv('  hybridSearch lần 2:', `query: "${sr2.query}"  |  topK=10`));
     console.log(ok(`hybridSearch lần 2 hoàn thành  ->  ${sr2.results.length} kết quả  ${C.gray}⏱ ${sr2.timeMs || 0}ms${C.reset}`));
     if (sr2.results.length > 0) {
       console.log('');
@@ -826,7 +629,6 @@ function displayServerTrace(t, query, aiResponse = null) {
   if (!s6) return;
 
   if (s6.llmMode === 'down' || (s6.usedFallback && !s6.providerAttempts?.length)) {
-    // LLM DOWN path
     const skipLines = compact
       ? [`${C.yellow}Không có LLM provider${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
       : [
@@ -854,10 +656,9 @@ function displayServerTrace(t, query, aiResponse = null) {
     console.log(sub('Đang chạy simpleKeywordMatch...'));
     console.log(ok(`Hoàn thành  ${C.gray}⏱ ${s6.timeMs}ms${C.reset}`));
   } else {
-    // LLM UP path
     if (s6.brandsStr) console.log(kv('  _getCatalogData:', `brands: ${s6.brandsStr.substring(0, 40)}`));
     if (s6.sanitized) console.log(kv('  A. _sanitizeMessage(finalQuery):', `"${s6.sanitized}..."`));
-    if (s6.promptLength) console.log(kv('  B. buildAugmentedPrompt:', `${s6.promptLength} ký tự  (${s6.productCount || s5.productsFound} SP + store info)`));
+    if (s6.promptLength) console.log(kv('  B. buildAugmentedPrompt:', `${s6.promptLength} ký tự  (${s6.productCount ?? s5?.productsFound ?? 0} SP + store info)`));
     console.log(kv('  C. messages[]:', `[system(6 rules), ${s6.historyMsgCount || 0} history, user+RAG_context]`));
     if (s6.totalBudgetMs) console.log(kv('  Ngân sách tổng:', `LLM_TOTAL_TIMEOUT_MS=${s6.totalBudgetMs}ms  (Promise.race bọc provider rotation)`));
 
@@ -931,6 +732,187 @@ function displayServerTrace(t, query, aiResponse = null) {
   console.log(dividerHi('=') + '\n');
 }
 
+// ── Run Pipeline (compute + display) ─────────────────────────────────────────
+
+async function runPipeline(query, llmMode, providedSessionId = null) {
+  const { trace, aiResponse } = await computePipeline(query, llmMode, providedSessionId);
+  displayPipeline(trace, query, aiResponse);
+}
+
+// ── Streaming HTTP — hiện từng bước khi server gửi chunk ─────────────────────
+
+function callChatbotServerStreaming(query, sid, onChunk) {
+  const http = require('http');
+  if (!sid) sid = 'demo-http-' + Date.now();
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({ message: query, sessionId: sid });
+    const req = http.request('http://localhost:8888/api/chatbot/message/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) },
+    }, (res) => {
+      let buf = '';
+      res.on('data', chunk => {
+        buf += chunk.toString();
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try { onChunk(JSON.parse(line)); } catch { /* ignore parse error */ }
+        }
+      });
+      res.on('end', () => {
+        if (buf.trim()) { try { onChunk(JSON.parse(buf)); } catch { /* ignore */ } }
+        resolve();
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(120000, () => { req.destroy(); reject(new Error('stream timeout')); });
+    req.write(payload);
+    req.end();
+  });
+}
+
+/** Hiện từng bước RAG ngay khi nhận chunk từ server streaming */
+function displayStreamStep(stepId, data, accum) {
+  switch (stepId) {
+    case '1':
+      console.log(step(1, 'Validate Message'));
+      if (!data.valid) { console.log(fail(`Không hợp lệ: ${data.reason || ''}`)); console.log(sub('Pipeline dừng → trả HTTP 400 cho client')); }
+      else { console.log(ok('Hợp lệ')); console.log(kv('  Độ dài:', `${data.length} ký tự  (giới hạn: 500)`)); console.log(kv('  Có ký tự hợp lệ:', 'Có (chữ cái / chữ số Unicode)')); }
+      break;
+    case '2':
+      console.log(step(2, 'Expand Abbreviations  (Normalize)'));
+      if (data.changed) { console.log(ok('Phát hiện và mở rộng viết tắt')); console.log(kv('  Trước:', `"${data.before}"`)); console.log(kv('  Sau:', `"${data.after}"`)); }
+      else console.log(sub('Không có viết tắt cần mở rộng — giữ nguyên query'));
+      break;
+    case '3':
+      console.log(step(3, 'Classify Intent  +  Security Gates'));
+      console.log(kv('  Intent phân loại:', `${C.cyan}${C.bold}${data.intent}${C.reset}`));
+      console.log(kv('  Prompt injection:', data.injection ? `${C.red}${C.bold}PHÁT HIỆN  ->  BLOCK${C.reset}` : `${C.green}Không phát hiện${C.reset}`));
+      console.log(kv('  Off-topic check:', data.offTopic ? `${C.yellow}${C.bold}NGOÀI PHẠM VI  ->  BLOCK${C.reset}` : `${C.green}Trong phạm vi${C.reset}`));
+      if (!data.injection && !data.offTopic) console.log(ok('Đạt tất cả security gates  ->  tiếp tục vào RAG pipeline'));
+      break;
+    case '4': {
+      console.log(step(4, 'Load Session History'));
+      console.log(kv('  Session ID:', data.sessionId || 'N/A'));
+      if (data.turns > 0 && data.messages?.length) {
+        console.log(kv('  Trạng thái:', `${C.green}Có lịch sử từ DB${C.reset}`));
+        console.log(kv('  conversationHistory:', `${data.turns} turns  (${data.messages.length} messages)`));
+        data.messages.forEach(m => { const p = (m.content || '').replace(/\n/g, ' ').substring(0, 60); console.log(`  ${C.gray}  ${m.role.padEnd(9)}${C.reset} "${p}${p.length >= 60 ? '...' : ''}"`); });
+      } else { console.log(kv('  Trạng thái:', 'Session chưa có lịch sử')); console.log(kv('  conversationHistory:', '[]  (0 turns)')); }
+      console.log(sub('Lưu trong Map RAM  |  Tối đa 500 sessions  |  TTL 30 phút'));
+      break;
+    }
+    case '5': // skipped (non-product intent)
+      console.log(step(5, 'Retrieve  (SKIP)'));
+      console.log(sub(data.reason));
+      console.log(sub('Không chạy Hybrid Search — chuyển thẳng sang Generation'));
+      break;
+    case '5a': {
+      console.log(compact ? step(5, 'Enrich Query  +  Retrieve Products') : step('5a', 'Enrich Query From History'));
+      const norm = accum.normalized || accum.query;
+      const enriched = data.enrichedQuery || norm;
+      console.log(kv('  Đại từ chỉ định:', data.hasPronoun
+        ? `${C.yellow}Có  ->  cần append context từ history${C.reset}`
+        : (data.isImplicitFollowup && accum.s4?.turns > 0
+            ? `${C.yellow}Implicit follow-up (query ngắn, không có brand)  ->  enrich${C.reset}`
+            : `${C.green}Không  ->  giữ nguyên query${C.reset}`)));
+      if (data.enrichChanged) { const app = enriched.replace(norm, '').trim(); if (app) console.log(sub(`_enrichQueryFromHistory: append "${app.substring(0, 50)}"`)); }
+      console.log(kv('  Enriched query:', `"${enriched}"`));
+      console.log('');
+      if (!compact) console.log(step('5b', 'Retrieve Products  (Hybrid Search)'));
+      console.log(`  ${C.dim}Cách tính Score  (DEFAULT_MIN_SCORE=0.45 • OVERLAP_BOOST=0.05 • KEYWORD_INJECTION_MAX_BOOST=0.05):${C.reset}`);
+      console.log(`  ${C.dim}  • Conf=ok  (vector match):  score = cosine + OVERLAP_BOOST (nếu trùng cả từ khóa)${C.reset}`);
+      console.log(`  ${C.dim}  • Conf=low (keyword-only):  score = DEFAULT_MIN_SCORE + (kwScore / maxKwScore) × KEYWORD_INJECTION_MAX_BOOST${C.reset}`);
+      console.log('');
+      console.log(sub('Promise.all( rewriteQuery(LLM)  ||  hybridSearch(topK=10) )'));
+      console.log(`  ${C.yellow}⏳  Đang chạy hybrid search + rewriteQuery...${C.reset}`);
+      break;
+    }
+    case '5b': {
+      const rw = data.rewrite;
+      if (rw) {
+        if (rw.fuzzy) console.log(kv('  rewriteQuery:', rw.result ? `${C.green}"${rw.result}"${C.reset}  ${C.gray}(fuzzyExpand)${C.reset}` : `${C.dim}[fuzzyExpand: no change]${C.reset}`));
+        else if (rw.result) console.log(kv('  rewriteQuery:', `${C.green}"${rw.result}"${C.reset}  ${C.gray}(${rw.model || 'LLM'})  ⏱ ${rw.timeMs}ms${C.reset}`));
+        else console.log(kv('  rewriteQuery:', `${C.dim}[no change]${C.reset}  ${C.gray}(${rw.model || 'LLM'})  ⏱ ${rw.timeMs}ms${C.reset}`));
+      }
+      const sr1 = data.search1;
+      if (sr1) {
+        console.log(kv('  hybridSearch lần 1:', `query: "${sr1.query}"  |  semantic (cosine) + keyword (BM25)  |  topK=10`));
+        console.log(ok(`hybridSearch lần 1 hoàn thành  ->  ${sr1.results.length} kết quả  ${C.gray}⏱ ${sr1.timeMs}ms${C.reset}`));
+        console.log('');
+        console.log(`  ${C.bold}${C.dim}  #   ${'Tên sản phẩm'.padEnd(42)}  Score   Conf${C.reset}`);
+        console.log(`  ${C.gray}  ${'-'.repeat(60)}${C.reset}`);
+        sr1.results.forEach((r, i) => { const n = (r.name || '?').substring(0, 42).padEnd(42); const cf = r.lowConfidence ? `${C.yellow}low${C.reset}` : `${C.green}ok ${C.reset}`; console.log(`  ${C.gray}${String(i+1).padStart(3)}.${C.reset} ${n}  ${C.cyan}${fmtScore(r.score)}${C.reset}  ${cf}`); });
+      }
+      if (data.rewriteChanged && data.search2) {
+        const sr2 = data.search2;
+        console.log('');
+        console.log(sub('rewriteQuery KHÁC query gốc → chạy refined search (lần 2)'));
+        console.log(sub(`  "${sr1?.query}"  →  "${rw?.result}"`));
+        console.log(sub('finalQuery (gửi LLM ở bước 6) = bản rewrite — GIỮ phủ định nếu có'));
+        console.log(kv('  hybridSearch lần 2:', `query: "${sr2.query}"  |  topK=10`));
+        console.log(ok(`hybridSearch lần 2 hoàn thành  ->  ${sr2.results.length} kết quả  ${C.gray}⏱ ${sr2.timeMs || 0}ms${C.reset}`));
+        if (sr2.results.length > 0) {
+          console.log('');
+          console.log(`  ${C.bold}${C.dim}  #   ${'Tên sản phẩm'.padEnd(42)}  Score   Conf${C.reset}`);
+          console.log(`  ${C.gray}  ${'-'.repeat(60)}${C.reset}`);
+          sr2.results.forEach((r, i) => { const n = (r.name || '?').substring(0, 42).padEnd(42); const cf = r.lowConfidence ? `${C.yellow}low${C.reset}` : `${C.green}ok ${C.reset}`; console.log(`  ${C.gray}${String(i+1).padStart(3)}.${C.reset} ${n}  ${C.cyan}${fmtScore(r.score)}${C.reset}  ${cf}`); });
+        }
+        console.log('');
+        console.log(sub(sr2.usedForFinal ? `Dùng kết quả lần 2 (rewrite) cho Generation  →  ${sr2.results.length} sản phẩm` : 'Lần 2 rỗng → fallback dùng initialResults (lần 1)'));
+      } else {
+        console.log('');
+        console.log(sub(`rewriteQuery không đổi query → bỏ qua lần 2, dùng kết quả lần 1 cho Generation  →  ${sr1?.results?.length || data.productsFound} sản phẩm`));
+      }
+      if (data.usedLowFallback) console.log(warn('0 kết quả trên threshold → hạ minScore=0, lấy top-3 (fallback)'));
+      break;
+    }
+    case '6_start': {
+      console.log(step(6, 'Generation'));
+      const isUp6 = (data.providerCount ?? data.llmMode === 'up') > 0 || data.llmMode === 'up';
+      const tag6 = isUp6 ? `${C.bold}${C.green}[ LLM UP  ]${C.reset}` : `${C.bold}${C.yellow}[ LLM DOWN ]${C.reset}`;
+      console.log(`  ${C.yellow}⏳  ${tag6}  Đang gọi LLM... (có thể mất 20-35 giây)${C.reset}`);
+      break;
+    }
+    case '6': {
+      if (data.llmMode === 'down' || (data.usedFallback && !data.providerAttempts?.length)) {
+        const skipLines = compact
+          ? [`${C.yellow}Không có LLM provider${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
+          : [`${C.yellow}Không có LLM provider  ->  các sub-steps LLM bị SKIP:${C.reset}`, `  ${C.gray}[SKIP] A. _sanitizeMessage     (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] B. buildAugmentedPrompt (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] C. build messages[]     (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] D. LLM HTTP POST        (không có provider)${C.reset}`, `  ${C.gray}[SKIP] E. parseLLMOutput       (không có response để parse)${C.reset}`, ''];
+        console.log(box('LLM DOWN  —  simpleKeywordMatch  (keyword fallback)', [...skipLines, `  ${C.yellow}-> Fallback: simpleKeywordMatch (8 bước nội bộ):${C.reset}`, '  1. Tokenize + scoring     name match +10  |  description match +5', '  2. Version number filter  extract số model, loại SP sai phiên bản', '  3. Brand coherence check  loại kết quả sai brand', '  4. Negation filter        parse "không muốn/tránh X" -> loại', '  5. Price range filter     tầm/dưới/trên X triệu -> filter theo giá', '  6. Category prefix filter detect "laptop/điện thoại" -> filter loại SP', '  7. Sort + dedup           sort by matchScore giảm dần, loại trùng', '  8. Intent-aware response  pricing->💰  policy->📋  search->🔍  new->🌟'], C.yellow));
+        console.log('');
+        console.log(sub('Đang chạy simpleKeywordMatch...'));
+        console.log(ok(`Hoàn thành  ${C.gray}⏱ ${data.timeMs}ms${C.reset}`));
+      } else {
+        if (data.brandsStr) console.log(kv('  _getCatalogData:', `brands: ${data.brandsStr.substring(0, 40)}`));
+        if (data.sanitized) console.log(kv('  A. _sanitizeMessage(finalQuery):', `"${data.sanitized}..."`));
+        if (data.promptLength) console.log(kv('  B. buildAugmentedPrompt:', `${data.promptLength} ký tự  (${data.productCount ?? 0} SP + store info)`));
+        console.log(kv('  C. messages[]:', `[system(6 rules), ${data.historyMsgCount || 0} history, user+RAG_context]`));
+        if (data.totalBudgetMs) console.log(kv('  Ngân sách tổng:', `LLM_TOTAL_TIMEOUT_MS=${data.totalBudgetMs}ms  (Promise.race bọc provider rotation)`));
+        for (const a of (data.providerAttempts || [])) {
+          console.log(kv('  D. LLM call:', `${a.model}  (provider ${a.index}/${a.total})  |  temp=0.3  |  max_tokens=800`));
+          if (a.url) console.log(sub(`POST -> ${a.url}  (đang chờ...)`));
+          if (a.status === 'ok') { console.log(ok(`Nhận phản hồi  (${a.timeMs}ms  |  ${a.rawLength} ký tự JSON)`)); console.log(kv('  E. parseLLMOutput:', 'extractJSON -> map names -> dedup -> extractProductsFromText')); console.log(ok('Hoàn thành')); }
+          else if (a.status === 'retry') console.log(warn(`Provider ${a.index} lỗi (${a.errorCode}) → ${a.index < a.total ? `thử provider ${a.index + 1}` : 'fallback simpleKeywordMatch'}`));
+          else if (a.status === 'break') console.log(warn(`Provider ${a.index} lỗi cố định (${a.errorCode}) → dừng retry`));
+        }
+        if (data.usedFallback) console.log(warn(`LLM vượt ngân sách ${data.totalBudgetMs}ms → fallback simpleKeywordMatch`));
+      }
+      break;
+    }
+    case '7':
+      console.log(step(7, 'Persist  —  Session Memory  +  Database'));
+      console.log(kv('  7a. Session memory:', `updatedMessages = ${data.updatedMsgCount || '?'} msgs  (giới hạn 20 = 10 turns)`));
+      console.log(kv('     lastAccess:', data.lastAccessTime || new Date().toLocaleTimeString('vi-VN')));
+      console.log(sub('_evictStaleSessions():  xóa TTL > 30 phút  +  LRU khi > 500 sessions'));
+      console.log('');
+      console.log(kv('  7b. DB persist:', 'ChatMessage.bulkCreate([userMsg, assistantMsg])  —  1 DB call'));
+      console.log(sub('Fire-and-forget: .catch() chỉ log warning  ->  chatbot vẫn trả lời khi DB lỗi'));
+      break;
+  }
+}
+
 // ── HTTP song song đến server đang chạy ──────────────────────────────────────
 
 async function callChatbotServer(query, sid, { trace = false, retries = 2 } = {}) {
@@ -961,11 +943,10 @@ async function callChatbotServer(query, sid, { trace = false, retries = 2 } = {}
   for (let i = 0; i <= retries; i++) {
     const res = await attempt();
     if (res.ok || i === retries) return res;
-    // Retry sau 1s khi gặp lỗi connection (ECONNRESET, ECONNREFUSED)
     if (res.error.includes('CONN') || res.error.includes('reset')) {
       await new Promise(r => setTimeout(r, 1000));
     } else {
-      return res; // Lỗi khác (parse fail, timeout) → không retry
+      return res;
     }
   }
 }
@@ -1017,7 +998,6 @@ function printServerResponse(res) {
   console.log(kv('  HTTP status:', res.data?.status));
   console.log(kv('  intent:', `${C.cyan}${d.intent}${C.reset}`));
   console.log('');
-  // In full response không truncate
   console.log(`  ${C.bold}Response đầy đủ:${C.reset}`);
   const lines = (d.response || '').split('\n');
   lines.forEach(l => console.log(`    ${l}`));
@@ -1038,9 +1018,8 @@ function printServerResponse(res) {
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 (async () => {
-  // Tính padding chính xác theo display width (tránh lệch do multi-byte Vietnamese)
-  const BOX = W; // header đồng bộ với W (tự adapt theo terminal)
-  const inner = BOX - 2; // chiều rộng bên trong (không tính 2 ký tự '|')
+  const BOX = W;
+  const inner = BOX - 2;
   const centerLine = (text) => {
     const pad = inner - text.length;
     const left = Math.floor(pad / 2);
@@ -1052,13 +1031,13 @@ function printServerResponse(res) {
     '',
     C.bold + C.teal + border,
     centerLine('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'),
-    centerLine('Luận văn tốt nghiệp'),
+    centerLine('Dự án công nghệ'),
     border + C.reset,
   ].join('\n');
   console.log(HEADER);
 
   const noHttp     = args.includes('--no-http');
-  const oneShot    = !!args.find(a => !a.startsWith('--')); // có query sẵn → chạy 1 lần rồi thoát
+  const oneShot    = !!args.find(a => !a.startsWith('--'));
   let   currentMode = modeArg;
   let   sessionId   = sessionArg || 'demo-' + Date.now();
 
@@ -1066,42 +1045,137 @@ function printServerResponse(res) {
     console.log(kv('Session ID:', `${C.teal}${sessionId}${C.reset}  ${C.green}(sync với UI)${C.reset}`));
   }
 
-  // Watch mode: tự theo dõi DB, trace query mới từ UI
-  // Không cần --session-id — tự detect session mới nhất và follow khi UI đổi session
+  // Watch mode
   if (watchMode) {
     console.log(kv('Mode:', currentMode));
     console.log(sub('Watch mode — tự follow session UI. Ctrl+C để dừng.\n'));
 
+    const { ChatMessage } = require('@models');
     const http = require('http');
 
-    const httpGet = (url) => new Promise(resolve => {
-      http.get(url, r => {
-        let raw = ''; r.on('data', d => raw += d);
-        r.on('end', () => { try { resolve(JSON.parse(raw)); } catch { resolve(null); } });
-      }).on('error', () => resolve(null));
-    });
-
-    // Query DB trực tiếp — không cần HTTP endpoint, không expose session ID qua API
-    const { ChatMessage } = require('@models');
-
     let watchSessionId = sessionArg || null;
-    let lastSeenId = 0;
     let terminalBusy = false;
+    let currentSSEReq = null; // giữ reference để ngắt khi đổi session
 
-    const initSession = async (sid) => {
-      const latest = await ChatMessage.findOne({
-        where: { sessionId: sid },
-        attributes: ['id'],
-        order: [['id', 'DESC']],
-        raw: true,
-      }).catch(() => null);
-      lastSeenId = latest?.id ?? 0;
-      watchSessionId = sid;
-      const count = await ChatMessage.count({ where: { sessionId: sid } }).catch(() => 0);
-      console.log(`${C.teal}${C.bold}[Watch]${C.reset} Đang theo dõi session id: ${C.dim}${sid}${C.reset} (${count} msgs hiện có)`);
+    // Vẽ lại prompt watch mode sau khi in async output
+    const WATCH_PROMPT = `\n${C.gray}(lệnh: 'exit' thoát, 'mode:up/down/both' đổi mode)${C.reset}\n${C.bold}${C.cyan}> Terminal query: ${C.reset}`;
+    // Chỉ vẽ lại dòng prompt (không vẽ lại hint đã có trên màn hình)
+    const redrawPrompt = () => { if (!terminalBusy) process.stdout.write(`${C.bold}${C.cyan}> Terminal query: ${C.reset}`); };
+
+    // ── Helper hiển thị KẾT QUẢ TRẢ VỀ (dùng chung cho SSE + streaming) ────────
+    const displayResult = (aiResponse, stepAccum = {}) => {
+      const tTotal = stepAccum.s7?.responseTimeMs || stepAccum.s6?.timeMs || 0;
+      const intent = aiResponse.intent || stepAccum.s3?.intent || 'N/A';
+      console.log('\n' + dividerHi('-'));
+      console.log(`${C.bold}  KẾT QUẢ TRẢ VỀ CHO FRONTEND  ${C.gray}⏱ tổng ${tTotal}ms${C.reset}`);
+      console.log(dividerHi('-'));
+      console.log(kv('  intent:', `${C.cyan}${intent}${C.reset}`));
+      console.log('');
+      console.log(`  ${C.bold}Response đầy đủ:${C.reset}`);
+      (aiResponse.response || '').split('\n').forEach(line => {
+        if (line.length <= 90) { console.log(`    ${line}`); return; }
+        const words = line.split(' '); let cur = '    ';
+        for (const w of words) { if (cur.length + w.length > 94) { console.log(cur); cur = '    ' + w + ' '; } else cur += w + ' '; }
+        if (cur.trim()) console.log(cur);
+      });
+      console.log('');
+      console.log(kv('  products:', `${aiResponse.products?.length || 0} card(s)`));
+      (aiResponse.products || []).forEach((p, i) =>
+        console.log(item(i+1, `${C.bold}${p.name}${C.reset}  —  ${C.cyan}${fmtPrice(p.price)}${C.reset}`))
+      );
+      if (aiResponse.suggestions?.length) {
+        aiResponse.suggestions.slice(0, 3).forEach((s, i) => {
+          const label = i === 0 ? '  suggestions:' : '              ';
+          const short = s.length > W - 18 ? s.substring(0, W - 21) + '...' : s;
+          console.log(`  ${C.dim}${label.padEnd(20)}${C.reset}${C.gray}${i + 1}.${C.reset} ${short}`);
+        });
+      }
+      console.log(dividerHi('=') + '\n');
     };
-    // Ưu tiên session UI đăng ký qua /session/register (ghi vào data/.last-session-id)
-    // Fallback: session mới nhất trong DB
+
+    // ── SSE client: nhận pipeline steps từ UI real-time ──────────────────────────
+    let sseGeneration = 0; // tăng mỗi lần connectSSE → stale doConnect tự dừng
+    const connectSSE = (sid) => {
+      if (currentSSEReq) { try { currentSSEReq.destroy(); } catch { /* ignore */ } currentSSEReq = null; }
+      if (!sid) return;
+      const myGen = ++sseGeneration; // closure capture — stale nếu sseGeneration > myGen
+      const sseAccum = { query: null };
+      const doConnect = () => {
+        if (sseGeneration !== myGen) return; // stale closure — dừng reconnect
+        let reconnectScheduled = false; // chỉ schedule reconnect 1 lần dù nhiều error fires
+        const scheduleReconnect = (delay) => {
+          if (reconnectScheduled || sseGeneration !== myGen) return;
+          reconnectScheduled = true;
+          setTimeout(doConnect, delay);
+        };
+        const req = http.get(
+          `http://localhost:8888/api/chatbot/events?sessionId=${encodeURIComponent(sid)}`,
+          (res) => {
+            let buf = '';
+            res.on('data', chunk => {
+              buf += chunk.toString();
+              const events = buf.split('\n\n');
+              buf = events.pop();
+              for (const event of events) {
+                if (event.startsWith(':')) continue; // heartbeat
+                const dataLine = event.split('\n').find(l => l.startsWith('data: '));
+                if (!dataLine) continue;
+                try {
+                  const msg = JSON.parse(dataLine.slice(6));
+                  if (terminalBusy) continue; // terminal đang xử lý query riêng
+                  // Erase prompt line trước khi in — chỉ khi không busy
+                  process.stdout.write('\r\x1b[2K');
+                  if (msg.type === 'connected') {
+                    console.log(`\n${C.teal}${C.bold}[SSE]${C.reset} Kết nối real-time session ${C.dim}${sid}${C.reset}`);
+                    redrawPrompt();
+                  } else if (msg.type === 'start') {
+                    sseAccum.query = msg.query; sseAccum.normalized = null; sseAccum.s3 = null; sseAccum.s6 = null; sseAccum.s7 = null;
+                    console.log(`\n${C.teal}${C.bold}[UI → Terminal]${C.reset} Query mới: "${msg.query}"`);
+                    // Header banner
+                    const hdrIn = W - 2;
+                    const cl2 = (t) => { const p = hdrIn - t.length; const l = Math.floor(p/2); return '|' + ' '.repeat(l) + t + ' '.repeat(p-l) + '|'; };
+                    const hdrB = '+' + '='.repeat(hdrIn) + '+';
+                    console.log('\n' + C.bold + C.teal + hdrB);
+                    console.log(cl2('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
+                    console.log(cl2('Luận văn tốt nghiệp'));
+                    console.log(hdrB + C.reset);
+                    console.log(`  Query:${' '.repeat(16)}"${msg.query}"`);
+                    console.log(`  Mode:${' '.repeat(17)}up`);
+                    const mT = `${C.bold}${C.green}[ LLM UP  ]${C.reset}`;
+                    console.log('\n' + dividerHi('='));
+                    console.log(`${C.bold}  RAG PIPELINE DEMO  |  Mode: ${mT}  ${compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`}${C.reset}`);
+                    console.log(dividerHi('='));
+                    console.log(kv('Query đầu vào:', `"${msg.query}"`));
+                  } else if (msg.type === 'step') {
+                    if (msg.step === '2' && msg.data?.after) sseAccum.normalized = msg.data.after;
+                    if (msg.step === '3') sseAccum.s3 = msg.data;
+                    if (msg.step === '4') sseAccum.s4 = msg.data;
+                    if (msg.step === '6') sseAccum.s6 = msg.data;
+                    if (msg.step === '7') sseAccum.s7 = msg.data;
+                    displayStreamStep(msg.step, msg.data, sseAccum);
+                  } else if (msg.type === 'done' && sseAccum.query) {
+                    displayResult(msg.data, sseAccum);
+                    redrawPrompt();
+                  }
+                } catch { /* ignore parse error */ }
+              }
+            });
+            res.on('end', () => {
+              if (watchSessionId === sid) scheduleReconnect(3000);
+            });
+            res.on('error', () => {
+              if (watchSessionId === sid) scheduleReconnect(3000);
+            });
+          }
+        );
+        req.on('error', () => {
+          if (watchSessionId === sid) scheduleReconnect(5000);
+        });
+        currentSSEReq = req;
+      };
+      doConnect();
+    };
+
     const fs = require('fs');
     const path = require('path');
     const lastSessionFile = path.join(__dirname, '..', 'data', '.last-session-id');
@@ -1120,6 +1194,13 @@ function printServerResponse(res) {
       } catch { return null; }
     };
 
+    const initSession = async (sid) => {
+      watchSessionId = sid;
+      const count = await ChatMessage.count({ where: { sessionId: sid } }).catch(() => 0);
+      console.log(`${C.teal}${C.bold}[Watch]${C.reset} Đang theo dõi session id: ${C.dim}${sid}${C.reset} (${count} msgs hiện có)`);
+      connectSSE(sid);
+    };
+
     if (watchSessionId) {
       await initSession(watchSessionId);
     } else {
@@ -1132,7 +1213,8 @@ function printServerResponse(res) {
       }
     }
 
-    const poll = async () => {
+    // Chỉ kiểm tra session change — DB message polling thay bằng SSE
+    const checkSession = async () => {
       if (terminalBusy) return;
       const latestSid = await fetchLatestSession();
       if (latestSid && latestSid !== watchSessionId) {
@@ -1140,58 +1222,15 @@ function printServerResponse(res) {
         await initSession(latestSid);
         return;
       }
-
-      if (!watchSessionId) {
-        if (latestSid) await initSession(latestSid);
-        return;
-      }
-
-      const { Op } = require('sequelize');
-      const newMsgs = await ChatMessage.findAll({
-        where: { sessionId: watchSessionId, id: { [Op.gt]: lastSeenId } },
-        order: [['id', 'ASC']],
-        attributes: ['id', 'role', 'content', 'metadata'],
-        raw: true,
-      }).catch(() => []);
-
-      if (newMsgs.length > 0) {
-        lastSeenId = newMsgs[newMsgs.length - 1].id;
-        for (const m of newMsgs) {
-          if (m.role !== 'user') continue;
-          console.log(`\n${C.teal}${C.bold}[UI → Terminal]${C.reset} Query mới: "${m.content}"`);
-          // Tìm assistant message ngay sau user message (chứa trace trong metadata)
-          const assistant = newMsgs.find(a => a.role === 'assistant' && a.id > m.id);
-          let trace = null;
-          let meta = null;
-          if (assistant?.metadata) {
-            try {
-              meta = typeof assistant.metadata === 'string' ? JSON.parse(assistant.metadata) : assistant.metadata;
-              trace = meta.trace;
-            } catch { /* ignore parse error */ }
-          }
-          if (trace) {
-            displayServerTrace(trace, m.content, {
-              intent: meta?.intent || trace?.step3_security?.intent || '', response: assistant.content,
-              products: meta?.products || [], suggestions: meta?.suggestions || [],
-            });
-          } else {
-            console.log(sub('Không có trace trong DB — fallback local pipeline'));
-            try {
-              if (currentMode === 'down' || currentMode === 'both') await runPipeline(m.content, 'down', watchSessionId);
-              if (currentMode === 'up'   || currentMode === 'both') await runPipeline(m.content, 'up', watchSessionId);
-            } catch (e) { console.error(`${C.red}Lỗi trace:${C.reset}`, e.message); }
-          }
-        }
-      }
+      if (!watchSessionId && latestSid) await initSession(latestSid);
     };
 
-    setInterval(poll, 2000);
+    setInterval(checkSession, 2000);
 
-    // Readline song song — nhận input từ terminal trong khi vẫn watch UI
     const readline = require('readline');
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     const askWatch = () => {
-      process.stdout.write(`\n${C.gray}(lệnh: 'exit' thoát, 'mode:up/down/both' đổi mode)${C.reset}\n${C.bold}${C.cyan}> Terminal query: ${C.reset}`);
+      process.stdout.write(WATCH_PROMPT);
       rl.once('line', async (input) => {
         input = input.trim();
         if (!input || input === 'exit') { rl.close(); process.exit(0); }
@@ -1201,45 +1240,68 @@ function printServerResponse(res) {
         } else {
           const sid = watchSessionId || 'demo-' + Date.now();
           console.log(`\n${C.teal}${C.bold}[Terminal → Server]${C.reset} Gửi: "${input}"  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
+          // Header banner một lần trước khi stream
+          const hdrInner = W - 2;
+          const cl = (text) => { const p = hdrInner - text.length; const l = Math.floor(p/2); return '|' + ' '.repeat(l) + text + ' '.repeat(p-l) + '|'; };
+          const hdrBorder = '+' + '='.repeat(hdrInner) + '+';
+          console.log('\n' + C.bold + C.teal + hdrBorder);
+          console.log(cl('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
+          console.log(cl('Luận văn tốt nghiệp'));
+          console.log(hdrBorder + C.reset);
+          console.log(`  Query:${' '.repeat(16)}"${input}"`);
+          const isUpMode = currentMode !== 'down';
+          console.log(`  Mode:${' '.repeat(17)}${isUpMode ? 'up' : 'down'}`);
+          const modeTag = isUpMode ? `${C.bold}${C.green}[ LLM UP  ]${C.reset}` : `${C.bold}${C.yellow}[ LLM DOWN ]${C.reset}`;
+          console.log('\n' + dividerHi('='));
+          console.log(`${C.bold}  RAG PIPELINE DEMO  |  Mode: ${modeTag}  ${compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`}${C.reset}`);
+          console.log(dividerHi('='));
+          console.log(kv('Query đầu vào:', `"${input}"`));
           terminalBusy = true;
+          const accum = { query: input };
           try {
-            const res = await callChatbotServer(input, sid, { trace: true });
-            if (res.ok && res.data?.data?.trace) {
-              const d = res.data.data;
-              displayServerTrace(res.data.data.trace, input, {
-                intent: d.intent, response: d.response, products: d.products, suggestions: d.suggestions,
-              });
-              console.log(sub(`${C.green}✓ UI sẽ hiển thị cùng response này${C.reset}`));
-            } else if (res.ok) {
-              console.log(ok('Server xử lý thành công (không có trace)'));
-            } else {
-              console.log(warn(`Server lỗi: ${res.error || 'unknown'}`));
-              console.log(sub('Kiểm tra server đang chạy (npm run dev) và thử lại'));
-            }
-            // Bump lastSeenId
-            const latest = await ChatMessage.findOne({
-              where: { sessionId: sid }, attributes: ['id'], order: [['id', 'DESC']], raw: true,
-            }).catch(() => null);
-            if (latest) lastSeenId = latest.id;
+            await callChatbotServerStreaming(input, sid, (msg) => {
+              if (msg.type === 'step') {
+                if (msg.step === '2' && msg.data?.after) accum.normalized = msg.data.after;
+                if (msg.step === '3') accum.s3 = msg.data;
+                if (msg.step === '4') accum.s4 = msg.data;
+                if (msg.step === '6') accum.s6 = msg.data;
+                if (msg.step === '7') accum.s7 = msg.data;
+                displayStreamStep(msg.step, msg.data, accum);
+              } else if (msg.type === 'done') {
+                displayResult(msg.data, accum);
+              } else if (msg.type === 'error') {
+                console.log(warn(`Server lỗi: ${msg.data?.message || 'unknown'}`));
+              }
+            });
+            console.log(sub(`${C.green}✓ UI sẽ hiển thị cùng response này${C.reset}`));
           } catch (e) {
-            console.error(`${C.red}Lỗi:${C.reset}`, e.message);
+            if (e.message === 'stream timeout' || e.message?.includes('ECONNREFUSED')) {
+              console.log(warn(`Server streaming không khả dụng — fallback trace`));
+              try {
+                const res = await callChatbotServer(input, sid, { trace: true });
+                if (res.ok && res.data?.data?.trace) {
+                  const d = res.data.data;
+                  displayPipeline(res.data.data.trace, input, { intent: d.intent, response: d.response, products: d.products, suggestions: d.suggestions });
+                }
+              } catch { /* ignore */ }
+            } else {
+              console.error(`${C.red}Lỗi stream:${C.reset}`, e.message);
+            }
           }
           terminalBusy = false;
         }
-        askWatch(); // loop lại
+        askWatch();
       });
     };
     askWatch();
-    return; // Giữ process chạy
+    return;
   }
 
-  // Nếu có query từ arg → chạy 1 lần
+  // One-shot
   if (oneShot) {
     const inputQuery = query;
     console.log(kv('Query:', `"${inputQuery}"`));
     console.log(kv('Mode:', currentMode));
-    // One-shot: chạy local pipeline, không gửi HTTP (tránh 2 LLM calls)
-    // Dùng --no-http=false nếu muốn sync với server
     const httpP = (noHttp || oneShot) ? null : callChatbotServer(inputQuery, sessionId);
     try {
       if (currentMode === 'down' || currentMode === 'both') await runPipeline(inputQuery, 'down', sessionId);
@@ -1249,7 +1311,7 @@ function printServerResponse(res) {
     process.exit(0);
   }
 
-  // Không có query → interactive loop
+  // Interactive loop
   console.log(kv('Mode:', currentMode));
   console.log(kv('Session ID:', sessionId));
   console.log(sub('Chạy interactive — nhập query để trace pipeline'));
@@ -1262,18 +1324,16 @@ function printServerResponse(res) {
       process.exit(0);
     }
 
-    // Lệnh đổi mode
     if (input.startsWith('mode:')) {
       currentMode = input.split(':')[1]?.trim() || currentMode;
       console.log(ok(`Đã đổi mode → ${C.cyan}${currentMode}${C.reset}`));
       continue;
     }
 
-    // Lệnh clear session
     if (input === 'clear') {
-      process.stdout.write('\x1Bc'); // clear terminal
+      process.stdout.write('\x1Bc');
       const oldSid = sessionId;
-      sessionId = 'demo-' + Date.now(); // session ID mới
+      sessionId = 'demo-' + Date.now();
       const r = await clearSessionOnServer(oldSid);
       console.log(HEADER);
       console.log(ok(`Session đã xóa  (old: ${oldSid})`));
@@ -1283,7 +1343,6 @@ function printServerResponse(res) {
       continue;
     }
 
-    // Chạy pipeline + HTTP song song
     console.log(kv('Query:', `"${input}"`));
     console.log(kv('Mode:', currentMode));
     const httpP = noHttp ? null : callChatbotServer(input, sessionId);

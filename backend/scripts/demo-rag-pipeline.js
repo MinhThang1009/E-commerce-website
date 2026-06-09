@@ -1266,42 +1266,47 @@ function printServerResponse(res) {
         if (input.startsWith('mode:')) {
           currentMode = input.split(':')[1] || currentMode;
           console.log(ok(`Mode → ${C.cyan}${currentMode}${C.reset}`));
-          if (currentMode === 'down') console.log(sub(`${C.dim}Watch mode: terminal query luôn gửi lên server → server quyết định up/down. 'mode:down' chỉ có tác dụng ở one-shot/interactive mode.${C.reset}`));
+          if (currentMode === 'down') console.log(sub(`${C.dim}mode:down → local pipeline, không gọi server LLM.${C.reset}`));
         } else {
           const sid = watchSessionId || 'demo-' + Date.now();
-          console.log(`\n${C.teal}${C.bold}[Terminal → Server]${C.reset} Gửi: "${input}"  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
-          // Header banner một lần trước khi stream
-          const hdrInner = W - 2;
-          const cl = (text) => { const p = hdrInner - text.length; const l = Math.floor(p/2); return '|' + ' '.repeat(l) + text + ' '.repeat(p-l) + '|'; };
-          const hdrBorder = '+' + '='.repeat(hdrInner) + '+';
-          console.log('\n' + C.bold + C.teal + hdrBorder);
-          console.log(cl('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
-          console.log(cl('Luận văn tốt nghiệp'));
-          console.log(hdrBorder + C.reset);
-          console.log(`  Query:${' '.repeat(16)}"${input}"`);
-          // Mode xác định bởi server (up/down hiện ở step 6_start) — không hiện ở banner
-          console.log('\n' + dividerHi('='));
-          console.log(`${C.bold}  RAG PIPELINE DEMO  |  ${compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`}${C.reset}`);
-          console.log(dividerHi('='));
-          console.log(kv('Query đầu vào:', `"${input}"`));
           terminalBusy = true;
-          const accum = { query: input };
           try {
-            await callChatbotServerStreaming(input, sid, (msg) => {
-              if (msg.type === 'step') {
-                if (msg.step === '2' && msg.data?.after) accum.normalized = msg.data.after;
-                if (msg.step === '3') accum.s3 = msg.data;
-                if (msg.step === '4') accum.s4 = msg.data;
-                if (msg.step === '6') accum.s6 = msg.data;
-                if (msg.step === '7') accum.s7 = msg.data;
-                displayStreamStep(msg.step, msg.data, accum);
-              } else if (msg.type === 'done') {
-                displayResult(msg.data, accum);
-              } else if (msg.type === 'error') {
-                console.log(warn(`Server lỗi: ${msg.data?.message || 'unknown'}`));
-              }
-            });
-            console.log(sub(`${C.green}✓ UI sẽ hiển thị cùng response này${C.reset}`));
+            if (currentMode === 'down') {
+              // mode:down → local pipeline (không gọi server LLM, tức thì, không cần sync UI)
+              console.log(`\n${C.teal}${C.bold}[Terminal Local]${C.reset} Chạy local pipeline (LLM DOWN)  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
+              await runPipeline(input, 'down', sid);
+            } else {
+              // mode:up/both → server streaming
+              console.log(`\n${C.teal}${C.bold}[Terminal → Server]${C.reset} Gửi: "${input}"  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
+              const hdrInner = W - 2;
+              const cl = (text) => { const p = hdrInner - text.length; const l = Math.floor(p/2); return '|' + ' '.repeat(l) + text + ' '.repeat(p-l) + '|'; };
+              const hdrBorder = '+' + '='.repeat(hdrInner) + '+';
+              console.log('\n' + C.bold + C.teal + hdrBorder);
+              console.log(cl('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
+              console.log(cl('Luận văn tốt nghiệp'));
+              console.log(hdrBorder + C.reset);
+              console.log(`  Query:${' '.repeat(16)}"${input}"`);
+              console.log('\n' + dividerHi('='));
+              console.log(`${C.bold}  RAG PIPELINE DEMO  |  ${compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`}${C.reset}`);
+              console.log(dividerHi('='));
+              console.log(kv('Query đầu vào:', `"${input}"`));
+              const accum = { query: input };
+              await callChatbotServerStreaming(input, sid, (msg) => {
+                if (msg.type === 'step') {
+                  if (msg.step === '2' && msg.data?.after) accum.normalized = msg.data.after;
+                  if (msg.step === '3') accum.s3 = msg.data;
+                  if (msg.step === '4') accum.s4 = msg.data;
+                  if (msg.step === '6') accum.s6 = msg.data;
+                  if (msg.step === '7') accum.s7 = msg.data;
+                  displayStreamStep(msg.step, msg.data, accum);
+                } else if (msg.type === 'done') {
+                  displayResult(msg.data, accum);
+                } else if (msg.type === 'error') {
+                  console.log(warn(`Server lỗi: ${msg.data?.message || 'unknown'}`));
+                }
+              });
+              console.log(sub(`${C.green}✓ UI sẽ hiển thị cùng response này${C.reset}`));
+            }
           } catch (e) {
             if (e.message === 'stream timeout' || e.message?.includes('ECONNREFUSED')) {
               console.log(warn(`Server streaming không khả dụng — fallback trace`));

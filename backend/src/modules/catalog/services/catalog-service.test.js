@@ -1664,3 +1664,1927 @@ describe('CatalogService._buildProductDetailResponse — variantColor không ove
     expect(result.sku).toBe('SKU-90');
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Merged from: catalog-service.edge-cases.test.js
+// Branch coverage tests nhắm vào các nhánh chưa cover trong file gốc.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('CatalogService — edge cases (branch coverage)', () => {
+  function makeProductRowEdge(overrides = {}) {
+    const data = {
+      id: 1,
+      name: 'Test Product',
+      slug: 'test-product',
+      status: 'active',
+      basePrice: '10000000',
+      compareAtPrice: null,
+      stockQuantity: 10,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      categories: [],
+      reviews: [],
+      ...overrides,
+    };
+    return { ...data, toJSON: () => ({ ...data }) };
+  }
+
+  function makeServiceEdge(repoOverrides = {}) {
+    const catalogRepository = {
+      findAllCategoriesSorted: jest.fn().mockResolvedValue([]),
+      getCategoryProductCounts: jest.fn().mockResolvedValue({}),
+      findCategoryById: jest.fn().mockResolvedValue(null),
+      findCategoryByIdOrSlug: jest.fn().mockResolvedValue(null),
+      findCategoryBySlug: jest.fn().mockResolvedValue(null),
+      createCategory: jest.fn().mockResolvedValue({ id: 1 }),
+      saveCategory: jest.fn().mockResolvedValue(),
+      deleteCategory: jest.fn().mockResolvedValue(),
+      countProductsByCategoryId: jest.fn().mockResolvedValue(0),
+      findProductsByCategoryId: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+      findAllBrands: jest.fn().mockResolvedValue([]),
+      findBrandIdsByCategoryId: jest.fn().mockResolvedValue([]),
+      findBrandById: jest.fn().mockResolvedValue(null),
+      findBrandBySlug: jest.fn().mockResolvedValue(null),
+      createBrand: jest.fn().mockResolvedValue({ id: 1 }),
+      saveBrand: jest.fn().mockResolvedValue(),
+      deleteBrand: jest.fn().mockResolvedValue(),
+      countProductsByBrandId: jest.fn().mockResolvedValue(0),
+      findProductsByBrandId: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+      findProductsList: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+      findProductByIdWithFullDetails: jest.fn().mockResolvedValue(null),
+      findProductBySlugWithFullDetails: jest.fn().mockResolvedValue(null),
+      findProductByPk: jest.fn().mockResolvedValue(null),
+      findFeaturedProducts: jest.fn().mockResolvedValue([]),
+      findRelatedProducts: jest.fn().mockResolvedValue([]),
+      findRelatedProductsFallback: jest.fn().mockResolvedValue([]),
+      searchProducts: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+      findProductSuggestions: jest.fn().mockResolvedValue([]),
+      findNewArrivals: jest.fn().mockResolvedValue([]),
+      findBestSellersRaw: jest.fn().mockResolvedValue([]),
+      findProductsByIdsOrdered: jest.fn().mockResolvedValue([]),
+      findDeals: jest.fn().mockResolvedValue([]),
+      findProductVariantsByProductId: jest.fn().mockResolvedValue([]),
+      findProductRatingsRows: jest.fn().mockResolvedValue([]),
+      getProductPriceRange: jest.fn().mockResolvedValue({ min: 0, max: 0 }),
+      findAttributeValuesByName: jest.fn().mockResolvedValue([]),
+      findOtherAttributes: jest.fn().mockResolvedValue([]),
+      findRecentlyViewedByUser: jest.fn().mockResolvedValue([]),
+      upsertRecentlyViewed: jest.fn().mockResolvedValue(),
+      pruneRecentlyViewed: jest.fn().mockResolvedValue(),
+      ...repoOverrides,
+    };
+
+    const service = new CatalogService({
+      catalogRepository,
+      eventBus: { publish: jest.fn() },
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
+    });
+
+    return { service, catalogRepository };
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getAllCategories — line 35
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getAllCategories — lọc category không có sản phẩm', () => {
+    it('category không có trong countMap (productCount = 0) → bị lọc khỏi kết quả', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findAllCategoriesSorted.mockResolvedValue([
+        { id: 99, toJSON: () => ({ id: 99, name: 'Orphan Cat' }) },
+      ]);
+      catalogRepository.getCategoryProductCounts.mockResolvedValue({});
+
+      const result = await service.getAllCategories();
+
+      expect(result.data).toHaveLength(0);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getCategoryById / getCategoryBySlug — lines 44-49
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getCategoryById — tìm thấy', () => {
+    it('tìm thấy category theo id → trả về category không throw', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const foundCat = { id: 5, name: 'Electronics' };
+      catalogRepository.findCategoryById.mockResolvedValue(foundCat);
+
+      const result = await service.getCategoryById({ id: 5 });
+
+      expect(result).toBe(foundCat);
+    });
+  });
+
+  describe('getCategoryBySlug — tìm thấy', () => {
+    it('tìm thấy category theo slug → trả về category không throw', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const foundCat = { id: 3, slug: 'electronics' };
+      catalogRepository.findCategoryByIdOrSlug.mockResolvedValue(foundCat);
+
+      const result = await service.getCategoryBySlug({ slug: 'electronics' });
+
+      expect(result).toBe(foundCat);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // updateCategory — lines 84-85
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('updateCategory — patch không đầy đủ fields', () => {
+    it('patch chỉ có name → chỉ name được cập nhật, description giữ nguyên', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = { id: 1, name: 'Old Name', description: 'Old Desc' };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 1, patch: { name: 'New Name' } });
+
+      expect(cat.name).toBe('New Name');
+      expect(cat.description).toBe('Old Desc');
+      expect(catalogRepository.saveCategory).toHaveBeenCalledWith(cat);
+    });
+
+    it('patch chỉ có description → chỉ description được cập nhật, name giữ nguyên', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = { id: 2, name: 'Unchanged', description: 'Old' };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 2, patch: { description: 'New Desc' } });
+
+      expect(cat.name).toBe('Unchanged');
+      expect(cat.description).toBe('New Desc');
+    });
+
+    it('patch rỗng → cả name lẫn description không thay đổi', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = { id: 3, name: 'Keep Me', description: 'Keep Me Too' };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 3, patch: {} });
+
+      expect(cat.name).toBe('Keep Me');
+      expect(cat.description).toBe('Keep Me Too');
+    });
+
+    it('patch có image → category.image được cập nhật', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = {
+        id: 4,
+        name: 'Cat',
+        description: '',
+        image: null,
+        parentId: null,
+        isActive: true,
+        sortOrder: 0,
+      };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 4, patch: { image: 'https://new-image.jpg' } });
+
+      expect(cat.image).toBe('https://new-image.jpg');
+    });
+
+    it('patch có parentId → category.parentId được cập nhật', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = {
+        id: 5,
+        name: 'Child',
+        description: '',
+        image: null,
+        parentId: null,
+        isActive: true,
+        sortOrder: 0,
+      };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 5, patch: { parentId: 10 } });
+
+      expect(cat.parentId).toBe(10);
+    });
+
+    it('patch có isActive → category.isActive được cập nhật', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = {
+        id: 6,
+        name: 'Cat',
+        description: '',
+        image: null,
+        parentId: null,
+        isActive: true,
+        sortOrder: 0,
+      };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 6, patch: { isActive: false } });
+
+      expect(cat.isActive).toBe(false);
+    });
+
+    it('patch có sortOrder → category.sortOrder được cập nhật', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const cat = {
+        id: 7,
+        name: 'Cat',
+        description: '',
+        image: null,
+        parentId: null,
+        isActive: true,
+        sortOrder: 0,
+      };
+      catalogRepository.findCategoryById.mockResolvedValue(cat);
+
+      await service.updateCategory({ id: 7, patch: { sortOrder: 5 } });
+
+      expect(cat.sortOrder).toBe(5);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _mapProductWithImages — line 136
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_mapProductWithImages', () => {
+    it('không có productImages → json.images và json.thumbnail không được set', () => {
+      const { service } = makeServiceEdge();
+      const product = {
+        toJSON: () => ({ id: 1, name: 'X', basePrice: '5000', variants: [] }),
+      };
+
+      const result = service._mapProductWithImages(product);
+
+      expect(result.images).toBeUndefined();
+      expect(result.thumbnail).toBeUndefined();
+      expect(result.price).toBe('5000');
+    });
+
+    it('có productImages nhưng không có ảnh isThumbnail → lấy ảnh đầu tiên làm thumbnail', () => {
+      const { service } = makeServiceEdge();
+      const product = {
+        toJSON: () => ({
+          id: 1,
+          name: 'X',
+          basePrice: '5000',
+          variants: [],
+          productImages: [
+            { id: 1, imageUrl: 'first.jpg', isThumbnail: false, color: null },
+            { id: 2, imageUrl: 'second.jpg', isThumbnail: false, color: null },
+          ],
+        }),
+      };
+
+      const result = service._mapProductWithImages(product);
+
+      expect(result.thumbnail).toBe('first.jpg');
+    });
+
+    it('có variants với isDefault=1 → price lấy từ variant đó (kiểm tra isDefault === 1)', () => {
+      const { service } = makeServiceEdge();
+      const product = {
+        toJSON: () => ({
+          id: 1,
+          name: 'X',
+          basePrice: '10000',
+          variants: [
+            { isDefault: 0, price: '15000', compareAtPrice: null },
+            { isDefault: 1, price: '12000', compareAtPrice: null },
+          ],
+          productImages: [],
+        }),
+      };
+
+      const result = service._mapProductWithImages(product);
+
+      expect(result.price).toBe('12000');
+    });
+
+    it('variants không rỗng nhưng không có default → lấy variants[0]', () => {
+      const { service } = makeServiceEdge();
+      const product = {
+        toJSON: () => ({
+          id: 1,
+          name: 'X',
+          basePrice: '10000',
+          variants: [
+            { isDefault: false, price: '9000', compareAtPrice: null },
+            { isDefault: false, price: '11000', compareAtPrice: null },
+          ],
+          productImages: [],
+        }),
+      };
+
+      const result = service._mapProductWithImages(product);
+
+      expect(result.price).toBe('9000');
+    });
+
+    it('variant không có price → fallback về basePrice', () => {
+      const { service } = makeServiceEdge();
+      const product = {
+        toJSON: () => ({
+          id: 1,
+          name: 'X',
+          basePrice: '8000',
+          variants: [{ isDefault: true, price: null, compareAtPrice: null }],
+          productImages: [],
+        }),
+      };
+
+      const result = service._mapProductWithImages(product);
+
+      expect(result.price).toBe('8000');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getAllBrands — category slug không tồn tại
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getAllBrands — category slug không tồn tại', () => {
+    it('category slug không tìm thấy → catId = -1, vẫn gọi findBrandIdsByCategoryId(-1)', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findCategoryBySlug.mockResolvedValue(null);
+      catalogRepository.findBrandIdsByCategoryId.mockResolvedValue([]);
+      catalogRepository.findAllBrands.mockResolvedValue([]);
+
+      await service.getAllBrands({ categoryId: 'nonexistent-slug' });
+
+      expect(catalogRepository.findBrandIdsByCategoryId).toHaveBeenCalledWith(-1);
+      expect(catalogRepository.findAllBrands).toHaveBeenCalledWith({
+        filter: { idIn: [], hasProducts: false },
+      });
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getAllProducts — brand filter paths
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getAllProducts — brand filter (edge)', () => {
+    it('brand là string (không phải array) → bọc thành array', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
+
+      await service.getAllProducts({ brand: 'apple' });
+
+      expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ brandSlugsIn: ['apple'] }),
+        }),
+      );
+    });
+
+    it('brand là numeric string → brandIdsIn được set', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
+
+      await service.getAllProducts({ brand: '5' });
+
+      expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ brandIdsIn: ['5'] }),
+        }),
+      );
+    });
+
+    it('category là numeric string → categoryId được set trực tiếp (không query slug)', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
+
+      await service.getAllProducts({ category: '10' });
+
+      expect(catalogRepository.findCategoryBySlug).not.toHaveBeenCalled();
+      expect(catalogRepository.findProductsList).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: expect.objectContaining({ categoryId: '10' }),
+        }),
+      );
+    });
+
+    it('không có category → không query slug và không set categoryId', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findProductsList.mockResolvedValue({ count: 0, rows: [] });
+
+      await service.getAllProducts({});
+
+      expect(catalogRepository.findCategoryBySlug).not.toHaveBeenCalled();
+      const call = catalogRepository.findProductsList.mock.calls[0][0];
+      expect(call.filter.categoryId).toBeUndefined();
+      expect(call.filter.categoryIdMissingSentinel).toBeFalsy();
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getAllProducts — map category vào categories
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getAllProducts — map category vào categories (edge)', () => {
+    it('json.category tồn tại và chưa trong categories → được push vào categories', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const row = makeProductRowEdge({
+        categories: [],
+        category: { id: 5, name: 'Phones' },
+      });
+      catalogRepository.findProductsList.mockResolvedValue({ count: 1, rows: [row] });
+
+      const { payload } = await service.getAllProducts({});
+
+      expect(payload.data[0].categories).toHaveLength(1);
+      expect(payload.data[0].categories[0].id).toBe(5);
+    });
+
+    it('json.category đã có trong categories → không push lại', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const row = makeProductRowEdge({
+        categories: [{ id: 5, name: 'Phones' }],
+        category: { id: 5, name: 'Phones' },
+      });
+      catalogRepository.findProductsList.mockResolvedValue({ count: 1, rows: [row] });
+
+      const { payload } = await service.getAllProducts({});
+
+      expect(payload.data[0].categories).toHaveLength(1);
+    });
+
+    it('json.categories = null → được khởi tạo thành [] trước khi push', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const data = {
+        id: 1,
+        name: 'Test',
+        slug: 'test',
+        basePrice: '1000',
+        compareAtPrice: null,
+        stockQuantity: 5,
+        isFeatured: false,
+        productImages: [],
+        variants: [],
+        reviews: [],
+        categories: null,
+        category: { id: 7, name: 'Tech' },
+      };
+      const row = { ...data, toJSON: () => ({ ...data }) };
+      catalogRepository.findProductsList.mockResolvedValue({ count: 1, rows: [row] });
+
+      const { payload } = await service.getAllProducts({});
+
+      expect(payload.data[0].categories).toBeInstanceOf(Array);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductById — trackRecentlyViewed
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductById — trackRecentlyViewed với userId (edge)', () => {
+    it('có userId → gọi upsertRecentlyViewed sau khi tìm thấy sản phẩm', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const product = makeProductRowEdge({ id: 42 });
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);
+
+      await service.getProductById({ id: 42, userId: 10 });
+
+      await new Promise((r) => setImmediate(r));
+      expect(catalogRepository.upsertRecentlyViewed).toHaveBeenCalledWith(10, 42);
+    });
+
+    it('không có userId → không gọi upsertRecentlyViewed', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const product = makeProductRowEdge({ id: 1 });
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(product);
+
+      await service.getProductById({ id: 1 });
+
+      await new Promise((r) => setImmediate(r));
+      expect(catalogRepository.upsertRecentlyViewed).not.toHaveBeenCalled();
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductBySlug — lines 503-508: userId → trackRecentlyViewed
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductBySlug — với userId (edge)', () => {
+    it('có userId → gọi upsertRecentlyViewed sau khi tìm thấy sản phẩm', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const product = makeProductRowEdge({ id: 7, slug: 'my-product' });
+      catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(product);
+
+      await service.getProductBySlug({ slug: 'my-product', userId: 3 });
+
+      await new Promise((r) => setImmediate(r));
+      expect(catalogRepository.upsertRecentlyViewed).toHaveBeenCalledWith(3, 7);
+    });
+
+    it('không có userId → không gọi upsertRecentlyViewed', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const product = makeProductRowEdge({ id: 8, slug: 'other-product' });
+      catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(product);
+
+      await service.getProductBySlug({ slug: 'other-product' });
+
+      await new Promise((r) => setImmediate(r));
+      expect(catalogRepository.upsertRecentlyViewed).not.toHaveBeenCalled();
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — image filtering branches
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — image filtering branches (edge)', () => {
+    it('skuId có nhưng không có ảnh theo variantId, có variantColor → lọc ảnh theo color', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 5,
+        name: 'Laptop A',
+        basePrice: '20000000',
+        reviews: [],
+        productImages: [
+          { id: 1, imageUrl: 'red.jpg', isThumbnail: true, variantId: null, color: 'đỏ' },
+          { id: 2, imageUrl: 'blue.jpg', isThumbnail: false, variantId: null, color: 'xanh' },
+        ],
+        variants: [
+          {
+            id: 10,
+            price: '20000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Đỏ 512GB',
+            isDefault: true,
+            attributes: { color: 'đỏ' },
+            sku: 'SKU-RED',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { skuId: '10' });
+
+      // variantId=10 không khớp (ảnh có variantId=null) → lọc theo color 'đỏ'
+      expect(result.images).toHaveLength(1);
+      expect(result.images[0].url).toBe('red.jpg');
+    });
+
+    it('skuId có, matchByVariantId rỗng, không có variantColor → giữ nguyên tất cả ảnh', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 6,
+        name: 'Tablet B',
+        basePrice: '15000000',
+        reviews: [],
+        productImages: [
+          { id: 1, imageUrl: 'img1.jpg', isThumbnail: true, variantId: null, color: null },
+          { id: 2, imageUrl: 'img2.jpg', isThumbnail: false, variantId: null, color: null },
+        ],
+        variants: [
+          {
+            id: 20,
+            price: '15000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: '128GB WiFi',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-128',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { skuId: '20' });
+
+      // Không lọc được theo variantId, không có color → giữ tất cả ảnh
+      expect(result.images).toHaveLength(2);
+    });
+
+    it('không có skuId, có queryColor, matchByColor rỗng → giữ nguyên tất cả ảnh', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 7,
+        name: 'Phone C',
+        basePrice: '12000000',
+        reviews: [],
+        productImages: [
+          { id: 1, imageUrl: 'gen.jpg', isThumbnail: true, variantId: null, color: null },
+        ],
+        variants: [
+          {
+            id: 30,
+            price: '12000000',
+            compareAtPrice: null,
+            stockQuantity: 10,
+            variantName: 'Vàng 64GB',
+            isDefault: true,
+            attributes: { color: 'vàng' },
+            sku: 'SKU-VANG',
+            specifications: {},
+          },
+        ],
+      });
+
+      // queryColor không match với ảnh nào (ảnh color = null)
+      const result = service._buildProductDetailResponse(product, { queryColor: 'vàng' });
+
+      // matchByColor = [] → giữ nguyên productJson.images
+      expect(result.images).toHaveLength(1);
+    });
+
+    it('không có skuId, queryColor match ảnh → lọc ảnh theo color', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 8,
+        name: 'Watch D',
+        basePrice: '5000000',
+        reviews: [],
+        productImages: [
+          { id: 1, imageUrl: 'black.jpg', isThumbnail: true, variantId: null, color: 'đen' },
+          { id: 2, imageUrl: 'white.jpg', isThumbnail: false, variantId: null, color: 'trắng' },
+        ],
+        variants: [
+          {
+            id: 40,
+            price: '5000000',
+            compareAtPrice: null,
+            stockQuantity: 2,
+            variantName: 'Đen',
+            isDefault: false,
+            attributes: { color: 'đen' },
+            sku: 'SKU-DEN',
+            specifications: {},
+          },
+          {
+            id: 41,
+            price: '5500000',
+            compareAtPrice: null,
+            stockQuantity: 2,
+            variantName: 'Trắng',
+            isDefault: true,
+            attributes: { color: 'trắng' },
+            sku: 'SKU-TRANG',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { queryColor: 'đen' });
+
+      // Lọc ảnh theo color 'đen'
+      expect(result.images).toHaveLength(1);
+      expect(result.images[0].url).toBe('black.jpg');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — fullName logic
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — fullName logic (edge)', () => {
+    it('variantName đã chứa mainName → fullName = variantName (không thêm prefix)', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 9,
+        name: 'iPhone 15',
+        basePrice: '25000000',
+        reviews: [],
+        variants: [
+          {
+            id: 50,
+            price: '25000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'iPhone 15 Pro 256GB Đen',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-50',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.name).toBe('iPhone 15 Pro 256GB Đen');
+    });
+
+    it('variantName không chứa mainName → fullName = mainName + variantName', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 10,
+        name: 'Galaxy S24',
+        basePrice: '22000000',
+        reviews: [],
+        variants: [
+          {
+            id: 60,
+            price: '22000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: '256GB Xanh Đại Dương',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-60',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.name).toBe('Galaxy S24 - 256GB Xanh Đại Dương');
+    });
+
+    it('product có model → modelName dùng từ model field (không strip prefix)', () => {
+      const { service } = makeServiceEdge();
+      const data = {
+        id: 11,
+        name: 'Laptop Dell XPS 15',
+        model: 'Dell XPS 15',
+        basePrice: '35000000',
+        compareAtPrice: null,
+        reviews: [],
+        productImages: [],
+        categories: [],
+        stockQuantity: 2,
+        isFeatured: false,
+        slug: 'laptop-dell-xps-15',
+        variants: [
+          {
+            id: 70,
+            price: '35000000',
+            compareAtPrice: null,
+            stockQuantity: 2,
+            variantName: 'Dell XPS 15 i7',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-70',
+            specifications: {},
+          },
+        ],
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      // variantName chứa modelName 'dell xps 15' → fullName = variantName
+      expect(result.name).toBe('Dell XPS 15 i7');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — variantColor override với normColor
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — variantColor override với normColor (edge)', () => {
+    it('không có skuId và có normColor → variantColor = normColor', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 12,
+        name: 'Sneaker X',
+        basePrice: '1500000',
+        reviews: [],
+        productImages: [
+          { id: 1, imageUrl: 'red-shoe.jpg', isThumbnail: true, variantId: null, color: 'đỏ' },
+          { id: 2, imageUrl: 'blue-shoe.jpg', isThumbnail: false, variantId: null, color: 'xanh' },
+        ],
+        variants: [
+          {
+            id: 80,
+            price: '1500000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Đỏ Size 42',
+            isDefault: false,
+            attributes: { color: 'đỏ' },
+            sku: 'SKU-RED-42',
+            specifications: {},
+          },
+          {
+            id: 81,
+            price: '1500000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Xanh Size 42',
+            isDefault: true,
+            attributes: { color: 'xanh' },
+            sku: 'SKU-BLUE-42',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { queryColor: 'đỏ' });
+
+      expect(result.images[0].url).toBe('red-shoe.jpg');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — variantName fallback displayName
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — variantName fallback displayName (edge)', () => {
+    it('không có variantName → dùng displayName', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 13,
+        name: 'Earphone Y',
+        basePrice: '2000000',
+        reviews: [],
+        variants: [
+          {
+            id: 90,
+            price: '2000000',
+            compareAtPrice: null,
+            stockQuantity: 8,
+            variantName: undefined,
+            displayName: 'Trắng',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-90',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.currentVariant.name).toBe('Trắng');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getRelatedProducts — không có categoryId
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getRelatedProducts — không có categoryId (edge)', () => {
+    it('product.categoryId = null → không gọi findRelatedProducts, fallback ngay', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findProductByPk.mockResolvedValue({
+        id: 1,
+        categoryId: null,
+        status: 'active',
+      });
+      catalogRepository.findRelatedProductsFallback.mockResolvedValue([
+        makeProductRowEdge({ id: 2 }),
+      ]);
+
+      const result = await service.getRelatedProducts({ id: 1, limit: 4 });
+
+      expect(catalogRepository.findRelatedProducts).not.toHaveBeenCalled();
+      expect(catalogRepository.findRelatedProductsFallback).toHaveBeenCalled();
+      expect(result).toHaveLength(1);
+    });
+
+    it('product.categoryId = undefined → không gọi findRelatedProducts', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findProductByPk.mockResolvedValue({ id: 2, status: 'active' });
+      catalogRepository.findRelatedProductsFallback.mockResolvedValue([]);
+
+      await service.getRelatedProducts({ id: 2 });
+
+      expect(catalogRepository.findRelatedProducts).not.toHaveBeenCalled();
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductFilters — slug không tìm thấy
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductFilters — slug không tìm thấy (edge)', () => {
+    it('categoryId là slug hợp lệ nhưng không tìm thấy trong DB → actualCategoryId = null', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findCategoryBySlug.mockResolvedValue(null);
+
+      await service.getProductFilters({ categoryId: 'nonexistent-category' });
+
+      expect(catalogRepository.getProductPriceRange).toHaveBeenCalledWith({ categoryId: null });
+    });
+
+    it('categoryId = 0 (falsy) → bỏ qua toàn bộ block, actualCategoryId = null', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+
+      await service.getProductFilters({ categoryId: 0 });
+
+      expect(catalogRepository.findCategoryBySlug).not.toHaveBeenCalled();
+      expect(catalogRepository.getProductPriceRange).toHaveBeenCalledWith({ categoryId: null });
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductFilters — collectValues với values không phải array
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductFilters — collectValues với values không phải array (edge)', () => {
+    it('row.values = null → không thêm vào set (không crash)', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findAttributeValuesByName.mockResolvedValue([
+        { values: null },
+        { values: ['red', 'blue'] },
+      ]);
+
+      const result = await service.getProductFilters({});
+
+      const allValues = [...result.brands, ...result.colors, ...result.sizes];
+      expect(allValues).toContain('red');
+      expect(allValues).toContain('blue');
+    });
+
+    it('row.values = string (không phải array) → không thêm vào set', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findAttributeValuesByName.mockResolvedValue([{ values: 'not-an-array' }]);
+
+      const result = await service.getProductFilters({});
+
+      const allValues = [...result.brands, ...result.colors, ...result.sizes];
+      expect(allValues).toHaveLength(0);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getBestSellers — period variations
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getBestSellers — period variations (edge)', () => {
+    it('period = week → startDate khoảng 7 ngày trước', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findBestSellersRaw.mockResolvedValue([]);
+      catalogRepository.findNewArrivals.mockResolvedValue([]);
+
+      await service.getBestSellers({ limit: 5, period: 'week' });
+
+      const callArgs = catalogRepository.findBestSellersRaw.mock.calls[0][0];
+      expect(callArgs.startDate).toBeInstanceOf(Date);
+    });
+
+    it('period = default (không truyền) → startDate khoảng 1 tháng trước', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findBestSellersRaw.mockResolvedValue([]);
+      catalogRepository.findNewArrivals.mockResolvedValue([]);
+
+      await service.getBestSellers({ limit: 5 });
+
+      expect(catalogRepository.findBestSellersRaw).toHaveBeenCalled();
+      const callArgs = catalogRepository.findBestSellersRaw.mock.calls[0][0];
+      expect(callArgs.startDate).toBeInstanceOf(Date);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductSuggestions — edge cases
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductSuggestions — edge cases (edge)', () => {
+    it('q chỉ có whitespace → trả về []', async () => {
+      const { service } = makeServiceEdge();
+
+      const result = await service.getProductSuggestions({ q: '   ' });
+
+      expect(result).toEqual([]);
+    });
+
+    it('q = null → trả về []', async () => {
+      const { service } = makeServiceEdge();
+
+      const result = await service.getProductSuggestions({ q: null });
+
+      expect(result).toEqual([]);
+    });
+
+    it('suggestion không có productImages → thumbnail = null', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const mockProduct = {
+        toJSON: () => ({ id: 1, name: 'Test', slug: 'test', productImages: undefined }),
+      };
+      catalogRepository.findProductSuggestions.mockResolvedValue([mockProduct]);
+
+      const result = await service.getProductSuggestions({ q: 'test' });
+
+      expect(result[0].thumbnail).toBeNull();
+    });
+
+    it('productImages[0] không có isThumbnail → lấy phần tử đầu tiên', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const mockProduct = {
+        toJSON: () => ({
+          id: 2,
+          name: 'Item',
+          slug: 'item',
+          productImages: [
+            { isThumbnail: false, imageUrl: 'first.jpg' },
+            { isThumbnail: false, imageUrl: 'second.jpg' },
+          ],
+        }),
+      };
+      catalogRepository.findProductSuggestions.mockResolvedValue([mockProduct]);
+
+      const result = await service.getProductSuggestions({ q: 'item' });
+
+      expect(result[0].thumbnail).toBe('first.jpg');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — reviews null → totalCount = 0
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — reviews null → totalCount = 0 (edge)', () => {
+    it('totalCount = 0 khi productJson.reviews = null', () => {
+      const { service } = makeServiceEdge();
+      const data = {
+        id: 50,
+        name: 'Camera Z',
+        slug: 'camera-z',
+        basePrice: '5000000',
+        compareAtPrice: null,
+        stockQuantity: 10,
+        isFeatured: false,
+        productImages: [],
+        variants: [],
+        categories: [],
+        reviews: null,
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.ratings.totalCount).toBe(0);
+    });
+
+    it('totalCount = 0 khi productJson.reviews = undefined', () => {
+      const { service } = makeServiceEdge();
+      const data = {
+        id: 51,
+        name: 'Drone A',
+        slug: 'drone-a',
+        basePrice: '8000000',
+        compareAtPrice: null,
+        stockQuantity: 5,
+        isFeatured: false,
+        productImages: [],
+        variants: [],
+        categories: [],
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.ratings.totalCount).toBe(0);
+    });
+
+    it('totalCount = reviews.length khi reviews là array không rỗng (TRUE branch)', () => {
+      const { service } = makeServiceEdge();
+      const data = {
+        id: 52,
+        name: 'Robot B',
+        slug: 'robot-b',
+        basePrice: '12000000',
+        compareAtPrice: null,
+        stockQuantity: 2,
+        isFeatured: false,
+        productImages: [],
+        variants: [],
+        categories: [],
+        reviews: [
+          { rating: 5, isVerified: true },
+          { rating: 4, isVerified: true },
+          { rating: 3, isVerified: false },
+        ],
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.ratings.totalCount).toBe(3);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — variant selection fallback (lines 545-549)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — variant selection fallback (edge)', () => {
+    it('normColor set nhưng không match variant nào → fallback sang isDefault = true', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 60,
+        name: 'Bàn phím',
+        basePrice: '1500000',
+        reviews: [],
+        variants: [
+          {
+            id: 200,
+            price: '1500000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Đen',
+            isDefault: false,
+            attributes: { color: 'đen' },
+            sku: 'SKU-DEN',
+            specifications: {},
+          },
+          {
+            id: 201,
+            price: '1600000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Trắng',
+            isDefault: true,
+            attributes: { color: 'trắng' },
+            sku: 'SKU-TRANG',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { queryColor: 'vàng' });
+
+      expect(result.sku).toBe('SKU-TRANG');
+    });
+
+    it('normColor set nhưng không match, không có isDefault → fallback sang variants[0]', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 61,
+        name: 'Chuột máy tính',
+        basePrice: '500000',
+        reviews: [],
+        variants: [
+          {
+            id: 210,
+            price: '500000',
+            compareAtPrice: null,
+            stockQuantity: 8,
+            variantName: 'Đỏ',
+            isDefault: false,
+            attributes: { color: 'đỏ' },
+            sku: 'SKU-DO',
+            specifications: {},
+          },
+          {
+            id: 211,
+            price: '550000',
+            compareAtPrice: null,
+            stockQuantity: 4,
+            variantName: 'Xanh lá',
+            isDefault: false,
+            attributes: { color: 'xanh lá' },
+            sku: 'SKU-XANH',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { queryColor: 'vàng' });
+
+      expect(result.sku).toBe('SKU-DO');
+    });
+
+    it("attrs['màu sắc'] (lowercase) match queryColor (line 540 alternate Vietnamese key)", () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 62,
+        name: 'Túi xách',
+        basePrice: '2000000',
+        reviews: [],
+        variants: [
+          {
+            id: 220,
+            price: '2000000',
+            compareAtPrice: null,
+            stockQuantity: 6,
+            variantName: 'Đen',
+            isDefault: false,
+            attributes: { 'màu sắc': 'đen' },
+            sku: 'SKU-TUI-DEN',
+            specifications: {},
+          },
+          {
+            id: 221,
+            price: '2200000',
+            compareAtPrice: null,
+            stockQuantity: 2,
+            variantName: 'Nâu',
+            isDefault: true,
+            attributes: { 'màu sắc': 'nâu' },
+            sku: 'SKU-TUI-NAU',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { queryColor: 'đen' });
+
+      expect(result.sku).toBe('SKU-TUI-DEN');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _pickDisplayPrice — không có variants → trả basePrice
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_pickDisplayPrice — không có variants → trả basePrice (edge)', () => {
+    it('trả basePrice khi variants array rỗng', () => {
+      const { service } = makeServiceEdge();
+
+      const result = service._pickDisplayPrice({
+        basePrice: '5000000',
+        variants: [],
+      });
+
+      expect(result).toBe(5000000);
+    });
+
+    it('trả basePrice khi variants = undefined', () => {
+      const { service } = makeServiceEdge();
+
+      const result = service._pickDisplayPrice({
+        basePrice: '3000000',
+      });
+
+      expect(result).toBe(3000000);
+    });
+
+    it('trả giá variant nhỏ nhất khi có variants', () => {
+      const { service } = makeServiceEdge();
+
+      const result = service._pickDisplayPrice({
+        basePrice: '10000000',
+        variants: [{ price: '12000000' }, { price: '8000000' }, { price: '15000000' }],
+      });
+
+      expect(result).toBe(8000000);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getNewArrivals — limit mặc định
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getNewArrivals — gọi với limit mặc định (edge)', () => {
+    it('trả về danh sách sản phẩm mới đến khi gọi không truyền limit', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const product = makeProductRowEdge({ id: 1, reviews: [] });
+      catalogRepository.findNewArrivals.mockResolvedValue([product]);
+
+      const result = await service.getNewArrivals({});
+
+      expect(catalogRepository.findNewArrivals).toHaveBeenCalledWith(8);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(1);
+    });
+
+    it('truyền limit tùy chỉnh → parseInt(limit) được gọi', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findNewArrivals.mockResolvedValue([]);
+
+      await service.getNewArrivals({ limit: 5 });
+
+      expect(catalogRepository.findNewArrivals).toHaveBeenCalledWith(5);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getRecentlyViewed — map qua recentlyViewed items
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getRecentlyViewed — map qua recentlyViewed items (edge)', () => {
+    it('trả về sản phẩm đã xem gần đây với viewedAt', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const productRow = makeProductRowEdge({ id: 5, reviews: [] });
+      const recentlyViewed = [{ Product: productRow, viewedAt: new Date('2025-01-15T10:00:00Z') }];
+      catalogRepository.findRecentlyViewedByUser.mockResolvedValue(recentlyViewed);
+
+      const result = await service.getRecentlyViewed({ userId: 10 });
+
+      expect(catalogRepository.findRecentlyViewedByUser).toHaveBeenCalledWith(10, 10);
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(5);
+      expect(result[0].viewedAt).toBeInstanceOf(Date);
+    });
+
+    it('truyền limit tùy chỉnh → parseInt(limit) được gọi', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      catalogRepository.findRecentlyViewedByUser.mockResolvedValue([]);
+
+      await service.getRecentlyViewed({ userId: 3, limit: 5 });
+
+      expect(catalogRepository.findRecentlyViewedByUser).toHaveBeenCalledWith(3, 5);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getFeaturedProducts — map products with _mapProductForList
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getFeaturedProducts — map products with _mapProductForList (edge)', () => {
+    it('gọi findFeaturedProducts và map qua _mapProductForList', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const product = makeProductRowEdge({ id: 1, reviews: [], compareAtPrice: null });
+      catalogRepository.findFeaturedProducts.mockResolvedValue([product]);
+
+      const result = await service.getFeaturedProducts({});
+
+      expect(catalogRepository.findFeaturedProducts).toHaveBeenCalledWith(8);
+      expect(result).toHaveLength(1);
+      expect(result[0].compareAtPrice).toBeNull();
+    });
+
+    it('compareAtPrice có giá trị → parseFloat(compareAtPrice) được trả về', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const data = {
+        ...makeProductRowEdge().toJSON(),
+        id: 2,
+        compareAtPrice: '12000000',
+        reviews: [],
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+      catalogRepository.findFeaturedProducts.mockResolvedValue([product]);
+
+      const result = await service.getFeaturedProducts({ limit: 4 });
+
+      expect(result[0].compareAtPrice).toBe(12000000);
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — compareAtPrice null (line 526)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — compareAtPrice null (edge)', () => {
+    it('compareAtPrice null → response.compareAtPrice = null (|| null branch)', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 20,
+        compareAtPrice: null,
+        variants: [],
+        reviews: [],
+      });
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.compareAtPrice).toBeNull();
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — attrs['Màu sắc'] (Vietnamese attribute key)
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe("_buildProductDetailResponse — attrs['Màu sắc'] (edge)", () => {
+    it("tìm variant theo color qua attrs['Màu sắc'] khi attrs.color không có", () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 30,
+        basePrice: '10000000',
+        reviews: [],
+        variants: [
+          {
+            id: 100,
+            price: '10000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Đỏ',
+            isDefault: false,
+            attributes: { 'Màu sắc': 'đỏ' },
+            sku: 'SKU-100',
+            specifications: {},
+          },
+          {
+            id: 101,
+            price: '11000000',
+            compareAtPrice: null,
+            stockQuantity: 3,
+            variantName: 'Xanh',
+            isDefault: true,
+            attributes: { 'Màu sắc': 'xanh' },
+            sku: 'SKU-101',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, { queryColor: 'đỏ' });
+
+      expect(result.sku).toBe('SKU-100');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // _buildProductDetailResponse — price/compareAtPrice fallback branches
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('_buildProductDetailResponse — price/compareAtPrice fallback branches (edge)', () => {
+    it('selectedVariant.price = null → fallback về productJson.basePrice', () => {
+      const { service } = makeServiceEdge();
+      const product = makeProductRowEdge({
+        id: 40,
+        basePrice: '9000000',
+        reviews: [],
+        variants: [
+          {
+            id: 200,
+            price: null,
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Default',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-200',
+            specifications: {},
+          },
+        ],
+      });
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.price).toBe('9000000');
+    });
+
+    it('selectedVariant.compareAtPrice = null → fallback về productJson.compareAtPrice', () => {
+      const { service } = makeServiceEdge();
+      const data = {
+        ...makeProductRowEdge().toJSON(),
+        id: 41,
+        basePrice: '8000000',
+        compareAtPrice: '10000000',
+        reviews: [],
+        variants: [
+          {
+            id: 201,
+            price: '8000000',
+            compareAtPrice: null,
+            stockQuantity: 5,
+            variantName: 'Red',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-201',
+            specifications: {},
+          },
+        ],
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.currentVariant.compareAtPrice).toBe('10000000');
+    });
+
+    it('availableVariants: v.compareAtPrice null → fallback về productJson.compareAtPrice', () => {
+      const { service } = makeServiceEdge();
+      const data = {
+        ...makeProductRowEdge().toJSON(),
+        id: 42,
+        basePrice: '7000000',
+        compareAtPrice: '9000000',
+        reviews: [],
+        variants: [
+          {
+            id: 202,
+            price: '7000000',
+            compareAtPrice: null,
+            variantName: 'Blue',
+            isDefault: true,
+            attributes: {},
+            sku: 'SKU-202',
+            specifications: {},
+            stockQuantity: 3,
+          },
+          {
+            id: 203,
+            price: '7500000',
+            compareAtPrice: '9500000',
+            variantName: 'Green',
+            isDefault: false,
+            attributes: {},
+            sku: 'SKU-203',
+            specifications: {},
+            stockQuantity: 2,
+          },
+        ],
+      };
+      const product = { ...data, toJSON: () => ({ ...data }) };
+
+      const result = service._buildProductDetailResponse(product, {});
+
+      expect(result.availableVariants[0].compareAtPrice).toBe('9000000');
+      expect(result.availableVariants[1].compareAtPrice).toBe('9500000');
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductById — sản phẩm không active → 404
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductById — sản phẩm không active → 404 (edge)', () => {
+    it('ném AppError 404 khi sản phẩm tìm thấy nhưng status không phải active', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const inactiveProduct = makeProductRowEdge({ id: 1, status: 'draft' });
+      catalogRepository.findProductByIdWithFullDetails.mockResolvedValue(inactiveProduct);
+
+      await expect(service.getProductById({ id: 1 })).rejects.toMatchObject({
+        statusCode: 404,
+      });
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getProductBySlug — sản phẩm không active → 404
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getProductBySlug — sản phẩm không active → 404 (edge)', () => {
+    it('ném AppError 404 khi sản phẩm tìm thấy nhưng status không phải active', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      const inactiveProduct = makeProductRowEdge({ id: 2, slug: 'my-product', status: 'inactive' });
+      catalogRepository.findProductBySlugWithFullDetails.mockResolvedValue(inactiveProduct);
+
+      await expect(service.getProductBySlug({ slug: 'my-product' })).rejects.toMatchObject({
+        statusCode: 404,
+      });
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // getAllProducts — page=0 không gây negative offset
+  // ════════════════════════════════════════════════════════════════════════════
+
+  describe('getAllProducts — page=0 không gây negative offset (edge)', () => {
+    it('page=0 → offset=0 (clamp về page 1), không throw', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      await service.getAllProducts({ page: 0, limit: 20 });
+      const callArgs = catalogRepository.findProductsList.mock.calls[0][0];
+      expect(callArgs.offset).toBe(0);
+      expect(callArgs.offset).not.toBeLessThan(0);
+    });
+
+    it('page=-5 → offset=0 (clamp về 0), không throw', async () => {
+      const { service, catalogRepository } = makeServiceEdge();
+      await service.getAllProducts({ page: -5, limit: 10 });
+      const callArgs = catalogRepository.findProductsList.mock.calls[0][0];
+      expect(callArgs.offset).toBe(0);
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Merged from: catalog-service.product.edge-cases.test.js
+// Integration-style tests (supertest + jest.mock) — module-level setup preserved.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Note: jest.mock calls must remain at module level (Jest hoisting).
+// The describes below reference the module-level app/request setup from this block.
+
+// Module-level mocks and setup for product edge cases integration tests
+jest.mock('@models', () => {
+  const mockFn = jest.fn;
+  return {
+    Product: {
+      findAll: mockFn(),
+      findAndCountAll: mockFn(),
+      findOne: mockFn(),
+      findByPk: mockFn(),
+      count: mockFn(),
+    },
+    SearchHistory: {
+      create: mockFn(),
+      findAll: mockFn(),
+      findOne: mockFn(),
+      destroy: mockFn(),
+    },
+    Category: { findOne: mockFn(), findAll: mockFn(), findByPk: mockFn() },
+    Brand: { findAll: mockFn(), findByPk: mockFn() },
+    ProductAttribute: { findAll: mockFn() },
+    ProductSpecification: { findAll: mockFn() },
+    ProductVariant: { findAll: mockFn() },
+    Review: { findAll: mockFn() },
+    RecentlyViewed: { upsert: mockFn(), findAll: mockFn(), findOne: mockFn(), create: mockFn() },
+    sequelize: {
+      fn: jest.fn((fnName, col) => ({ fn: fnName, col })),
+      col: jest.fn((name) => ({ col: name })),
+      where: jest.fn((col, condition) => ({ col, condition })),
+      literal: jest.fn((val) => ({ literal: val })),
+      Sequelize: { Op: require('sequelize').Op },
+    },
+  };
+});
+
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+}));
+
+jest.mock('@middlewares/rate-limiter', () => ({
+  chatbotLimiter: (_req, _res, next) => next(),
+  apiLimiter: (_req, _res, next) => next(),
+  destructiveLimiter: (_req, _res, next) => next(),
+}));
+
+jest.mock('@middlewares/authenticate', () => ({
+  authenticate: (req, _res, next) => {
+    if (req.headers.authorization) {
+      req.user = { id: 1 };
+    }
+    next();
+  },
+  optionalAuthenticate: (req, _res, next) => {
+    if (req.headers.authorization) {
+      req.user = { id: 1 };
+    }
+    next();
+  },
+}));
+
+jest.mock('@middlewares/authorize', () => ({
+  authorize: () => (_req, _res, next) => next(),
+}));
+
+jest.mock('@modules/catalog/validators/catalog-validator', () => ({
+  productSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+  brandSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+  categorySchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+}));
+
+jest.mock('@middlewares/validate-request', () => ({
+  validateRequest: () => (_req, _res, next) => next(),
+}));
+
+{
+  const express = require('express');
+  const supertest = require('supertest');
+  const buildCatalogModule = require('@modules/catalog/module');
+  const { errorHandler } = require('@middlewares/error-handler');
+  const {
+    Product,
+    Category,
+    Brand,
+    ProductAttribute,
+    ProductVariant,
+    ProductSpecification,
+    Review,
+    RecentlyViewed,
+    sequelize,
+  } = require('@models');
+  const eventBus = require('@shared/event-bus');
+  const logger = require('@utils/logger');
+
+  const catalogModule = buildCatalogModule({
+    Category,
+    Brand,
+    Product,
+    ProductAttribute,
+    ProductVariant,
+    ProductSpecification,
+    Review,
+    RecentlyViewed,
+    sequelize,
+    eventBus,
+    logger,
+  });
+  const productMount = catalogModule.mounts.find((m) => m.basePath === '/products');
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/products', productMount.router);
+  app.use(errorHandler);
+
+  const request = supertest(app);
+
+  describe('GET /api/products/suggestions — getProductSuggestions (product edge cases)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('200 + mảng rỗng khi không có query q', async () => {
+      const res = await request.get('/api/products/suggestions');
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.data).toEqual([]);
+      expect(Product.findAll).not.toHaveBeenCalled();
+    });
+
+    test('200 + mảng rỗng khi q là chuỗi rỗng', async () => {
+      const res = await request.get('/api/products/suggestions?q=');
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+      expect(Product.findAll).not.toHaveBeenCalled();
+    });
+
+    test('200 + trả về danh sách suggestions khi có q', async () => {
+      const mockProducts = [
+        {
+          toJSON: () => ({
+            id: 1,
+            name: 'Laptop Dell',
+            slug: 'laptop-dell',
+            productImages: [{ imageUrl: 'https://img.jpg', isThumbnail: true, displayOrder: 1 }],
+          }),
+        },
+        { toJSON: () => ({ id: 2, name: 'Laptop HP', slug: 'laptop-hp', productImages: [] }) },
+      ];
+      Product.findAll.mockResolvedValue(mockProducts);
+
+      const res = await request.get('/api/products/suggestions?q=lap');
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(Array.isArray(res.body.data)).toBe(true);
+      expect(res.body.data).toHaveLength(2);
+    });
+
+    test('response suggestion có đúng fields: id, name, slug, thumbnail', async () => {
+      const mockProducts = [
+        {
+          toJSON: () => ({
+            id: 5,
+            name: 'Laptop Gaming Asus',
+            slug: 'laptop-gaming-asus',
+            productImages: [{ imageUrl: 'https://asus.jpg', isThumbnail: true, displayOrder: 1 }],
+          }),
+        },
+      ];
+      Product.findAll.mockResolvedValue(mockProducts);
+
+      const res = await request.get('/api/products/suggestions?q=laptop');
+      expect(res.status).toBe(200);
+      const item = res.body.data[0];
+      expect(item).toHaveProperty('id', 5);
+      expect(item).toHaveProperty('name', 'Laptop Gaming Asus');
+      expect(item).toHaveProperty('slug', 'laptop-gaming-asus');
+      expect(item).toHaveProperty('thumbnail', 'https://asus.jpg');
+    });
+
+    test('thumbnail là null khi sản phẩm không có ảnh', async () => {
+      Product.findAll.mockResolvedValue([
+        { toJSON: () => ({ id: 3, name: 'Laptop Acer', slug: 'laptop-acer', productImages: [] }) },
+      ]);
+
+      const res = await request.get('/api/products/suggestions?q=acer');
+      expect(res.status).toBe(200);
+      expect(res.body.data[0].thumbnail).toBeNull();
+    });
+
+    test('Product.findAll được gọi với limit 10', async () => {
+      Product.findAll.mockResolvedValue([]);
+
+      await request.get('/api/products/suggestions?q=samsung');
+      expect(Product.findAll).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
+    });
+
+    test('trả về mảng rỗng khi không có sản phẩm khớp', async () => {
+      Product.findAll.mockResolvedValue([]);
+
+      const res = await request.get('/api/products/suggestions?q=xyznotexist');
+      expect(res.status).toBe(200);
+      expect(res.body.data).toEqual([]);
+    });
+  });
+
+  jest.mock('@modules/search-history/validators/search-history-validator', () => ({
+    saveSearchSchema: { validate: jest.fn().mockReturnValue({ error: null }) },
+  }));
+
+  const searchHistoryRouter = require('@modules/search-history/routes');
+  const { SearchHistory } = require('@models');
+
+  const appHistory = express();
+  appHistory.use(express.json());
+  appHistory.use('/api/search-histories', searchHistoryRouter);
+  appHistory.use(errorHandler);
+
+  const requestHistory = supertest(appHistory);
+
+  describe('POST /api/search-histories — deduplication (product edge cases)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('201 khi keyword chưa tồn tại trong 1 giờ qua', async () => {
+      SearchHistory.findOne.mockResolvedValue(null);
+      SearchHistory.create.mockResolvedValue({
+        id: 10,
+        userId: 1,
+        keyword: 'điện thoại samsung',
+        sessionId: null,
+      });
+
+      const res = await requestHistory
+        .post('/api/search-histories')
+        .set('Authorization', 'Bearer token')
+        .send({ keyword: 'điện thoại samsung' });
+
+      expect(res.status).toBe(201);
+      expect(SearchHistory.create).toHaveBeenCalledTimes(1);
+    });
+
+    test('200 khi keyword đã tồn tại trong 1 giờ qua — không tạo lại', async () => {
+      SearchHistory.findOne.mockResolvedValue({
+        id: 5,
+        userId: 1,
+        keyword: 'điện thoại samsung',
+        createdAt: new Date(Date.now() - 10 * 60 * 1000),
+      });
+
+      const res = await requestHistory
+        .post('/api/search-histories')
+        .set('Authorization', 'Bearer token')
+        .send({ keyword: 'điện thoại samsung' });
+
+      expect(res.status).toBe(200);
+      expect(SearchHistory.create).not.toHaveBeenCalled();
+    });
+
+    test('findOne được gọi với điều kiện bao gồm createdAt >= 1 giờ trước', async () => {
+      SearchHistory.findOne.mockResolvedValue(null);
+      SearchHistory.create.mockResolvedValue({ id: 1, keyword: 'laptop' });
+
+      await requestHistory
+        .post('/api/search-histories')
+        .set('Authorization', 'Bearer token')
+        .send({ keyword: 'laptop' });
+
+      expect(SearchHistory.findOne).toHaveBeenCalledTimes(1);
+      const callArgs = SearchHistory.findOne.mock.calls[0][0];
+      expect(callArgs.where).toHaveProperty('keyword', 'laptop');
+      expect(callArgs.where).toHaveProperty('createdAt');
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Merged from: catalog-service.skuid.test.js
+// Branch coverage cho line 563: if (!skuId && normColor) — FALSE branch.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('CatalogService._buildProductDetailResponse — skuId + queryColor (line 563 FALSE branch)', () => {
+  function makeProductSkuId(overrides = {}) {
+    const data = {
+      id: 1,
+      name: 'iPhone 15 Pro',
+      slug: 'iphone-15-pro',
+      basePrice: '29990000',
+      compareAtPrice: null,
+      stockQuantity: 5,
+      isFeatured: false,
+      productImages: [],
+      variants: [],
+      categories: [],
+      reviews: [],
+      ...overrides,
+    };
+    return { ...data, toJSON: () => ({ ...data }) };
+  }
+
+  let service;
+
+  beforeEach(() => {
+    service = new CatalogService({
+      catalogRepository: {},
+      logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+    });
+  });
+
+  test('có skuId → !skuId=false → variantColor KHÔNG bị override bởi normColor', () => {
+    const product = makeProductSkuId({
+      variants: [
+        {
+          id: 10,
+          price: '25000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Đen 256GB',
+          isDefault: true,
+          sku: 'SKU-10',
+          specifications: {},
+          attributes: { color: 'đen' },
+        },
+      ],
+    });
+    const result = service._buildProductDetailResponse(product, {
+      skuId: '10',
+      queryColor: 'trắng',
+    });
+    expect(result).toBeDefined();
+    expect(result.sku).toBe('SKU-10');
+  });
+
+  test('không có skuId, có normColor → !skuId=true → variantColor ĐƯỢC override', () => {
+    const product = makeProductSkuId({
+      variants: [
+        {
+          id: 20,
+          price: '25000000',
+          compareAtPrice: null,
+          stockQuantity: 5,
+          variantName: 'Trắng 256GB',
+          isDefault: true,
+          sku: 'SKU-20',
+          specifications: {},
+          attributes: { color: 'trắng' },
+        },
+      ],
+    });
+    const result = service._buildProductDetailResponse(product, { queryColor: 'trắng' });
+    expect(result).toBeDefined();
+  });
+});

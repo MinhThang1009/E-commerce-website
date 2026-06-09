@@ -94,6 +94,10 @@ jest.mock('multer', () => {
       cb(null); // không set req.file → controller trả 400
     } else if (behavior === 'limitFileSize') {
       cb(new MulterError('LIMIT_FILE_SIZE'));
+    } else if (behavior === 'nonMulter') {
+      cb(new Error('Disk full'));
+    } else if (behavior === 'throw') {
+      throw new Error('multer internal sync error in single');
     } else {
       cb(new MulterError('LIMIT_UNEXPECTED_FILE'));
     }
@@ -126,6 +130,10 @@ jest.mock('multer', () => {
       cb(new MulterError('LIMIT_FILE_SIZE'));
     } else if (behavior === 'limitFileCount') {
       cb(new MulterError('LIMIT_FILE_COUNT'));
+    } else if (behavior === 'nonMulter') {
+      cb(new Error('S3 connection refused'));
+    } else if (behavior === 'throw') {
+      throw new Error('multer internal sync error in array');
     } else {
       cb(new MulterError('LIMIT_UNEXPECTED_FILE'));
     }
@@ -881,5 +889,339 @@ describe('mutation-kill: controller messages + options + url', () => {
     const body = res.json.mock.calls[0][0];
     expect(body.data.count).toBe(2);
     expect(body.data.images[0].url).toBe('/uploads/images/product/x.webp');
+  });
+});
+
+// ============================================================
+// Edge cases — multer error paths, options parsing, userId null
+// ============================================================
+
+describe('Edge cases — multer error paths, options parsing, userId null', () => {
+  let imageController;
+
+  beforeAll(() => {
+    imageController = require('./image-controller');
+  });
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    global.__mockMulterSingleBehavior = 'success';
+    global.__mockMulterArrayBehavior = 'success';
+  });
+
+  afterEach(() => {
+    delete global.__mockMulterSingleBehavior;
+    delete global.__mockMulterArrayBehavior;
+  });
+
+  // ─── uploadSingle — non-multer error path ────────────────────────────────────
+
+  describe('ImageController.uploadSingle — non-multer error từ middleware', () => {
+    it('gọi next với error gốc khi middleware callback nhận non-MulterError', async () => {
+      global.__mockMulterSingleBehavior = 'nonMulter';
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadSingle(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'Disk full' }));
+      expect(mockUploadImage).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── uploadMultiple — nhánh non-multer error ─────────────────────────────────
+
+  describe('ImageController.uploadMultiple — non-multer error từ middleware', () => {
+    it('gọi next với error gốc khi middleware callback nhận non-MulterError', async () => {
+      global.__mockMulterArrayBehavior = 'nonMulter';
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadMultiple(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'S3 connection refused' }),
+      );
+      expect(mockUploadMultipleImages).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── uploadSingle — req.body.generateThumbs / optimize options ───────────────
+
+  describe('ImageController.uploadSingle — options từ req.body', () => {
+    it('generateThumbs=false → options.generateThumbs = false', async () => {
+      global.__mockMulterSingleBehavior = 'success';
+      mockUploadImage.mockResolvedValue({ id: 'img-1', filePath: 'products/test.jpg' });
+
+      const req = {
+        body: { generateThumbs: 'false', optimize: 'true', category: 'product' },
+        user: { id: 1 },
+        headers: {},
+      };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadSingle(req, res, next);
+
+      expect(mockUploadImage).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ generateThumbs: false, optimize: true }),
+      );
+    });
+
+    it('optimize=false → options.optimize = false', async () => {
+      global.__mockMulterSingleBehavior = 'success';
+      mockUploadImage.mockResolvedValue({ id: 'img-2', filePath: 'products/t2.jpg' });
+
+      const req = {
+        body: { optimize: 'false' },
+        user: null,
+        headers: {},
+      };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+      await imageController.uploadSingle(req, res, jest.fn());
+
+      expect(mockUploadImage).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ optimize: false, userId: null }),
+      );
+    });
+  });
+
+  // ─── uploadMultiple — options từ req.body ────────────────────────────────────
+
+  describe('ImageController.uploadMultiple — options từ req.body', () => {
+    it('generateThumbs=false → options.generateThumbs = false', async () => {
+      global.__mockMulterArrayBehavior = 'success';
+      const multiResult = {
+        successful: [],
+        failed: [],
+        count: { total: 2, successful: 2, failed: 0 },
+      };
+      mockUploadMultipleImages.mockResolvedValue(multiResult);
+
+      const req = {
+        body: { generateThumbs: 'false', category: 'reviews' },
+        user: { id: 5 },
+        headers: {},
+      };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+      await imageController.uploadMultiple(req, res, jest.fn());
+
+      expect(mockUploadMultipleImages).toHaveBeenCalledWith(
+        expect.any(Array),
+        expect.objectContaining({ generateThumbs: false }),
+      );
+    });
+  });
+
+  // ─── uploadSingle — generic multer error (không phải LIMIT_FILE_SIZE) ─────────
+
+  describe('ImageController.uploadSingle — generic multer error', () => {
+    it('MulterError khác LIMIT_FILE_SIZE → AppError 400 với err.message', async () => {
+      global.__mockMulterSingleBehavior = 'other';
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const next = jest.fn();
+
+      await imageController.uploadSingle(
+        req,
+        { status: jest.fn().mockReturnThis(), json: jest.fn() },
+        next,
+      );
+
+      const calledWith = next.mock.calls[0][0];
+      expect(calledWith).toMatchObject({ statusCode: 400 });
+    });
+  });
+
+  // ─── uploadSingle — inner service error ──────────────────────────────────────
+
+  describe('ImageController.uploadSingle — inner service error', () => {
+    it('imageService.uploadImage throw → gọi next với lỗi', async () => {
+      global.__mockMulterSingleBehavior = 'success';
+      mockUploadImage.mockRejectedValue(new Error('Image processing failed'));
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadSingle(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'Image processing failed' }),
+      );
+    });
+  });
+
+  // ─── uploadMultiple — generic MulterError ────────────────────────────────────
+
+  describe('ImageController.uploadMultiple — generic MulterError', () => {
+    it('MulterError không phải SIZE/COUNT → AppError 400', async () => {
+      global.__mockMulterArrayBehavior = 'other';
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadMultiple(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+      expect(mockUploadMultipleImages).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── uploadMultiple — inner service catch ────────────────────────────────────
+
+  describe('ImageController.uploadMultiple — service throw', () => {
+    it('service throw → gọi next với lỗi', async () => {
+      global.__mockMulterArrayBehavior = 'success';
+      mockUploadMultipleImages.mockRejectedValue(new Error('S3 batch upload failed'));
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadMultiple(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'S3 batch upload failed' }),
+      );
+    });
+  });
+
+  // ─── uploadMultiple — non-multer error callback ──────────────────────────────
+
+  describe('ImageController.uploadMultiple — non-multer error callback', () => {
+    it('non-MulterError callback → gọi next với original error', async () => {
+      global.__mockMulterArrayBehavior = 'nonMulter';
+
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadMultiple(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'S3 connection refused' }),
+      );
+    });
+  });
+
+  // ─── uploadMultiple — req.user undefined → userId null ───────────────────────
+
+  describe('ImageController.uploadMultiple — userId null', () => {
+    it('user undefined → userId = null', async () => {
+      global.__mockMulterArrayBehavior = 'success';
+      mockUploadMultipleImages.mockResolvedValue({
+        count: { successful: 1, failed: 0 },
+        results: [],
+      });
+
+      const req = { body: {}, user: undefined, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+      await imageController.uploadMultiple(req, res, jest.fn());
+
+      expect(mockUploadMultipleImages).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ userId: null }),
+      );
+    });
+  });
+
+  // ─── convertBase64 — req.user undefined → userId null ────────────────────────
+
+  describe('ImageController.convertBase64 — userId null', () => {
+    it('user undefined → userId = null', async () => {
+      mockConvertBase64ToFile.mockResolvedValue({ url: '/uploads/converted.jpg' });
+
+      const req = {
+        body: { base64Data: 'data:image/png;base64,abc123' },
+        user: undefined,
+        headers: {},
+      };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+      await imageController.convertBase64(req, res, jest.fn());
+
+      expect(mockConvertBase64ToFile).toHaveBeenCalledWith(
+        'data:image/png;base64,abc123',
+        expect.objectContaining({ userId: null }),
+      );
+    });
+  });
+
+  // ─── healthCheck — error path ─────────────────────────────────────────────────
+
+  describe('ImageController.healthCheck — error path', () => {
+    it('res.json throw → gọi next với lỗi', async () => {
+      const req = {};
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockImplementation(() => {
+          throw new Error('response stream closed');
+        }),
+      };
+      const next = jest.fn();
+
+      await imageController.healthCheck(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'response stream closed' }),
+      );
+    });
+  });
+});
+
+// ============================================================
+// Error handling — outer catch synchronous multer throw
+// ============================================================
+
+describe('Error handling — outer catch synchronous multer throw', () => {
+  let imageController;
+
+  beforeAll(() => {
+    imageController = require('./image-controller');
+  });
+
+  // ─── uploadSingle outer catch — line 94 ────────────────────────────────────
+
+  describe('ImageController.uploadSingle — outer catch khi multer middleware throw đồng bộ (line 94)', () => {
+    it('gọi next với lỗi khi multer middleware throw synchronously', async () => {
+      global.__mockMulterSingleBehavior = 'throw';
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadSingle(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'multer internal sync error in single' }),
+      );
+    });
+  });
+
+  // ─── uploadMultiple outer catch — line 147 ─────────────────────────────────
+
+  describe('ImageController.uploadMultiple — outer catch khi multer middleware throw đồng bộ (line 147)', () => {
+    it('gọi next với lỗi khi multer middleware throw synchronously', async () => {
+      global.__mockMulterArrayBehavior = 'throw';
+      const req = { body: {}, user: { id: 1 }, headers: {} };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+      const next = jest.fn();
+
+      await imageController.uploadMultiple(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'multer internal sync error in array' }),
+      );
+    });
   });
 });

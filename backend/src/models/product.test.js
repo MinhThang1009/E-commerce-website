@@ -612,3 +612,211 @@ describe('afterBulkDestroy hook — vectorStoreService falsy → early return (l
     expect(mockSave).not.toHaveBeenCalled();
   });
 });
+
+// =============================================================================
+// Branch coverage — getter object-passthrough paths + hook false paths
+// (merged from product-edge-cases.test.js)
+// =============================================================================
+
+describe('Product model — branch coverage (object passthrough & hook false paths)', () => {
+  // ── Helpers ───────────────────────────────────────────────────────────────────────────────────────────
+  function makeInstanceEdge(initialData = {}) {
+    const dataValues = { ...initialData };
+    return {
+      getDataValue(field) {
+        return dataValues[field];
+      },
+      setDataValue(field, value) {
+        dataValues[field] = value;
+      },
+      changed() {
+        return false;
+      },
+    };
+  }
+
+  // Capture define call (separate from top-level mockHooks used by base tests)
+  let capturedHooksEdge = {};
+  let capturedFieldsEdge = {};
+  const mockProductInstanceEdge = { findByPk: jest.fn() };
+
+  const mockVectorStoreEdge = {
+    upsertProduct: jest.fn().mockResolvedValue(undefined),
+    save: jest.fn().mockResolvedValue(undefined),
+    items: [],
+  };
+
+  beforeAll(() => {
+    jest.resetModules();
+
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    }));
+    jest.mock('slugify', () =>
+      jest.fn((text) =>
+        text
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, ''),
+      ),
+    );
+    jest.mock('@services/vector-store/vector-store', () => mockVectorStoreEdge);
+    jest.mock('@models/category', () => ({}));
+    jest.mock('@models/product-image', () => ({}));
+    jest.mock('@models/product-variant', () => ({}));
+    jest.mock('@utils/product-helpers', () => ({
+      enrichProductData: jest.fn((p) => p),
+    }));
+    jest.mock('@config/sequelize', () => ({
+      define: jest.fn((modelName, fields, opts) => {
+        capturedFieldsEdge = fields;
+        if (opts && opts.hooks) {
+          capturedHooksEdge = { ...opts.hooks };
+        }
+        return mockProductInstanceEdge;
+      }),
+    }));
+
+    require('./product');
+  });
+
+  function getFieldDefEdge(fieldName) {
+    return capturedFieldsEdge[fieldName];
+  }
+
+  // ── Line 166: attributes getter — object passthrough ────────────────────────────────────────────────
+
+  describe('attributes getter — object passthrough (line 166)', () => {
+    function callGetter(rawValue) {
+      const inst = makeInstanceEdge({ attributes: rawValue });
+      return getFieldDefEdge('attributes').get.call(inst);
+    }
+
+    it('trả về nguyên object khi rawValue đã là object (không stringify)', () => {
+      const obj = { color: 'blue', size: 'L' };
+      const result = callGetter(obj);
+      expect(result).toBe(obj);
+    });
+
+    it('trả về nguyên array khi rawValue đã là array', () => {
+      const arr = [{ key: 'val' }];
+      const result = callGetter(arr);
+      expect(result).toBe(arr);
+    });
+
+    it('parse JSON string thành object (string path — ensure false branch unchanged)', () => {
+      const result = callGetter('{"ram":"16GB"}');
+      expect(result).toEqual({ ram: '16GB' });
+    });
+
+    it('trả về {} khi null (no-value guard)', () => {
+      expect(callGetter(null)).toEqual({});
+    });
+  });
+
+  // ── Line 207: shippingInfo getter — object passthrough ─────────────────────────────────────────────
+
+  describe('shippingInfo getter — object passthrough (line 207)', () => {
+    function callGetter(rawValue) {
+      const inst = makeInstanceEdge({ shippingInfo: rawValue });
+      return getFieldDefEdge('shippingInfo').get.call(inst);
+    }
+
+    it('trả về nguyên object khi rawValue đã là object', () => {
+      const shippingObj = { weight: 500, provider: 'GHN' };
+      const result = callGetter(shippingObj);
+      expect(result).toBe(shippingObj);
+    });
+
+    it('trả về nguyên object lồng nhau khi rawValue là nested object', () => {
+      const nested = { dimensions: { w: 10, h: 5, d: 3 } };
+      expect(callGetter(nested)).toBe(nested);
+    });
+
+    it('parse JSON string thành object (string path)', () => {
+      expect(callGetter('{"weight":300}')).toEqual({ weight: 300 });
+    });
+
+    it('trả về {} khi null', () => {
+      expect(callGetter(null)).toEqual({});
+    });
+  });
+
+  // ── Line 243: seoKeywords getter — object passthrough ──────────────────────────────────────────────
+
+  describe('seoKeywords getter — object passthrough (line 243)', () => {
+    function callGetter(rawValue) {
+      const inst = makeInstanceEdge({ seoKeywords: rawValue });
+      return getFieldDefEdge('seoKeywords').get.call(inst);
+    }
+
+    it('trả về nguyên array khi rawValue đã là array', () => {
+      const arr = ['laptop', 'gaming', 'ultrabook'];
+      const result = callGetter(arr);
+      expect(result).toBe(arr);
+    });
+
+    it('trả về nguyên object khi rawValue là plain object (typeof object)', () => {
+      const obj = { keywords: ['laptop'] };
+      expect(callGetter(obj)).toBe(obj);
+    });
+
+    it('parse JSON array string thành array (string path)', () => {
+      expect(callGetter('["seo","phone"]')).toEqual(['seo', 'phone']);
+    });
+
+    it('trả về [] khi null', () => {
+      expect(callGetter(null)).toEqual([]);
+    });
+  });
+
+  // ── Line 332: afterUpdate hook — vectorStoreService truthy (true path) ────────────────────────────
+
+  describe('afterUpdate hook — vectorStoreService truthy (line 332 true path)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockVectorStoreEdge.items = [{ metadata: { id: 10 } }, { metadata: { id: 11 } }];
+    });
+
+    it('status=inactive → xóa item khỏi vector store và gọi save', async () => {
+      await capturedHooksEdge.afterUpdate({ id: 10, status: 'inactive' });
+      expect(mockVectorStoreEdge.items.some((i) => i.metadata.id === 10)).toBe(false);
+      expect(mockVectorStoreEdge.save).toHaveBeenCalled();
+    });
+
+    it('status=archived → tương tự inactive: xóa item khỏi vector store', async () => {
+      await capturedHooksEdge.afterUpdate({ id: 10, status: 'archived' });
+      expect(mockVectorStoreEdge.items.some((i) => i.metadata.id === 10)).toBe(false);
+      expect(mockVectorStoreEdge.save).toHaveBeenCalled();
+    });
+
+    it('status=active nhưng findByPk trả null → không gọi upsertProduct', async () => {
+      mockProductInstanceEdge.findByPk.mockResolvedValue(null);
+      await capturedHooksEdge.afterUpdate({ id: 99, status: 'active' });
+      expect(mockVectorStoreEdge.upsertProduct).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── Line 365: afterDestroy hook — vectorStoreService truthy (true path) ──────────────────────────
+
+  describe('afterDestroy hook — vectorStoreService truthy (line 365 true path)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockVectorStoreEdge.items = [{ metadata: { id: 7 } }, { metadata: { id: 8 } }];
+    });
+
+    it('xóa item khỏi vector store và gọi save', async () => {
+      await capturedHooksEdge.afterDestroy({ id: 7 });
+      expect(mockVectorStoreEdge.items.some((i) => i.metadata.id === 7)).toBe(false);
+      expect(mockVectorStoreEdge.save).toHaveBeenCalled();
+    });
+
+    it('không throw khi save fail', async () => {
+      mockVectorStoreEdge.save.mockRejectedValueOnce(new Error('IO fail'));
+      await expect(capturedHooksEdge.afterDestroy({ id: 8 })).resolves.not.toThrow();
+    });
+  });
+});

@@ -1833,3 +1833,192 @@ describe('Test Phase 32 — Các nhánh chưa được cover trong adminImport.j
     });
   });
 });
+
+// ─── Merged from admin-import-controller.edge-cases.test.js ──────────────────
+
+/**
+ * Test Phase 31 — Database Migration Workflow & Product Import
+ *
+ * Bao gồm:
+ * - GET  /api/admin/products/import-template — download CSV template (200)
+ * - POST /api/admin/products/import — upload không có file (400)
+ * - POST /api/admin/products/import — upload file không hợp lệ (400)
+ * - POST /api/admin/products/import — upload CSV hợp lệ (200 + success count)
+ * - POST /api/admin/products/import — CSV thiếu name → error chi tiết, dòng còn lại OK
+ * - GET  /api/admin/products/export — export CSV (200 + Content-Disposition)
+ * - POST /api/admin/products/import — không có auth (401)
+ */
+describe('Test Phase 31 — Database Migration Workflow & Product Import', () => {
+  let appEdge;
+  const adminHeadersEdge = { 'x-test-admin': 'true' };
+
+  beforeAll(() => {
+    const express = require('express');
+    const { errorHandler } = require('@middlewares/error-handler');
+    const adminRouter = require('@modules/admin/routes');
+
+    appEdge = express();
+    appEdge.use(express.json());
+    // Auth guard cho edge-cases: kiểm tra header thật thay vì mock bypass
+    appEdge.use((req, res, next) => {
+      if (!req.headers['x-test-admin']) {
+        return res.status(401).json({ status: 'error', message: 'auth.unauthorized' });
+      }
+      next();
+    });
+    appEdge.use('/api/admin', adminRouter);
+    appEdge.use(errorHandler);
+  });
+
+  beforeEach(() => jest.clearAllMocks());
+
+  describe('GET /api/admin/products/import-template', () => {
+    test('Admin → trả về file CSV với Content-Disposition attachment', async () => {
+      const res = await supertest(appEdge)
+        .get('/api/admin/products/import-template')
+        .set(adminHeadersEdge);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.headers['content-disposition']).toMatch(/attachment/);
+      // Kiểm tra header CSV bắt buộc
+      expect(res.text).toContain('name');
+      expect(res.text).toContain('base_price');
+      expect(res.text).toContain('category_slug');
+    });
+
+    test('Không có auth (thiếu x-test-admin) → 401', async () => {
+      const res = await supertest(appEdge).get('/api/admin/products/import-template');
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('POST /api/admin/products/import', () => {
+    test('Không có file đính kèm → 400', async () => {
+      const res = await supertest(appEdge).post('/api/admin/products/import').set(adminHeadersEdge);
+
+      expect(res.status).toBe(400);
+      // 4xx errors dùng status 'fail' theo convention errorHandler
+      expect(['error', 'fail']).toContain(res.body.status);
+    });
+
+    test('Upload file có extension không hợp lệ (.txt) → 400', async () => {
+      const res = await supertest(appEdge)
+        .post('/api/admin/products/import')
+        .set(adminHeadersEdge)
+        .attach('file', Buffer.from('some text'), {
+          filename: 'data.txt',
+          contentType: 'text/plain',
+        });
+
+      expect(res.status).toBe(400);
+    });
+
+    test('Upload CSV hợp lệ với 2 sản phẩm → 200, successCount >= 1', async () => {
+      const { Category, Brand, Product } = require('@models');
+      Category.findAll.mockResolvedValue([
+        { id: 1, slug: 'dien-thoai', name: 'Điện thoại' },
+        { id: 2, slug: 'laptop', name: 'Laptop' },
+      ]);
+      Brand.findAll.mockResolvedValue([{ id: 1, name: 'Apple', slug: 'apple' }]);
+      Product.create.mockResolvedValue({ id: 100, name: 'Test Product' });
+      Product.findOne.mockResolvedValue(null);
+      Product.findAll.mockResolvedValue([]);
+
+      const csvContent = [
+        'name,slug,short_description,base_price,category_slug,brand,status,stock_quantity',
+        'iPhone 17 Pro,,Flagship mới,36990000,dien-thoai,Apple,active,50',
+        'MacBook Air M5,,Siêu mỏng nhẹ,29990000,laptop,Apple,active,20',
+      ].join('\n');
+
+      const res = await supertest(appEdge)
+        .post('/api/admin/products/import')
+        .set(adminHeadersEdge)
+        .attach('file', Buffer.from(csvContent), {
+          filename: 'products.csv',
+          contentType: 'text/csv',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.data).toHaveProperty('totalRows');
+      expect(res.body.data).toHaveProperty('successCount');
+      expect(res.body.data).toHaveProperty('failedCount');
+      expect(res.body.data.totalRows).toBe(2);
+    });
+
+    test('CSV có 1 dòng thiếu name → error chi tiết cho dòng đó, dòng còn lại import được', async () => {
+      // Dòng 2: name trống (chỉ có dấu phẩy ở đầu) → validation error
+      // Dòng 3: hợp lệ → import được
+      const csvContent = [
+        'name,base_price,category_slug',
+        ',29990000,dien-thoai', // dòng 2: name bỏ trống → error
+        'Samsung Galaxy S25,29990000,dien-thoai', // dòng 3: hợp lệ
+      ].join('\n');
+
+      const res = await supertest(appEdge)
+        .post('/api/admin/products/import')
+        .set(adminHeadersEdge)
+        .attach('file', Buffer.from(csvContent), {
+          filename: 'products.csv',
+          contentType: 'text/csv',
+        });
+
+      // Vẫn trả 200 nếu có ít nhất 1 dòng thành công hoặc 422 nếu tất cả lỗi
+      expect([200, 422]).toContain(res.status);
+
+      if (res.status === 200) {
+        // Phải có errors array với ít nhất 1 lỗi về name
+        expect(res.body.data.errors.length).toBeGreaterThan(0);
+        const nameError = res.body.data.errors.find(
+          (e) => e.field === 'name' || e.field === 'general',
+        );
+        expect(nameError).toBeTruthy();
+      }
+    });
+
+    test('Không có auth → 401', async () => {
+      const res = await supertest(appEdge)
+        .post('/api/admin/products/import')
+        .attach('file', Buffer.from('name,base_price'), { filename: 'p.csv' });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/admin/products/export', () => {
+    test('Admin → trả về file CSV với Content-Disposition (200)', async () => {
+      // Mock Product.findAll cho export
+      const { Product } = require('@models');
+      Product.findAll.mockResolvedValueOnce([
+        {
+          id: 1,
+          name: 'iPhone 16',
+          slug: 'iphone-16',
+          shortDescription: 'Flagship',
+          basePrice: 22990000,
+          status: 'active',
+          stockQuantity: 30,
+          category: { slug: 'dien-thoai' },
+          brand: { name: 'Apple' },
+          productImages: [{ imageUrl: '/img/iphone16.jpg' }],
+          specifications: [{ specKey: 'CPU', specValue: 'A18' }],
+        },
+      ]);
+
+      const res = await supertest(appEdge)
+        .get('/api/admin/products/export?format=csv')
+        .set(adminHeadersEdge);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/text\/csv/);
+      expect(res.headers['content-disposition']).toMatch(/attachment/);
+      expect(res.text).toContain('name');
+    });
+
+    test('Không có auth → 401', async () => {
+      const res = await supertest(appEdge).get('/api/admin/products/export');
+      expect(res.status).toBe(401);
+    });
+  });
+});

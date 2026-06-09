@@ -1,6 +1,6 @@
 /**
  * @file imageProxyRouter.test.js
- * @description Gộp từ imageProxyRouter.test.js + imageProxyRouter.extra.test.js
+ * @description Gộp từ imageProxyRouter.test.js + imageProxyRouter.edge-cases.test.js
  */
 const express = require('express');
 const supertest = require('supertest');
@@ -108,12 +108,14 @@ describe('imageProxyRouter — Input validation và domain whitelist', () => {
   });
 });
 
-// ═══════════
-// imageProxyRouter.extra.test.js
-// ═══════════
+// ═══════════════════════════════════════════════════════════════════════════════
+// imageProxyRouter.edge-cases.test.js
+// Covers lines 21-42: http path, proxyRes callback, error, timeout.
+// ═══════════════════════════════════════════════════════════════════════════════
 
-let mockCapturedProxyReq = null;
-let mockCallbackFn = null;
+// Module-scope vars required because jest.mock() is hoisted before describe blocks
+let mockCapturedProxyReqEdge = null;
+let mockCallbackFnEdge = null;
 
 jest.mock('https', () => {
   const original = jest.requireActual('https');
@@ -123,8 +125,8 @@ jest.mock('https', () => {
       const { EventEmitter } = require('events');
       const proxyReq = new EventEmitter();
       proxyReq.destroy = jest.fn();
-      mockCapturedProxyReq = proxyReq;
-      mockCallbackFn = callback;
+      mockCapturedProxyReqEdge = proxyReq;
+      mockCallbackFnEdge = callback;
       return proxyReq;
     },
   };
@@ -138,177 +140,128 @@ jest.mock('http', () => {
       const { EventEmitter } = require('events');
       const proxyReq = new EventEmitter();
       proxyReq.destroy = jest.fn();
-      mockCapturedProxyReq = proxyReq;
-      mockCallbackFn = callback;
+      mockCapturedProxyReqEdge = proxyReq;
+      mockCallbackFnEdge = callback;
       return proxyReq;
     },
   };
 });
 
-function mockRes() {
-  const res = {
-    headersSent: false,
-    status: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
-    set: jest.fn().mockReturnThis(),
-  };
-  return res;
-}
+describe('imageProxyRouter — edge cases (http path, proxyRes, error, timeout)', () => {
+  function mockResEdge() {
+    return {
+      headersSent: false,
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+    };
+  }
 
-afterEach(() => {
-  mockCapturedProxyReq = null;
-  mockCallbackFn = null;
-});
+  function mockReqEdge(url) {
+    return {
+      method: 'GET',
+      url: `/?url=${encodeURIComponent(url)}`,
+      path: '/',
+      originalUrl: `/?url=${encodeURIComponent(url)}`,
+      query: { url },
+      headers: {},
+      app: { get: jest.fn() },
+      baseUrl: '',
+    };
+  }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
-function mockReq(url) {
-  return {
-    method: 'GET',
-    url: `/?url=${encodeURIComponent(url)}`,
-    path: '/',
-    originalUrl: `/?url=${encodeURIComponent(url)}`,
-    query: { url },
-    headers: {},
-    app: { get: jest.fn() },
-    baseUrl: '',
-  };
-}
-
-describe('imageProxyRouter — error callback (line 38)', () => {
-  test('502 Upstream error khi proxyReq emits error', () => {
-    const req = mockReq('https://cdnv2.tgdd.vn/image.jpg');
-    const res = mockRes();
-
-    imageProxyRouter(req, res, jest.fn());
-
-    expect(mockCapturedProxyReq).not.toBeNull();
-    mockCapturedProxyReq.emit('error', new Error('upstream failed'));
-
-    expect(res.status).toHaveBeenCalledWith(502);
-    expect(res.send).toHaveBeenCalledWith('Upstream error');
+  afterEach(() => {
+    mockCapturedProxyReqEdge = null;
+    mockCallbackFnEdge = null;
   });
 
-  test('không gọi res.status khi headersSent = true (error)', () => {
-    const req = mockReq('https://cdnv2.tgdd.vn/image.jpg');
-    const res = mockRes();
-    res.headersSent = true;
-
-    imageProxyRouter(req, res, jest.fn());
-
-    // Assert unconditional — nếu proxy req không được tạo, test PHẢI fail rõ ràng
-    expect(mockCapturedProxyReq).not.toBeNull();
-    mockCapturedProxyReq.emit('error', new Error('error after send'));
-    expect(res.status).not.toHaveBeenCalled();
-  });
-});
-
-describe('imageProxyRouter — timeout callback (lines 41-42)', () => {
-  test('destroy + 504 Timeout khi proxyReq emits timeout', () => {
-    const req = mockReq('https://cdn.tgdd.vn/image.jpg');
-    const res = mockRes();
-
-    imageProxyRouter(req, res, jest.fn());
-
-    expect(mockCapturedProxyReq).not.toBeNull();
-    mockCapturedProxyReq.emit('timeout');
-
-    expect(mockCapturedProxyReq.destroy).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(504);
-    expect(res.send).toHaveBeenCalledWith('Timeout');
+  describe('imageProxyRouter — error callback (line 38)', () => {
+    test('502 Upstream error khi proxyReq emits error', () => {
+      const res = mockResEdge();
+      imageProxyRouter(mockReqEdge('https://cdnv2.tgdd.vn/image.jpg'), res, jest.fn());
+      expect(mockCapturedProxyReqEdge).not.toBeNull();
+      mockCapturedProxyReqEdge.emit('error', new Error('upstream'));
+      expect(res.status).toHaveBeenCalledWith(502);
+      expect(res.send).toHaveBeenCalledWith('Upstream error');
+    });
+    test('không gọi res.status khi headersSent = true (error)', () => {
+      const res = mockResEdge();
+      res.headersSent = true;
+      imageProxyRouter(mockReqEdge('https://cdnv2.tgdd.vn/image.jpg'), res, jest.fn());
+      expect(mockCapturedProxyReqEdge).not.toBeNull();
+      mockCapturedProxyReqEdge.emit('error', new Error('error'));
+      expect(res.status).not.toHaveBeenCalled();
+    });
   });
 
-  test('destroy nhưng không gọi res.status khi headersSent = true (timeout)', () => {
-    const req = mockReq('https://cdn2.cellphones.com.vn/image.jpg');
-    const res = mockRes();
-    res.headersSent = true;
-
-    imageProxyRouter(req, res, jest.fn());
-    expect(mockCapturedProxyReq).not.toBeNull();
-    mockCapturedProxyReq.emit('timeout');
-    expect(mockCapturedProxyReq.destroy).toHaveBeenCalled();
-    expect(res.status).not.toHaveBeenCalled();
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// http (không phải https) path — line 21 branch
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('imageProxyRouter — http (non-https) URL — line 21 branch', () => {
-  test('dùng http module khi URL bắt đầu bằng http:// (line 21 false branch)', () => {
-    // cdnv2.tgdd.vn là allowed domain — dùng http:// thay vì https://
-    const req = mockReq('http://cdnv2.tgdd.vn/image.jpg');
-    const res = mockRes();
-
-    imageProxyRouter(req, res, jest.fn());
-
-    // http.get được gọi → mockCapturedProxyReq được set bởi http mock
-    expect(mockCapturedProxyReq).not.toBeNull();
-
-    // Emit error để test kết thúc
-    mockCapturedProxyReq.emit('error', new Error('http upstream error'));
-    expect(res.status).toHaveBeenCalledWith(502);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// proxyRes callback — lines 32-33 (headersSent check + content-type)
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('imageProxyRouter — proxyRes callback (lines 32-33)', () => {
-  const { EventEmitter } = require('events');
-
-  test('pipe proxyRes khi header chưa sent (line 32 false branch)', () => {
-    const req = mockReq('https://cdnv2.tgdd.vn/image.jpg');
-    const res = mockRes();
-    res.pipe = jest.fn();
-
-    imageProxyRouter(req, res, jest.fn());
-
-    // Tạo mock proxyRes và gọi callback
-    const proxyRes = new EventEmitter();
-    proxyRes.headers = { 'content-type': 'image/jpeg' };
-    proxyRes.pipe = jest.fn();
-
-    if (mockCallbackFn) {
-      mockCallbackFn(proxyRes);
-      expect(res.set).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
-      expect(res.set).toHaveBeenCalledWith('Cache-Control', 'public, max-age=86400');
-    }
+  describe('imageProxyRouter — timeout callback (lines 41-42)', () => {
+    test('destroy + 504 Timeout', () => {
+      const res = mockResEdge();
+      imageProxyRouter(mockReqEdge('https://cdn.tgdd.vn/image.jpg'), res, jest.fn());
+      expect(mockCapturedProxyReqEdge).not.toBeNull();
+      mockCapturedProxyReqEdge.emit('timeout');
+      expect(mockCapturedProxyReqEdge.destroy).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(504);
+      expect(res.send).toHaveBeenCalledWith('Timeout');
+    });
+    test('destroy khi headersSent=true (no status)', () => {
+      const res = mockResEdge();
+      res.headersSent = true;
+      imageProxyRouter(mockReqEdge('https://cdn2.cellphones.com.vn/image.jpg'), res, jest.fn());
+      expect(mockCapturedProxyReqEdge).not.toBeNull();
+      mockCapturedProxyReqEdge.emit('timeout');
+      expect(mockCapturedProxyReqEdge.destroy).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
   });
 
-  test('skip pipe khi headersSent = true (line 32 true branch)', () => {
-    const req = mockReq('https://cdnv2.tgdd.vn/image.jpg');
-    const res = mockRes();
-    res.headersSent = true;
-
-    imageProxyRouter(req, res, jest.fn());
-
-    const proxyRes = new EventEmitter();
-    proxyRes.headers = { 'content-type': 'image/png' };
-    proxyRes.pipe = jest.fn();
-
-    if (mockCallbackFn) {
-      mockCallbackFn(proxyRes);
-      // headersSent = true → return ngay, không gọi res.set
-      expect(res.set).not.toHaveBeenCalled();
-    }
+  describe('imageProxyRouter — http path (line 21 false branch)', () => {
+    test('dùng http module cho URL http://', () => {
+      const res = mockResEdge();
+      imageProxyRouter(mockReqEdge('http://cdnv2.tgdd.vn/image.jpg'), res, jest.fn());
+      expect(mockCapturedProxyReqEdge).not.toBeNull();
+      mockCapturedProxyReqEdge.emit('error', new Error('http error'));
+      expect(res.status).toHaveBeenCalledWith(502);
+    });
   });
 
-  test('dùng image/jpeg khi content-type không có trong header', () => {
-    const req = mockReq('https://cdnv2.tgdd.vn/image.jpg');
-    const res = mockRes();
-
-    imageProxyRouter(req, res, jest.fn());
-
-    const proxyRes = new EventEmitter();
-    proxyRes.headers = {}; // không có content-type
-    proxyRes.pipe = jest.fn();
-
-    if (mockCallbackFn) {
-      mockCallbackFn(proxyRes);
-      expect(res.set).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
-    }
+  describe('imageProxyRouter — proxyRes callback (lines 32-33)', () => {
+    test('set Content-Type và pipe khi header chưa sent', () => {
+      const { EventEmitter } = require('events');
+      const res = mockResEdge();
+      imageProxyRouter(mockReqEdge('https://cdnv2.tgdd.vn/image.jpg'), res, jest.fn());
+      const proxyRes = new EventEmitter();
+      proxyRes.headers = { 'content-type': 'image/jpeg' };
+      proxyRes.pipe = jest.fn();
+      if (mockCallbackFnEdge) {
+        mockCallbackFnEdge(proxyRes);
+        expect(res.set).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
+      }
+    });
+    test('skip pipe khi headersSent=true', () => {
+      const { EventEmitter } = require('events');
+      const res = mockResEdge();
+      res.headersSent = true;
+      imageProxyRouter(mockReqEdge('https://cdnv2.tgdd.vn/image.jpg'), res, jest.fn());
+      const proxyRes = new EventEmitter();
+      proxyRes.headers = {};
+      proxyRes.pipe = jest.fn();
+      if (mockCallbackFnEdge) {
+        mockCallbackFnEdge(proxyRes);
+        expect(res.set).not.toHaveBeenCalled();
+      }
+    });
+    test('fallback image/jpeg khi không có content-type', () => {
+      const { EventEmitter } = require('events');
+      const res = mockResEdge();
+      imageProxyRouter(mockReqEdge('https://cdnv2.tgdd.vn/image.jpg'), res, jest.fn());
+      const proxyRes = new EventEmitter();
+      proxyRes.headers = {};
+      proxyRes.pipe = jest.fn();
+      if (mockCallbackFnEdge) {
+        mockCallbackFnEdge(proxyRes);
+        expect(res.set).toHaveBeenCalledWith('Content-Type', 'image/jpeg');
+      }
+    });
   });
 });

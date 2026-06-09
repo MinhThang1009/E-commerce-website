@@ -647,6 +647,50 @@ describe('productNameGenerator module load — association setup khi chưa có',
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// association setup khi chưa tồn tại (từ product-name-generator.assoc.test.js)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('association setup khi chưa tồn tại (assoc file)', () => {
+  it('belongsTo + hasMany được gọi với foreignKey/as đúng', () => {
+    jest.resetModules();
+
+    const mockBelongsTo = jest.fn();
+    const mockHasMany = jest.fn();
+
+    jest.mock('@utils/logger', () => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    }));
+
+    jest.mock('@models', () => ({
+      AttributeValue: {
+        associations: {},
+        findAll: jest.fn(),
+        belongsTo: (...args) => mockBelongsTo(...args),
+      },
+      AttributeGroup: {
+        associations: {},
+        hasMany: (...args) => mockHasMany(...args),
+      },
+    }));
+
+    const { AttributeValue, AttributeGroup } = require('@models');
+    require('@modules/ai/services/product/product-name-generator');
+
+    expect(mockBelongsTo).toHaveBeenCalledWith(AttributeGroup, {
+      foreignKey: 'attributeGroupId',
+      as: 'attributeGroup',
+    });
+    expect(mockHasMany).toHaveBeenCalledWith(AttributeValue, {
+      foreignKey: 'attributeGroupId',
+      as: 'values',
+    });
+  });
+});
+
 // ── generateVariantName() error catch (lines 107-108) ─────────────────────────
 
 describe('productNameGenerator — generateVariantName() error propagation (lines 107-108)', () => {

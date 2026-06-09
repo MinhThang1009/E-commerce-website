@@ -44,6 +44,7 @@ jest.mock('@utils/logger', () => ({
 
 const loadEmailService = () => {
   jest.resetModules();
+  jest.unmock('./email'); // tránh mock từ edge-cases section override
   // Re-mock sau resetModules
   jest.mock('nodemailer', () => ({
     createTransport: (...args) => mockCreateTransport(...args),
@@ -587,5 +588,314 @@ describe('createTransporter — EMAIL_PORT undefined → fallback port (line 40)
     // Restore
     if (savedPort !== undefined) process.env.EMAIL_PORT = savedPort;
     process.env.EMAIL_HOST = savedHost;
+  });
+});
+
+// ============================================================
+// email.edge-cases — Auth flow integration (Phase 14 AC tests)
+// ============================================================
+
+describe('email.edge-cases — Auth flow integration (Phase 14 AC tests)', () => {
+  const mockUserDataEdge = {
+    id: 1,
+    email: 'test@example.com',
+    firstName: 'Test',
+    lastName: 'User',
+    resetPasswordToken: 'validtoken123',
+    resetPasswordExpires: new Date(Date.now() + 10 * 60 * 1000), // chưa hết hạn
+    save: jest.fn().mockResolvedValue(undefined),
+  };
+
+  jest.mock('@models', () => ({
+    User: {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      findByPk: jest.fn(),
+    },
+  }));
+
+  jest.mock('./email', () => ({
+    sendOtpEmail: jest.fn().mockResolvedValue(undefined),
+    sendResetPasswordEmail: jest.fn().mockResolvedValue(undefined),
+    sendOrderConfirmationEmail: jest.fn().mockResolvedValue(undefined),
+  }));
+
+  jest.mock('@middlewares/authenticate', () => ({
+    authenticate: (req, res, next) => {
+      if (!req.headers.authorization) {
+        return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+      }
+      req.user = { id: 1 };
+      next();
+    },
+    optionalAuthenticate: (_req, _res, next) => next(),
+  }));
+
+  jest.mock('@middlewares/rate-limiter', () => ({
+    otpLimiter: (_req, _res, next) => next(),
+  }));
+
+  jest.mock('@middlewares/validate-request', () => ({
+    validateRequest: () => (_req, _res, next) => next(),
+  }));
+
+  jest.mock('@modules/auth/validators/auth-validator', () => ({
+    registerSchema: {},
+    loginSchema: {},
+    forgotPasswordSchema: {},
+    resetPasswordSchema: {},
+    emailSchema: {},
+  }));
+
+  jest.mock('google-auth-library', () => ({
+    OAuth2Client: jest.fn().mockImplementation(() => ({
+      verifyIdToken: jest.fn(),
+    })),
+  }));
+
+  const express = require('express');
+  const supertest = require('supertest');
+  const buildAuthModule = require('@modules/auth/module');
+  const emailServiceEdge = require('./email');
+  const { User } = require('@models');
+  const eventBus = require('@shared/event-bus');
+  const loggerEdge = require('@utils/logger');
+
+  const authModule = buildAuthModule({
+    User,
+    eventBus,
+    logger: loggerEdge,
+    emailService: emailServiceEdge,
+  });
+
+  const app = express();
+  app.use(express.json());
+  app.use('/api/auth', authModule.router);
+  app.use((err, _req, res, _next) => {
+    res.status(err.statusCode || 500).json({ status: 'error', message: err.message });
+  });
+
+  const request = supertest(app);
+
+  // ── POST /api/auth/forgot-password — user enumeration fix ──
+
+  describe('POST /api/auth/forgot-password', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    // AC1: email không tồn tại → phải trả cùng response như email tồn tại (tránh user enumeration)
+    test('200 OK và cùng message khi email không tồn tại', async () => {
+      User.findOne.mockResolvedValue(null); // email không tồn tại trong DB
+
+      const res = await request
+        .post('/api/auth/forgot-password')
+        .send({ email: 'notexist@example.com' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.message).toBe('auth.passwordResetSent');
+      // Không gửi email vì user không tồn tại
+      expect(emailServiceEdge.sendResetPasswordEmail).not.toHaveBeenCalled();
+    });
+
+    // AC1: email tồn tại → phải trả cùng response
+    test('200 OK và cùng message khi email tồn tại', async () => {
+      User.findOne.mockResolvedValue({ ...mockUserDataEdge });
+
+      const res = await request
+        .post('/api/auth/forgot-password')
+        .send({ email: 'test@example.com' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.message).toBe('auth.passwordResetSent');
+      // Email phải được gửi
+      expect(emailServiceEdge.sendResetPasswordEmail).toHaveBeenCalledTimes(1);
+    });
+
+    // AC4: Nodemailer fail → server không crash, vẫn trả 200
+    test('200 OK dù emailService throw — không crash server', async () => {
+      User.findOne.mockResolvedValue({ ...mockUserDataEdge });
+      emailServiceEdge.sendResetPasswordEmail.mockRejectedValueOnce(
+        new Error('SMTP connection refused'),
+      );
+
+      const res = await request
+        .post('/api/auth/forgot-password')
+        .send({ email: 'test@example.com' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+    });
+  });
+
+  // ── POST /api/auth/reset-password — token reuse ──
+
+  describe('POST /api/auth/reset-password', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    // AC3: token hợp lệ → 200 OK
+    test('200 OK khi token hợp lệ chưa hết hạn', async () => {
+      const mockSave = jest.fn().mockResolvedValue(undefined);
+      User.findOne.mockResolvedValue({
+        ...mockUserDataEdge,
+        password: null,
+        save: mockSave,
+      });
+
+      const res = await request
+        .post('/api/auth/reset-password')
+        .send({ token: 'validtoken123', password: 'newpassword123' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(mockSave).toHaveBeenCalledTimes(1);
+    });
+
+    // AC3: token đã dùng (null trong DB sau lần dùng đầu) → 400
+    test('400 khi token đã được dùng hoặc hết hạn', async () => {
+      // Sau khi dùng xong, token bị set null → findOne không tìm thấy
+      User.findOne.mockResolvedValue(null);
+
+      const res = await request
+        .post('/api/auth/reset-password')
+        .send({ token: 'alreadyusedtoken', password: 'newpassword123' });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('auth.tokenInvalidOrExpired');
+    });
+  });
+
+  // ── POST /api/auth/register — Nodemailer fail không crash server ──
+
+  describe('POST /api/auth/register', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    // AC4: Nodemailer credential sai → 201 tạo user thành công, không crash
+    test('201 tạo user thành công dù sendOtpEmail throw', async () => {
+      User.findOne.mockResolvedValue(null); // email chưa tồn tại
+      User.create.mockResolvedValue({
+        id: 1,
+        email: 'new@example.com',
+      });
+      emailServiceEdge.sendOtpEmail.mockRejectedValueOnce(new Error('Invalid credentials'));
+
+      const res = await request.post('/api/auth/register').send({
+        email: 'new@example.com',
+        password: 'password123',
+        firstName: 'New',
+        lastName: 'User',
+      });
+
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('success');
+      // User vẫn được tạo dù email thất bại
+      expect(User.create).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ── POST /api/auth/register — OTP email arguments ──
+
+  describe('POST /api/auth/register — OTP email arguments', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('sendOtpEmail được gọi với email và mã OTP đúng từ controller', async () => {
+      User.findOne.mockResolvedValue(null);
+      User.create.mockResolvedValue({
+        id: 1,
+        email: 'new@example.com',
+      });
+      emailServiceEdge.sendOtpEmail.mockResolvedValue(undefined);
+
+      const res = await request.post('/api/auth/register').send({
+        email: 'new@example.com',
+        password: 'password123',
+        firstName: 'New',
+        lastName: 'User',
+      });
+
+      expect(res.status).toBe(201);
+      // sendOtpEmail phải được gọi với email đúng
+      expect(emailServiceEdge.sendOtpEmail).toHaveBeenCalledTimes(1);
+      expect(emailServiceEdge.sendOtpEmail).toHaveBeenCalledWith(
+        'new@example.com',
+        expect.any(String), // mã OTP là chuỗi 6 chữ số
+      );
+      // Mã OTP truyền vào phải là chuỗi số 6 chữ số
+      const otpArg = emailServiceEdge.sendOtpEmail.mock.calls[0][1];
+      expect(otpArg).toMatch(/^\d{6}$/);
+    });
+  });
+});
+
+// ============================================================
+// email.locale — dateLocale English branch (line 29)
+// ============================================================
+
+describe('email.js — dateLocale English branch (line 29)', () => {
+  const mockSendMailLocale = jest.fn().mockResolvedValue({ messageId: 'en-001' });
+
+  beforeAll(() => {
+    jest.mock('nodemailer', () => ({
+      createTransport: jest.fn(() => ({ sendMail: mockSendMailLocale })),
+    }));
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  const baseOrderLocale = {
+    orderNumber: 'ORD-001',
+    orderDate: new Date('2024-01-01'),
+    subtotal: 450000,
+    shippingCost: 50000,
+    total: 500000,
+    items: [{ name: 'iPhone 15', quantity: 1, price: 450000, subtotal: 450000 }],
+    shippingAddress: {
+      name: 'John',
+      address1: '123 Main',
+      address2: null,
+      city: 'HCM',
+      state: 'HCM',
+      zip: '700000',
+      country: 'VN',
+    },
+    estimatedDelivery: null,
+  };
+
+  test('sendOrderConfirmationEmail với lang=en → dateLocale("en") → "en-US"', async () => {
+    const emailServiceLocale = loadEmailService();
+    mockSendMailLocale.mockResolvedValue({ messageId: 'en-001' });
+    mockSendMail.mockResolvedValue({ messageId: 'en-001' });
+    await emailServiceLocale.sendOrderConfirmationEmail('user@test.com', baseOrderLocale, 'en');
+    expect(mockSendMail).toHaveBeenCalled();
+  });
+
+  test('sendOrderStatusUpdateEmail với lang=en', async () => {
+    const emailServiceLocale = loadEmailService();
+    mockSendMail.mockResolvedValue({ messageId: 'en-002' });
+    await emailServiceLocale.sendOrderStatusUpdateEmail(
+      'user@test.com',
+      { orderNumber: 'ORD-002', orderDate: new Date(), status: 'delivered' },
+      'en',
+    );
+    expect(mockSendMail).toHaveBeenCalled();
+  });
+
+  test('sendOrderCancellationEmail với lang=en', async () => {
+    const emailServiceLocale = loadEmailService();
+    mockSendMail.mockResolvedValue({ messageId: 'en-003' });
+    await emailServiceLocale.sendOrderCancellationEmail(
+      'user@test.com',
+      { orderNumber: 'ORD-003', orderDate: new Date() },
+      'en',
+    );
+    expect(mockSendMail).toHaveBeenCalled();
   });
 });

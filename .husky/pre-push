@@ -16,11 +16,11 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅ Frontend build OK"
 
-# 2. Backend tests — đảm bảo tests pass
+# 2. Backend tests + coverage 100% — chặn push nếu coverage < 100%
 echo "🧪 Backend tests..."
-cd "$ROOT/backend" && npm test 2>/dev/null
+cd "$ROOT/backend" && npm test
 if [ $? -ne 0 ]; then
-  echo "❌ Backend tests failed. Fix tests trước khi push."
+  echo "❌ Backend tests hoặc coverage < 100%. Viết thêm test trước khi push."
   exit 1
 fi
 echo "✅ Backend tests OK"

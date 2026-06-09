@@ -513,8 +513,11 @@ function displayPipeline(t, query, aiResponse = null, { showBanner = false } = {
   const hasPronoun = enrich.hasPronoun || false;
   const isImplicit = enrich.isImplicitFollowup || false;
 
+  const pronounMatchFull = (enrich.enrichedQuery !== normalized ? normalized : '')
+    ?.match(/\b(nó|đó|này|kia|cái đó|cái này|cái kia|so sánh|cả hai|2 cái|hai cái)\b/iu);
+  const pronounWordFull = pronounMatchFull ? `"${pronounMatchFull[0]}"` : 'đại từ';
   console.log(kv('  Đại từ chỉ định:', hasPronoun
-    ? `${C.yellow}Có  ->  cần append context từ history${C.reset}`
+    ? `${C.yellow}Có (${pronounWordFull})  ->  cần append context từ history${C.reset}`
     : isImplicit && s4?.turns > 0
       ? `${C.yellow}Implicit follow-up (query ngắn, không có brand)  ->  enrich${C.reset}`
       : `${C.green}Không  ->  giữ nguyên query${C.reset}`));
@@ -812,8 +815,10 @@ function displayStreamStep(stepId, data, accum) {
       console.log(compact ? step(5, 'Enrich Query  +  Retrieve Products') : step('5a', 'Enrich Query From History'));
       const norm = accum.normalized || accum.query;
       const enriched = data.enrichedQuery || norm;
+      const pronounMatch = norm?.match(/\b(nó|đó|này|kia|cái đó|cái này|cái kia|so sánh|cả hai|2 cái|hai cái)\b/iu);
+      const pronounWord = pronounMatch ? `"${pronounMatch[0]}"` : 'đại từ';
       console.log(kv('  Đại từ chỉ định:', data.hasPronoun
-        ? `${C.yellow}Có  ->  cần append context từ history${C.reset}`
+        ? `${C.yellow}Có (${pronounWord})  ->  cần append context từ history${C.reset}`
         : (data.isImplicitFollowup && accum.s4?.turns > 0
             ? `${C.yellow}Implicit follow-up (query ngắn, không có brand)  ->  enrich${C.reset}`
             : `${C.green}Không  ->  giữ nguyên query${C.reset}`)));

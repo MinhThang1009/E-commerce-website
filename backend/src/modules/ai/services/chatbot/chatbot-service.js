@@ -610,6 +610,7 @@ class ChatbotService {
         .replace(/^\s*[•-]\s*/, '') // bỏ ký hiệu đầu dòng
         .replace(/\s*[-:]\s*(?:giá|từ)?\s*[\d.,]+.*$/i, '') // bỏ phần giá phía sau
         .replace(/:\s.*$/, '') // bỏ phần mô tả sau dấu ":"
+        .replace(/\s+\d+\s*(?:GB|TB)\b/gi, '') // bỏ dung lượng (256GB, 1TB...) — chỉ cần tên SP
         .trim();
       // Nếu extracted chỉ là dung lượng/spec (vd "256GB"), không có brand/model name,
       // thử lấy tên sản phẩm từ dòng intro đầu response

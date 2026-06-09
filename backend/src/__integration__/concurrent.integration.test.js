@@ -564,6 +564,9 @@ test('BUG-HIGH-1: double-submit cancelPendingOrdersByUser có SELECT FOR UPDATE 
   const origStock = variant.stockQuantity;
   await variant.update({ stockQuantity: 10 });
 
+  // Cleanup pending orders còn sót từ test trước (isolation)
+  await Order.update({ status: 'cancelled' }, { where: { userId: user1.id, status: 'pending' } });
+
   // Tạo pending order giả (2 units)
   const pendingOrder = await Order.create({
     ...orderBase(user1.id, `phantom-${Date.now()}`),

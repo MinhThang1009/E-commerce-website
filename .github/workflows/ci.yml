@@ -105,6 +105,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [backend]
+    env:
+      CI: true
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ''
+      DB_NAME: techstore_test
+      JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
+      JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
+      EMAIL_USERNAME: test@test.com
+      EMAIL_PASSWORD: test
 
     services:
       mysql:
@@ -149,48 +161,14 @@ jobs:
       - name: Integration tests
         working-directory: backend
         run: npm run test:integration
-        env:
-          CI: true
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: ''
-          DB_NAME: techstore_test
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
 
       - name: API HTTP tests
         working-directory: backend
         run: npm run test:api
-        env:
-          CI: true
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: ''
-          DB_NAME: techstore_test
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
-          EMAIL_USERNAME: test@test.com
-          EMAIL_PASSWORD: test
 
       - name: E2E tests
         working-directory: backend
         run: npm run test:e2e
-        env:
-          CI: true
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: ''
-          DB_NAME: techstore_test
-          JWT_SECRET: ${{ secrets.JWT_SECRET || 'ci-test-secret-minimum-32-chars-long' }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET || 'ci-refresh-secret-minimum-32-chars' }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY || 'demo-key' }}
-          EMAIL_USERNAME: test@test.com
-          EMAIL_PASSWORD: test
 
 # ─── FRONTEND ────────────────────────────────────────────────────────────────
   frontend:

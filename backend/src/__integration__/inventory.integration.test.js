@@ -106,4 +106,63 @@ describe('Inventory Integration', () => {
     await variant.reload();
     expect(net).toBe(variant.stockQuantity);
   });
+
+  test('Adjustment: điều chỉnh stock + ghi log', async () => {
+    const before = variant.stockQuantity;
+    await variant.update({ stockQuantity: 100 });
+    await InventoryLog.create({
+      productId: product.id,
+      variantId: variant.id,
+      createdBy: admin.id,
+      changeType: 'adjustment',
+      changeAmount: 100 - before,
+      previousStock: before,
+      newStock: 100,
+      note: 'Kiểm kê điều chỉnh',
+    });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(100);
+  });
+
+  test('Return: hoàn trả stock khi cancel order', async () => {
+    const before = variant.stockQuantity;
+    const returned = 5;
+    await variant.increment('stockQuantity', { by: returned });
+    await InventoryLog.create({
+      productId: product.id,
+      variantId: variant.id,
+      createdBy: admin.id,
+      changeType: 'return',
+      changeAmount: returned,
+      previousStock: before,
+      newStock: before + returned,
+      note: 'Hoàn trả do hủy đơn',
+    });
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(105);
+  });
+
+  test('Log filter theo changeType', async () => {
+    const restockLogs = await InventoryLog.findAll({
+      where: { variantId: variant.id, changeType: 'restock' },
+    });
+    expect(restockLogs).toHaveLength(1);
+    const saleLogs = await InventoryLog.findAll({
+      where: { variantId: variant.id, changeType: 'sale' },
+    });
+    expect(saleLogs).toHaveLength(1);
+  });
+
+  test('Stock không được âm khi dùng SELECT FOR UPDATE', async () => {
+    await variant.update({ stockQuantity: 1 });
+    const result = await sequelize.transaction(async (t) => {
+      const v = await ProductVariant.findByPk(variant.id, { lock: t.LOCK.UPDATE, transaction: t });
+      if (v.stockQuantity < 5) return 'INSUFFICIENT';
+      await v.decrement('stockQuantity', { by: 5, transaction: t });
+      return 'OK';
+    });
+    expect(result).toBe('INSUFFICIENT');
+    await variant.reload();
+    expect(variant.stockQuantity).toBe(1);
+  });
 });

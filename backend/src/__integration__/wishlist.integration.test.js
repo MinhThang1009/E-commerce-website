@@ -74,4 +74,23 @@ describe('Wishlist Integration', () => {
     expect(items).toHaveLength(1);
     expect(items[0].productId).toBe(p2.id);
   });
+
+  test('Xóa toàn bộ wishlist của user', async () => {
+    await Wishlist.create({ userId: user.id, productId: p1.id });
+    const before = await Wishlist.count({ where: { userId: user.id } });
+    expect(before).toBe(2);
+    await Wishlist.destroy({ where: { userId: user.id }, force: true });
+    const after = await Wishlist.count({ where: { userId: user.id } });
+    expect(after).toBe(0);
+  });
+
+  test('Wishlist item include product info', async () => {
+    await Wishlist.create({ userId: user.id, productId: p1.id });
+    const items = await Wishlist.findAll({
+      where: { userId: user.id },
+      include: [{ model: Product, attributes: ['nameVi', 'basePrice'] }],
+    });
+    expect(items[0].Product).toBeDefined();
+    expect(items[0].Product.nameVi).toContain('__INT_WL');
+  });
 });

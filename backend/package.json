@@ -113,6 +113,7 @@
     "@stryker-mutator/jest-runner": "^9.6.1",
     "axios": "^1.13.6",
     "eslint": "^9.28.0",
+    "eslint-plugin-security": "^4.0.0",
     "eslint-plugin-unicorn": "^64.0.0",
     "fast-check": "^4.8.0",
     "jest": "^29.7.0",

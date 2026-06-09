@@ -13,6 +13,7 @@
 //   cross-module — KHÔNG deep import vào module khác
 
 const unicorn = require('eslint-plugin-unicorn').default;
+const security = require('eslint-plugin-security');
 
 module.exports = [
   {
@@ -20,6 +21,23 @@ module.exports = [
       'node_modules/**', 'coverage/**', 'data/**', 'logs/**',
       'migrations/**',   'scripts/**',
     ],
+  },
+
+  // ── 0. Security rules ─────────────────────────────────────────────────────
+  {
+    files: ['src/**/*.js'],
+    ignores: ['src/**/*.test.js', 'src/__tests__/**', 'src/__integration__/**', 'src/__api__/**', 'src/__e2e__/**'],
+    plugins: { security },
+    rules: {
+      'security/detect-object-injection': 'off',
+      'security/detect-non-literal-regexp': 'off',
+      'security/detect-non-literal-require': 'off',
+      'security/detect-non-literal-fs-filename': 'off',
+      'security/detect-eval-with-expression': 'error',
+      'security/detect-child-process': 'warn',
+      'security/detect-no-csrf-before-method-override': 'error',
+      'security/detect-possible-timing-attacks': 'warn',
+    },
   },
 
   // ── 1. File naming: kebab-case ─────────────────────────────────────────────

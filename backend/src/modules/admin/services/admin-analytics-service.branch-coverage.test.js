@@ -85,4 +85,11 @@ describe('AdminAnalyticsService — branch coverage', () => {
     expect(res.body).toContain('""');
     expect(res.statusCode).toBe(200);
   });
+
+  test('getTopProductsAnalytics: aggregateOrderItems throws → trả data=[] (L91-92)', async () => {
+    repo.aggregateOrderItems.mockRejectedValue(new Error('SQL syntax error'));
+    const { res } = await invoke(service.getTopProductsAnalytics, { query: {} });
+    expect(res.statusCode).toBe(200);
+    expect(res.payload.data).toEqual([]);
+  });
 });

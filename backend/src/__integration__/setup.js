@@ -2,13 +2,12 @@
  * Setup cho integration tests — kết nối database thật (test_db).
  * KHÔNG mock bất kỳ thứ gì.
  */
-require('module-alias/register');
-require('dotenv').config();
-
-// Dùng techstore — DB thật với dữ liệu seed đầy đủ
-// Tests tạo data với prefix '__INT_TEST_' và xóa sạch trong afterAll
+// Set DB_NAME TRƯỚC dotenv để dotenv không override từ .env (DB_NAME=techstore)
 process.env.NODE_ENV = 'development';
 process.env.DB_NAME = 'techstore_test';
+
+require('module-alias/register');
+require('dotenv').config();
 process.env.DB_HOST = process.env.DB_HOST || '127.0.0.1';
 process.env.DB_PORT = process.env.DB_PORT || '3306';
 process.env.DB_USER = process.env.DB_USER || 'root';

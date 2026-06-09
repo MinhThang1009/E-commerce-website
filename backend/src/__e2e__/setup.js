@@ -2,11 +2,11 @@
  * Setup cho E2E tests — kết nối database thật, port riêng 9996.
  * Chạy trước mỗi test file qua jest.e2e.config.js setupFiles.
  */
-require('module-alias/register');
-require('dotenv').config();
-
 process.env.NODE_ENV = 'development';
 process.env.DB_NAME = 'techstore_test';
+
+require('module-alias/register');
+require('dotenv').config();
 process.env.DB_HOST = process.env.DB_HOST || '127.0.0.1';
 process.env.DB_PORT = process.env.DB_PORT || '3306';
 process.env.DB_USER = process.env.DB_USER || 'root';

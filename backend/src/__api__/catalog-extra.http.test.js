@@ -207,13 +207,20 @@ describe('GET /api/categories/:id không tồn tại', () => {
 
 describe('POST /api/categories trùng slug', () => {
   test('tạo danh mục với slug đã tồn tại → 400 hoặc 409', async () => {
-    // Dùng slug của cat đã được tạo trong beforeAll
+    const uniqueSlug = `__dup_slug_test_${Date.now()}`;
+    // Tạo lần 1 — đảm bảo tồn tại
+    const first = await request(app)
+      .post('/api/categories')
+      .set('Authorization', `Bearer ${staffToken}`)
+      .send({ name: `Dup Test ${uniqueSlug}`, slug: uniqueSlug, isActive: true });
+    expect([200, 201]).toContain(first.status);
+    // Tạo lần 2 cùng slug — server phải từ chối
     const res = await request(app)
       .post('/api/categories')
       .set('Authorization', `Bearer ${staffToken}`)
-      .send({ name: cat.nameVi, slug: cat.slug, isActive: true });
-    // Server phải từ chối vì slug trùng
+      .send({ name: `Dup Test ${uniqueSlug}`, slug: uniqueSlug, isActive: true });
     expect([400, 409, 422]).toContain(res.status);
+    await Category.destroy({ where: { slug: uniqueSlug } }).catch(() => {});
   });
 });
 

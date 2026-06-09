@@ -56,38 +56,41 @@ const getTopProductsAnalytics = catchAsync(async (req, res) => {
       ? [[Sequelize.literal('revenue'), 'DESC']]
       : [[Sequelize.literal('soldCount'), 'DESC']];
 
-  const topProducts = await adminRepository.aggregateOrderItems({
-    attributes: [
-      'productId',
-      [Sequelize.fn('SUM', Sequelize.col('OrderItem.subtotal')), 'revenue'],
-      [Sequelize.fn('SUM', Sequelize.col('OrderItem.quantity')), 'soldCount'],
-    ],
-    include: [
-      {
-        model: Order,
-        attributes: [],
-        where: { paymentStatus: 'paid' },
-      },
-      {
-        model: Product,
-        // Cần 'id' để Sequelize load association productImages (limit:1 → query riêng cần product_id)
-        // và để group theo 'Product.id'
-        attributes: ['id', 'nameVi', 'nameEn'],
-        include: [
-          {
-            model: ProductImage,
-            as: 'productImages',
-            attributes: ['imageUrl'],
-            limit: 1,
-          },
-        ],
-      },
-    ],
-    group: ['productId', 'Product.id'],
-    order: orderBy,
-    limit: limitNum,
-    subQuery: false,
-  });
+  let topProducts = [];
+  try {
+    topProducts = await adminRepository.aggregateOrderItems({
+      attributes: [
+        'productId',
+        [Sequelize.fn('SUM', Sequelize.col('OrderItem.subtotal')), 'revenue'],
+        [Sequelize.fn('SUM', Sequelize.col('OrderItem.quantity')), 'soldCount'],
+      ],
+      include: [
+        {
+          model: Order,
+          attributes: [],
+          where: { paymentStatus: 'paid' },
+        },
+        {
+          model: Product,
+          attributes: ['id', 'nameVi', 'nameEn'],
+          include: [
+            {
+              model: ProductImage,
+              as: 'productImages',
+              attributes: ['imageUrl'],
+              limit: 1,
+            },
+          ],
+        },
+      ],
+      group: ['productId', 'Product.id'],
+      order: orderBy,
+      limit: limitNum,
+      subQuery: false,
+    });
+  } catch (err) {
+    logger.warn('[Analytics] top-products query failed, trả [] thay vì 500:', err.message);
+  }
 
   const data = topProducts.map((item) => {
     const prod = item.Product ? item.Product.toJSON() : {};

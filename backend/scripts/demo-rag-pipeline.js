@@ -631,11 +631,20 @@ function displayPipeline(t, query, aiResponse = null, { showBanner = false } = {
   console.log(step(6, 'Generation'));
   if (!s6) return;
 
+  // LLM timeout: provider có nhưng budget timer win trước → usedFallback=true, providerAttempts=[]
+  const isTimeout = s6.usedFallback && !s6.providerAttempts?.length && s6.llmMode !== 'down';
+  if (isTimeout) {
+    console.log(warn(`LLM vượt ngân sách ${s6.totalBudgetMs || 30000}ms → fallback simpleKeywordMatch`));
+  }
+
   if (s6.llmMode === 'down' || (s6.usedFallback && !s6.providerAttempts?.length)) {
+    const noProviderMsg = s6.llmMode === 'down'
+      ? 'Không có LLM provider'
+      : `LLM timeout (${s6.totalBudgetMs || 30000}ms)`;
     const skipLines = compact
-      ? [`${C.yellow}Không có LLM provider${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
+      ? [`${C.yellow}${noProviderMsg}${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
       : [
-          `${C.yellow}Không có LLM provider  ->  các sub-steps LLM bị SKIP:${C.reset}`,
+          `${C.yellow}${noProviderMsg}  ->  các sub-steps LLM bị SKIP:${C.reset}`,
           `  ${C.gray}[SKIP] A. _sanitizeMessage     (không cần khi không gọi LLM)${C.reset}`,
           `  ${C.gray}[SKIP] B. buildAugmentedPrompt (không cần khi không gọi LLM)${C.reset}`,
           `  ${C.gray}[SKIP] C. build messages[]     (không cần khi không gọi LLM)${C.reset}`,
@@ -643,7 +652,8 @@ function displayPipeline(t, query, aiResponse = null, { showBanner = false } = {
           `  ${C.gray}[SKIP] E. parseLLMOutput       (không có response để parse)${C.reset}`,
           '',
         ];
-    console.log(box('LLM DOWN  —  simpleKeywordMatch  (keyword fallback)', [
+    const boxTitleFull = s6.llmMode === 'down' ? 'LLM DOWN  —  simpleKeywordMatch  (keyword fallback)' : 'LLM TIMEOUT  —  simpleKeywordMatch  (graceful degradation)';
+    console.log(box(boxTitleFull, [
       ...skipLines,
       `  ${C.yellow}-> Fallback: simpleKeywordMatch (8 bước nội bộ):${C.reset}`,
       '  1. Tokenize + scoring     name match +10  |  description match +5',
@@ -890,11 +900,16 @@ function displayStreamStep(stepId, data, accum) {
       break;
     }
     case '6': {
+      if (data.usedFallback && !data.providerAttempts?.length && data.llmMode !== 'down') {
+        console.log(warn(`LLM vượt ngân sách ${data.totalBudgetMs || 30000}ms → fallback simpleKeywordMatch`));
+      }
       if (data.llmMode === 'down' || (data.usedFallback && !data.providerAttempts?.length)) {
+        const noProvMsg = data.llmMode === 'down' ? 'Không có LLM provider' : `LLM timeout (${data.totalBudgetMs || 30000}ms)`;
         const skipLines = compact
-          ? [`${C.yellow}Không có LLM provider${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
-          : [`${C.yellow}Không có LLM provider  ->  các sub-steps LLM bị SKIP:${C.reset}`, `  ${C.gray}[SKIP] A. _sanitizeMessage     (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] B. buildAugmentedPrompt (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] C. build messages[]     (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] D. LLM HTTP POST        (không có provider)${C.reset}`, `  ${C.gray}[SKIP] E. parseLLMOutput       (không có response để parse)${C.reset}`, ''];
-        console.log(box('LLM DOWN  —  simpleKeywordMatch  (keyword fallback)', [...skipLines, `  ${C.yellow}-> Fallback: simpleKeywordMatch (8 bước nội bộ):${C.reset}`, '  1. Tokenize + scoring     name match +10  |  description match +5', '  2. Version number filter  extract số model, loại SP sai phiên bản', '  3. Brand coherence check  loại kết quả sai brand', '  4. Negation filter        parse "không muốn/tránh X" -> loại', '  5. Price range filter     tầm/dưới/trên X triệu -> filter theo giá', '  6. Category prefix filter detect "laptop/điện thoại" -> filter loại SP', '  7. Sort + dedup           sort by matchScore giảm dần, loại trùng', '  8. Intent-aware response  pricing->💰  policy->📋  search->🔍  new->🌟'], C.yellow));
+          ? [`${C.yellow}${noProvMsg}${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
+          : [`${C.yellow}${noProvMsg}  ->  các sub-steps LLM bị SKIP:${C.reset}`, `  ${C.gray}[SKIP] A. _sanitizeMessage     (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] B. buildAugmentedPrompt (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] C. build messages[]     (không cần khi không gọi LLM)${C.reset}`, `  ${C.gray}[SKIP] D. LLM HTTP POST        (không có provider)${C.reset}`, `  ${C.gray}[SKIP] E. parseLLMOutput       (không có response để parse)${C.reset}`, ''];
+        const boxTitle = data.llmMode === 'down' ? 'LLM DOWN  —  simpleKeywordMatch  (keyword fallback)' : 'LLM TIMEOUT  —  simpleKeywordMatch  (graceful degradation)';
+        console.log(box(boxTitle, [...skipLines, `  ${C.yellow}-> Fallback: simpleKeywordMatch (8 bước nội bộ):${C.reset}`, '  1. Tokenize + scoring     name match +10  |  description match +5', '  2. Version number filter  extract số model, loại SP sai phiên bản', '  3. Brand coherence check  loại kết quả sai brand', '  4. Negation filter        parse "không muốn/tránh X" -> loại', '  5. Price range filter     tầm/dưới/trên X triệu -> filter theo giá', '  6. Category prefix filter detect "laptop/điện thoại" -> filter loại SP', '  7. Sort + dedup           sort by matchScore giảm dần, loại trùng', '  8. Intent-aware response  pricing->💰  policy->📋  search->🔍  new->🌟'], C.yellow));
         console.log('');
         console.log(sub('Đang chạy simpleKeywordMatch...'));
         console.log(ok(`Hoàn thành  ${C.gray}⏱ ${data.timeMs}ms${C.reset}`));

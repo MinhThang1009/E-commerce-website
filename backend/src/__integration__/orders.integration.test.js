@@ -364,22 +364,22 @@ describe('Orders edge cases — phân quyền', () => {
     await sequelize.authenticate();
 
     cat = await Category.create({
-      nameVi: `__INT_OrdEdge_Cat_${TS}`,
-      nameEn: `__INT_OrdEdge_Cat_${TS}`,
-      slug: `int-ord-edge-cat-${TS}`,
+      nameVi: `__INT_OrdEdge22_Cat_${TS}`,
+      nameEn: `__INT_OrdEdge22_Cat_${TS}`,
+      slug: `int-ord-edge22-cat-${TS}`,
       isActive: true,
     });
     brand = await Brand.create({
-      nameVi: `__INT_OrdEdge_Brand_${TS}`,
-      nameEn: `__INT_OrdEdge_Brand_${TS}`,
-      slug: `int-ord-edge-brand-${TS}`,
+      nameVi: `__INT_OrdEdge22_Brand_${TS}`,
+      nameEn: `__INT_OrdEdge22_Brand_${TS}`,
+      slug: `int-ord-edge22-brand-${TS}`,
     });
 
     product = await Product.create({
-      nameVi: `__INT_OrdEdge_Product_${TS}`,
-      nameEn: `__INT_OrdEdge_Product_${TS}`,
-      baseName: `__INT_OrdEdge_Product_${TS}`,
-      slug: `int-ord-edge-product-${TS}`,
+      nameVi: `__INT_OrdEdge22_Product_${TS}`,
+      nameEn: `__INT_OrdEdge22_Product_${TS}`,
+      baseName: `__INT_OrdEdge22_Product_${TS}`,
+      slug: `int-ord-edge22-product-${TS}`,
       basePrice: 5_000_000,
       categoryId: cat.id,
       brandId: brand.id,
@@ -397,14 +397,14 @@ describe('Orders edge cases — phân quyền', () => {
     });
 
     userA = await User.create({
-      firstName: '__INT_OrdEdge_A',
+      firstName: '__INT_OrdEdge22_A',
       lastName: 'User',
       email: `__int_ord_edge_a_${TS}@test.com`,
       password: 'Edge123!',
       role: 'customer',
     });
     userB = await User.create({
-      firstName: '__INT_OrdEdge_B',
+      firstName: '__INT_OrdEdge22_B',
       lastName: 'User',
       email: `__int_ord_edge_b_${TS}@test.com`,
       password: 'Edge456!',
@@ -509,22 +509,22 @@ describe('Orders edge cases — validation trạng thái', () => {
     await sequelize.authenticate();
 
     cat = await Category.create({
-      nameVi: `__INT_OrdEdge_Cat_${TS}`,
-      nameEn: `__INT_OrdEdge_Cat_${TS}`,
-      slug: `int-ord-edge-cat-${TS}`,
+      nameVi: `__INT_OrdEdge33_Cat_${TS}`,
+      nameEn: `__INT_OrdEdge33_Cat_${TS}`,
+      slug: `int-ord-edge33-cat-${TS}`,
       isActive: true,
     });
     brand = await Brand.create({
-      nameVi: `__INT_OrdEdge_Brand_${TS}`,
-      nameEn: `__INT_OrdEdge_Brand_${TS}`,
-      slug: `int-ord-edge-brand-${TS}`,
+      nameVi: `__INT_OrdEdge33_Brand_${TS}`,
+      nameEn: `__INT_OrdEdge33_Brand_${TS}`,
+      slug: `int-ord-edge33-brand-${TS}`,
     });
 
     product = await Product.create({
-      nameVi: `__INT_OrdEdge_Product_${TS}`,
-      nameEn: `__INT_OrdEdge_Product_${TS}`,
-      baseName: `__INT_OrdEdge_Product_${TS}`,
-      slug: `int-ord-edge-product-${TS}`,
+      nameVi: `__INT_OrdEdge33_Product_${TS}`,
+      nameEn: `__INT_OrdEdge33_Product_${TS}`,
+      baseName: `__INT_OrdEdge33_Product_${TS}`,
+      slug: `int-ord-edge33-product-${TS}`,
       basePrice: 5_000_000,
       categoryId: cat.id,
       brandId: brand.id,
@@ -542,14 +542,14 @@ describe('Orders edge cases — validation trạng thái', () => {
     });
 
     userA = await User.create({
-      firstName: '__INT_OrdEdge_A',
+      firstName: '__INT_OrdEdge33_A',
       lastName: 'User',
       email: `__int_ord_edge_a_${TS}@test.com`,
       password: 'Edge123!',
       role: 'customer',
     });
     userB = await User.create({
-      firstName: '__INT_OrdEdge_B',
+      firstName: '__INT_OrdEdge33_B',
       lastName: 'User',
       email: `__int_ord_edge_b_${TS}@test.com`,
       password: 'Edge456!',
@@ -743,22 +743,22 @@ describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
     await sequelize.authenticate();
 
     cat = await Category.create({
-      nameVi: `__INT_OrdEdge_Cat_${TS}`,
-      nameEn: `__INT_OrdEdge_Cat_${TS}`,
-      slug: `int-ord-edge-cat-${TS}`,
+      nameVi: `__INT_OrdEdge44_Cat_${TS}`,
+      nameEn: `__INT_OrdEdge44_Cat_${TS}`,
+      slug: `int-ord-edge44-cat-${TS}`,
       isActive: true,
     });
     brand = await Brand.create({
-      nameVi: `__INT_OrdEdge_Brand_${TS}`,
-      nameEn: `__INT_OrdEdge_Brand_${TS}`,
-      slug: `int-ord-edge-brand-${TS}`,
+      nameVi: `__INT_OrdEdge44_Brand_${TS}`,
+      nameEn: `__INT_OrdEdge44_Brand_${TS}`,
+      slug: `int-ord-edge44-brand-${TS}`,
     });
 
     product = await Product.create({
-      nameVi: `__INT_OrdEdge_Product_${TS}`,
-      nameEn: `__INT_OrdEdge_Product_${TS}`,
-      baseName: `__INT_OrdEdge_Product_${TS}`,
-      slug: `int-ord-edge-product-${TS}`,
+      nameVi: `__INT_OrdEdge44_Product_${TS}`,
+      nameEn: `__INT_OrdEdge44_Product_${TS}`,
+      baseName: `__INT_OrdEdge44_Product_${TS}`,
+      slug: `int-ord-edge44-product-${TS}`,
       basePrice: 5_000_000,
       categoryId: cat.id,
       brandId: brand.id,
@@ -776,14 +776,14 @@ describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
     });
 
     userA = await User.create({
-      firstName: '__INT_OrdEdge_A',
+      firstName: '__INT_OrdEdge44_A',
       lastName: 'User',
       email: `__int_ord_edge_a_${TS}@test.com`,
       password: 'Edge123!',
       role: 'customer',
     });
     userB = await User.create({
-      firstName: '__INT_OrdEdge_B',
+      firstName: '__INT_OrdEdge44_B',
       lastName: 'User',
       email: `__int_ord_edge_b_${TS}@test.com`,
       password: 'Edge456!',
@@ -791,7 +791,7 @@ describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
     });
 
     userC = await User.create({
-      firstName: '__INT_OrdEdge_C',
+      firstName: '__INT_OrdEdge44_C',
       lastName: 'User',
       email: `__int_ord_edge_c_${TS}@test.com`,
       password: 'Edge789!',
@@ -962,22 +962,22 @@ describe('MEDIUM-1 — clearCartItems transaction atomicity (requires MySQL)', (
     await sequelize.authenticate();
 
     cat = await Category.create({
-      nameVi: `__INT_OrdEdge_Cat_${TS}`,
-      nameEn: `__INT_OrdEdge_Cat_${TS}`,
-      slug: `int-ord-edge-cat-${TS}`,
+      nameVi: `__INT_OrdEdge55_Cat_${TS}`,
+      nameEn: `__INT_OrdEdge55_Cat_${TS}`,
+      slug: `int-ord-edge55-cat-${TS}`,
       isActive: true,
     });
     brand = await Brand.create({
-      nameVi: `__INT_OrdEdge_Brand_${TS}`,
-      nameEn: `__INT_OrdEdge_Brand_${TS}`,
-      slug: `int-ord-edge-brand-${TS}`,
+      nameVi: `__INT_OrdEdge55_Brand_${TS}`,
+      nameEn: `__INT_OrdEdge55_Brand_${TS}`,
+      slug: `int-ord-edge55-brand-${TS}`,
     });
 
     product = await Product.create({
-      nameVi: `__INT_OrdEdge_Product_${TS}`,
-      nameEn: `__INT_OrdEdge_Product_${TS}`,
-      baseName: `__INT_OrdEdge_Product_${TS}`,
-      slug: `int-ord-edge-product-${TS}`,
+      nameVi: `__INT_OrdEdge55_Product_${TS}`,
+      nameEn: `__INT_OrdEdge55_Product_${TS}`,
+      baseName: `__INT_OrdEdge55_Product_${TS}`,
+      slug: `int-ord-edge55-product-${TS}`,
       basePrice: 5_000_000,
       categoryId: cat.id,
       brandId: brand.id,

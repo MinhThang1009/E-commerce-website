@@ -309,22 +309,22 @@ describe('Cart edge cases — validate cart với sản phẩm bị xóa', () =>
     await sequelize.authenticate();
 
     cat = await Category.create({
-      nameVi: `__INT_CartEdge_Cat_${TS}`,
-      nameEn: `__INT_CartEdge_Cat_${TS}`,
-      slug: `int-cart-edge-cat-${TS}`,
+      nameVi: `__INT_CartEdge2_Cat_${TS}`,
+      nameEn: `__INT_CartEdge2_Cat_${TS}`,
+      slug: `int-cart-edge2-cat-${TS}`,
       isActive: true,
     });
     brand = await Brand.create({
-      nameVi: `__INT_CartEdge_Brand_${TS}`,
-      nameEn: `__INT_CartEdge_Brand_${TS}`,
-      slug: `int-cart-edge-brand-${TS}`,
+      nameVi: `__INT_CartEdge2_Brand_${TS}`,
+      nameEn: `__INT_CartEdge2_Brand_${TS}`,
+      slug: `int-cart-edge2-brand-${TS}`,
     });
 
     productInStock = await Product.create({
-      nameVi: `__INT_CartEdge_InStock_${TS}`,
-      nameEn: `__INT_CartEdge_InStock_${TS}`,
-      baseName: `__INT_CartEdge_InStock_${TS}`,
-      slug: `int-cart-edge-in-stock-${TS}`,
+      nameVi: `__INT_CartEdge2_InStock_${TS}`,
+      nameEn: `__INT_CartEdge2_InStock_${TS}`,
+      baseName: `__INT_CartEdge2_InStock_${TS}`,
+      slug: `int-cart-edge2-in-stock-${TS}`,
       basePrice: 1_000_000,
       categoryId: cat.id,
       brandId: brand.id,
@@ -341,10 +341,10 @@ describe('Cart edge cases — validate cart với sản phẩm bị xóa', () =>
     });
 
     user = await User.create({
-      firstName: '__INT_CartEdge',
+      firstName: '__INT_CartEdge2',
       lastName: 'User',
       email: `__int_cart_edge_${TS}@test.com`,
-      password: 'CartEdge123!',
+      password: 'CartEdge2123!',
       role: 'customer',
     });
   });
@@ -413,22 +413,22 @@ describe('Cart edge cases — guest cart merge', () => {
     await sequelize.authenticate();
 
     cat = await Category.create({
-      nameVi: `__INT_CartEdge_Cat_${TS}`,
-      nameEn: `__INT_CartEdge_Cat_${TS}`,
-      slug: `int-cart-edge-cat-${TS}`,
+      nameVi: `__INT_CartEdge3_Cat_${TS}`,
+      nameEn: `__INT_CartEdge3_Cat_${TS}`,
+      slug: `int-cart-edge3-cat-${TS}`,
       isActive: true,
     });
     brand = await Brand.create({
-      nameVi: `__INT_CartEdge_Brand_${TS}`,
-      nameEn: `__INT_CartEdge_Brand_${TS}`,
-      slug: `int-cart-edge-brand-${TS}`,
+      nameVi: `__INT_CartEdge3_Brand_${TS}`,
+      nameEn: `__INT_CartEdge3_Brand_${TS}`,
+      slug: `int-cart-edge3-brand-${TS}`,
     });
 
     productInStock = await Product.create({
-      nameVi: `__INT_CartEdge_InStock_${TS}`,
-      nameEn: `__INT_CartEdge_InStock_${TS}`,
-      baseName: `__INT_CartEdge_InStock_${TS}`,
-      slug: `int-cart-edge-in-stock-${TS}`,
+      nameVi: `__INT_CartEdge3_InStock_${TS}`,
+      nameEn: `__INT_CartEdge3_InStock_${TS}`,
+      baseName: `__INT_CartEdge3_InStock_${TS}`,
+      slug: `int-cart-edge3-in-stock-${TS}`,
       basePrice: 1_000_000,
       categoryId: cat.id,
       brandId: brand.id,
@@ -445,10 +445,10 @@ describe('Cart edge cases — guest cart merge', () => {
     });
 
     user = await User.create({
-      firstName: '__INT_CartEdge',
+      firstName: '__INT_CartEdge3',
       lastName: 'User',
       email: `__int_cart_edge_${TS}@test.com`,
-      password: 'CartEdge123!',
+      password: 'CartEdge3123!',
       role: 'customer',
     });
   });

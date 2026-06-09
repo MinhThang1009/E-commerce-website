@@ -2113,3 +2113,978 @@ describe('OrdersService › _clearUserCartInTransaction', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 });
+
+// ─── Merged from orders-service.edge-cases-4.test.js ────────────────────────
+
+jest.mock('@utils/logger', () => ({
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+}));
+
+jest.mock('@middlewares/rate-limiter', () => ({
+  chatbotLimiter: (_req, _res, next) => next(),
+  apiLimiter: (_req, _res, next) => next(),
+  authLimiter: (_req, _res, next) => next(),
+  otpLimiter: (_req, _res, next) => next(),
+}));
+
+jest.mock('@middlewares/authenticate', () => ({
+  authenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'customer' };
+    next();
+  },
+  optionalAuthenticate: (req, _res, next) => {
+    req.user = { id: 1, role: 'customer' };
+    next();
+  },
+}));
+
+jest.mock('@middlewares/authorize', () => ({
+  authorize: () => (_req, _res, next) => next(),
+}));
+
+jest.mock('@middlewares/admin-auth', () => ({
+  requireSuperAdmin: (_req, _res, next) => next(),
+  requireRole: () => (_req, _res, next) => next(),
+  adminAuthenticate: (_req, _res, next) => next(),
+}));
+
+jest.mock('@config/sequelize', () => ({
+  define: jest.fn().mockReturnValue(class MockModel {}),
+  fn: jest.fn(),
+  col: jest.fn(),
+  where: jest.fn(),
+  literal: jest.fn(),
+  query: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('@services/email', () => ({
+  sendOtpEmail: jest.fn().mockResolvedValue(undefined),
+  sendOrderConfirmationEmail: jest.fn().mockResolvedValue(undefined),
+  sendOrderCancellationEmail: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@services/vector-store/vector-store', () => ({
+  upsertProduct: jest.fn(),
+  save: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('@utils/product-helpers', () => ({
+  calculateTotalStock: jest.fn().mockReturnValue(10),
+  updateProductTotalStock: jest.fn().mockResolvedValue(undefined),
+  validateVariantAttributes: jest.fn().mockReturnValue([]),
+  generateVariantSku: jest.fn().mockReturnValue('SKU-TEST'),
+}));
+
+jest.mock('@models', () => {
+  const sequelizePkg = require('sequelize');
+
+  const mockTx = {
+    LOCK: { UPDATE: 'UPDATE' },
+    commit: jest.fn().mockResolvedValue(undefined),
+    rollback: jest.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    Product: {
+      findByPk: jest.fn().mockImplementation((...args) => mockProductFindByPkImpl(...args)),
+      findAll: jest.fn().mockResolvedValue([]),
+    },
+    ProductVariant: {
+      findByPk: jest.fn().mockImplementation((...args) => mockVariantFindByPkImpl(...args)),
+      findOne: jest.fn().mockImplementation((...args) => mockVariantFindByPkImpl(...args)),
+      findAll: jest.fn().mockResolvedValue([]),
+    },
+    Cart: {
+      findOrCreate: jest.fn().mockResolvedValue([{ id: 10 }, false]),
+      findOne: jest.fn().mockResolvedValue(null),
+      findByPk: jest.fn().mockResolvedValue(null),
+      findAll: jest.fn().mockResolvedValue([]),
+      update: jest.fn().mockResolvedValue([1]),
+    },
+    CartItem: {
+      findOne: jest.fn().mockResolvedValue(null),
+      findAll: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({ id: 1 }),
+      destroy: jest.fn().mockResolvedValue(1),
+    },
+    User: {
+      findByPk: jest.fn().mockResolvedValue({ id: 1, update: jest.fn() }),
+    },
+    Order: {
+      findByPk: jest.fn().mockResolvedValue(null),
+      findAll: jest.fn().mockResolvedValue([]),
+      findAndCountAll: jest.fn().mockResolvedValue({ count: 0, rows: [] }),
+      create: jest.fn().mockResolvedValue({ id: 100 }),
+      update: jest.fn().mockResolvedValue([1]),
+    },
+    OrderItem: {
+      findAll: jest.fn().mockResolvedValue([]),
+      bulkCreate: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockResolvedValue({ id: 1 }),
+    },
+    Review: { findAll: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    ProductAttribute: { findAll: jest.fn().mockResolvedValue([]) },
+    ProductSpecification: { findAll: jest.fn().mockResolvedValue([]) },
+    ProductImage: { findAll: jest.fn().mockResolvedValue([]) },
+    InventoryLog: {
+      create: jest.fn().mockResolvedValue({}),
+      bulkCreate: jest.fn().mockResolvedValue([]),
+    },
+    SearchHistory: { findAll: jest.fn().mockResolvedValue([]) },
+    Category: { findAll: jest.fn().mockResolvedValue([]) },
+    DiscountCode: {
+      findOne: jest.fn().mockImplementation((...args) => mockDiscountFindOneImpl(...args)),
+      update: jest.fn().mockResolvedValue([1]),
+    },
+    sequelize: {
+      transaction: jest.fn().mockResolvedValue(mockTx),
+      fn: jest.fn(),
+      col: jest.fn(),
+      where: jest.fn(),
+      literal: jest.fn(),
+      query: jest.fn().mockResolvedValue([]),
+      Sequelize: { fn: jest.fn(), col: jest.fn() },
+    },
+    Op: sequelizePkg.Op,
+  };
+});
+
+describe('Tests Phase 25b — Order Additional Coverage', () => {
+  let request;
+
+  beforeAll(() => {
+    const express = require('express');
+    const supertest = require('supertest');
+    const buildOrdersModule = require('@modules/orders/module');
+    const {
+      Order,
+      OrderItem,
+      Cart,
+      CartItem,
+      Product,
+      ProductVariant,
+      User,
+      DiscountCode,
+      InventoryLog,
+      sequelize,
+    } = require('@models');
+    const eventBus = require('@shared/event-bus');
+    const logger = require('@utils/logger');
+    const emailService = require('@services/email');
+    const constants = require('../../../constants');
+    const { errorHandler } = require('@middlewares/error-handler');
+
+    const ordersModule = buildOrdersModule({
+      Order,
+      OrderItem,
+      Cart,
+      CartItem,
+      Product,
+      ProductVariant,
+      User,
+      DiscountCode,
+      InventoryLog,
+      sequelize,
+      eventBus,
+      logger,
+      emailService,
+      constants,
+    });
+
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => {
+      req.cookies = {};
+      next();
+    });
+    app.use('/api/orders', ordersModule.router);
+    app.use(errorHandler);
+    request = supertest(app);
+  });
+
+  // ============================================================
+  // GET /api/orders — getUserOrders
+  // ============================================================
+
+  describe('GET /api/orders — lấy danh sách đơn hàng của user', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('Không có đơn hàng → 200 với data = []', async () => {
+      const { Order } = require('@models');
+      Order.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
+
+      const res = await request.get('/api/orders').set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.data).toEqual([]);
+      expect(res.body.total).toBe(0);
+    });
+
+    test('Có 2 đơn hàng → 200 với data đúng, phân trang', async () => {
+      const { Order } = require('@models');
+      const mockOrders = [
+        { id: 1, userId: 1, orderNumber: 'ORD-001', status: 'pending', totalAmount: 500000 },
+        { id: 2, userId: 1, orderNumber: 'ORD-002', status: 'delivered', totalAmount: 1000000 },
+      ];
+      Order.findAndCountAll.mockResolvedValue({ count: 2, rows: mockOrders });
+
+      const res = await request
+        .get('/api/orders?page=1&limit=10')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(2);
+      expect(res.body.total).toBe(2);
+      expect(res.body.page).toBe(1);
+    });
+  });
+
+  // ============================================================
+  // GET /api/orders/:id — getOrderById
+  // ============================================================
+
+  describe('GET /api/orders/:id — lấy chi tiết đơn hàng', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('Đơn hàng tồn tại, thuộc về user → 200', async () => {
+      const { Order } = require('@models');
+      Order.findByPk.mockResolvedValue({
+        id: 1,
+        userId: 1, // khớp req.user.id = 1
+        orderNumber: 'ORD-001',
+        status: 'pending',
+      });
+
+      const res = await request.get('/api/orders/1').set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe('success');
+      expect(res.body.data.id).toBe(1);
+    });
+
+    test('Đơn hàng không tồn tại → 404', async () => {
+      const { Order } = require('@models');
+      Order.findByPk.mockResolvedValue(null);
+
+      const res = await request.get('/api/orders/9999').set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toMatch(/không tìm thấy/i);
+    });
+
+    test('Đơn hàng thuộc user khác (non-admin) → 403', async () => {
+      const { Order } = require('@models');
+      Order.findByPk.mockResolvedValue({
+        id: 1,
+        userId: 99, // khác req.user.id = 1
+        orderNumber: 'ORD-001',
+        status: 'pending',
+      });
+
+      const res = await request.get('/api/orders/1').set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/không có quyền/i);
+    });
+  });
+
+  // ============================================================
+  // GET /api/orders/shipping-estimate — estimateShipping
+  // ============================================================
+
+  describe('GET /api/orders/shipping-estimate — tính phí vận chuyển', () => {
+    test('Subtotal 500000 → dưới ngưỡng miễn phí → shippingCost = null (tính theo km trên FE)', async () => {
+      const res = await request
+        .get('/api/orders/shipping-estimate?subtotal=500000')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.shippingCost).toBeNull();
+    });
+
+    test('Subtotal 5000000 (ngưỡng miễn phí) → phí ship = 0', async () => {
+      const res = await request
+        .get('/api/orders/shipping-estimate?subtotal=5000000')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.shippingCost).toBe(0);
+      expect(res.body.data.freeShippingThreshold).toBe(5000000);
+    });
+
+    test('Không truyền params → 200 với default values', async () => {
+      const res = await request
+        .get('/api/orders/shipping-estimate')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      // subtotal default = 0 < 5000000 → shippingCost = null; freeShippingThreshold luôn có mặt
+      expect(res.body.data).toHaveProperty('freeShippingThreshold');
+    });
+  });
+
+  // ============================================================
+  // GET /api/orders/number/:number — getOrderByNumber
+  // ============================================================
+
+  describe('GET /api/orders/number/:number — lấy đơn hàng theo mã', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('Mã đơn hàng tồn tại, thuộc user → 200', async () => {
+      const { Order } = require('@models');
+      Order.findOne = jest.fn().mockResolvedValue({
+        id: 1,
+        userId: 1,
+        orderNumber: 'ORD-001',
+        status: 'pending',
+      });
+
+      const res = await request
+        .get('/api/orders/number/ORD-001')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.orderNumber).toBe('ORD-001');
+    });
+
+    test('Mã đơn hàng không tồn tại → 404', async () => {
+      const { Order } = require('@models');
+      Order.findOne = jest.fn().mockResolvedValue(null);
+
+      const res = await request
+        .get('/api/orders/number/ORD-NOTFOUND')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(404);
+    });
+  });
+
+  // ============================================================
+  // POST /api/orders/:id/cancel — cancelOrder
+  // ============================================================
+
+  describe('POST /api/orders/:id/cancel — hủy đơn hàng', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Phase 42 modules/orders dùng callback form sequelize.transaction(async (tx) => {...})
+      const { sequelize } = require('@models');
+      sequelize.transaction.mockImplementation(async (cb) => {
+        const tx = {
+          LOCK: { UPDATE: 'UPDATE' },
+          commit: jest.fn().mockResolvedValue(undefined),
+          rollback: jest.fn().mockResolvedValue(undefined),
+        };
+        return typeof cb === 'function' ? cb(tx) : tx;
+      });
+    });
+
+    test('Đơn hàng không tồn tại hoặc không thuộc user → 404', async () => {
+      const { Order } = require('@models');
+      Order.findOne = jest.fn().mockResolvedValue(null);
+
+      const res = await request
+        .post('/api/orders/999/cancel')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toMatch(/không tìm thấy/i);
+    });
+
+    test('Đơn hàng status = delivered → không thể hủy → 422 (DomainError)', async () => {
+      // Phase 42 modules/orders dùng OrderAggregate.cancel() throw DomainError → 422
+      // (semantic violation, request well-formed nhưng vi phạm invariant)
+      const { Order } = require('@models');
+      Order.findOne = jest.fn().mockResolvedValue({
+        id: 1,
+        userId: 1,
+        number: 'ORD-001',
+        status: 'delivered', // không thể hủy
+        items: [],
+      });
+
+      const res = await request
+        .post('/api/orders/1/cancel')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(422);
+      expect(res.body.message).toMatch(/không thể hủy/i);
+    });
+  });
+
+  // ============================================================
+  // GET /api/orders/admin/all — getAllOrders (admin)
+  // ============================================================
+
+  describe('GET /api/orders/admin/all — lấy tất cả đơn hàng (admin)', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    test('Không có filter → 200 với tất cả đơn hàng phân trang', async () => {
+      const { Order } = require('@models');
+      Order.findAndCountAll.mockResolvedValue({
+        count: 1,
+        rows: [{ id: 1, userId: 1, status: 'pending', totalAmount: 300000 }],
+      });
+
+      const res = await request
+        .get('/api/orders/admin/all')
+        .set('Authorization', 'Bearer test-token');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.total).toBe(1);
+    });
+  });
+});
+
+// ─── Merged from orders-service.edge-cases-3.test.js ────────────────────────
+
+// ---------- Mutable mock state ----------
+
+const mockProductFindByPkImpl = jest.fn();
+const mockVariantFindByPkImpl = jest.fn();
+const mockDiscountFindOneImpl = jest.fn();
+
+describe('Tests Phase 25 — Order Creation Business Logic', () => {
+  let request;
+  let sequelize, Cart, CartItem, Order, OrderItem, InventoryLog, Product, ProductVariant;
+
+  beforeAll(() => {
+    const express = require('express');
+    const supertest = require('supertest');
+    const buildOrdersModule = require('@modules/orders/module');
+    let User, DiscountCode;
+    ({
+      Order,
+      OrderItem,
+      Cart,
+      CartItem,
+      Product,
+      ProductVariant,
+      User,
+      DiscountCode,
+      InventoryLog,
+      sequelize,
+    } = require('@models'));
+    const eventBus = require('@shared/event-bus');
+    const logger = require('@utils/logger');
+    const emailService = require('@services/email');
+    const constants = require('../../../constants');
+    const { errorHandler } = require('@middlewares/error-handler');
+
+    const ordersModule = buildOrdersModule({
+      Order,
+      OrderItem,
+      Cart,
+      CartItem,
+      Product,
+      ProductVariant,
+      User,
+      DiscountCode,
+      InventoryLog,
+      sequelize,
+      eventBus,
+      logger,
+      emailService,
+      constants,
+    });
+
+    const app = express();
+    app.use(express.json());
+    // Khởi tạo req.cookies = {} để createOrder không throw TypeError khi đọc sessionId từ cookie
+    app.use((req, _res, next) => {
+      req.cookies = {};
+      next();
+    });
+    app.use('/api/orders', ordersModule.router);
+    app.use(errorHandler);
+    request = supertest(app);
+  });
+
+  // ---------- Base request body (đủ trường theo createOrderSchema) ----------
+
+  const BASE_ORDER_BODY = {
+    shippingFirstName: 'Minh',
+    shippingLastName: 'Thang',
+    shippingAddress1: '123 Đường Test, Quận 1',
+    shippingCity: 'TP. Hồ Chí Minh',
+    shippingState: 'TP. Hồ Chí Minh',
+    billingFirstName: 'Minh',
+    billingLastName: 'Thang',
+    billingAddress1: '123 Đường Test, Quận 1',
+    billingCity: 'TP. Hồ Chí Minh',
+    billingState: 'TP. Hồ Chí Minh',
+    paymentMethod: 'cod',
+  };
+
+  // Sản phẩm mẫu có status active
+  const ACTIVE_PRODUCT = {
+    id: 1,
+    name: 'iPhone Test',
+    status: 'active',
+    basePrice: 500000,
+    slug: 'iphone-test',
+    thumbnail: null,
+    sku: null,
+  };
+
+  // ============================================================
+  // 1. Out-of-stock — variant hết hàng → 400
+  // ============================================================
+
+  describe('POST /api/orders — out-of-stock scenarios', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      // Khôi phục mock transaction non-callback cho mỗi test
+      const mockTx = {
+        LOCK: { UPDATE: 'UPDATE' },
+        commit: jest.fn().mockResolvedValue(undefined),
+        rollback: jest.fn().mockResolvedValue(undefined),
+      };
+      sequelize.transaction.mockImplementation(async (cb) =>
+        typeof cb === 'function' ? cb(mockTx) : mockTx,
+      );
+    });
+
+    test('Variant stockQuantity = 0 → 400 với message tồn kho', async () => {
+      // Tìm sản phẩm thành công
+      mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
+      // Lần 1: tìm variant theo variantId (item lookup)
+      // Lần 2: tìm variant với lock (kiểm tra tồn kho)
+      mockVariantFindByPkImpl
+        .mockResolvedValueOnce({ id: 1, name: 'Đỏ', price: 100000, stockQuantity: 0, sku: 'V-001' })
+        .mockResolvedValueOnce({ id: 1, stockQuantity: 0 });
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 1, quantity: 1 }],
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/chỉ còn 0 sản phẩm/);
+    });
+
+    test('Variant stockQuantity = 1 nhưng yêu cầu quantity = 5 → 400', async () => {
+      mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
+      mockVariantFindByPkImpl
+        .mockResolvedValueOnce({
+          id: 2,
+          name: 'Xanh',
+          price: 200000,
+          stockQuantity: 1,
+          sku: 'V-002',
+        })
+        .mockResolvedValueOnce({ id: 2, stockQuantity: 1 });
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 2, quantity: 5 }],
+        });
+
+      expect(res.status).toBe(400);
+      // Message phải thể hiện tồn kho thực tế (1, không đủ 5)
+      expect(res.body.message).toMatch(/chỉ còn 1 sản phẩm/);
+    });
+
+    test('Sản phẩm không tồn tại → 404', async () => {
+      mockProductFindByPkImpl.mockResolvedValue(null);
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 999, variantId: 1, quantity: 1 }],
+        });
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toMatch(/Không tìm thấy sản phẩm/);
+    });
+  });
+
+  // ============================================================
+  // 2. Discount code validation → 400
+  // ============================================================
+
+  describe('POST /api/orders — discount code validation', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      const mockTx = {
+        LOCK: { UPDATE: 'UPDATE' },
+        commit: jest.fn().mockResolvedValue(undefined),
+        rollback: jest.fn().mockResolvedValue(undefined),
+      };
+      sequelize.transaction.mockImplementation(async (cb) =>
+        typeof cb === 'function' ? cb(mockTx) : mockTx,
+      );
+
+      // Variant đủ hàng (5 items); lockedVariant cần có decrement()
+      mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
+      mockVariantFindByPkImpl
+        .mockResolvedValueOnce({ id: 1, name: 'Đỏ', price: 500000, stockQuantity: 5, sku: 'V-001' })
+        .mockResolvedValueOnce({
+          id: 1,
+          stockQuantity: 5,
+          decrement: jest.fn().mockResolvedValue(undefined),
+        });
+    });
+
+    test('Mã giảm giá không tồn tại → 400', async () => {
+      mockDiscountFindOneImpl.mockResolvedValue(null);
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 1, quantity: 1 }],
+          discountCode: 'INVALID123',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/Mã giảm giá không hợp lệ/);
+    });
+
+    test('Mã giảm giá đã hết hạn → 400', async () => {
+      mockDiscountFindOneImpl.mockResolvedValue({
+        id: 1,
+        code: 'EXPIRED50',
+        isActive: true,
+        startDate: null,
+        endDate: new Date('2020-01-01'), // đã qua
+        usageLimit: null,
+        usedCount: 0,
+        minOrderAmount: 0,
+        type: 'percent',
+        value: 50,
+        maxDiscountAmount: null,
+        increment: jest.fn().mockResolvedValue(undefined),
+      });
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 1, quantity: 1 }],
+          discountCode: 'EXPIRED50',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/đã hết hạn/);
+    });
+
+    test('Đơn hàng chưa đạt giá trị tối thiểu của mã giảm giá → 400', async () => {
+      mockDiscountFindOneImpl.mockResolvedValue({
+        id: 2,
+        code: 'BIGORDER',
+        isActive: true,
+        startDate: null,
+        endDate: null,
+        usageLimit: null,
+        usedCount: 0,
+        minOrderAmount: 5000000, // tối thiểu 5 triệu
+        type: 'fixed',
+        value: 100000,
+        maxDiscountAmount: null,
+        increment: jest.fn().mockResolvedValue(undefined),
+      });
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 1, quantity: 1 }], // subtotal = 500000 < 5000000
+          discountCode: 'BIGORDER',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/tối thiểu/);
+    });
+
+    test('Mã giảm giá đã đạt giới hạn lượt sử dụng → 400', async () => {
+      mockDiscountFindOneImpl.mockResolvedValue({
+        id: 3,
+        code: 'LIMITED10',
+        isActive: true,
+        startDate: null,
+        endDate: null,
+        usageLimit: 10,
+        usedCount: 10, // đã dùng đủ 10 lần
+        minOrderAmount: 0,
+        type: 'fixed',
+        value: 50000,
+        maxDiscountAmount: null,
+        increment: jest.fn().mockResolvedValue(undefined),
+      });
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 1, quantity: 1 }],
+          discountCode: 'LIMITED10',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/giới hạn lượt sử dụng/);
+    });
+  });
+
+  // ============================================================
+  // 3. Happy path — COD order thành công → 201
+  // ============================================================
+
+  describe('POST /api/orders — happy path', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      const mockTx = {
+        LOCK: { UPDATE: 'UPDATE' },
+        commit: jest.fn().mockResolvedValue(undefined),
+        rollback: jest.fn().mockResolvedValue(undefined),
+      };
+      sequelize.transaction.mockImplementation(async (cb) =>
+        typeof cb === 'function' ? cb(mockTx) : mockTx,
+      );
+    });
+
+    test('Đặt hàng COD thành công với variant đủ hàng → 201', async () => {
+      mockProductFindByPkImpl.mockResolvedValue(ACTIVE_PRODUCT);
+      // Lần 1: item lookup; lần 2: lockedVariant cần có decrement()
+      mockVariantFindByPkImpl
+        .mockResolvedValueOnce({
+          id: 1,
+          name: 'Đỏ',
+          price: 500000,
+          stockQuantity: 10,
+          sku: 'V-001',
+          weight: null,
+        })
+        .mockResolvedValueOnce({
+          id: 1,
+          stockQuantity: 10,
+          weight: null,
+          decrement: jest.fn().mockResolvedValue(undefined),
+        });
+      mockDiscountFindOneImpl.mockResolvedValue(null); // không dùng discount
+
+      Order.create.mockResolvedValue({
+        id: 100,
+        number: 'ORD-2605-TEST',
+        status: 'pending',
+        total: 530000, // 500000 + 30000 phí ship
+        createdAt: new Date(),
+      });
+      OrderItem.create.mockResolvedValue({ id: 1, name: 'iPhone Test' });
+      InventoryLog.bulkCreate.mockResolvedValue([]);
+      Cart.findAll.mockResolvedValue([]); // clearUserCart
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({
+          ...BASE_ORDER_BODY,
+          items: [{ productId: 1, variantId: 1, quantity: 1 }],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.status).toBe('success');
+      expect(res.body.data.order).toHaveProperty('number');
+      expect(res.body.data.order.number).toMatch(/ORD/);
+    });
+
+    test('Validation: thiếu shippingFirstName → 400', async () => {
+      const { shippingFirstName: _, ...bodyWithout } = BASE_ORDER_BODY;
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send({ ...bodyWithout, items: [{ productId: 1, variantId: 1, quantity: 1 }] });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/Tên người nhận/);
+    });
+  });
+
+  // ============================================================
+  // 4. Cart-based flow — đặt hàng từ giỏ hàng (không truyền items)
+  // ============================================================
+
+  describe('POST /api/orders — cart-based flow', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      const mockTx = {
+        LOCK: { UPDATE: 'UPDATE' },
+        commit: jest.fn().mockResolvedValue(undefined),
+        rollback: jest.fn().mockResolvedValue(undefined),
+      };
+      sequelize.transaction.mockImplementation(async (cb) =>
+        typeof cb === 'function' ? cb(mockTx) : mockTx,
+      );
+    });
+
+    test('Đặt hàng từ giỏ hàng (không truyền items) — cart có 1 item đủ hàng → 201', async () => {
+      const mockCartItem = {
+        productId: 1,
+        variantId: 1,
+        quantity: 2,
+        Product: {
+          id: 1,
+          name: 'Laptop',
+          status: 'active',
+          basePrice: 800000,
+          slug: 'laptop',
+          thumbnail: null,
+          sku: null,
+        },
+        ProductVariant: {
+          id: 1,
+          name: 'Xám',
+          price: 750000,
+          stockQuantity: 5,
+          sku: 'V-GRAY',
+          weight: null,
+        },
+      };
+
+      // Cart.findOrCreate: trả về [cart, created]
+      Cart.findOrCreate.mockResolvedValue([{ id: 20 }, false]);
+
+      // Cart.findByPk với include items: trả về cart có items
+      Cart.findByPk.mockResolvedValue({
+        id: 20,
+        items: [mockCartItem],
+      });
+
+      // lockedVariant (có decrement)
+      mockVariantFindByPkImpl.mockResolvedValue({
+        id: 1,
+        stockQuantity: 5,
+        weight: null,
+        decrement: jest.fn().mockResolvedValue(undefined),
+      });
+
+      Order.update.mockResolvedValue([0]);
+      Order.create.mockResolvedValue({
+        id: 200,
+        number: 'ORD-CART-TEST',
+        status: 'pending',
+        total: 1530000,
+        createdAt: new Date(),
+      });
+      OrderItem.create.mockResolvedValue({ id: 2 });
+      InventoryLog.bulkCreate.mockResolvedValue([]);
+      Cart.findAll.mockResolvedValue([]); // clearUserCart
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send(BASE_ORDER_BODY); // KHÔNG truyền items — sẽ lấy từ giỏ hàng
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.order.number).toBe('ORD-CART-TEST');
+    });
+
+    test('Giỏ hàng trống → 400', async () => {
+      Cart.findOrCreate.mockResolvedValue([{ id: 21 }, false]);
+      // Cart findByPk trả về cart với items rỗng
+      Cart.findByPk.mockResolvedValue({ id: 21, items: [] });
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send(BASE_ORDER_BODY);
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toMatch(/trống/);
+    });
+
+    test('COD order: clearUserCart được gọi sau khi tạo đơn → cart bị đánh dấu converted', async () => {
+      Cart.findOrCreate.mockResolvedValue([{ id: 22 }, false]);
+      Cart.findByPk.mockResolvedValue({
+        id: 22,
+        items: [
+          {
+            productId: 1,
+            variantId: 1,
+            quantity: 1,
+            Product: {
+              id: 1,
+              name: 'Phone',
+              status: 'active',
+              basePrice: 2500000,
+              slug: 'phone',
+              thumbnail: null,
+              sku: null,
+            },
+            ProductVariant: {
+              id: 1,
+              name: 'Đen',
+              price: 2500000,
+              stockQuantity: 3,
+              sku: 'V-BLK',
+              weight: null,
+            },
+          },
+        ],
+      });
+
+      mockVariantFindByPkImpl.mockResolvedValue({
+        id: 1,
+        stockQuantity: 3,
+        weight: null,
+        decrement: jest.fn().mockResolvedValue(undefined),
+      });
+
+      Order.update.mockResolvedValue([0]);
+      Order.create.mockResolvedValue({
+        id: 300,
+        number: 'ORD-CLEAR-TEST',
+        status: 'pending',
+        total: 2500000,
+        createdAt: new Date(),
+      });
+      OrderItem.create.mockResolvedValue({ id: 3 });
+      InventoryLog.bulkCreate.mockResolvedValue([]);
+
+      // clearUserCart: có 1 giỏ hàng đang hoạt động → phải set status converted và save + destroy items
+      // Phase 42 modules/orders dùng cart.status = 'converted' + cart.save() (thay vì update)
+      const mockActiveCart = {
+        id: 22,
+        status: 'active',
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      Cart.findAll.mockResolvedValue([mockActiveCart]);
+      CartItem.destroy.mockResolvedValue(1);
+
+      const res = await request
+        .post('/api/orders')
+        .set('Authorization', 'Bearer test-token')
+        .send(BASE_ORDER_BODY);
+
+      expect(res.status).toBe(201);
+      // clearUserCart phải đánh dấu giỏ hàng là 'converted' (qua mutation + save)
+      expect(mockActiveCart.save).toHaveBeenCalled();
+      expect(mockActiveCart.status).toBe('converted');
+      expect(CartItem.destroy).toHaveBeenCalled();
+    });
+  });
+});

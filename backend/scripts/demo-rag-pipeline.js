@@ -1251,6 +1251,7 @@ function printServerResponse(res) {
         if (input.startsWith('mode:')) {
           currentMode = input.split(':')[1] || currentMode;
           console.log(ok(`Mode → ${C.cyan}${currentMode}${C.reset}`));
+          if (currentMode === 'down') console.log(sub(`${C.dim}Watch mode: terminal query luôn gửi lên server → server quyết định up/down. 'mode:down' chỉ có tác dụng ở one-shot/interactive mode.${C.reset}`));
         } else {
           const sid = watchSessionId || 'demo-' + Date.now();
           console.log(`\n${C.teal}${C.bold}[Terminal → Server]${C.reset} Gửi: "${input}"  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
@@ -1263,11 +1264,9 @@ function printServerResponse(res) {
           console.log(cl('Luận văn tốt nghiệp'));
           console.log(hdrBorder + C.reset);
           console.log(`  Query:${' '.repeat(16)}"${input}"`);
-          const isUpMode = currentMode !== 'down';
-          console.log(`  Mode:${' '.repeat(17)}${isUpMode ? 'up' : 'down'}`);
-          const modeTag = isUpMode ? `${C.bold}${C.green}[ LLM UP  ]${C.reset}` : `${C.bold}${C.yellow}[ LLM DOWN ]${C.reset}`;
+          // Mode xác định bởi server (up/down hiện ở step 6_start) — không hiện ở banner
           console.log('\n' + dividerHi('='));
-          console.log(`${C.bold}  RAG PIPELINE DEMO  |  Mode: ${modeTag}  ${compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`}${C.reset}`);
+          console.log(`${C.bold}  RAG PIPELINE DEMO  |  ${compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`}${C.reset}`);
           console.log(dividerHi('='));
           console.log(kv('Query đầu vào:', `"${input}"`));
           terminalBusy = true;

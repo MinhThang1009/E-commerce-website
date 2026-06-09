@@ -606,11 +606,22 @@ class ChatbotService {
       // Tìm dòng đầu tiên bắt đầu bằng bullet "•" hoặc gạch đầu dòng "- "
       const firstItem = text.split('\n').find((l) => /^\s*[•-]\s/.test(l));
       if (!firstItem) return null;
-      return firstItem
+      const fromBullet = firstItem
         .replace(/^\s*[•-]\s*/, '') // bỏ ký hiệu đầu dòng
-        .replace(/\s*[-:]\s*(?:giá|từ)?\s*[\d.,]+.*$/i, '') // bỏ phần giá phía sau (": 24.990.000đ" hoặc "- 24.990.000 đ")
+        .replace(/\s*[-:]\s*(?:giá|từ)?\s*[\d.,]+.*$/i, '') // bỏ phần giá phía sau
         .replace(/:\s.*$/, '') // bỏ phần mô tả sau dấu ":"
         .trim();
+      // Nếu extracted chỉ là dung lượng/spec (vd "256GB"), không có brand/model name,
+      // thử lấy tên sản phẩm từ dòng intro đầu response
+      if (fromBullet && !BRAND_RE.test(fromBullet)) {
+        const intro = text.split('\n')[0] || '';
+        const cleaned = intro
+          .replace(/^dạ\s+/i, '')
+          .replace(/\s+(?:hiện có|hiện đang|có giá|giá từ|bao gồm|hiện tại|đang có).*$/i, '')
+          .trim();
+        if (cleaned && BRAND_RE.test(cleaned) && cleaned.length <= 80) return cleaned;
+      }
+      return fromBullet || null;
     };
 
     const recentContext = history

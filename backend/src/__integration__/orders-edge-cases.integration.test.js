@@ -484,6 +484,8 @@ describe('Orders edge cases — hoàn kho qua service (F1/F2/F3)', () => {
 describe('MEDIUM-1 — clearCartItems transaction atomicity (requires MySQL)', () => {
   test('MEDIUM-1: CartItems không bị xóa vĩnh viễn khi createOrder transaction rollback', async () => {
     const { Cart, CartItem } = require('@models');
+    // Ensure variant có stock cho test này
+    await variant.update({ stockQuantity: 50 });
 
     const user = await User.create({
       firstName: '__INT_M1',

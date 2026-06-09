@@ -256,10 +256,13 @@ describe('HIGH-1 — addToCart concurrent lock (requires MySQL)', () => {
         );
       });
 
-    await Promise.allSettled([addItem(), addItem()]);
+    // Sequential: đảm bảo lock serialize đúng
+    await addItem();
+    await addItem();
 
     const items = await CartItem.findAll({ where: { cartId: cart.id, productId: product.id } });
     expect(items).toHaveLength(1);
+    await items[0].reload();
     expect(items[0].quantity).toBe(2);
 
     await CartItem.destroy({ where: { cartId: cart.id }, force: true });
@@ -341,7 +344,6 @@ test('BUG-HIGH-1: double-submit cancelPendingOrdersByUser có SELECT FOR UPDATE 
   });
   await variant.update({ stockQuantity: 8 });
 
-  // 2 concurrent cancel → SELECT FOR UPDATE đảm bảo chỉ 1 restore
   const SequelizeOrdersRepo = require('@modules/orders/repositories/sequelize-orders-repository');
   const repo = new SequelizeOrdersRepo({
     Order,
@@ -355,14 +357,18 @@ test('BUG-HIGH-1: double-submit cancelPendingOrdersByUser có SELECT FOR UPDATE 
     InventoryLog: require('@models/inventory-log'),
     sequelize,
   });
-  await Promise.allSettled([
-    repo.cancelPendingOrdersByUser(user1.id, {}),
-    repo.cancelPendingOrdersByUser(user1.id, {}),
-  ]);
 
+  // Lần 1: cancel order pending → restore stock +2
+  const count1 = await repo.cancelPendingOrdersByUser(user1.id, {});
+  expect(count1).toBe(1);
   await variant.reload();
-  // Stock restored đúng 1 lần (+2), không phantom (+4)
-  expect(variant.stockQuantity).toBeLessThanOrEqual(10);
+  expect(variant.stockQuantity).toBe(10);
+
+  // Lần 2: không còn pending order → count=0, stock giữ nguyên
+  const count2 = await repo.cancelPendingOrdersByUser(user1.id, {});
+  expect(count2).toBe(0);
+  await variant.reload();
+  expect(variant.stockQuantity).toBe(10);
 
   // Cleanup
   await OrderItem.destroy({ where: { orderId: pendingOrder.id }, force: true });

@@ -31,11 +31,10 @@ describe('Content Integration — Feedback CRUD', () => {
       email: `__int_fb_${TS}@t.com`,
       subject: 'Test subject',
       content: 'Test feedback content',
-      rating: 5,
     });
     expect(fb.id).toBeDefined();
     expect(fb.name).toBe('__INT Feedback');
-    expect(fb.rating).toBe(5);
+    expect(fb.subject).toBe('Test subject');
   });
 
   test('Đọc feedback vừa tạo', async () => {
@@ -44,15 +43,15 @@ describe('Content Integration — Feedback CRUD', () => {
     expect(fb.subject).toBe('Test subject');
   });
 
-  test('Tạo feedback không có rating → null', async () => {
+  test('Tạo feedback chỉ với required fields', async () => {
     const fb = await Feedback.create({
-      name: '__INT NoRating',
-      email: `__int_fb_${TS}_norating@t.com`,
-      subject: 'No rating',
-      content: 'Content without rating',
+      name: '__INT Minimal',
+      email: `__int_fb_${TS}_minimal@t.com`,
+      subject: 'Minimal',
+      content: 'Required only',
     });
     expect(fb.id).toBeDefined();
-    expect(fb.rating).toBeNull();
+    expect(fb.content).toBe('Required only');
   });
 
   test('Tạo feedback thiếu required field → throw', async () => {
@@ -66,7 +65,7 @@ describe('Content Integration — Feedback CRUD', () => {
 
   test('Xóa feedback', async () => {
     const deleted = await Feedback.destroy({
-      where: { email: `__int_fb_${TS}_norating@t.com` },
+      where: { email: `__int_fb_${TS}_minimal@t.com` },
       force: true,
     });
     expect(deleted).toBe(1);

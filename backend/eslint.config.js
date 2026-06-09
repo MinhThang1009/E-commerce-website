@@ -155,4 +155,20 @@ module.exports = [
       }],
     },
   },
+
+  // ── 4. Test files — relax no-shadow ────────────────────────────────────────
+  // Test files thường dùng scoped variables trùng tên với outer scope (describe mock setup).
+  // no-shadow warning gây nhiễu nhưng không ảnh hưởng correctness trong test context.
+  {
+    files: [
+      'src/**/*.test.js',
+      'src/__integration__/**',
+      'src/__api__/**',
+      'src/__e2e__/**',
+      'src/__tests__/**',
+    ],
+    rules: {
+      'no-shadow': 'off',
+    },
+  },
 ];

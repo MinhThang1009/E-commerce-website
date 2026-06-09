@@ -275,7 +275,7 @@ const ChatWidgetPortal: React.FC = () => {
         /* silent */
       }
     };
-    const timer = setInterval(poll, 3000);
+    const timer = setInterval(poll, 10000);
     return () => clearInterval(timer);
   }, [isDemoMode, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 

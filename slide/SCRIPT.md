@@ -328,7 +328,7 @@ Kết quả là chatbot vẫn trả về danh sách sản phẩm phù hợp vớ
 
 ### Bonus: Sync session giữa terminal và giao diện web
 
-Script demo còn có thể kết nối với chatbot trên website khi chạy cùng một session ID. Khi truyền tham số session-id từ giao diện web, terminal sẽ hiển thị trace chi tiết từng bước trong khi giao diện web hiển thị kết quả cho người dùng. Hai bên dùng chung session history, nên lịch sử hội thoại đồng bộ. Ở chế độ watch, script tự theo dõi database và khi phát hiện tin nhắn mới từ giao diện web sẽ tự động trace pipeline tương ứng. Điều này giúp demo cho thầy cô thấy song song: bên trái là terminal hiển thị nội bộ bảy bước, bên phải là giao diện web hiển thị kết quả cuối cùng cho người dùng.
+Script demo còn hỗ trợ chế độ `--watch` để theo dõi real-time khi người dùng chat trên giao diện web. Ở chế độ này, terminal kết nối với server qua SSE, tức là Server-Sent Events. Khi người dùng gửi tin nhắn trên web, server xử lý pipeline và đẩy từng bước về terminal ngay lập tức qua kênh SSE đó. Bước 1 đến bước 5 hiện gần như ngay khi xử lý xong, bước 6 hiện thông báo "đang gọi LLM" rồi hiện kết quả sau khi LLM trả về. Điều này giúp demo cho thầy cô thấy song song: bên trái là terminal hiển thị chi tiết nội bộ bảy bước theo thời gian thực, bên phải là giao diện web hiển thị kết quả cuối cùng cho người dùng, cả hai dùng chung cùng một lần gọi LLM.
 
 ### Tổng kết demo
 

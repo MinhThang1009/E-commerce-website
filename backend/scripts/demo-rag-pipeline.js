@@ -477,7 +477,7 @@ function displayPipeline(t, query, aiResponse = null, { showBanner = false } = {
     console.log(kv('  Session ID:', s4.sessionId || 'N/A'));
     if (s4.turns > 0 && s4.messages?.length) {
       console.log(kv('  Trạng thái:', `${C.green}Có lịch sử từ DB${C.reset}`));
-      console.log(kv('  conversationHistory:', `${s4.turns} turns  (${s4.messages.length} messages)`));
+      console.log(kv('  conversationHistory:', `${s4.turns} turns  (hiện ${s4.messages.length} messages cuối)`));
       s4.messages.forEach(m => {
         const preview = (m.content || '').replace(/\n/g, ' ').substring(0, 60);
         console.log(`  ${C.gray}  ${m.role.padEnd(9)}${C.reset} "${preview}${preview.length >= 60 ? '...' : ''}"`);
@@ -810,7 +810,7 @@ function displayStreamStep(stepId, data, accum) {
       console.log(kv('  Session ID:', data.sessionId || 'N/A'));
       if (data.turns > 0 && data.messages?.length) {
         console.log(kv('  Trạng thái:', `${C.green}Có lịch sử từ DB${C.reset}`));
-        console.log(kv('  conversationHistory:', `${data.turns} turns  (${data.messages.length} messages)`));
+        console.log(kv('  conversationHistory:', `${data.turns} turns  (hiện ${data.messages.length} messages cuối)`));
         data.messages.forEach(m => { const p = (m.content || '').replace(/\n/g, ' ').substring(0, 60); console.log(`  ${C.gray}  ${m.role.padEnd(9)}${C.reset} "${p}${p.length >= 60 ? '...' : ''}"`); });
       } else { console.log(kv('  Trạng thái:', 'Session chưa có lịch sử')); console.log(kv('  conversationHistory:', '[]  (0 turns)')); }
       console.log(sub('Lưu trong Map RAM  |  Tối đa 500 sessions  |  TTL 30 phút'));

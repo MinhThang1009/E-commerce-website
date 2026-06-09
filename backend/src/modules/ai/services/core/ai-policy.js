@@ -59,7 +59,10 @@ const ABBREV_MAP = {
   // "r7" → "AMD Ryzen 7"
   '\\br7\\b': 'AMD Ryzen 7',
   // Viết tắt đại từ xưng hô phổ biến trong chat
-  '\\bb\\b': 'bạn',
+  '(?<![\\p{L}])b(?![\\p{L}])': 'bạn',
+
+  // Lỗi đánh máy phổ biến — "tâm" (sai) → "tầm" (đúng) khi đứng trước giá
+  '\\btâm\\b(?=\\s*\\d)': 'tầm',
 
   // Viết tắt câu hỏi hội thoại phổ biến
   // "bnh" nối liền: sau chữ ("pmbnh") hoặc sau số ("17bnh")

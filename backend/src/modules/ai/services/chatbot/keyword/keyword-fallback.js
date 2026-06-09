@@ -248,7 +248,7 @@ function simpleKeywordMatch(userMessage, products) {
     new RegExp(`(?:dưới|under|below|tối\\s*đa|max)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'),
   );
   const approxMatch = lowerMessage.match(
-    new RegExp(`(?:tầm|khoảng|around|budget|about)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'),
+    new RegExp(`(?:tầm|tâm|khoảng|around|budget|about)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'),
   );
   const minMatch = lowerMessage.match(
     new RegExp(`(?:trên|over|above|tối\\s*thiểu|min)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'),

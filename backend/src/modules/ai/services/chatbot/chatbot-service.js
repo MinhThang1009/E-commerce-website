@@ -378,20 +378,25 @@ class ChatbotService {
       onStep?.('4', s4);
 
       // ── Bước 5: Retrieve — embedding-based hybrid search ────────────────────
-      // Skip hybrid search cho intent không liên quan sản phẩm (general, policy, order_inquiry)
-      const needsSearch = intent === 'pricing' || intent === 'product_search';
+      const PRONOUN_RE =
+        /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
+      const BRAND_RE =
+        /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
+      const hasBrand = BRAND_RE.test(normalizedQuery);
+      const hasPronoun = PRONOUN_RE.test(normalizedQuery) && !hasBrand;
+      const isImplicit = !hasPronoun && normalizedQuery.trim().length <= 50 && !hasBrand;
+
+      // needsSearch: intent rõ ràng, HOẶC câu có đại từ/implicit follow-up với history
+      // (vd: "nó có mấy màu?" → general nhưng cần enrich + search để trả lời đúng)
+      const needsSearch =
+        intent === 'pricing' ||
+        intent === 'product_search' ||
+        ((hasPronoun || isImplicit) && conversationHistory.length > 0);
       const enrichedQuery = needsSearch
         ? this._enrichQueryFromHistory(normalizedQuery, conversationHistory)
         : normalizedQuery;
 
       if (needsSearch) {
-        const PRONOUN_RE =
-          /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
-        const BRAND_RE =
-          /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
-        const hasBrand = BRAND_RE.test(normalizedQuery);
-        const hasPronoun = PRONOUN_RE.test(normalizedQuery) && !hasBrand;
-        const isImplicit = !hasPronoun && normalizedQuery.trim().length <= 50 && !hasBrand;
         const s5a = {
           hasPronoun,
           isImplicitFollowup: isImplicit,

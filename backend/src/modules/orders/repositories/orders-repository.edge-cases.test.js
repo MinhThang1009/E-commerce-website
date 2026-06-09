@@ -396,3 +396,198 @@ describe('SequelizeOrdersRepository — createOrderItem', () => {
     expect(result).toBe(createdItem);
   });
 });
+
+// ─── findOrderByPkBasic — branch: không truyền options (line 42) ──────────────
+
+describe('findOrderByPkBasic', () => {
+  it('gọi Order.findByPk với id và default options {} khi không truyền options', async () => {
+    // Branch: options = {} (default parameter branch)
+    const { repo, deps } = makeRepo();
+    const order = { id: 5, number: 'ORD-001' };
+    deps.Order.findByPk.mockResolvedValue(order);
+
+    const result = await repo.findOrderByPkBasic(5);
+
+    expect(deps.Order.findByPk).toHaveBeenCalledWith(5, {});
+    expect(result).toBe(order);
+  });
+
+  it('gọi Order.findByPk với id và options khi được truyền', async () => {
+    const { repo, deps } = makeRepo();
+    const order = { id: 5 };
+    deps.Order.findByPk.mockResolvedValue(order);
+
+    await repo.findOrderByPkBasic(5, { transaction: 'txn' });
+
+    expect(deps.Order.findByPk).toHaveBeenCalledWith(5, { transaction: 'txn' });
+  });
+});
+
+// ─── findUserOrdersWithItems — branch: không truyền options (limit/offset = undefined) ──
+
+describe('findUserOrdersWithItems', () => {
+  it('truyền undefined limit và offset khi không cung cấp options (line 108)', async () => {
+    // Branch: { limit, offset } = {} → limit = undefined, offset = undefined
+    const { repo, deps } = makeRepo();
+    const mockResult = { count: 2, rows: [{ id: 1 }, { id: 2 }] };
+    deps.Order.findAndCountAll.mockResolvedValue(mockResult);
+
+    const result = await repo.findUserOrdersWithItems(5);
+
+    expect(deps.Order.findAndCountAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 5 },
+        limit: undefined,
+        offset: undefined,
+        order: [['createdAt', 'DESC']],
+      }),
+    );
+    expect(result).toBe(mockResult);
+  });
+
+  it('truyền limit và offset khi cung cấp options (line 108)', async () => {
+    const { repo, deps } = makeRepo();
+    const mockResult = { count: 10, rows: [{ id: 3 }] };
+    deps.Order.findAndCountAll.mockResolvedValue(mockResult);
+
+    const result = await repo.findUserOrdersWithItems(7, { limit: 5, offset: 10 });
+
+    expect(deps.Order.findAndCountAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 7 },
+        limit: 5,
+        offset: 10,
+      }),
+    );
+    expect(result).toBe(mockResult);
+  });
+
+  it('include đúng associations: items, Product, ProductVariant', async () => {
+    const { repo, deps } = makeRepo();
+    deps.Order.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
+
+    await repo.findUserOrdersWithItems(1, { limit: 10, offset: 0 });
+
+    expect(deps.Order.findAndCountAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.arrayContaining([expect.objectContaining({ association: 'items' })]),
+      }),
+    );
+  });
+});
+
+// ─── findAllOrdersWithUser — branch: không truyền options ─────────────────────
+
+describe('findAllOrdersWithUser', () => {
+  it('dùng where rỗng và limit/offset undefined khi không truyền options', async () => {
+    // Branch: { where = {}, limit, offset } = {} → default values
+    const { repo, deps } = makeRepo();
+    deps.Order.findAndCountAll.mockResolvedValue({ count: 0, rows: [] });
+
+    await repo.findAllOrdersWithUser();
+
+    expect(deps.Order.findAndCountAll).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {},
+        limit: undefined,
+        offset: undefined,
+      }),
+    );
+  });
+});
+
+// ─── findOrderByIdAndUserId — branch: không truyền options ────────────────────
+
+describe('findOrderByIdAndUserId', () => {
+  it('gọi Order.findOne với where {id, userId} và default options {} khi không truyền options', async () => {
+    const { repo, deps } = makeRepo();
+    const order = { id: 3, userId: 7 };
+    deps.Order.findOne.mockResolvedValue(order);
+
+    const result = await repo.findOrderByIdAndUserId(3, 7);
+
+    expect(deps.Order.findOne).toHaveBeenCalledWith({ where: { id: 3, userId: 7 } });
+    expect(result).toBe(order);
+  });
+});
+
+// ─── cancelPendingOrdersByUser — branch: không truyền options ─────────────────
+
+describe('cancelPendingOrdersByUser', () => {
+  it('không truyền options → findAll + cancel với transaction undefined; items rỗng không restore', async () => {
+    const { repo, deps } = makeRepo();
+    const order = { status: 'pending', items: [], save: jest.fn().mockResolvedValue() };
+    deps.Order.findAll.mockResolvedValue([order]);
+
+    const result = await repo.cancelPendingOrdersByUser(5);
+
+    expect(deps.Order.findAll).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 5, status: 'pending' }, transaction: undefined }),
+    );
+    expect(order.status).toBe('cancelled');
+    expect(order.save).toHaveBeenCalledWith({ transaction: undefined });
+    expect(result).toBe(1);
+  });
+});
+
+// ─── createInventoryLogs — branch: rows rỗng → trả [] (line 339) ──────────────
+
+describe('createInventoryLogs', () => {
+  it('trả [] ngay khi rows rỗng — không gọi bulkCreate', async () => {
+    const { repo, deps } = makeRepo();
+
+    const result = await repo.createInventoryLogs([]);
+
+    expect(result).toEqual([]);
+    expect(deps.InventoryLog.bulkCreate).not.toHaveBeenCalled();
+  });
+
+  it('trả [] ngay khi rows = null — không gọi bulkCreate', async () => {
+    const { repo, deps } = makeRepo();
+
+    const result = await repo.createInventoryLogs(null);
+
+    expect(result).toEqual([]);
+    expect(deps.InventoryLog.bulkCreate).not.toHaveBeenCalled();
+  });
+
+  it('gọi bulkCreate khi rows có dữ liệu', async () => {
+    const { repo, deps } = makeRepo();
+    const rows = [{ productId: 1, changeType: 'sale', changeAmount: -1 }];
+    deps.InventoryLog.bulkCreate.mockResolvedValue(rows);
+
+    const result = await repo.createInventoryLogs(rows, { transaction: 'txn' });
+
+    expect(deps.InventoryLog.bulkCreate).toHaveBeenCalledWith(rows, { transaction: 'txn' });
+    expect(result).toBe(rows);
+  });
+});
+
+// ─── findUserById — branch: không truyền options ─────────────────────────────
+
+describe('findUserById', () => {
+  it('gọi User.findByPk với id và default options {} khi không truyền options', async () => {
+    const { repo, deps } = makeRepo();
+    const user = { id: 3 };
+    deps.User.findByPk.mockResolvedValue(user);
+
+    const result = await repo.findUserById(3);
+
+    expect(deps.User.findByPk).toHaveBeenCalledWith(3, {});
+    expect(result).toBe(user);
+  });
+});
+
+// ─── runInTransaction ─────────────────────────────────────────────────────────
+
+describe('runInTransaction', () => {
+  it('gọi sequelize.transaction với work function', async () => {
+    const { repo, deps } = makeRepo();
+    const work = jest.fn().mockResolvedValue('done');
+
+    const result = await repo.runInTransaction(work);
+
+    expect(deps.sequelize.transaction).toHaveBeenCalledWith(work);
+    expect(result).toBe('done');
+  });
+});

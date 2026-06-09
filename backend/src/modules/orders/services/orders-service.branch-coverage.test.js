@@ -25,16 +25,14 @@ describe('OrdersService — branch coverage', () => {
       decrementVariantStock: jest.fn(),
       decrementProductStock: jest.fn(),
       incrementDiscountCodeUsage: jest.fn(),
-      createOrder: jest
-        .fn()
-        .mockResolvedValue({
-          id: 1,
-          number: 'ORD-001',
-          total: 100,
-          status: 'pending',
-          paymentStatus: 'pending',
-          paymentMethod: 'cod',
-        }),
+      createOrder: jest.fn().mockResolvedValue({
+        id: 1,
+        number: 'ORD-001',
+        total: 100,
+        status: 'pending',
+        paymentStatus: 'pending',
+        paymentMethod: 'cod',
+      }),
       createOrderItem: jest.fn().mockResolvedValue({ id: 1 }),
       clearCartItems: jest.fn(),
       getActiveDiscountByCode: jest.fn(),

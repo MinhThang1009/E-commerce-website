@@ -33,14 +33,14 @@ describe('POST /api/search-histories', () => {
     expect([200, 201]).toContain(res.status);
   });
 
-  test('thiếu keyword → 422', async () => {
+  test('thiếu keyword → 400', async () => {
     const res = await request(app).post('/api/search-histories').send({});
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
   });
 
-  test('keyword rỗng → 422', async () => {
+  test('keyword rỗng → 400', async () => {
     const res = await request(app).post('/api/search-histories').send({ keyword: '' });
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(400);
   });
 });
 

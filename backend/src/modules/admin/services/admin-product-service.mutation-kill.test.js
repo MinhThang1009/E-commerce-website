@@ -91,11 +91,18 @@ const { Op } = require('sequelize');
 const repo = require('@modules/admin/repositories/sequelize-admin-repository');
 const helpers = require('@utils/product-helpers');
 const vectorStore = require('@services/vector-store/vector-store');
+const logger = require('@utils/logger');
 const service = require('@modules/admin/services/admin-product-service');
 
 const sequelize = repo.getSequelize();
-const { Category, ProductVariant, ProductImage, ProductSpecification, ProductCategory } =
-  repo.getModels();
+const {
+  Category,
+  ProductVariant,
+  ProductImage,
+  ProductSpecification,
+  ProductCategory,
+  ProductAttribute,
+} = repo.getModels();
 
 const TX = { commit: jest.fn(), rollback: jest.fn() };
 
@@ -120,6 +127,19 @@ function invoke(handler, req) {
 }
 
 const flushAsync = () => new Promise((r) => setImmediate(r));
+
+const INCLUDE_5 = [
+  { model: Category, as: 'categories', through: { attributes: [] } },
+  { model: ProductAttribute, as: 'productAttributes' },
+  { model: ProductVariant, as: 'variants' },
+  {
+    model: ProductImage,
+    as: 'productImages',
+    attributes: ['imageUrl', 'isThumbnail'],
+    required: false,
+  },
+  { model: ProductSpecification, as: 'productSpecifications' },
+];
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -752,5 +772,1323 @@ describe('updateProduct', () => {
     });
     await flushAsync();
     expect(translateBatch).toHaveBeenCalledWith(['Tiếng Việt']);
+  });
+});
+
+// ─── createProduct deep (batch 2) ──────────────────────────────────────────
+
+describe('createProduct deep', () => {
+  function prod() {
+    return { id: 10, setCategories: jest.fn(), update: jest.fn() };
+  }
+  beforeEach(() => {
+    repo.findProductOne.mockResolvedValue(null);
+    repo.findProductById.mockResolvedValue({ status: 'draft', toJSON: () => ({ id: 10 }) });
+  });
+
+  test('createProductFull fallback đầy đủ (body tối thiểu)', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'P', description: 'D' } });
+    expect(repo.createProductFull).toHaveBeenCalledWith(
+      {
+        name: 'P',
+        baseName: 'P',
+        description: 'D',
+        shortDescription: 'D',
+        basePrice: undefined,
+        compareAtPrice: null,
+        stockQuantity: 0,
+        status: 'active',
+        isFeatured: false,
+        seoTitle: 'P',
+        seoDescription: 'D',
+        seoKeywords: [],
+        condition: 'new',
+        specifications: {}, // specifications mặc định {} → {} || [] = {}
+        faqs: [],
+      },
+      expect.anything(),
+    );
+  });
+
+  test('không sku → generateVariantSku nhận uniqueSku SKU-<ts>-<rand>', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1' }] },
+    });
+    expect(helpers.generateVariantSku).toHaveBeenCalledWith(
+      expect.stringMatching(/^SKU-\d+-\d+$/),
+      {},
+    );
+  });
+
+  test('attribute value mảng / số', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: {
+        name: 'P',
+        attributes: [
+          { name: 'A', value: ['x', 'y'] },
+          { name: 'B', value: 42 },
+        ],
+      },
+    });
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: 10, name: 'A', values: ['x', 'y'] },
+      expect.anything(),
+    );
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: 10, name: 'B', values: ['42'] },
+      expect.anything(),
+    );
+  });
+
+  test('variant displayName/variantName fallback từ attributes; sortOrder/isAvailable', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    helpers.generateVariantSku.mockReturnValue('SK');
+    await invoke(service.createProduct, {
+      body: {
+        name: 'P',
+        variants: [{ price: '10', stock: '2', attributes: { color: 'Đỏ', size: 'L' } }],
+      },
+    });
+    const arg = repo.createProductVariant.mock.calls[0][0];
+    expect(arg.displayName).toBe('Đỏ - L');
+    expect(arg.variantName).toBe('Đỏ - L');
+    expect(arg.sortOrder).toBe(0);
+    expect(arg.isAvailable).toBe(true);
+    expect(arg.isDefault).toBe(false);
+    expect(arg.sku).toBe('SK');
+    expect(arg.price).toBe(10);
+    expect(arg.stockQuantity).toBe(2);
+  });
+
+  test('variant isAvailable=false + isDefault=true khi truyền', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: {
+        name: 'P',
+        variants: [{ name: 'V', price: '1', stock: '1', isAvailable: false, isDefault: true }],
+      },
+    });
+    const arg = repo.createProductVariant.mock.calls[0][0];
+    expect(arg.isAvailable).toBe(false);
+    expect(arg.isDefault).toBe(true);
+  });
+
+  test('variants → updateProductWhere(stockQuantity=calculateTotalStock)', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    helpers.calculateTotalStock.mockReturnValue(99);
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '5' }] },
+    });
+    expect(repo.updateProductWhere).toHaveBeenCalledWith(
+      { stockQuantity: 99 },
+      { id: 10 },
+      expect.anything(),
+    );
+  });
+
+  test('specs → bulkCreateProductSpecs (category General, sortOrder index)', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', specifications: [{ name: 'CPU', value: 'A17' }] },
+    });
+    expect(repo.bulkCreateProductSpecs).toHaveBeenCalledWith(
+      [{ productId: 10, name: 'CPU', value: 'A17', category: 'General', sortOrder: 0 }],
+      expect.anything(),
+    );
+  });
+
+  test('mảng rỗng → KHÔNG gọi create tương ứng', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [], images: [], specifications: [], attributes: [] },
+    });
+    expect(repo.createProductVariant).not.toHaveBeenCalled();
+    expect(repo.updateProductWhere).not.toHaveBeenCalled();
+    expect(repo.bulkCreateProductImages).not.toHaveBeenCalled();
+    expect(repo.bulkCreateProductSpecs).not.toHaveBeenCalled();
+    expect(repo.createProductAttribute).not.toHaveBeenCalled();
+  });
+});
+
+// ─── updateProduct deep (batch 2) ──────────────────────────────────────────
+
+describe('updateProduct deep', () => {
+  function prod(over = {}) {
+    return {
+      id: 5,
+      name: 'Old',
+      basePrice: 100,
+      update: jest.fn().mockResolvedValue(undefined),
+      setCategories: jest.fn().mockResolvedValue(undefined),
+      ...over,
+    };
+  }
+  function mockFinal(status = 'draft') {
+    repo.findProductById.mockResolvedValueOnce({ id: 5, status, toJSON: () => ({ id: 5 }) });
+  }
+
+  test('updateData map đủ field hasOwnProperty', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        baseName: 'BN',
+        description: 'D',
+        shortDescription: 'SD',
+        stockQuantity: '12',
+        status: 'active',
+        featured: true, // trigger hasOwnProperty('featured')
+        isFeatured: true, // giá trị thực (destructure isFeatured: featured)
+        condition: 'used',
+        seoTitle: 'ST',
+        seoDescription: 'SDesc',
+        seoKeywords: ['k'],
+        faqs: [{ q: 'a' }],
+      },
+    });
+    expect(p.update).toHaveBeenCalledWith(
+      {
+        baseName: 'BN',
+        description: 'D',
+        shortDescription: 'SD',
+        stockQuantity: 12,
+        status: 'active',
+        isFeatured: true,
+        condition: 'used',
+        seoTitle: 'ST',
+        seoDescription: 'SDesc',
+        seoKeywords: ['k'],
+        faqs: [{ q: 'a' }],
+      },
+      { transaction: TX },
+    );
+  });
+
+  test('baseName fallback name khi baseName rỗng', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { name: 'NewName', baseName: '' },
+    });
+    expect(p.update.mock.calls[0][0].baseName).toBe('NewName');
+  });
+
+  test('images: destroy cũ + bulkCreate (string + object)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { images: ['a.jpg', { url: 'b.jpg', color: 'red', variantId: 3 }] },
+    });
+    expect(repo.destroyProductImages).toHaveBeenCalledWith({ productId: '5' }, { transaction: TX });
+    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith(
+      [
+        { productId: '5', imageUrl: 'a.jpg', isThumbnail: true, color: null, variantId: null },
+        { productId: '5', imageUrl: 'b.jpg', isThumbnail: false, color: 'red', variantId: 3 },
+      ],
+      { transaction: TX },
+    );
+  });
+
+  test('compareAtPrice ưu tiên hơn comparePrice', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { compareAtPrice: 200, comparePrice: 999 },
+    });
+    expect(sequelize.query.mock.calls[0][1].replacements.compareAtPrice).toBe(200);
+  });
+
+  test('attributes CRUD: xoá cũ không còn, update tồn tại, tạo mới', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    const oldAttr = { name: 'Cũ', destroy: jest.fn() };
+    const existAttr = { name: 'Màu', update: jest.fn(), type: 'custom', required: false };
+    repo.findProductAttributes.mockResolvedValueOnce([oldAttr, existAttr]);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        attributes: [
+          { name: 'Màu', value: 'đỏ,xanh' },
+          { name: 'Mới', value: ['a'] },
+        ],
+      },
+    });
+    expect(oldAttr.destroy).toHaveBeenCalledWith({ transaction: TX }); // không còn → xoá
+    expect(existAttr.update).toHaveBeenCalledWith(
+      expect.objectContaining({ values: ['đỏ', 'xanh'] }),
+      { transaction: TX },
+    );
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      expect.objectContaining({ productId: '5', name: 'Mới', values: ['a'] }),
+      { transaction: TX },
+    );
+  });
+
+  test('variants CRUD: update tồn tại + tạo mới + xoá bỏ + stock/minPrice', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    const existVar = { id: 7, update: jest.fn().mockResolvedValue({ id: 7, price: 50 }) };
+    const removeVar = { id: 8, destroy: jest.fn() };
+    repo.findProductVariants.mockResolvedValueOnce([existVar, removeVar]);
+    repo.createProductVariant.mockResolvedValueOnce({ id: 9, price: 30 });
+    helpers.calculateTotalStock.mockReturnValue(10);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        variants: [
+          { id: 7, price: '50', stock: '4' },
+          { price: '30', stock: '6' },
+        ],
+      },
+    });
+    expect(removeVar.destroy).toHaveBeenCalledWith({ transaction: TX }); // id 8 không có trong incoming
+    expect(existVar.update).toHaveBeenCalled(); // id 7 update
+    expect(repo.createProductVariant).toHaveBeenCalled(); // variant mới
+    // minVariantPrice = min(50,30)=30 > 0 → stockUpdate có basePrice
+    expect(repo.updateProductWhere).toHaveBeenCalledWith(
+      { stockQuantity: 10, basePrice: 30 },
+      { id: '5' },
+      { transaction: TX },
+    );
+  });
+
+  test('stockQuantity-only (không variants) → updateProductWhere stock', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { stockQuantity: '15' },
+    });
+    expect(repo.updateProductWhere).toHaveBeenCalledWith(
+      { stockQuantity: 15 },
+      { id: '5' },
+      { transaction: TX },
+    );
+  });
+
+  test('specs CRUD: xoá cũ + update tồn tại + tạo mới', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    mockFinal();
+    const oldSpec = { name: 'Cũ', destroy: jest.fn() };
+    const existSpec = {
+      name: 'CPU',
+      value: 'X',
+      valueEn: 'X',
+      update: jest.fn().mockResolvedValue({ valueEn: 'X' }),
+    };
+    repo.findProductSpecs.mockResolvedValueOnce([oldSpec, existSpec]);
+    ProductSpecification.create.mockResolvedValueOnce({ value: 'New', valueEn: 'New' });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        specifications: [
+          { name: 'CPU', value: 'X' },
+          { name: 'RAM', value: 'New', valueEn: 'New' },
+        ],
+      },
+    });
+    expect(oldSpec.destroy).toHaveBeenCalledWith({ transaction: TX });
+    expect(existSpec.update).toHaveBeenCalled();
+    expect(ProductSpecification.create).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'RAM', value: 'New', productId: '5', category: 'General' }),
+      { transaction: TX },
+    );
+  });
+
+  test('lỗi khi cập nhật → rollback + throw', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    p.update.mockRejectedValueOnce(new Error('boom'));
+    const { err } = await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { name: 'X' },
+    });
+    expect(TX.rollback).toHaveBeenCalled();
+    expect(err.message).toBe('boom');
+  });
+});
+
+// ─── getAllProducts deep (batch 2) ─────────────────────────────────────────
+
+describe('getAllProducts deep', () => {
+  beforeEach(() => repo.findProducts.mockResolvedValue({ count: 0, rows: [] }));
+
+  test('include shape 6 association', async () => {
+    await invoke(service.getAllProducts, { query: {} });
+    const inc = repo.findProducts.mock.calls[0][0].include;
+    expect(inc).toHaveLength(6);
+    expect(inc[0]).toEqual({ model: Category, as: 'category' });
+    expect(inc[1]).toMatchObject({ as: 'categories', through: { attributes: [] } });
+    expect(inc[2]).toMatchObject({ as: 'variants', required: false });
+    expect(inc[5]).toMatchObject({
+      as: 'productImages',
+      attributes: ['imageUrl', 'color', 'isThumbnail'],
+      required: false,
+    });
+  });
+
+  test('sortBy=stockQuantity → Sequelize.literal subquery, ASC', async () => {
+    await invoke(service.getAllProducts, { query: { sortBy: 'stockQuantity', sortOrder: 'asc' } });
+    const order = repo.findProducts.mock.calls[0][0].order[0];
+    expect(order[0].val).toContain('SUM(pv.stock_quantity)');
+    expect(order[1]).toBe('ASC');
+  });
+
+  test('sortBy=stock → literal subquery', async () => {
+    await invoke(service.getAllProducts, { query: { sortBy: 'stock' } });
+    expect(repo.findProducts.mock.calls[0][0].order[0][0].val).toContain('product_variants');
+  });
+
+  test('category filter → include[1].where + required', async () => {
+    await invoke(service.getAllProducts, { query: { category: '7' } });
+    const inc = repo.findProducts.mock.calls[0][0].include;
+    expect(inc[1].where).toEqual({ id: '7' });
+    expect(inc[1].required).toBe(true);
+  });
+
+  test('logger lấy + xong', async () => {
+    await invoke(service.getAllProducts, { query: {} });
+    expect(logger.info).toHaveBeenCalledWith('[ADMIN] Đang lấy danh sách sản phẩm...');
+    expect(logger.info).toHaveBeenCalledWith('[ADMIN] Lấy sản phẩm xong:', 0);
+  });
+
+  test('transform: không variants → giữ stock gốc, images []', async () => {
+    repo.findProducts.mockResolvedValueOnce({
+      count: 1,
+      rows: [{ toJSON: () => ({ id: 1, basePrice: 5, stockQuantity: 7 }) }],
+    });
+    const { res } = await invoke(service.getAllProducts, { query: {} });
+    expect(res.payload.data.products[0].stockQuantity).toBe(7);
+    expect(res.payload.data.products[0].images).toEqual([]);
+  });
+
+  test('transform: category đã có trong categories → không push trùng', async () => {
+    repo.findProducts.mockResolvedValueOnce({
+      count: 1,
+      rows: [
+        { toJSON: () => ({ id: 1, basePrice: 1, category: { id: 9 }, categories: [{ id: 9 }] }) },
+      ],
+    });
+    const { res } = await invoke(service.getAllProducts, { query: {} });
+    expect(res.payload.data.products[0].categories).toEqual([{ id: 9 }]);
+  });
+
+  test('findProducts lỗi → rethrow', async () => {
+    repo.findProducts.mockRejectedValueOnce(new Error('boom'));
+    const { err } = await invoke(service.getAllProducts, { query: {} });
+    expect(err.message).toBe('boom');
+  });
+});
+
+// ─── cloneProduct deep (batch 2) ───────────────────────────────────────────
+
+describe('cloneProduct deep', () => {
+  test('variant sku có "-" → suffix phần cuối', async () => {
+    const original = {
+      name: 'SP',
+      get: () => ({ id: 1, name: 'SP', sku: 'OLD' }),
+      categories: [],
+      productAttributes: [],
+      variants: [{ get: () => ({ id: 7, sku: 'OLD-RED' }) }],
+      productSpecifications: [],
+    };
+    repo.findProductById.mockResolvedValueOnce(original);
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    const vd = repo.bulkCreateProductVariants.mock.calls[0][0][0];
+    expect(vd.sku).toMatch(/^SKU-\d+-\d+-RED$/);
+    expect(vd.productId).toBe(20);
+    expect(vd.id).toBeUndefined();
+  });
+});
+
+// ─── createProduct — include + arg phụ (batch 3) ───────────────────────────
+
+describe('createProduct — include + arg phụ', () => {
+  function prod() {
+    return { id: 10, setCategories: jest.fn(), update: jest.fn() };
+  }
+  beforeEach(() => {
+    repo.findProductOne.mockResolvedValue(null);
+    repo.findProductById.mockResolvedValue({ status: 'draft', toJSON: () => ({ id: 10 }) });
+  });
+
+  test('có variants → findProductAttributes({productId})', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1' }] },
+    });
+    expect(repo.findProductAttributes).toHaveBeenCalledWith({ productId: 10 }, expect.anything());
+  });
+
+  test('final findProductById có include shape đầy đủ', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'P' } });
+    const lastCall = repo.findProductById.mock.calls.at(-1);
+    expect(lastCall[1].include).toEqual(INCLUDE_5);
+  });
+
+  test('image object: url||imageUrl + isThumbnail||index0', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: {
+        name: 'P',
+        images: [{ imageUrl: 'x.jpg', isThumbnail: true }, { url: 'y.jpg' }],
+      },
+    });
+    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith(
+      [
+        { productId: 10, imageUrl: 'x.jpg', isThumbnail: true, color: null, variantId: null },
+        { productId: 10, imageUrl: 'y.jpg', isThumbnail: false, color: null, variantId: null },
+      ],
+      expect.anything(),
+    );
+  });
+});
+
+// ─── updateProduct — include + data exact (batch 3) ────────────────────────
+
+describe('updateProduct — include + data exact', () => {
+  function prod(over = {}) {
+    return {
+      id: 5,
+      name: 'Old',
+      basePrice: 100,
+      update: jest.fn().mockResolvedValue(undefined),
+      setCategories: jest.fn().mockResolvedValue(undefined),
+      ...over,
+    };
+  }
+
+  test('findProductById đầu tiên có {transaction}', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    repo.findProductById.mockResolvedValueOnce({ status: 'draft', toJSON: () => ({ id: 5 }) });
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { name: 'X' } });
+    expect(repo.findProductById).toHaveBeenNthCalledWith(1, '5', { transaction: TX });
+  });
+
+  test('final findProductById include shape', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    repo.findProductById.mockResolvedValueOnce({ status: 'draft', toJSON: () => ({ id: 5 }) });
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { name: 'X' } });
+    expect(repo.findProductById.mock.calls.at(-1)[1].include).toEqual(INCLUDE_5);
+  });
+
+  test('variant mới: createProductVariant data đầy đủ', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    repo.findProductById.mockResolvedValueOnce({ status: 'draft', toJSON: () => ({ id: 5 }) });
+    repo.createProductVariant.mockResolvedValueOnce({ id: 9, price: 30 });
+    helpers.generateVariantSku.mockReturnValue('VS');
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { sku: 'P', variants: [{ price: '30', stock: '6', attributes: { c: 'Đỏ' } }] },
+    });
+    expect(repo.createProductVariant).toHaveBeenCalledWith(
+      {
+        variantName: 'Đỏ',
+        sku: 'VS',
+        attributes: { c: 'Đỏ' },
+        attributeValues: { c: 'Đỏ' },
+        price: 30,
+        stockQuantity: 6,
+        images: [],
+        isDefault: true, // index 0 và không variant nào isDefault
+        isAvailable: true,
+        compareAtPrice: null,
+        displayName: 'Đỏ',
+        productId: '5',
+        id: undefined,
+      },
+      { transaction: TX },
+    );
+  });
+
+  test('attribute tạo mới: type custom + required false mặc định', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    repo.findProductById.mockResolvedValueOnce({ status: 'draft', toJSON: () => ({ id: 5 }) });
+    repo.findProductAttributes.mockResolvedValueOnce([]);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { attributes: [{ name: 'Mới', value: 'a' }] },
+    });
+    expect(repo.createProductAttribute).toHaveBeenCalledWith(
+      { productId: '5', name: 'Mới', values: ['a'], type: 'custom', required: false },
+      { transaction: TX },
+    );
+  });
+
+  test('variant images: destroy theo variantId + bulkCreate', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    repo.findProductById.mockResolvedValueOnce({ status: 'draft', toJSON: () => ({ id: 5 }) });
+    repo.createProductVariant.mockResolvedValueOnce({ id: 9, price: 30 });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { variants: [{ price: '1', stock: '1', images: ['v1.jpg', 'v2.jpg'] }] },
+    });
+    expect(repo.destroyProductImages).toHaveBeenCalledWith(
+      { productId: '5', variantId: 9 },
+      { transaction: TX },
+    );
+    expect(repo.bulkCreateProductImages).toHaveBeenCalledWith(
+      [
+        { productId: '5', variantId: 9, imageUrl: 'v1.jpg', isThumbnail: true, color: null },
+        { productId: '5', variantId: 9, imageUrl: 'v2.jpg', isThumbnail: false, color: null },
+      ],
+      { transaction: TX },
+    );
+  });
+});
+
+// ─── getAllProducts — include attributes/specs (batch 3) ───────────────────
+
+describe('getAllProducts — include attributes/specs', () => {
+  beforeEach(() => repo.findProducts.mockResolvedValue({ count: 0, rows: [] }));
+
+  test('include[3]=productAttributes, include[4]=productSpecifications (required false)', async () => {
+    await invoke(service.getAllProducts, { query: {} });
+    const inc = repo.findProducts.mock.calls[0][0].include;
+    expect(inc[3]).toEqual({ model: ProductAttribute, as: 'productAttributes', required: false });
+    expect(inc[4]).toEqual({
+      model: ProductSpecification,
+      as: 'productSpecifications',
+      required: false,
+    });
+  });
+});
+
+// ─── updateProductStock — messages (batch 3) ───────────────────────────────
+
+describe('updateProductStock — messages', () => {
+  test('product không tồn tại → message đúng', async () => {
+    repo.findProductById.mockResolvedValueOnce(null);
+    const { err } = await invoke(service.updateProductStock, {
+      params: { id: '5' },
+      body: { stockQuantity: '5' },
+    });
+    expect(err.message).toBe('Không tìm thấy sản phẩm');
+  });
+
+  test('response status success', async () => {
+    const p = { id: 5, update: jest.fn() };
+    repo.findProductById.mockResolvedValueOnce(p);
+    const { res } = await invoke(service.updateProductStock, {
+      params: { id: '5' },
+      body: { stockQuantity: '5' },
+    });
+    expect(res.payload.status).toBe('success');
+  });
+});
+
+// ─── cloneProduct — include + data (batch 3) ──────────────────────────────
+
+describe('cloneProduct — include + data', () => {
+  function original(over = {}) {
+    return {
+      name: 'SP',
+      get: () => ({ id: 1, name: 'SP', sku: 'OLD', createdAt: 'x', updatedAt: 'y', slug: 's' }),
+      categories: [],
+      productAttributes: [],
+      variants: [],
+      productSpecifications: [],
+      ...over,
+    };
+  }
+
+  test('include 4 association khi tìm product gốc', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(repo.findProductById.mock.calls[0][1].include).toEqual([
+      { model: Category, as: 'categories' },
+      { model: ProductAttribute, as: 'productAttributes' },
+      { model: ProductVariant, as: 'variants' },
+      { model: ProductSpecification, as: 'productSpecifications' },
+    ]);
+  });
+
+  test('clone data: xoá id/createdAt/updatedAt/slug, status draft, sku mới', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    const data = repo.createProductFull.mock.calls[0][0];
+    expect(data.id).toBeUndefined();
+    expect(data.createdAt).toBeUndefined();
+    expect(data.updatedAt).toBeUndefined();
+    expect(data.slug).toBeUndefined();
+    expect(data.status).toBe('draft');
+    expect(data.sku).toMatch(/^SKU-\d+-\d+$/);
+    expect(data.name).toBe('SP (1)');
+  });
+
+  test('clone attribute data: xoá id/createdAt/updatedAt + gắn productId mới', async () => {
+    repo.findProductById.mockResolvedValueOnce(
+      original({
+        productAttributes: [
+          { get: () => ({ id: 5, name: 'Màu', createdAt: 'a', updatedAt: 'b' }) },
+        ],
+      }),
+    );
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(repo.bulkCreateProductAttributes).toHaveBeenCalledWith(
+      [{ name: 'Màu', productId: 20 }],
+      { transaction: TX },
+    );
+  });
+
+  test('clone variant không có "-" trong sku → suffix random', async () => {
+    repo.findProductById.mockResolvedValueOnce(
+      original({ variants: [{ get: () => ({ id: 7, sku: 'NODASH' }) }] }),
+    );
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    const vd = repo.bulkCreateProductVariants.mock.calls[0][0][0];
+    expect(vd.sku).toMatch(/^SKU-\d+-\d+-\d+$/); // suffix là số random
+  });
+});
+
+// ─── createProduct b4 (batch 4) ────────────────────────────────────────────
+
+describe('createProduct b4', () => {
+  function prod() {
+    return { id: 10, setCategories: jest.fn(), update: jest.fn() };
+  }
+  beforeEach(() => {
+    repo.findProductOne.mockResolvedValue(null);
+    repo.findProductById.mockResolvedValue({ status: 'draft', toJSON: () => ({ id: 10 }) });
+  });
+
+  test('dup check: findProductOne({nameVi:name})', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'ABC' } });
+    expect(repo.findProductOne).toHaveBeenCalledWith({ nameVi: 'ABC' });
+  });
+
+  test('không categoryIds → findCategories + setCategories KHÔNG gọi', async () => {
+    const p = prod();
+    repo.createProductFull.mockResolvedValueOnce(p);
+    await invoke(service.createProduct, { body: { name: 'P' } });
+    expect(repo.findCategories).not.toHaveBeenCalled();
+    expect(p.setCategories).not.toHaveBeenCalled();
+  });
+
+  test('findCategories where = {id: categoryIds}', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    repo.findCategories.mockResolvedValueOnce([{ id: 3 }]);
+    await invoke(service.createProduct, { body: { name: 'P', categoryIds: [3] } });
+    expect(repo.findCategories).toHaveBeenCalledWith({ where: { id: [3] } });
+  });
+
+  test('không comparePrice → sequelize.query KHÔNG gọi', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'P' } });
+    expect(sequelize.query).not.toHaveBeenCalled();
+  });
+
+  test('không attributes → createProductAttribute KHÔNG gọi + KHÔNG log attributes', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'P' } });
+    expect(repo.createProductAttribute).not.toHaveBeenCalled();
+    expect(logger.info).not.toHaveBeenCalledWith('Đang xử lý attributes:', expect.anything());
+  });
+
+  test('log: request + comparePrice + attributes/variants/spec khi có', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', comparePrice: 5, attributes: [{ name: 'A', value: 'x' }] },
+    });
+    expect(logger.info).toHaveBeenCalledWith(
+      'Dữ liệu request tạo sản phẩm:',
+      expect.stringContaining('"name"'),
+    );
+    expect(logger.info).toHaveBeenCalledWith('comparePrice từ request:', 5);
+    expect(logger.info).toHaveBeenCalledWith('Đang xử lý attributes:', [{ name: 'A', value: 'x' }]);
+  });
+
+  test('attribute tạo lỗi → logger.error + rethrow', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    repo.createProductAttribute.mockRejectedValueOnce(new Error('attr fail'));
+    const { err } = await invoke(service.createProduct, {
+      body: { name: 'P', attributes: [{ name: 'A', value: 'x' }] },
+    });
+    expect(logger.error).toHaveBeenCalledWith('Lỗi khi tạo attributes:', expect.any(Error));
+    expect(err.message).toBe('attr fail');
+  });
+
+  test('variant displayName: ưu tiên displayName truyền vào', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', displayName: 'MyName', price: '1', stock: '1' }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].displayName).toBe('MyName');
+  });
+
+  test('variant displayName fallback variant.name khi không attrs/displayName', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'TênV', price: '1', stock: '1' }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].displayName).toBe('TênV');
+  });
+
+  test('variant variantName fallback sku khi không name/displayName/attrs', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    helpers.generateVariantSku.mockReturnValue('SKX');
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ price: '1', stock: '1' }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].variantName).toBe('SKX');
+  });
+
+  test('variant.images giữ nguyên khi truyền', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1', images: ['a'] }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].images).toEqual(['a']);
+  });
+
+  test('image object isThumbnail=false + index>0 → false', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', images: ['a.jpg', { url: 'b.jpg', isThumbnail: false }] },
+    });
+    expect(repo.bulkCreateProductImages.mock.calls[0][0][1].isThumbnail).toBe(false);
+  });
+});
+
+// ─── updateProduct b4 (batch 4) ────────────────────────────────────────────
+
+describe('updateProduct b4', () => {
+  function prod(over = {}) {
+    return {
+      id: 5,
+      name: 'Old',
+      basePrice: 100,
+      update: jest.fn().mockResolvedValue(undefined),
+      setCategories: jest.fn().mockResolvedValue(undefined),
+      ...over,
+    };
+  }
+  function final(status = 'draft') {
+    repo.findProductById.mockResolvedValueOnce({ id: 5, status, toJSON: () => ({ id: 5 }) });
+  }
+
+  test('không tìm thấy → message "Không tìm thấy sản phẩm"', async () => {
+    repo.findProductById.mockResolvedValueOnce(null);
+    const { err } = await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { name: 'X' },
+    });
+    expect(err.message).toBe('Không tìm thấy sản phẩm');
+  });
+
+  test('images không phải array → KHÔNG destroy/bulkCreate', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { images: 'notarray' } });
+    expect(repo.destroyProductImages).not.toHaveBeenCalled();
+    expect(repo.bulkCreateProductImages).not.toHaveBeenCalled();
+  });
+
+  test('không comparePrice/compareAtPrice → sequelize.query KHÔNG gọi', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { name: 'X' } });
+    expect(sequelize.query).not.toHaveBeenCalled();
+  });
+
+  test('categoryIds → findCategories where + setCategories null khi rỗng', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.findCategories.mockResolvedValueOnce([]);
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { categoryIds: [] } });
+    expect(repo.findCategories).toHaveBeenCalledWith({ where: { id: [] }, transaction: TX });
+    expect(p.update).toHaveBeenCalledWith({ categoryId: null }, { transaction: TX });
+  });
+
+  test('attributes → findProductAttributes({productId}); attr.value split', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.findProductAttributes.mockResolvedValueOnce([]);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { attributes: [{ name: 'A', value: ' x , y ' }] },
+    });
+    expect(repo.findProductAttributes).toHaveBeenCalledWith(
+      { productId: '5' },
+      { transaction: TX },
+    );
+    expect(repo.createProductAttribute.mock.calls[0][0].values).toEqual(['x', 'y']);
+  });
+
+  test('variant sku fallback generateVariantSku(sku||PROD)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant.mockResolvedValueOnce({ id: 9, price: 1 });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { variants: [{ price: '1', stock: '1', attributes: { c: 'x' } }] },
+    });
+    expect(helpers.generateVariantSku).toHaveBeenCalledWith('PROD', { c: 'x' });
+  });
+
+  test('findProductSpecs({productId})', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.findProductSpecs.mockResolvedValueOnce([]);
+    require('@modules/admin/repositories/sequelize-admin-repository')
+      .getModels()
+      .ProductSpecification.create.mockResolvedValueOnce({ value: 'v', valueEn: 'v' });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { specifications: [{ name: 'CPU', value: 'v', valueEn: 'v' }] },
+    });
+    expect(repo.findProductSpecs).toHaveBeenCalledWith({ productId: '5' }, { transaction: TX });
+  });
+});
+
+// ─── deleteProduct b4 (batch 4) ────────────────────────────────────────────
+
+describe('deleteProduct b4', () => {
+  test('destroy attributes/variants/categories với {productId}', async () => {
+    const p = { destroy: jest.fn().mockResolvedValue() };
+    repo.findProductById.mockResolvedValueOnce(p);
+    await invoke(service.deleteProduct, { params: { id: '5' } });
+    expect(repo.destroyProductAttributes).toHaveBeenCalledWith(
+      { productId: '5' },
+      { transaction: TX },
+    );
+    expect(repo.destroyProductVariants).toHaveBeenCalledWith(
+      { productId: '5' },
+      { transaction: TX },
+    );
+    expect(repo.destroyProductCategories).toHaveBeenCalledWith(
+      { productId: '5' },
+      { transaction: TX },
+    );
+  });
+});
+
+// ─── getAllProducts b4 (batch 4) ───────────────────────────────────────────
+
+describe('getAllProducts b4', () => {
+  beforeEach(() => repo.findProducts.mockResolvedValue({ count: 0, rows: [] }));
+
+  test('không search → where KHÔNG có Op.or', async () => {
+    await invoke(service.getAllProducts, { query: {} });
+    expect(repo.findProducts.mock.calls[0][0].where[Op.or]).toBeUndefined();
+  });
+
+  test('offset = (page-1)*limit', async () => {
+    await invoke(service.getAllProducts, { query: { page: '3', limit: '10' } });
+    expect(repo.findProducts.mock.calls[0][0].offset).toBe(20);
+  });
+
+  test('không category → include[1] KHÔNG có where/required=true', async () => {
+    await invoke(service.getAllProducts, { query: {} });
+    const inc1 = repo.findProducts.mock.calls[0][0].include[1];
+    expect(inc1.where).toBeUndefined();
+    expect(inc1.required).toBeUndefined();
+  });
+});
+
+// ─── updateProductStock b4 (batch 4) ──────────────────────────────────────
+
+describe('updateProductStock b4', () => {
+  test('qty=0 → hợp lệ (kill < 0 → <= 0), update stock 0', async () => {
+    const p = { id: 5, update: jest.fn() };
+    repo.findProductById.mockResolvedValueOnce(p);
+    const { res } = await invoke(service.updateProductStock, {
+      params: { id: '5' },
+      body: { stockQuantity: '0' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(p.update).toHaveBeenCalledWith({ stockQuantity: 0 });
+  });
+});
+
+// ─── toggleProductStatus b4 (batch 4) ─────────────────────────────────────
+
+describe('toggleProductStatus b4', () => {
+  test('response data.product', async () => {
+    const p = { status: 'active', update: jest.fn() };
+    repo.findProductById.mockResolvedValueOnce(p);
+    const { res } = await invoke(service.toggleProductStatus, { params: { id: '5' }, body: {} });
+    expect(res.payload).toEqual({ status: 'success', data: { product: p } });
+  });
+});
+
+// ─── cloneProduct b4 (batch 4) ─────────────────────────────────────────────
+
+describe('cloneProduct b4', () => {
+  function original(over = {}) {
+    return {
+      name: 'SP',
+      get: () => ({ id: 1, name: 'SP', sku: 'OLD' }),
+      categories: [],
+      productAttributes: [],
+      variants: [],
+      productSpecifications: [],
+      ...over,
+    };
+  }
+
+  test('findProductOne({nameVi: testName}) khi tìm tên unique', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(repo.findProductOne).toHaveBeenCalledWith({ nameVi: 'SP (1)' });
+  });
+
+  test('không categories/variants/specs → bulk KHÔNG gọi', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(ProductCategory.bulkCreate).not.toHaveBeenCalled();
+    expect(repo.bulkCreateProductAttributes).not.toHaveBeenCalled();
+    expect(repo.bulkCreateProductVariants).not.toHaveBeenCalled();
+    expect(repo.bulkCreateProductSpecs).not.toHaveBeenCalled();
+  });
+});
+
+// ─── createProduct b5 (batch 5) ────────────────────────────────────────────
+
+describe('createProduct b5', () => {
+  function prod() {
+    return { id: 10, setCategories: jest.fn(), update: jest.fn() };
+  }
+  beforeEach(() => {
+    repo.findProductOne.mockResolvedValue(null);
+    repo.findProductById.mockResolvedValue({ status: 'draft', toJSON: () => ({ id: 10 }) });
+  });
+
+  test('variant.attributes không phải object (mảng) → variantAttributes = {}', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1', attributes: ['x'] }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].attributes).toEqual({});
+  });
+
+  test('variant.attributes string → {}', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1', attributes: 'str' }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].attributes).toEqual({});
+  });
+
+  test('variantName fallback variant.variantName khi không name', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ variantName: 'VN', price: '1', stock: '1' }] },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].variantName).toBe('VN');
+  });
+
+  test('images không phải array → bulkCreateProductImages KHÔNG gọi', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'P', images: 'notarray' } });
+    expect(repo.bulkCreateProductImages).not.toHaveBeenCalled();
+  });
+
+  test('specifications không phải array → bulkCreateProductSpecs KHÔNG gọi', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, { body: { name: 'P', specifications: { a: 1 } } });
+    expect(repo.bulkCreateProductSpecs).not.toHaveBeenCalled();
+  });
+
+  test('image object isThumbnail=true tại index>0 → true (kill || index===0)', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    await invoke(service.createProduct, {
+      body: { name: 'P', images: ['a.jpg', { url: 'b.jpg', isThumbnail: true }] },
+    });
+    expect(repo.bulkCreateProductImages.mock.calls[0][0][1].isThumbnail).toBe(true);
+  });
+
+  test('log variant + spec khi có', async () => {
+    repo.createProductFull.mockResolvedValueOnce(prod());
+    helpers.generateVariantSku.mockReturnValue('VS');
+    await invoke(service.createProduct, {
+      body: { name: 'P', variants: [{ name: 'V', price: '1', stock: '1' }] },
+    });
+    expect(logger.info).toHaveBeenCalledWith('Đang xử lý variants:', expect.any(Array));
+    expect(logger.info).toHaveBeenCalledWith('Tạo variant với SKU: VS');
+  });
+});
+
+// ─── updateProduct b5 (batch 5) ────────────────────────────────────────────
+
+describe('updateProduct b5', () => {
+  function prod(over = {}) {
+    return {
+      id: 5,
+      name: 'Old',
+      basePrice: 100,
+      update: jest.fn().mockResolvedValue(undefined),
+      setCategories: jest.fn().mockResolvedValue(undefined),
+      ...over,
+    };
+  }
+  function final(status = 'draft') {
+    repo.findProductById.mockResolvedValueOnce({ id: 5, status, toJSON: () => ({ id: 5 }) });
+  }
+
+  test('categoryIds không phải array → findCategories KHÔNG gọi', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { categoryIds: 'x' } });
+    expect(repo.findCategories).not.toHaveBeenCalled();
+  });
+
+  test('attr.required defined → dùng giá trị truyền (kill ternary)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    const existAttr = { name: 'A', update: jest.fn(), type: 'custom', required: false };
+    repo.findProductAttributes.mockResolvedValueOnce([existAttr]);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { attributes: [{ name: 'A', value: 'x', required: true }] },
+    });
+    expect(existAttr.update.mock.calls[0][0].required).toBe(true);
+  });
+
+  test('variant id thật → UPDATE (currentVarMap), không create', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    const existVar = { id: 7, update: jest.fn().mockResolvedValue({ id: 7, price: 1 }) };
+    repo.findProductVariants.mockResolvedValueOnce([existVar]);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { variants: [{ id: 7, price: '1', stock: '1' }] },
+    });
+    expect(existVar.update).toHaveBeenCalled();
+    expect(repo.createProductVariant).not.toHaveBeenCalled();
+  });
+
+  test('variant id tạm "var-9" → tạo mới (id=undefined), không update', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant.mockResolvedValueOnce({ id: 9, price: 1 });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { variants: [{ id: 'var-9', price: '1', stock: '1' }] },
+    });
+    expect(repo.createProductVariant).toHaveBeenCalled();
+    expect(repo.createProductVariant.mock.calls[0][0].id).toBeUndefined();
+  });
+
+  test('isDefault: 2 variant không cờ → variant đầu isDefault=true (kill some/every)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant
+      .mockResolvedValueOnce({ id: 9, price: 1 })
+      .mockResolvedValueOnce({ id: 10, price: 2 });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        variants: [
+          { price: '1', stock: '1' },
+          { price: '2', stock: '1' },
+        ],
+      },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].isDefault).toBe(true);
+    expect(repo.createProductVariant.mock.calls[1][0].isDefault).toBe(false);
+  });
+
+  test('isDefault: có variant cờ isDefault → variant đầu KHÔNG auto-default', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant
+      .mockResolvedValueOnce({ id: 9, price: 1 })
+      .mockResolvedValueOnce({ id: 10, price: 2 });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        variants: [
+          { price: '1', stock: '1' },
+          { price: '2', stock: '1', isDefault: true },
+        ],
+      },
+    });
+    expect(repo.createProductVariant.mock.calls[0][0].isDefault).toBe(false);
+  });
+
+  test('variants rỗng → updateProductWhere KHÔNG có basePrice (minVariantPrice null)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    helpers.calculateTotalStock.mockReturnValue(0);
+    await invoke(service.updateProduct, { params: { id: '5' }, body: { variants: [] } });
+    const arg = repo.updateProductWhere.mock.calls[0][0];
+    expect(arg).toEqual({ stockQuantity: 0 });
+    expect(arg.basePrice).toBeUndefined();
+  });
+
+  test('BUG-FIX: tất cả variants giá 0 → basePrice KHÔNG được set (không ghi Infinity vào DB)', async () => {
+    // Math.min(...[]) = Infinity khi filter loại hết giá 0 → basePrice = Infinity → MySQL error
+    // Fix: kiểm tra array rỗng trước Math.min → minVariantPrice = null → không set basePrice
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant
+      .mockResolvedValueOnce({ id: 11, price: 0 })
+      .mockResolvedValueOnce({ id: 12, price: 0 });
+    helpers.calculateTotalStock.mockReturnValue(0);
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: {
+        variants: [
+          { price: '0', stock: '5' },
+          { price: '0', stock: '3' },
+        ],
+      },
+    });
+    const stockArg = repo.updateProductWhere.mock.calls[0][0];
+    expect(stockArg.basePrice).toBeUndefined();
+    expect(stockArg.stockQuantity).toBe(0);
+  });
+
+  test('spec valueEn null mặc định + sortOrder index', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.findProductSpecs.mockResolvedValueOnce([]);
+    ProductSpecification.create.mockResolvedValueOnce({
+      value: 'v',
+      valueEn: null,
+      update: jest.fn(),
+    });
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { specifications: [{ name: 'CPU', value: 'v' }] },
+    });
+    expect(ProductSpecification.create.mock.calls[0][0]).toMatchObject({
+      valueEn: null,
+      category: 'General',
+      sortOrder: 0,
+    });
+    await new Promise((r) => setImmediate(r)); // drain setImmediate translate (tránh rò sang test sau)
+  });
+
+  test('spec đã có valueEn → KHÔNG translate (specsNeedTranslation lọc)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.findProductSpecs.mockResolvedValueOnce([]);
+    ProductSpecification.create.mockResolvedValueOnce({
+      value: 'v',
+      valueEn: 'EN',
+      update: jest.fn(),
+    });
+    const { translateBatch } = require('@modules/ai/services/translate/translate-service');
+    await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { specifications: [{ name: 'CPU', value: 'v', valueEn: 'EN' }] },
+    });
+    await new Promise((r) => setImmediate(r));
+    expect(translateBatch).not.toHaveBeenCalled();
+  });
+
+  test('variant có images → off-by-one loop chạy đúng 1 lần (kill i<=length)', async () => {
+    const p = prod();
+    repo.findProductById.mockResolvedValueOnce(p);
+    final();
+    repo.createProductVariant.mockResolvedValueOnce({ id: 9, price: 1 });
+    const { err } = await invoke(service.updateProduct, {
+      params: { id: '5' },
+      body: { variants: [{ price: '1', stock: '1', images: ['v.jpg'] }] },
+    });
+    // i<=length sẽ lặp thừa → variants[length] undefined → crash; i<length ok
+    expect(err).toBeUndefined();
+    expect(repo.bulkCreateProductImages).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ─── cloneProduct b5 (batch 5) ─────────────────────────────────────────────
+
+describe('cloneProduct b5', () => {
+  function original(over = {}) {
+    return {
+      name: 'SP',
+      get: () => ({ id: 1, name: 'SP', sku: 'OLD' }),
+      categories: [{ id: 3 }],
+      productAttributes: [{ get: () => ({ id: 5, name: 'Màu', createdAt: 'a', updatedAt: 'b' }) }],
+      variants: [{ get: () => ({ id: 7, sku: 'OLD-RED' }) }],
+      productSpecifications: [
+        { get: () => ({ id: 9, name: 'CPU', createdAt: 'a', updatedAt: 'b' }) },
+      ],
+      ...over,
+    };
+  }
+
+  test('createProductFull có {transaction}', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(repo.createProductFull.mock.calls[0][1]).toEqual({ transaction: TX });
+  });
+
+  test('bulkCreate categories/attributes/variants/specs có {transaction}', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(ProductCategory.bulkCreate.mock.calls[0][1]).toEqual({ transaction: TX });
+    expect(repo.bulkCreateProductAttributes.mock.calls[0][1]).toEqual({ transaction: TX });
+    expect(repo.bulkCreateProductVariants.mock.calls[0][1]).toEqual({ transaction: TX });
+    expect(repo.bulkCreateProductSpecs.mock.calls[0][1]).toEqual({ transaction: TX });
+  });
+
+  test('spec clone: xoá id/createdAt/updatedAt + productId mới', async () => {
+    repo.findProductById.mockResolvedValueOnce(original());
+    repo.findProductOne.mockResolvedValueOnce(null);
+    repo.createProductFull.mockResolvedValueOnce({ id: 20 });
+    await invoke(service.cloneProduct, { params: { id: '5' } });
+    expect(repo.bulkCreateProductSpecs).toHaveBeenCalledWith([{ name: 'CPU', productId: 20 }], {
+      transaction: TX,
+    });
   });
 });

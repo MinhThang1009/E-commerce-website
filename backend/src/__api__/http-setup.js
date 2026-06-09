@@ -2,12 +2,12 @@
  * Shared setup cho HTTP integration tests dùng supertest.
  * Import file này trong mỗi http.test.js.
  */
+// Set DB_NAME TRƯỚC dotenv để luôn dùng test DB, tránh ảnh hưởng DB chính
+process.env.NODE_ENV = 'development';
+process.env.DB_NAME = 'techstore_test';
+
 require('module-alias/register');
 require('dotenv').config();
-
-// Dùng techstore real DB
-process.env.NODE_ENV = 'development';
-process.env.DB_NAME = 'techstore';
 process.env.DB_HOST = process.env.DB_HOST || '127.0.0.1';
 process.env.DB_PORT = process.env.DB_PORT || '3306';
 process.env.DB_USER = process.env.DB_USER || 'root';

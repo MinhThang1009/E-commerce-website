@@ -39,7 +39,7 @@ describe('chatbotLimiter — 20 req/60s', () => {
     expect(statuses).toContain(429);
     // Số lượng bị throttle
     const throttled = statuses.filter((s) => s === 429).length;
-    console.log(`Rate limit: ${throttled}/21 requests bị 429`);
+    expect(throttled).toBeGreaterThanOrEqual(1);
   }, 60000); // 60s timeout cho concurrent requests
 });
 

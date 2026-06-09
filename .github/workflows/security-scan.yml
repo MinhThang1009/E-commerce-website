@@ -64,4 +64,5 @@ jobs:
 
       - name: Run ESLint with security plugin
         working-directory: backend
-        run: npx eslint --max-warnings 0 src/ --rule '{"no-eval": "error", "no-implied-eval": "error", "no-new-func": "error"}'
+        run: |
+          npx eslint --max-warnings 0 src/ --rule '{"no-eval": "error", "no-implied-eval": "error", "no-new-func": "error"}'

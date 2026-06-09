@@ -79,6 +79,7 @@ describe('AIController — mutation kill', () => {
         userId: 9,
         sessionId: 'sess-9',
         enableTrace: true,
+        onStep: expect.any(Function),
       });
     });
   });

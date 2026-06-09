@@ -58,6 +58,9 @@ const ABBREV_MAP = {
   '\\br5\\b': 'AMD Ryzen 5',
   // "r7" → "AMD Ryzen 7"
   '\\br7\\b': 'AMD Ryzen 7',
+  // Viết tắt đại từ xưng hô phổ biến trong chat
+  '\\bb\\b': 'bạn',
+
   // Viết tắt câu hỏi hội thoại phổ biến
   // "bnh" nối liền: sau chữ ("pmbnh") hoặc sau số ("17bnh")
   '(?<=[a-zA-Z]{2,})bnh': ' bao nhiêu',
@@ -261,7 +264,7 @@ function classifyIntent(normalizedText) {
 
   // Hỏi về sản phẩm cụ thể (tên thương hiệu, loại sản phẩm)
   if (
-    /iphone|samsung|macbook|laptop|phone|computer|tablet|điện thoại|máy tính|đồng hồ|smartwatch|watch|ipad|oppo|xiaomi|realme|pixel|nokia|headphone|earbuds|airpods|galaxy|surface/.test(
+    /iphone|samsung|macbook|laptop|phone|computer|tablet|điện thoại|máy tính|đồng hồ|smartwatch|watch|ipad|oppo|xiaomi|realme|pixel|nokia|headphone|earbuds|airpods|galaxy|surface|pro max|ultra|fold/.test(
       lower,
     )
   )

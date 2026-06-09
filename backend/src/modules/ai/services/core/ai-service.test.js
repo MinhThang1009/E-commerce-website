@@ -30,6 +30,7 @@ describe('AIService', () => {
       });
       expect(service.chatbotService.handleMessage).toHaveBeenCalledWith('hello', 1, 'sess', {
         enableTrace: false,
+        onStep: null,
       });
       expect(result.response).toBe('hi');
     });

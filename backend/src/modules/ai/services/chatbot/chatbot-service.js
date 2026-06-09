@@ -34,6 +34,7 @@ try {
 } catch {
   // vectorStoreService = null → Path B fallback về empty products
 }
+const embeddingIntentClassifier = require('@modules/ai/services/chatbot/intent/embedding-intent-classifier');
 const { detectLanguage } = require('@modules/ai/services/chatbot/language/language-detector');
 const {
   validateMessage,
@@ -231,6 +232,18 @@ class ChatbotService {
     } catch (error) {
       logger.error('Khởi tạo Chatbot thất bại:', error.message || error);
     }
+    // Khởi tạo embedding intent classifier ở background — không block server startup
+    try {
+      const unifiedEmbedding = require('@services/embedding/unified-embedding');
+      embeddingIntentClassifier
+        .initialize((text) => unifiedEmbedding.generateEmbedding(text, 'query'))
+        .then(() => logger.debug('[IntentClassifier] Embedding classifier sẵn sàng'))
+        .catch((err) =>
+          logger.warn('[IntentClassifier] Không thể init embedding classifier:', err.message),
+        );
+    } catch {
+      // Embedding service không khả dụng — classifier vẫn có thể dùng nếu inject sau
+    }
   }
 
   /**
@@ -256,7 +269,12 @@ class ChatbotService {
    * @param {string|null} [sessionId=null] - Session ID để track conversation history.
    * @returns {Promise<Object>} `{ response, products, suggestions, intent }`
    */
-  async handleMessage(message, userId = null, sessionId = null, { enableTrace = false } = {}) {
+  async handleMessage(
+    message,
+    userId = null,
+    sessionId = null,
+    { enableTrace = false, onStep = null } = {},
+  ) {
     const startTime = Date.now();
     const trace = enableTrace ? {} : null;
     try {
@@ -265,17 +283,30 @@ class ChatbotService {
       const prep = this._preprocessMessage(message);
       if (!prep.valid) throw new AppError(prep.reason, 400);
 
-      const { normalizedQuery, intent, injection, offTopic } = prep;
-
-      if (trace) {
-        trace.step1_validate = { valid: true, length: message.length };
-        trace.step2_normalize = {
-          before: message,
-          after: normalizedQuery,
-          changed: message !== normalizedQuery,
-        };
-        trace.step3_security = { intent, injection, offTopic };
+      const { normalizedQuery, injection, offTopic } = prep;
+      // Nếu regex classify là 'general', thử embedding classifier để cải thiện accuracy
+      let intent = prep.intent;
+      if (intent === 'general' && embeddingIntentClassifier.isReady()) {
+        try {
+          const queryEmbedding = await embeddingIntentClassifier.embed(normalizedQuery);
+          const embIntent = embeddingIntentClassifier.classify(queryEmbedding);
+          if (embIntent && embIntent !== 'general') intent = embIntent;
+        } catch {
+          // Embedding thất bại → giữ intent từ regex
+        }
       }
+
+      const s1 = { valid: true, length: message.length };
+      const s2 = { before: message, after: normalizedQuery, changed: message !== normalizedQuery };
+      const s3 = { intent, injection, offTopic };
+      if (trace) {
+        trace.step1_validate = s1;
+        trace.step2_normalize = s2;
+        trace.step3_security = s3;
+      }
+      onStep?.('1', s1);
+      onStep?.('2', s2);
+      onStep?.('3', s3);
 
       if (injection) {
         logger.warn('[Security] Phát hiện prompt injection, từ chối xử lý');
@@ -336,15 +367,15 @@ class ChatbotService {
       const sessionEntry = sessionId ? this.conversationHistory.get(sessionId) : null;
       const conversationHistory = sessionEntry ? sessionEntry.messages : [];
 
-      if (trace) {
-        trace.step4_history = {
-          turns: Math.floor(conversationHistory.length / 2),
-          sessionId,
-          messages: conversationHistory
-            .slice(-4)
-            .map((m) => ({ role: m.role, content: (m.content || '').substring(0, 80) })),
-        };
-      }
+      const s4 = {
+        turns: Math.floor(conversationHistory.length / 2),
+        sessionId,
+        messages: conversationHistory
+          .slice(-4)
+          .map((m) => ({ role: m.role, content: (m.content || '').substring(0, 80) })),
+      };
+      if (trace) trace.step4_history = s4;
+      onStep?.('4', s4);
 
       // ── Bước 5: Retrieve — embedding-based hybrid search ────────────────────
       // Skip hybrid search cho intent không liên quan sản phẩm (general, policy, order_inquiry)
@@ -353,7 +384,7 @@ class ChatbotService {
         ? this._enrichQueryFromHistory(normalizedQuery, conversationHistory)
         : normalizedQuery;
 
-      if (trace && needsSearch) {
+      if (needsSearch) {
         const PRONOUN_RE =
           /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
         const BRAND_RE =
@@ -361,12 +392,14 @@ class ChatbotService {
         const hasBrand = BRAND_RE.test(normalizedQuery);
         const hasPronoun = PRONOUN_RE.test(normalizedQuery) && !hasBrand;
         const isImplicit = !hasPronoun && normalizedQuery.trim().length <= 50 && !hasBrand;
-        trace.step5_enrich = {
+        const s5a = {
           hasPronoun,
           isImplicitFollowup: isImplicit,
           enrichedQuery,
           enrichChanged: enrichedQuery !== normalizedQuery,
         };
+        if (trace) trace.step5_enrich = s5a;
+        onStep?.('5a', s5a);
       }
       const retrieveStart = Date.now();
       const {
@@ -377,23 +410,23 @@ class ChatbotService {
         ? await this._retrieveProducts(enrichedQuery, normalizedQuery, { enableTrace: !!trace })
         : { products: [], finalQuery: normalizedQuery };
 
-      if (trace) {
-        trace.step5_retrieve = needsSearch
-          ? {
-              enrichedQuery,
-              finalQuery,
-              productsFound: relevantProducts.length,
-              products: relevantProducts.map((p) => ({
-                name: p.name,
-                score: p.score,
-                lowConfidence: p.lowConfidence,
-                price: p.price || p.basePrice,
-              })),
-              timeMs: Date.now() - retrieveStart,
-              ...(_retrieveTrace || {}),
-            }
-          : { skipped: true, reason: `intent "${intent}" không cần tìm sản phẩm`, timeMs: 0 };
-      }
+      const s5b = needsSearch
+        ? {
+            enrichedQuery,
+            finalQuery,
+            productsFound: relevantProducts.length,
+            products: relevantProducts.map((p) => ({
+              name: p.name,
+              score: p.score,
+              lowConfidence: p.lowConfidence,
+              price: p.price || p.basePrice,
+            })),
+            timeMs: Date.now() - retrieveStart,
+            ...(_retrieveTrace || {}),
+          }
+        : { skipped: true, reason: `intent "${intent}" không cần tìm sản phẩm`, timeMs: 0 };
+      if (trace) trace.step5_retrieve = s5b;
+      onStep?.(needsSearch ? '5b' : '5', s5b);
 
       // ── Bước 6: Generation — gọi LLM để sinh câu trả lời ────────────────────
       // Ngân sách tổng: nếu LLM (cộng dồn provider rotation) vượt LLM_TOTAL_TIMEOUT_MS
@@ -402,6 +435,10 @@ class ChatbotService {
       const generateStart = Date.now();
       let usedFallback = false;
       const _genTrace = trace ? {} : null;
+      onStep?.('6_start', {
+        providerCount: this.providers.length,
+        totalBudgetMs: LLM_TOTAL_TIMEOUT_MS,
+      });
       let _budgetTimer;
       const aiResponse = await Promise.race([
         this.augmentAndGenerate(finalQuery, relevantProducts, conversationHistory, _genTrace),
@@ -416,18 +453,17 @@ class ChatbotService {
         }),
       ]).finally(() => clearTimeout(_budgetTimer));
 
-      if (trace) {
-        const genLlmMode = _genTrace.llmMode;
-        trace.step6_generate = {
-          usedFallback,
-          timeMs: Date.now() - generateStart,
-          productsInResponse: aiResponse.products ? aiResponse.products.length : 0,
-          llmMode: genLlmMode,
-          providerCount: this.providers.length,
-          providerModels: this.providers.map((p) => p.model),
-          ..._genTrace,
-        };
-      }
+      const s6 = {
+        usedFallback,
+        timeMs: Date.now() - generateStart,
+        productsInResponse: aiResponse.products ? aiResponse.products.length : 0,
+        llmMode: _genTrace?.llmMode,
+        providerCount: this.providers.length,
+        providerModels: this.providers.map((p) => p.model),
+        ...(_genTrace || {}),
+      };
+      if (trace) trace.step6_generate = s6;
+      onStep?.('6', s6);
 
       // ── Bước 7: Persist — cập nhật session memory + lưu DB ──────────────────
       if (sessionId) {
@@ -448,18 +484,20 @@ class ChatbotService {
 
       const responseTimeMs = Date.now() - startTime;
 
+      const updatedLen = sessionId
+        ? [...conversationHistory, {}, {}].slice(-(MAX_HISTORY_TURNS * 2)).length
+        : 0;
+      const s7 = {
+        sessionId,
+        responseTimeMs,
+        updatedMsgCount: updatedLen,
+        lastAccessTime: new Date().toLocaleTimeString('vi-VN'),
+      };
       if (trace) {
-        const updatedLen = sessionId
-          ? [...conversationHistory, {}, {}].slice(-(MAX_HISTORY_TURNS * 2)).length
-          : 0;
-        trace.step7_persist = {
-          sessionId,
-          responseTimeMs,
-          updatedMsgCount: updatedLen,
-          lastAccessTime: new Date().toLocaleTimeString('vi-VN'),
-        };
+        trace.step7_persist = s7;
         aiResponse.trace = trace;
       }
+      onStep?.('7', s7);
 
       this._persistMessages(
         sessionId,

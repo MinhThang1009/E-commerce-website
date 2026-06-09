@@ -32,6 +32,15 @@ module.exports = ({ aiController }) => {
     validateRequest(chatMessageSchema),
     aiController.handleMessage,
   );
+  router.post(
+    '/message/stream',
+    chatbotLimiter,
+    optionalAuthenticate,
+    validateRequest(chatMessageSchema),
+    aiController.streamMessage,
+  );
+  // SSE: terminal kết nối để nhận pipeline events real-time khi UI gửi query
+  router.get('/events', optionalAuthenticate, aiController.subscribeEvents);
   /**
    * @swagger
    * /api/chatbot/cart/add:

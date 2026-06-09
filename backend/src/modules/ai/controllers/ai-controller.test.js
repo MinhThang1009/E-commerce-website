@@ -278,6 +278,12 @@ describe('AIController', () => {
   // ────────────────────────────────────────────────────────────
 
   describe('registerSession', () => {
+    beforeEach(() => {
+      // Ngăn side-effect ghi file thật trong unit test (chỉ cần test logic HTTP, không test fs)
+      jest.spyOn(require('fs'), 'writeFileSync').mockImplementation(() => {});
+    });
+    afterEach(() => jest.restoreAllMocks());
+
     test('sessionId hợp lệ → gọi aiService.registerSession và trả success', async () => {
       aiService.registerSession = jest.fn();
       const req = { body: { sessionId: 'sess-abc' } };
@@ -325,6 +331,237 @@ describe('AIController', () => {
       const next = jest.fn();
       await controller.getSessionMessages(req, res, next);
       expect(next).toHaveBeenCalledWith(err);
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
+  // streamMessage
+  // ────────────────────────────────────────────────────────────
+
+  describe('streamMessage', () => {
+    const makeStreamRes = () => {
+      const chunks = [];
+      return {
+        setHeader: jest.fn(),
+        write: jest.fn((s) => chunks.push(s)),
+        end: jest.fn(),
+        _chunks: chunks,
+      };
+    };
+
+    test('gọi handleMessage với onStep và ghi done chunk cuối', async () => {
+      let capturedOnStep;
+      aiService.handleMessage = jest.fn().mockImplementation(async ({ onStep }) => {
+        capturedOnStep = onStep;
+        onStep('1', { valid: true, length: 5 });
+        return { response: 'ok', products: [], suggestions: [], intent: 'general' };
+      });
+      const req = { body: { message: 'hi', sessionId: 'ss' }, user: null };
+      const res = makeStreamRes();
+      await controller.streamMessage(req, res);
+      expect(aiService.handleMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ enableTrace: true, onStep: expect.any(Function) }),
+      );
+      const lines = res._chunks.map((c) => JSON.parse(c.trim()));
+      expect(lines[0]).toEqual({ type: 'step', step: '1', data: { valid: true, length: 5 } });
+      expect(lines[lines.length - 1]).toMatchObject({ type: 'done' });
+      expect(res.end).toHaveBeenCalled();
+    });
+
+    test('service throw AppError (có statusCode) → ghi error chunk với message gốc', async () => {
+      const err = Object.assign(new Error('ai.messageFailed'), { statusCode: 500 });
+      aiService.handleMessage = jest.fn().mockRejectedValue(err);
+      const req = { body: { message: 'hi', sessionId: 'ss' }, user: { id: 1 } };
+      const res = makeStreamRes();
+      await controller.streamMessage(req, res);
+      const lines = res._chunks.map((c) => JSON.parse(c.trim()));
+      expect(lines[0]).toMatchObject({ type: 'error', data: { message: 'ai.messageFailed' } });
+      expect(res.end).toHaveBeenCalled();
+    });
+
+    test('service throw Error thường (không statusCode) → ghi fallback message', async () => {
+      aiService.handleMessage = jest.fn().mockRejectedValue(new Error('network error'));
+      const req = { body: { message: 'hi', sessionId: 'ss' }, user: null };
+      const res = makeStreamRes();
+      await controller.streamMessage(req, res);
+      const lines = res._chunks.map((c) => JSON.parse(c.trim()));
+      expect(lines[0]).toMatchObject({ type: 'error', data: { message: 'ai.messageFailed' } });
+      expect(res.end).toHaveBeenCalled();
+    });
+
+    test('done chunk chứa response/products/suggestions/intent', async () => {
+      const mockResult = {
+        response: 'ok',
+        products: [{ name: 'x' }],
+        suggestions: ['a'],
+        intent: 'pricing',
+        trace: {},
+      };
+      aiService.handleMessage = jest.fn().mockResolvedValue(mockResult);
+      const req = { body: { message: 'hi', sessionId: 'ss' }, user: null };
+      const res = makeStreamRes();
+      await controller.streamMessage(req, res);
+      const lines = res._chunks.map((c) => JSON.parse(c.trim()));
+      const done = lines.find((l) => l.type === 'done');
+      expect(done.data).toMatchObject({ response: 'ok', intent: 'pricing' });
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────
+  // subscribeEvents + _sseWrite
+  // ────────────────────────────────────────────────────────────
+
+  describe('subscribeEvents', () => {
+    const makeSseRes = () => ({
+      setHeader: jest.fn(),
+      write: jest.fn(),
+      status: jest.fn().mockReturnThis(),
+      end: jest.fn(),
+    });
+
+    test('no sessionId → 400', () => {
+      const req = { query: {}, on: jest.fn() };
+      const res = makeSseRes();
+      controller.subscribeEvents(req, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.end).toHaveBeenCalled();
+    });
+
+    test('valid sessionId → set headers + ghi connected event + lưu client', () => {
+      jest.useFakeTimers();
+      const closeHandlers = [];
+      const req = {
+        query: { sessionId: 'sse-1' },
+        on: (ev, fn) => {
+          if (ev === 'close') closeHandlers.push(fn);
+        },
+      };
+      const res = makeSseRes();
+      controller.subscribeEvents(req, res);
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/event-stream');
+      expect(res.write).toHaveBeenCalledWith(expect.stringContaining('"type":"connected"'));
+      expect(controller.sseClients.has('sse-1')).toBe(true);
+      jest.useRealTimers();
+    });
+
+    test('close event → xóa client khỏi sseClients (session rỗng → xóa Map entry)', () => {
+      jest.useFakeTimers();
+      const closeHandlers = [];
+      const req = {
+        query: { sessionId: 'sse-2' },
+        on: (ev, fn) => {
+          if (ev === 'close') closeHandlers.push(fn);
+        },
+      };
+      const res = makeSseRes();
+      controller.subscribeEvents(req, res);
+      expect(controller.sseClients.has('sse-2')).toBe(true);
+      closeHandlers.forEach((fn) => fn());
+      expect(controller.sseClients.has('sse-2')).toBe(false);
+      jest.useRealTimers();
+    });
+
+    test('session đã có clients → thêm vào Set hiện có (không tạo mới)', () => {
+      jest.useFakeTimers();
+      const existingRes = makeSseRes();
+      controller.sseClients.set('sse-existing', new Set([existingRes]));
+      const closeHandlers = [];
+      const req = {
+        query: { sessionId: 'sse-existing' },
+        on: (ev, fn) => {
+          if (ev === 'close') closeHandlers.push(fn);
+        },
+        socket: { setTimeout: jest.fn() },
+      };
+      const res2 = makeSseRes();
+      controller.subscribeEvents(req, res2);
+      expect(controller.sseClients.get('sse-existing').size).toBe(2);
+      // Close res2 only → set còn existingRes → Map entry KHÔNG bị xóa
+      closeHandlers.forEach((fn) => fn());
+      expect(controller.sseClients.has('sse-existing')).toBe(true);
+      expect(controller.sseClients.get('sse-existing').size).toBe(1);
+      jest.useRealTimers();
+    });
+
+    test('req.socket null → không throw khi gọi setTimeout', () => {
+      jest.useFakeTimers();
+      const req = { query: { sessionId: 'sse-no-socket' }, on: jest.fn(), socket: null };
+      const res = makeSseRes();
+      expect(() => controller.subscribeEvents(req, res)).not.toThrow();
+      jest.useRealTimers();
+    });
+
+    test('heartbeat: setInterval fires → ghi heartbeat comment', () => {
+      jest.useFakeTimers();
+      const req = {
+        query: { sessionId: 'sse-hb' },
+        on: jest.fn(),
+        socket: { setTimeout: jest.fn() },
+      };
+      const res = makeSseRes();
+      controller.subscribeEvents(req, res);
+      jest.advanceTimersByTime(5000);
+      expect(res.write).toHaveBeenCalledWith(': heartbeat\n\n');
+      jest.useRealTimers();
+    });
+
+    test('heartbeat fails (client ngắt) → clearInterval', () => {
+      jest.useFakeTimers();
+      const req = { query: { sessionId: 'sse-fail' }, on: jest.fn() };
+      const res = makeSseRes();
+      res.write
+        .mockImplementationOnce(() => {}) // connected OK
+        .mockImplementationOnce(() => {
+          throw new Error('broken pipe');
+        }); // heartbeat fails
+      controller.subscribeEvents(req, res);
+      expect(() => jest.advanceTimersByTime(25000)).not.toThrow();
+      jest.useRealTimers();
+    });
+  });
+
+  describe('_sseWrite', () => {
+    test('không có clients → no-op', () => {
+      expect(() => controller._sseWrite('no-session', { type: 'test' })).not.toThrow();
+    });
+
+    test('có clients → ghi chunk tới tất cả', () => {
+      const res1 = { write: jest.fn() };
+      const res2 = { write: jest.fn() };
+      controller.sseClients.set('sess', new Set([res1, res2]));
+      controller._sseWrite('sess', { type: 'step', step: '1' });
+      expect(res1.write).toHaveBeenCalledWith(expect.stringContaining('"type":"step"'));
+      expect(res2.write).toHaveBeenCalledWith(expect.stringContaining('"type":"step"'));
+    });
+
+    test('client throw khi write → bị xóa khỏi set', () => {
+      const bad = {
+        write: jest.fn().mockImplementation(() => {
+          throw new Error('pipe');
+        }),
+      };
+      controller.sseClients.set('dead', new Set([bad]));
+      controller._sseWrite('dead', { type: 'test' });
+      expect(controller.sseClients.has('dead')).toBe(false);
+    });
+  });
+
+  describe('handleMessage SSE broadcast', () => {
+    test('gửi start + step + done qua SSE khi có client đang kết nối', async () => {
+      const written = [];
+      const sseRes = { write: jest.fn((s) => written.push(s)) };
+      controller.sseClients.set('sess-sse', new Set([sseRes]));
+      aiService.handleMessage = jest.fn().mockImplementation(async ({ onStep }) => {
+        onStep('1', { valid: true, length: 2 }); // trigger onStep callback (line 63)
+        return { response: 'hi', products: [], suggestions: [], intent: 'general' };
+      });
+      const req = { body: { message: 'hi', sessionId: 'sess-sse' }, user: null, query: {} };
+      const res = makeRes();
+      await controller.handleMessage(req, res);
+      const events = written.map((s) => JSON.parse(s.replace(/^data: /, '')));
+      expect(events.find((e) => e.type === 'start')).toMatchObject({ type: 'start', query: 'hi' });
+      expect(events.find((e) => e.type === 'step')).toMatchObject({ type: 'step', step: '1' });
+      expect(events.find((e) => e.type === 'done')).toMatchObject({ type: 'done' });
     });
   });
 });

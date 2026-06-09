@@ -830,6 +830,15 @@ function displayStreamStep(stepId, data, accum) {
       break;
     }
     case '5b': {
+      const sn = data.stripNegation;
+      if (sn?.changed) {
+        console.log(warn('Strip mệnh đề phủ định trước khi embedding (chỉ embedding, LLM giữ gốc):'));
+        console.log(kv('  Trước:', `"${sn.before}"`));
+        console.log(kv('  Sau:', `"${sn.after}"`));
+      } else {
+        console.log(kv('  Strip negation:', 'Không có mệnh đề phủ định'));
+      }
+      console.log('');
       const rw = data.rewrite;
       if (rw) {
         if (rw.fuzzy) console.log(kv('  rewriteQuery:', rw.result ? `${C.green}"${rw.result}"${C.reset}  ${C.gray}(fuzzyExpand)${C.reset}` : `${C.dim}[fuzzyExpand: no change]${C.reset}`));

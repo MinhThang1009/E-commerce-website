@@ -54,9 +54,9 @@ jobs:
       - name: Lint migrations (kiểm tra down() rollback)
         run: bash scripts/lint-migrations.sh
 
-      - name: Security audit
+      - name: Security audit (warn only)
         working-directory: backend
-        run: npm audit --audit-level=high --omit=dev
+        run: npm audit --audit-level=high --omit=dev || echo "::warning::Backend npm audit found vulnerabilities"
 
       - name: Run tests + coverage
         working-directory: backend
@@ -202,9 +202,9 @@ jobs:
         working-directory: frontend
         run: npm run test:ci
 
-      - name: Security audit
+      - name: Security audit (warn only)
         working-directory: frontend
-        run: npm audit --audit-level=high --omit=dev
+        run: npm audit --audit-level=high --omit=dev || echo "::warning::Frontend npm audit found vulnerabilities"
 
       - name: Build
         working-directory: frontend

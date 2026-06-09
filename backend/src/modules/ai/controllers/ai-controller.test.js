@@ -175,6 +175,19 @@ describe('AIController', () => {
 
       expect(res.json).toHaveBeenCalledWith({ status: 'success', data });
     });
+
+    test('success với ?trace=true → giữ trace trong response', async () => {
+      const data = { response: 'OK', suggestions: [], trace: { step1: {} } };
+      aiService.handleMessage.mockResolvedValue(data);
+
+      const req = { body: { message: 'Hi', userId: 1, sessionId: 's' }, query: { trace: 'true' } };
+      const res = makeRes();
+
+      await controller.handleMessage(req, res, jest.fn());
+
+      const responseData = res.json.mock.calls[0][0].data;
+      expect(responseData.trace).toBeDefined();
+    });
   });
 
   // ────────────────────────────────────────────────────────────

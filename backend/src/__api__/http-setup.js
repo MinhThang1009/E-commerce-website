@@ -15,6 +15,8 @@ process.env.DB_PASSWORD = process.env.DB_PASSWORD ?? '';
 
 process.env.JWT_SECRET = 'http-test-jwt-secret-minimum-32-chars';
 process.env.JWT_REFRESH_SECRET = 'http-test-refresh-secret-min-32-chars';
+process.env.JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+process.env.JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 process.env.OPENROUTER_API_KEY = 'demo-key';
 process.env.PORT = '9997';
 

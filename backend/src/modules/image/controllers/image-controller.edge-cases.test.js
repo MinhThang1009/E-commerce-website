@@ -1,5 +1,5 @@
-// Tests bổ sung cho image controller (src/controllers/image.js) — nhắm vào
-// các nhánh chưa được cover: non-multer error trong uploadSingle/uploadMultiple.
+// Edge-case tests cho image controller — multer error paths, service errors,
+// options parsing, healthCheck error, userId null branches.
 
 process.env.NODE_ENV = 'test';
 
@@ -257,5 +257,143 @@ describe('ImageController.uploadSingle — generic multer error', () => {
 
     const calledWith = next.mock.calls[0][0];
     expect(calledWith).toMatchObject({ statusCode: 400 });
+  });
+});
+
+// ─── uploadSingle — inner service error ─────────────────────────────────────
+
+describe('ImageController.uploadSingle — inner service error', () => {
+  it('imageService.uploadImage throw → gọi next với lỗi', async () => {
+    global.__extraMockMulterSingle = 'success';
+    mockUploadImage.mockRejectedValue(new Error('Image processing failed'));
+
+    const req = { body: {}, user: { id: 1 }, headers: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await imageController.uploadSingle(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Image processing failed' }),
+    );
+  });
+});
+
+// ─── uploadMultiple — generic MulterError ───────────────────────────────────
+
+describe('ImageController.uploadMultiple — generic MulterError', () => {
+  it('MulterError không phải SIZE/COUNT → AppError 400', async () => {
+    global.__extraMockMulterArray = 'other';
+
+    const req = { body: {}, user: { id: 1 }, headers: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await imageController.uploadMultiple(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 400 }));
+    expect(mockUploadMultipleImages).not.toHaveBeenCalled();
+  });
+});
+
+// ─── uploadMultiple — inner service catch ───────────────────────────────────
+
+describe('ImageController.uploadMultiple — service throw', () => {
+  it('service throw → gọi next với lỗi', async () => {
+    global.__extraMockMulterArray = 'success';
+    mockUploadMultipleImages.mockRejectedValue(new Error('S3 batch upload failed'));
+
+    const req = { body: {}, user: { id: 1 }, headers: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await imageController.uploadMultiple(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'S3 batch upload failed' }),
+    );
+  });
+});
+
+// ─── uploadMultiple — non-multer error callback ─────────────────────────────
+
+describe('ImageController.uploadMultiple — non-multer error callback', () => {
+  it('non-MulterError callback → gọi next với original error', async () => {
+    global.__extraMockMulterArray = 'nonMulter';
+
+    const req = { body: {}, user: { id: 1 }, headers: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    await imageController.uploadMultiple(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'S3 connection refused' }),
+    );
+  });
+});
+
+// ─── uploadMultiple — req.user undefined → userId null ──────────────────────
+
+describe('ImageController.uploadMultiple — userId null', () => {
+  it('user undefined → userId = null', async () => {
+    global.__extraMockMulterArray = 'success';
+    mockUploadMultipleImages.mockResolvedValue({
+      count: { successful: 1, failed: 0 },
+      results: [],
+    });
+
+    const req = { body: {}, user: undefined, headers: {} };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await imageController.uploadMultiple(req, res, jest.fn());
+
+    expect(mockUploadMultipleImages).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ userId: null }),
+    );
+  });
+});
+
+// ─── convertBase64 — req.user undefined → userId null ───────────────────────
+
+describe('ImageController.convertBase64 — userId null', () => {
+  it('user undefined → userId = null', async () => {
+    mockConvertBase64ToFile.mockResolvedValue({ url: '/uploads/converted.jpg' });
+
+    const req = {
+      body: { base64Data: 'data:image/png;base64,abc123' },
+      user: undefined,
+      headers: {},
+    };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+    await imageController.convertBase64(req, res, jest.fn());
+
+    expect(mockConvertBase64ToFile).toHaveBeenCalledWith(
+      'data:image/png;base64,abc123',
+      expect.objectContaining({ userId: null }),
+    );
+  });
+});
+
+// ─── healthCheck — error path ───────────────────────────────────────────────
+
+describe('ImageController.healthCheck — error path', () => {
+  it('res.json throw → gọi next với lỗi', async () => {
+    const req = {};
+    const res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn().mockImplementation(() => {
+        throw new Error('response stream closed');
+      }),
+    };
+    const next = jest.fn();
+
+    await imageController.healthCheck(req, res, next);
+
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'response stream closed' }),
+    );
   });
 });

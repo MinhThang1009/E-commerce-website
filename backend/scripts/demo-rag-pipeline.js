@@ -599,11 +599,343 @@ QUY TẮC BẮT BUỘC:
   console.log(dividerHi('=') + '\n');
 }
 
+// ── Hiển thị trace từ server (dùng chung helpers với runPipeline) ────────────
+
+function displayServerTrace(t, query, aiResponse = null) {
+  const s5 = t.step5_retrieve;
+  const s6 = t.step6_generate;
+
+  // ── Header box (giống gốc) ───────────────────────────────────────────
+  const hdrInner = W - 2;
+  const centerLine = (text) => {
+    const pad = hdrInner - text.length;
+    const left = Math.floor(pad / 2);
+    const right = pad - left;
+    return '|' + ' '.repeat(left) + text + ' '.repeat(right) + '|';
+  };
+  const hdrBorder = '+' + '='.repeat(hdrInner) + '+';
+  console.log('\n' + C.bold + C.teal + hdrBorder);
+  console.log(centerLine('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'));
+  console.log(centerLine('Luận văn tốt nghiệp'));
+  console.log(hdrBorder + C.reset);
+
+  const isUp = (s6?.llmMode || 'up') === 'up';
+  const modeStr = isUp ? 'up' : 'down';
+  const modeTag = isUp
+    ? `${C.bold}${C.green}[ LLM UP  ]${C.reset}`
+    : `${C.bold}${C.yellow}[ LLM DOWN ]${C.reset}`;
+  const formatTag = compact ? `${C.dim}[compact]${C.reset}` : `${C.dim}[detailed]${C.reset}`;
+
+  console.log(`  Query:${' '.repeat(16)}"${query}"`);
+  console.log(`  Mode:${' '.repeat(17)}${modeStr}`);
+
+  console.log('\n' + dividerHi('='));
+  console.log(`${C.bold}  RAG PIPELINE DEMO  |  Mode: ${modeTag}  ${formatTag}${C.reset}`);
+  console.log(dividerHi('='));
+  console.log(kv('Query đầu vào:', `"${query}"`));
+
+  // ── Step 1: Validate ────────────────────────────────────────────────────
+  console.log(step(1, 'Validate Message'));
+  if (!t.step1_validate?.valid && t.step1_validate?.valid !== undefined) {
+    console.log(fail(`Không hợp lệ`));
+    console.log(sub('Pipeline dừng → trả HTTP 400 cho client'));
+    return;
+  }
+  console.log(ok('Hợp lệ'));
+  console.log(kv('  Độ dài:', `${t.step1_validate?.length || query.length} ký tự  (giới hạn: 500)`));
+  console.log(kv('  Có ký tự hợp lệ:', 'Có (chữ cái / chữ số Unicode)'));
+
+  // ── Step 2: Expand Abbreviations ────────────────────────────────────────
+  console.log(step(2, 'Expand Abbreviations  (Normalize)'));
+  if (t.step2_normalize?.changed) {
+    console.log(ok('Phát hiện và mở rộng viết tắt'));
+    console.log(kv('  Trước:', `"${t.step2_normalize.before}"`));
+    console.log(kv('  Sau:', `"${t.step2_normalize.after}"`));
+  } else {
+    console.log(sub('Không có viết tắt cần mở rộng — giữ nguyên query'));
+  }
+
+  // ── Step 3: Classify Intent + Security Gates ────────────────────────────
+  console.log(step(3, 'Classify Intent  +  Security Gates'));
+  const s3 = t.step3_security;
+  if (s3) {
+    console.log(kv('  Intent phân loại:', `${C.cyan}${C.bold}${s3.intent}${C.reset}`));
+    console.log(kv('  Prompt injection:', s3.injection
+      ? `${C.red}${C.bold}PHÁT HIỆN  ->  BLOCK${C.reset}`
+      : `${C.green}Không phát hiện${C.reset}`));
+    console.log(kv('  Off-topic check:', s3.offTopic
+      ? `${C.yellow}${C.bold}NGOÀI PHẠM VI  ->  BLOCK${C.reset}`
+      : `${C.green}Trong phạm vi${C.reset}`));
+  }
+  if (t.blocked === 'injection') {
+    console.log(warn('Prompt injection → trả về phản hồi bảo vệ, kết thúc pipeline'));
+    return;
+  }
+  if (t.blocked === 'off_topic' || s3?.offTopic) {
+    console.log(warn('Off-topic → trả về thông báo phạm vi hỗ trợ, kết thúc pipeline'));
+    return;
+  }
+  console.log(ok('Đạt tất cả security gates  ->  tiếp tục vào RAG pipeline'));
+
+  // ── Step 4: Load Session History ────────────────────────────────────────
+  console.log(step(4, 'Load Session History'));
+  const s4 = t.step4_history;
+  if (s4) {
+    console.log(kv('  Session ID:', s4.sessionId || 'N/A'));
+    if (s4.turns > 0 && s4.messages?.length) {
+      console.log(kv('  Trạng thái:', `${C.green}Có lịch sử từ DB${C.reset}`));
+      console.log(kv('  conversationHistory:', `${s4.turns} turns  (${s4.messages.length} messages)`));
+      s4.messages.forEach(m => {
+        const preview = (m.content || '').replace(/\n/g, ' ').substring(0, 60);
+        console.log(`  ${C.gray}  ${m.role.padEnd(9)}${C.reset} "${preview}${preview.length >= 60 ? '...' : ''}"`);
+      });
+    } else {
+      console.log(kv('  Trạng thái:', 'Session chưa có lịch sử'));
+      console.log(kv('  conversationHistory:', '[]  (0 turns)'));
+    }
+  }
+  console.log(sub('Lưu trong Map RAM  |  Tối đa 500 sessions  |  TTL 30 phút'));
+
+  if (!s5) return;
+
+  // Step 5 skipped cho intent không cần search
+  if (s5.skipped) {
+    console.log(step(5, 'Retrieve  (SKIP)'));
+    console.log(sub(s5.reason));
+    console.log(sub('Không chạy Hybrid Search — chuyển thẳng sang Generation'));
+    // Vẫn tiếp tục step 6, 7
+  } else {
+
+  // ── Step 5a: Enrich Query From History ──────────────────────────────────
+  if (compact) {
+    console.log(step(5, 'Enrich Query  +  Retrieve Products'));
+  } else {
+    console.log(step('5a', 'Enrich Query From History'));
+  }
+
+  const normalized = t.step2_normalize?.after || query;
+  const enriched = s5.enrichedQuery || normalized;
+  const enrichDiff = enriched !== normalized;
+
+  // Dùng server trace nếu có, fallback tính local
+  const enrich = t.step5_enrich || {};
+  const hasPronoun = enrich.hasPronoun || false;
+  const isImplicit = enrich.isImplicitFollowup || false;
+
+  console.log(kv('  Đại từ chỉ định:', hasPronoun
+    ? `${C.yellow}Có  ->  cần append context từ history${C.reset}`
+    : isImplicit && s4?.turns > 0
+      ? `${C.yellow}Implicit follow-up (query ngắn, không có brand)  ->  enrich${C.reset}`
+      : `${C.green}Không  ->  giữ nguyên query${C.reset}`));
+
+  if (enrichDiff) {
+    const appended = enriched.replace(normalized, '').trim();
+    if (appended) console.log(sub(`_enrichQueryFromHistory: append "${appended.substring(0, 50)}"`));
+  } else if (isImplicit && s4?.turns > 0) {
+    console.log(sub('History có nhưng không trích được tên SP → giữ nguyên'));
+  }
+  console.log(kv('  Enriched query:', `"${enriched}"`));
+  console.log('');
+
+  // ── Step 5b: Retrieve Products (Hybrid Search) ─────────────────────────
+  if (!compact) console.log(step('5b', 'Retrieve Products  (Hybrid Search)'));
+
+  // Strip negation
+  const sn = s5.stripNegation;
+  if (sn?.changed) {
+    console.log(warn('Strip mệnh đề phủ định trước khi embedding (chỉ embedding, LLM giữ gốc):'));
+    console.log(kv('  Trước:', `"${sn.before}"`));
+    console.log(kv('  Sau:', `"${sn.after}"`));
+  } else {
+    console.log(kv('  Strip negation:', 'Không có mệnh đề phủ định'));
+  }
+
+  console.log('');
+  console.log(`  ${C.dim}Cách tính Score  (DEFAULT_MIN_SCORE=0.45 • OVERLAP_BOOST=0.05 • KEYWORD_INJECTION_MAX_BOOST=0.05):${C.reset}`);
+  console.log(`  ${C.dim}  • Conf=ok  (vector match):  score = cosine + OVERLAP_BOOST (nếu trùng cả từ khóa)${C.reset}`);
+  console.log(`  ${C.dim}  • Conf=low (keyword-only):  score = DEFAULT_MIN_SCORE + (kwScore / maxKwScore) × KEYWORD_INJECTION_MAX_BOOST${C.reset}`);
+  console.log('');
+  console.log(sub('Promise.all( rewriteQuery(LLM)  ||  hybridSearch(topK=10) )'));
+
+  // rewriteQuery
+  const rw = s5.rewrite;
+  if (rw) {
+    const rwModel = s6?.providerAttempts?.[0]?.model || 'LLM';
+    if (rw.result) {
+      console.log(kv('  rewriteQuery:', `${C.green}"${rw.result}"${C.reset}  ${C.gray}(${rwModel})  ⏱ ${rw.timeMs}ms${C.reset}`));
+    } else {
+      console.log(kv('  rewriteQuery:', `${C.dim}[no change]${C.reset}  ${C.gray}(${rwModel})  ⏱ ${rw.timeMs}ms${C.reset}`));
+    }
+  }
+
+  // hybridSearch lần 1
+  const sr1 = s5.search1;
+  if (sr1) {
+    console.log(kv('  hybridSearch lần 1:', `query: "${sr1.query}"  |  semantic (cosine) + keyword (BM25)  |  topK=10`));
+    console.log(ok(`hybridSearch lần 1 hoàn thành  ->  ${sr1.results.length} kết quả  ${C.gray}⏱ ${sr1.timeMs != null ? sr1.timeMs : s5.timeMs}ms${C.reset}`));
+    console.log('');
+    console.log(`  ${C.bold}${C.dim}  #   ${'Tên sản phẩm'.padEnd(42)}  Score   Conf${C.reset}`);
+    console.log(`  ${C.gray}  ${'-'.repeat(60)}${C.reset}`);
+    if (sr1.results.length === 0) {
+      console.log(`  ${C.dim}  (không có sản phẩm nào vượt ngưỡng 0.45)${C.reset}`);
+    }
+    sr1.results.forEach((r, i) => {
+      const name  = (r.name || '?').substring(0, 42).padEnd(42);
+      const score = fmtScore(r.score);
+      const conf  = r.lowConfidence ? `${C.yellow}low${C.reset}` : `${C.green}ok ${C.reset}`;
+      console.log(`  ${C.gray}${String(i+1).padStart(3)}.${C.reset} ${name}  ${C.cyan}${score}${C.reset}  ${conf}`);
+    });
+  }
+
+  // hybridSearch lần 2
+  if (s5.rewriteChanged && s5.search2) {
+    const sr2 = s5.search2;
+    console.log('');
+    console.log(sub(`rewriteQuery KHÁC query gốc ("${normalized}" → "${rw?.result}") → chạy refined search (lần 2)`));
+    console.log(sub('finalQuery (gửi LLM ở bước 6) = bản rewrite — GIỮ phủ định nếu có'));
+    console.log(kv('  hybridSearch lần 2:', `query: "${sr2.query}"  (strip từ rewrite "${rw?.result}")  |  topK=10`));
+    console.log(ok(`hybridSearch lần 2 hoàn thành  ->  ${sr2.results.length} kết quả  ${C.gray}⏱ ${sr2.timeMs || 0}ms${C.reset}`));
+    if (sr2.results.length > 0) {
+      console.log('');
+      console.log(`  ${C.bold}${C.dim}  #   ${'Tên sản phẩm'.padEnd(42)}  Score   Conf${C.reset}`);
+      console.log(`  ${C.gray}  ${'-'.repeat(60)}${C.reset}`);
+      sr2.results.forEach((r, i) => {
+        const name  = (r.name || '?').substring(0, 42).padEnd(42);
+        const score = fmtScore(r.score);
+        const conf  = r.lowConfidence ? `${C.yellow}low${C.reset}` : `${C.green}ok ${C.reset}`;
+        console.log(`  ${C.gray}${String(i+1).padStart(3)}.${C.reset} ${name}  ${C.cyan}${score}${C.reset}  ${conf}`);
+      });
+    }
+    console.log('');
+    console.log(sub(sr2.usedForFinal
+      ? `Dùng kết quả lần 2 (rewrite) cho Generation  →  ${sr2.results.length} sản phẩm`
+      : `Lần 2 rỗng → fallback dùng initialResults (lần 1)`));
+  } else {
+    console.log('');
+    console.log(sub(`rewriteQuery không đổi query → bỏ qua lần 2, dùng kết quả lần 1 cho Generation  →  ${sr1?.results?.length || s5.productsFound} sản phẩm`));
+  }
+
+  if (s5.usedLowFallback) {
+    console.log(warn('0 kết quả trên threshold → hạ minScore=0, lấy top-3 (fallback)'));
+  }
+
+  } // end else (step 5 not skipped)
+
+  // ── Step 6: Generation ──────────────────────────────────────────────────
+  console.log(step(6, 'Generation'));
+  if (!s6) return;
+
+  if (s6.llmMode === 'down' || (s6.usedFallback && !s6.providerAttempts?.length)) {
+    // LLM DOWN path
+    const skipLines = compact
+      ? [`${C.yellow}Không có LLM provider${C.reset}  ${C.gray}→ [SKIP] A-E: sanitize / buildPrompt / messages[] / HTTP POST / parseLLMOutput${C.reset}`, '']
+      : [
+          `${C.yellow}Không có LLM provider  ->  các sub-steps LLM bị SKIP:${C.reset}`,
+          `  ${C.gray}[SKIP] A. _sanitizeMessage     (không cần khi không gọi LLM)${C.reset}`,
+          `  ${C.gray}[SKIP] B. buildAugmentedPrompt (không cần khi không gọi LLM)${C.reset}`,
+          `  ${C.gray}[SKIP] C. build messages[]     (không cần khi không gọi LLM)${C.reset}`,
+          `  ${C.gray}[SKIP] D. LLM HTTP POST        (không có provider)${C.reset}`,
+          `  ${C.gray}[SKIP] E. parseLLMOutput       (không có response để parse)${C.reset}`,
+          '',
+        ];
+    console.log(box('LLM DOWN  —  simpleKeywordMatch  (keyword fallback)', [
+      ...skipLines,
+      `  ${C.yellow}-> Fallback: simpleKeywordMatch (8 bước nội bộ):${C.reset}`,
+      '  1. Tokenize + scoring     name match +10  |  description match +5',
+      '  2. Version number filter  extract số model, loại SP sai phiên bản',
+      '  3. Brand coherence check  loại kết quả sai brand',
+      '  4. Negation filter        parse "không muốn/tránh X" -> loại',
+      '  5. Price range filter     tầm/dưới/trên X triệu -> filter theo giá',
+      '  6. Category prefix filter detect "laptop/điện thoại" -> filter loại SP',
+      '  7. Sort + dedup           sort by matchScore giảm dần, loại trùng',
+      '  8. Intent-aware response  pricing->💰  policy->📋  search->🔍  new->🌟',
+    ], C.yellow));
+    console.log('');
+    console.log(sub('Đang chạy simpleKeywordMatch...'));
+    console.log(ok(`Hoàn thành  ${C.gray}⏱ ${s6.timeMs}ms${C.reset}`));
+  } else {
+    // LLM UP path
+    if (s6.brandsStr) console.log(kv('  _getCatalogData:', `brands: ${s6.brandsStr.substring(0, 40)}`));
+    if (s6.sanitized) console.log(kv('  A. _sanitizeMessage(finalQuery):', `"${s6.sanitized}..."`));
+    if (s6.promptLength) console.log(kv('  B. buildAugmentedPrompt:', `${s6.promptLength} ký tự  (${s6.productCount || s5.productsFound} SP + store info)`));
+    console.log(kv('  C. messages[]:', `[system(6 rules), ${s6.historyMsgCount || 0} history, user+RAG_context]`));
+    if (s6.totalBudgetMs) console.log(kv('  Ngân sách tổng:', `LLM_TOTAL_TIMEOUT_MS=${s6.totalBudgetMs}ms  (Promise.race bọc provider rotation)`));
+
+    const attempts = s6.providerAttempts || [];
+    for (const a of attempts) {
+      console.log(kv('  D. LLM call:', `${a.model}  (provider ${a.index}/${a.total})  |  temp=0.3  |  max_tokens=800`));
+      if (a.url) console.log(sub(`POST -> ${a.url}  (đang chờ...)`));
+      if (a.status === 'ok') {
+        console.log(ok(`Nhận phản hồi  (${a.timeMs}ms  |  ${a.rawLength} ký tự JSON)`));
+        console.log(kv('  E. parseLLMOutput:', 'extractJSON -> map names -> dedup -> extractProductsFromText'));
+        console.log(ok('Hoàn thành'));
+      } else if (a.status === 'retry') {
+        if (a.index < a.total)
+          console.log(warn(`Provider ${a.index} lỗi (${a.errorCode}) → thử provider ${a.index + 1}`));
+        else
+          console.log(warn(`Tất cả providers lỗi → fallback simpleKeywordMatch`));
+      } else if (a.status === 'break') {
+        console.log(warn(`Provider ${a.index} lỗi cố định (${a.errorCode}) → dừng retry`));
+      }
+    }
+
+    if (s6.usedFallback) {
+      console.log(warn(`LLM vượt ngân sách ${s6.totalBudgetMs}ms → fallback simpleKeywordMatch`));
+    }
+  }
+
+  // ── Step 7: Persist ─────────────────────────────────────────────────────
+  console.log(step(7, 'Persist  —  Session Memory  +  Database'));
+  const s7 = t.step7_persist;
+  if (s7) {
+    console.log(kv('  7a. Session memory:', `updatedMessages = ${s7.updatedMsgCount || '?'} msgs  (giới hạn 20 = 10 turns)`));
+    console.log(kv('     lastAccess:', s7.lastAccessTime || new Date().toLocaleTimeString('vi-VN')));
+    console.log(sub('_evictStaleSessions():  xóa TTL > 30 phút  +  LRU khi > 500 sessions'));
+    console.log('');
+    console.log(kv('  7b. DB persist:', 'ChatMessage.bulkCreate([userMsg, assistantMsg])  —  1 DB call'));
+    console.log(sub('Fire-and-forget: .catch() chỉ log warning  ->  chatbot vẫn trả lời khi DB lỗi'));
+  }
+
+  // ── Result ──────────────────────────────────────────────────────────────
+  if (aiResponse) {
+    const tTotal = s7?.responseTimeMs || s6?.timeMs || 0;
+    console.log('\n' + dividerHi('-'));
+    console.log(`${C.bold}  KẾT QUẢ TRẢ VỀ CHO FRONTEND  ${C.gray}⏱ tổng ${tTotal}ms${C.reset}`);
+    console.log(dividerHi('-'));
+    console.log(kv('  intent:', `${C.cyan}${aiResponse.intent || s3?.intent || 'N/A'}${C.reset}`));
+    console.log('');
+    console.log(`  ${C.bold}Response đầy đủ:${C.reset}`);
+    (aiResponse.response || '').split('\n').forEach(line => {
+      if (line.length <= 90) { console.log(`    ${line}`); return; }
+      const words = line.split(' ');
+      let cur = '    ';
+      for (const w of words) {
+        if (cur.length + w.length > 94) { console.log(cur); cur = '    ' + w + ' '; }
+        else cur += w + ' ';
+      }
+      if (cur.trim()) console.log(cur);
+    });
+    console.log('');
+    console.log(kv('  products:', `${aiResponse.products?.length || 0} card(s)`));
+    (aiResponse.products || []).forEach((p, i) =>
+      console.log(item(i+1, `${C.bold}${p.name}${C.reset}  —  ${C.cyan}${fmtPrice(p.price)}${C.reset}`))
+    );
+    if (aiResponse.suggestions?.length) {
+      aiResponse.suggestions.slice(0, 3).forEach((s, i) => {
+        const label = i === 0 ? '  suggestions:' : '              ';
+        const short = s.length > W - 18 ? s.substring(0, W - 21) + '...' : s;
+        console.log(`  ${C.dim}${label.padEnd(20)}${C.reset}${C.gray}${i + 1}.${C.reset} ${short}`);
+      });
+    }
+  }
+  console.log(dividerHi('=') + '\n');
+}
+
 // ── HTTP song song đến server đang chạy ──────────────────────────────────────
 
-async function callChatbotServer(query, sid, retries = 2) {
+async function callChatbotServer(query, sid, { trace = false, retries = 2 } = {}) {
   const http = require('http');
-  const SERVER = 'http://localhost:8888/api/chatbot/message';
+  const SERVER = `http://localhost:8888/api/chatbot/message${trace ? '?trace=true' : ''}`;
   if (!sid) sid = 'demo-http-' + Date.now();
 
   const attempt = () => new Promise((resolve) => {
@@ -749,49 +1081,106 @@ function printServerResponse(res) {
       }).on('error', () => resolve(null));
     });
 
-    let watchSessionId = sessionArg || null;
-    let lastCount = 0;
+    // Query DB trực tiếp — không cần HTTP endpoint, không expose session ID qua API
+    const { ChatMessage } = require('@models');
 
-    // Khởi tạo session và count hiện tại
+    let watchSessionId = sessionArg || null;
+    let lastSeenId = 0;
+    let terminalBusy = false;
+
     const initSession = async (sid) => {
-      const res = await httpGet(`http://localhost:8888/api/chatbot/session/${sid}/messages`);
-      lastCount = res?.data?.messages?.length ?? 0;
+      const latest = await ChatMessage.findOne({
+        where: { sessionId: sid },
+        attributes: ['id'],
+        order: [['id', 'DESC']],
+        raw: true,
+      }).catch(() => null);
+      lastSeenId = latest?.id ?? 0;
       watchSessionId = sid;
-      console.log(`${C.teal}${C.bold}[Watch]${C.reset} Đang theo dõi session id: ${C.dim}${sid}${C.reset} (${lastCount} msgs hiện có)`);
+      const count = await ChatMessage.count({ where: { sessionId: sid } }).catch(() => 0);
+      console.log(`${C.teal}${C.bold}[Watch]${C.reset} Đang theo dõi session id: ${C.dim}${sid}${C.reset} (${count} msgs hiện có)`);
+    };
+    // Ưu tiên session UI đăng ký qua /session/register (ghi vào data/.last-session-id)
+    // Fallback: session mới nhất trong DB
+    const fs = require('fs');
+    const path = require('path');
+    const lastSessionFile = path.join(__dirname, '..', 'data', '.last-session-id');
+    const fetchLatestSession = async () => {
+      try {
+        const fromFile = fs.readFileSync(lastSessionFile, 'utf8').trim();
+        if (fromFile) return fromFile;
+      } catch { /* file chưa tồn tại */ }
+      try {
+        const row = await ChatMessage.findOne({
+          attributes: ['sessionId'],
+          order: [['createdAt', 'DESC']],
+          raw: true,
+        });
+        return row?.sessionId ?? null;
+      } catch { return null; }
     };
 
     if (watchSessionId) {
       await initSession(watchSessionId);
     } else {
-      // /session/latest đã bị xóa — cần truyền --session-id=<id> thủ công
-      console.log(warn('Auto-detect session không còn hỗ trợ. Dùng: node demo-rag-pipeline.js --watch --session-id=<sessionId>'));
-      console.log(sub('Chờ UI gửi tin và truyền session ID qua --session-id...'));
+      const detected = await fetchLatestSession();
+      if (detected) {
+        console.log(ok('Auto-detect session mới nhất từ DB'));
+        await initSession(detected);
+      } else {
+        console.log(warn('Chưa có session nào trong DB. Chờ UI gửi tin nhắn đầu tiên...'));
+      }
     }
 
     const poll = async () => {
-      // /session/latest đã bị xóa — không thể auto-detect session mới
-      // Chỉ poll session đang theo dõi (nếu có)
-      const latestSid = null; // endpoint removed
+      if (terminalBusy) return;
+      const latestSid = await fetchLatestSession();
       if (latestSid && latestSid !== watchSessionId) {
         console.log(`\n${C.yellow}[Watch]${C.reset} Session UI đổi → follow session mới: ${C.dim}${latestSid}${C.reset}`);
         await initSession(latestSid);
         return;
       }
 
-      if (!watchSessionId) return;
+      if (!watchSessionId) {
+        if (latestSid) await initSession(latestSid);
+        return;
+      }
 
-      const res = await httpGet(`http://localhost:8888/api/chatbot/session/${watchSessionId}/messages`);
-      const msgs = res?.data?.messages ?? [];
+      const { Op } = require('sequelize');
+      const newMsgs = await ChatMessage.findAll({
+        where: { sessionId: watchSessionId, id: { [Op.gt]: lastSeenId } },
+        order: [['id', 'ASC']],
+        attributes: ['id', 'role', 'content', 'metadata'],
+        raw: true,
+      }).catch(() => []);
 
-      if (msgs.length > lastCount) {
-        const newMsgs = msgs.slice(lastCount).filter(m => m.role === 'user');
-        lastCount = msgs.length;
+      if (newMsgs.length > 0) {
+        lastSeenId = newMsgs[newMsgs.length - 1].id;
         for (const m of newMsgs) {
+          if (m.role !== 'user') continue;
           console.log(`\n${C.teal}${C.bold}[UI → Terminal]${C.reset} Query mới: "${m.content}"`);
-          try {
-            if (currentMode === 'down' || currentMode === 'both') await runPipeline(m.content, 'down', watchSessionId);
-            if (currentMode === 'up'   || currentMode === 'both') await runPipeline(m.content, 'up', watchSessionId);
-          } catch (e) { console.error(`${C.red}Lỗi trace:${C.reset}`, e.message); }
+          // Tìm assistant message ngay sau user message (chứa trace trong metadata)
+          const assistant = newMsgs.find(a => a.role === 'assistant' && a.id > m.id);
+          let trace = null;
+          let meta = null;
+          if (assistant?.metadata) {
+            try {
+              meta = typeof assistant.metadata === 'string' ? JSON.parse(assistant.metadata) : assistant.metadata;
+              trace = meta.trace;
+            } catch { /* ignore parse error */ }
+          }
+          if (trace) {
+            displayServerTrace(trace, m.content, {
+              intent: meta?.intent || trace?.step3_security?.intent || '', response: assistant.content,
+              products: meta?.products || [], suggestions: meta?.suggestions || [],
+            });
+          } else {
+            console.log(sub('Không có trace trong DB — fallback local pipeline'));
+            try {
+              if (currentMode === 'down' || currentMode === 'both') await runPipeline(m.content, 'down', watchSessionId);
+              if (currentMode === 'up'   || currentMode === 'both') await runPipeline(m.content, 'up', watchSessionId);
+            } catch (e) { console.error(`${C.red}Lỗi trace:${C.reset}`, e.message); }
+          }
         }
       }
     };
@@ -811,23 +1200,31 @@ function printServerResponse(res) {
           console.log(ok(`Mode → ${C.cyan}${currentMode}${C.reset}`));
         } else {
           const sid = watchSessionId || 'demo-' + Date.now();
-          console.log(`\n${C.teal}${C.bold}[Terminal]${C.reset} Chạy pipeline cho: "${input}"  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
-          // Gửi HTTP đến server song song để UI auto-poll bắt được
-          const httpP = noHttp ? null : callChatbotServer(input, sid);
-          // Tăng lastCount ngay lập tức — tránh poll 2s phát hiện message này và trace lại
-          if (!noHttp) lastCount += 2;
+          console.log(`\n${C.teal}${C.bold}[Terminal → Server]${C.reset} Gửi: "${input}"  ${C.gray}(session: ${sid.slice(0,8)}...)${C.reset}`);
+          terminalBusy = true;
           try {
-            if (currentMode === 'down' || currentMode === 'both') await runPipeline(input, 'down', sid);
-            if (currentMode === 'up'   || currentMode === 'both') await runPipeline(input, 'up', sid);
-          } catch (e) { console.error(`${C.red}Lỗi:${C.reset}`, e.message); }
-          if (httpP) {
-            const res = await httpP.catch(e => ({ ok: false, error: e.message }));
-            if (res && res.ok === false) {
-              console.log(warn(`HTTP sync thất bại (${res.error || 'unknown'}) — dùng --no-http để tắt sync`));
+            const res = await callChatbotServer(input, sid, { trace: true });
+            if (res.ok && res.data?.data?.trace) {
+              const d = res.data.data;
+              displayServerTrace(res.data.data.trace, input, {
+                intent: d.intent, response: d.response, products: d.products, suggestions: d.suggestions,
+              });
+              console.log(sub(`${C.green}✓ UI sẽ hiển thị cùng response này${C.reset}`));
+            } else if (res.ok) {
+              console.log(ok('Server xử lý thành công (không có trace)'));
             } else {
-              console.log(sub(`${C.green}✓ Đã sync với server${C.reset} — UI auto-poll sẽ cập nhật trong ~3s`));
+              console.log(warn(`Server lỗi: ${res.error || 'unknown'}`));
+              console.log(sub('Kiểm tra server đang chạy (npm run dev) và thử lại'));
             }
+            // Bump lastSeenId
+            const latest = await ChatMessage.findOne({
+              where: { sessionId: sid }, attributes: ['id'], order: [['id', 'DESC']], raw: true,
+            }).catch(() => null);
+            if (latest) lastSeenId = latest.id;
+          } catch (e) {
+            console.error(`${C.red}Lỗi:${C.reset}`, e.message);
           }
+          terminalBusy = false;
         }
         askWatch(); // loop lại
       });
@@ -841,7 +1238,9 @@ function printServerResponse(res) {
     const inputQuery = query;
     console.log(kv('Query:', `"${inputQuery}"`));
     console.log(kv('Mode:', currentMode));
-    const httpP = noHttp ? null : callChatbotServer(inputQuery, sessionId);
+    // One-shot: chạy local pipeline, không gửi HTTP (tránh 2 LLM calls)
+    // Dùng --no-http=false nếu muốn sync với server
+    const httpP = (noHttp || oneShot) ? null : callChatbotServer(inputQuery, sessionId);
     try {
       if (currentMode === 'down' || currentMode === 'both') await runPipeline(inputQuery, 'down', sessionId);
       if (currentMode === 'up'   || currentMode === 'both') await runPipeline(inputQuery, 'up', sessionId);

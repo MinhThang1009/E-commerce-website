@@ -256,8 +256,9 @@ class ChatbotService {
    * @param {string|null} [sessionId=null] - Session ID để track conversation history.
    * @returns {Promise<Object>} `{ response, products, suggestions, intent }`
    */
-  async handleMessage(message, userId = null, sessionId = null) {
+  async handleMessage(message, userId = null, sessionId = null, { enableTrace = false } = {}) {
     const startTime = Date.now();
+    const trace = enableTrace ? {} : null;
     try {
       // ── Bước 1-3: Validate + Normalize + Security gates ───────────────────────
       logger.debug(`📝 Câu truy vấn gốc: "${message}"`);
@@ -265,6 +266,16 @@ class ChatbotService {
       if (!prep.valid) throw new AppError(prep.reason, 400);
 
       const { normalizedQuery, intent, injection, offTopic } = prep;
+
+      if (trace) {
+        trace.step1_validate = { valid: true, length: message.length };
+        trace.step2_normalize = {
+          before: message,
+          after: normalizedQuery,
+          changed: message !== normalizedQuery,
+        };
+        trace.step3_security = { intent, injection, offTopic };
+      }
 
       if (injection) {
         logger.warn('[Security] Phát hiện prompt injection, từ chối xử lý');
@@ -276,6 +287,9 @@ class ChatbotService {
           products: [],
           suggestions: isEn ? ['View phones', 'View laptops'] : ['Xem điện thoại', 'Xem laptop'],
           intent: 'off_topic',
+          ...(trace && {
+            trace: { ...trace, blocked: 'injection', responseTimeMs: Date.now() - startTime },
+          }),
         };
         this._persistMessages(
           sessionId,
@@ -285,6 +299,7 @@ class ChatbotService {
           'off_topic',
           Date.now() - startTime,
           true,
+          trace ? { trace: injectionResponse.trace } : undefined,
         ).catch((err) => logger.warn('[Chatbot] Lưu injection message thất bại:', err.message));
         return injectionResponse;
       }
@@ -300,6 +315,9 @@ class ChatbotService {
             ? ['View phones', 'View laptops', 'Deals & promotions', 'Get advice']
             : ['Xem điện thoại', 'Xem laptop', 'Sản phẩm khuyến mãi', 'Tư vấn thêm'],
           intent: 'off_topic',
+          ...(trace && {
+            trace: { ...trace, blocked: 'off_topic', responseTimeMs: Date.now() - startTime },
+          }),
         };
         this._persistMessages(
           sessionId,
@@ -309,6 +327,7 @@ class ChatbotService {
           intent,
           Date.now() - startTime,
           true,
+          trace ? { trace: offTopicResponse.trace } : undefined,
         ).catch((err) => logger.warn('[Chatbot] Lưu off-topic message thất bại:', err.message));
         return offTopicResponse;
       }
@@ -317,29 +336,97 @@ class ChatbotService {
       const sessionEntry = sessionId ? this.conversationHistory.get(sessionId) : null;
       const conversationHistory = sessionEntry ? sessionEntry.messages : [];
 
+      if (trace) {
+        trace.step4_history = {
+          turns: Math.floor(conversationHistory.length / 2),
+          sessionId,
+          messages: conversationHistory
+            .slice(-4)
+            .map((m) => ({ role: m.role, content: (m.content || '').substring(0, 80) })),
+        };
+      }
+
       // ── Bước 5: Retrieve — embedding-based hybrid search ────────────────────
-      const enrichedQuery = this._enrichQueryFromHistory(normalizedQuery, conversationHistory);
-      const { products: relevantProducts, finalQuery } = await this._retrieveProducts(
-        enrichedQuery,
-        normalizedQuery,
-      );
+      // Skip hybrid search cho intent không liên quan sản phẩm (general, policy, order_inquiry)
+      const needsSearch = intent === 'pricing' || intent === 'product_search';
+      const enrichedQuery = needsSearch
+        ? this._enrichQueryFromHistory(normalizedQuery, conversationHistory)
+        : normalizedQuery;
+
+      if (trace && needsSearch) {
+        const PRONOUN_RE =
+          /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
+        const BRAND_RE =
+          /iphone|samsung|macbook|xiaomi|oppo|realme|apple|dell|asus|acer|casio|citizen|laptop|tablet|điện thoại|đồng hồ|máy tính|smartwatch|earphone|headphone|airpod/i;
+        const hasBrand = BRAND_RE.test(normalizedQuery);
+        const hasPronoun = PRONOUN_RE.test(normalizedQuery) && !hasBrand;
+        const isImplicit = !hasPronoun && normalizedQuery.trim().length <= 50 && !hasBrand;
+        trace.step5_enrich = {
+          hasPronoun,
+          isImplicitFollowup: isImplicit,
+          enrichedQuery,
+          enrichChanged: enrichedQuery !== normalizedQuery,
+        };
+      }
+      const retrieveStart = Date.now();
+      const {
+        products: relevantProducts,
+        finalQuery,
+        _retrieveTrace,
+      } = needsSearch
+        ? await this._retrieveProducts(enrichedQuery, normalizedQuery, { enableTrace: !!trace })
+        : { products: [], finalQuery: normalizedQuery };
+
+      if (trace) {
+        trace.step5_retrieve = needsSearch
+          ? {
+              enrichedQuery,
+              finalQuery,
+              productsFound: relevantProducts.length,
+              products: relevantProducts.map((p) => ({
+                name: p.name,
+                score: p.score,
+                lowConfidence: p.lowConfidence,
+                price: p.price || p.basePrice,
+              })),
+              timeMs: Date.now() - retrieveStart,
+              ...(_retrieveTrace || {}),
+            }
+          : { skipped: true, reason: `intent "${intent}" không cần tìm sản phẩm`, timeMs: 0 };
+      }
 
       // ── Bước 6: Generation — gọi LLM để sinh câu trả lời ────────────────────
       // Ngân sách tổng: nếu LLM (cộng dồn provider rotation) vượt LLM_TOTAL_TIMEOUT_MS
       // → trả fallback keyword match thay vì để user chờ/treo. Mỗi axios provider vẫn
       // tự timeout LLM_REQUEST_TIMEOUT_MS ở augmentAndGenerate.
+      const generateStart = Date.now();
+      let usedFallback = false;
+      const _genTrace = trace ? {} : null;
       let _budgetTimer;
       const aiResponse = await Promise.race([
-        this.augmentAndGenerate(finalQuery, relevantProducts, conversationHistory),
+        this.augmentAndGenerate(finalQuery, relevantProducts, conversationHistory, _genTrace),
         new Promise((resolve) => {
           _budgetTimer = setTimeout(() => {
             logger.warn(
               `[Chatbot] LLM vượt ngân sách ${LLM_TOTAL_TIMEOUT_MS}ms — trả fallback keyword match`,
             );
+            usedFallback = true;
             resolve(this.simpleKeywordMatch(finalQuery, relevantProducts));
           }, LLM_TOTAL_TIMEOUT_MS);
         }),
       ]).finally(() => clearTimeout(_budgetTimer));
+
+      if (trace) {
+        trace.step6_generate = {
+          usedFallback,
+          timeMs: Date.now() - generateStart,
+          productsInResponse: aiResponse.products?.length ?? 0,
+          llmMode: _genTrace?.llmMode || (this.providers.length > 0 ? 'up' : 'down'),
+          providerCount: this.providers.length,
+          providerModels: this.providers.map((p) => p.model),
+          ...(_genTrace || {}),
+        };
+      }
 
       // ── Bước 7: Persist — cập nhật session memory + lưu DB ──────────────────
       if (sessionId) {
@@ -359,6 +446,20 @@ class ChatbotService {
       }
 
       const responseTimeMs = Date.now() - startTime;
+
+      if (trace) {
+        const updatedLen = sessionId
+          ? [...conversationHistory, {}, {}].slice(-(MAX_HISTORY_TURNS * 2)).length
+          : 0;
+        trace.step7_persist = {
+          sessionId,
+          responseTimeMs,
+          updatedMsgCount: updatedLen,
+          lastAccessTime: new Date().toLocaleTimeString('vi-VN'),
+        };
+        aiResponse.trace = trace;
+      }
+
       this._persistMessages(
         sessionId,
         userId,
@@ -367,7 +468,11 @@ class ChatbotService {
         intent,
         responseTimeMs,
         false,
-        { products: aiResponse.products, suggestions: aiResponse.suggestions },
+        {
+          products: aiResponse.products,
+          suggestions: aiResponse.suggestions,
+          ...(trace && { trace }),
+        },
       ).catch((err) => logger.warn('[Chatbot] Lưu tin nhắn thất bại (non-blocking):', err.message));
 
       return aiResponse;
@@ -493,14 +598,11 @@ class ChatbotService {
    * @param {string} normalizedQuery - Query đã normalize (để so sánh với LLM rewrite).
    * @returns {Promise<{ products: Array, finalQuery: string }>}
    */
-  async _retrieveProducts(enrichedQuery, normalizedQuery) {
+  async _retrieveProducts(enrichedQuery, normalizedQuery, { enableTrace = false } = {}) {
     if (!vectorStoreService) return { products: [], finalQuery: enrichedQuery };
+    const _t = enableTrace ? {} : null;
 
     try {
-      // Strip mệnh đề phủ định CHỈ cho embedding (hybridSearch), KHÔNG cho LLM.
-      // "không cần iPhone, Samsung" → bias embedding về iPhone/Samsung dù là phủ định.
-      // Ngược lại, rewriteQuery + finalQuery (gửi LLM generation) giữ NGUYÊN phủ định —
-      // LLM hiểu ý loại trừ ("không phải Dell") còn embedding thì không, nên phải tách 2 đường.
       const stripNegation = (q) =>
         q
           .replace(
@@ -509,13 +611,40 @@ class ChatbotService {
           )
           .trim() || q;
 
-      // Chạy song song LLM rewrite + hybridSearch để giảm latency.
-      // rewriteQuery dùng query GỐC (giữ phủ định + sửa typo/viết tắt cùng lúc);
-      // hybridSearch dùng query đã strip (tránh embedding bias).
+      const queryForSearch = stripNegation(enrichedQuery);
+      if (_t) {
+        _t.stripNegation = {
+          before: enrichedQuery,
+          after: queryForSearch,
+          changed: enrichedQuery !== queryForSearch,
+        };
+      }
+
+      const rewriteStart = Date.now();
+      let search1TimeMs = 0;
       const [llmRewrite, initialResults] = await Promise.all([
         this.rewriteQuery(enrichedQuery).catch(() => null),
-        vectorStoreService.hybridSearch(stripNegation(enrichedQuery), 10),
+        (async () => {
+          const t0 = Date.now();
+          const res = await vectorStoreService.hybridSearch(queryForSearch, 10);
+          search1TimeMs = Date.now() - t0;
+          return res;
+        })(),
       ]);
+
+      if (_t) {
+        _t.rewrite = { result: llmRewrite, timeMs: Date.now() - rewriteStart };
+        _t.search1 = {
+          query: queryForSearch,
+          results: initialResults.map((r) => ({
+            name: r.metadata?.name,
+            score: r.score,
+            lowConfidence: r.lowConfidence,
+          })),
+          count: initialResults.length,
+          timeMs: search1TimeMs,
+        };
+      }
 
       let finalQuery = enrichedQuery;
       let products;
@@ -523,11 +652,24 @@ class ChatbotService {
       if (llmRewrite && llmRewrite.toLowerCase() !== normalizedQuery.toLowerCase()) {
         finalQuery = llmRewrite;
         logger.debug(`✨ [LLM Rewrite] "${normalizedQuery}" → "${llmRewrite}"`);
+        if (_t) _t.rewriteChanged = true;
         try {
           const refinedResults = await vectorStoreService.hybridSearch(
             stripNegation(llmRewrite),
             10,
           );
+          if (_t) {
+            _t.search2 = {
+              query: stripNegation(llmRewrite),
+              results: refinedResults.map((r) => ({
+                name: r.metadata?.name,
+                score: r.score,
+                lowConfidence: r.lowConfidence,
+              })),
+              count: refinedResults.length,
+              usedForFinal: refinedResults.length > 0,
+            };
+          }
           const results = refinedResults.length > 0 ? refinedResults : initialResults;
           products = results.map((r) => ({
             ...r.metadata,
@@ -543,6 +685,7 @@ class ChatbotService {
           }));
         }
       } else {
+        if (_t) _t.rewriteChanged = false;
         products = initialResults.map((r) => ({
           ...r.metadata,
           score: r.score,
@@ -551,8 +694,10 @@ class ChatbotService {
       }
 
       // Fallback: không có kết quả trên threshold → hạ minScore, lấy top-3
+      let usedLowFallback = false;
       if (products.length === 0) {
         logger.warn('[Chatbot] Không có kết quả trên threshold — hạ minScore lấy top-3');
+        usedLowFallback = true;
         try {
           const lowResults = await vectorStoreService.hybridSearch(stripNegation(finalQuery), 3, 0);
           products = lowResults.map((r) => ({
@@ -565,11 +710,12 @@ class ChatbotService {
           products = [];
         }
       }
+      if (_t) _t.usedLowFallback = usedLowFallback;
 
       if (process.env.NODE_ENV !== 'production') {
         logger.debug(`📦 Tìm thấy ${products.length} sản phẩm liên quan qua RAG`);
       }
-      return { products, finalQuery };
+      return { products, finalQuery, ...(_t && { _retrieveTrace: _t }) };
     } catch (err) {
       logger.warn('[Chatbot] Vector search thất bại, tiếp tục không có retrieval:', err.message);
       return { products: [], finalQuery: enrichedQuery };
@@ -683,27 +829,36 @@ class ChatbotService {
    * @param {Array<Object>} [history=[]] - Lịch sử hội thoại: [{role: 'user'|'assistant', content}].
    * @returns {Promise<Object>} Kết quả: `{ response, products, suggestions, intent }`.
    */
-  async augmentAndGenerate(userMessage, products, history = []) {
-    // Không có provider → keyword match với products đã retrieve (nhất quán với all-providers-fail path)
+  async augmentAndGenerate(userMessage, products, history = [], _trace = null) {
     if (this.providers.length === 0) {
+      if (_trace) {
+        _trace.llmMode = 'down';
+        _trace.noProviders = true;
+      }
       return this.simpleKeywordMatch(userMessage, products);
     }
 
-    // ── Load thông tin cửa hàng từ cache (refresh 5 phút/lần) ───────────────
     let brandsStr = '';
     let categoriesStr = '';
     try {
       ({ brandsStr, categoriesStr } = await this._getCatalogData());
     } catch {
-      /* Bỏ qua nếu DB lỗi — system prompt vẫn hoạt động không có danh sách này */
+      /* */
     }
 
-    // ── Sanitize input trước khi đưa vào prompt (defense-in-depth) ──────────
     const sanitizedMessage = this._sanitizeMessage(userMessage);
-
-    // ── Xây dựng RAG context prompt (phần "Augmented") ───────────────────────
-    // buildAugmentedPrompt inject danh sách sản phẩm + thông tin cửa hàng vào câu hỏi user
     const augmentedPrompt = this.buildAugmentedPrompt(sanitizedMessage, products);
+
+    if (_trace) {
+      _trace.llmMode = 'up';
+      _trace.sanitized = sanitizedMessage.substring(0, 60);
+      _trace.promptLength = augmentedPrompt.length;
+      _trace.productCount = products.length;
+      _trace.historyMsgCount = history.length;
+      _trace.brandsStr = brandsStr;
+      _trace.totalBudgetMs = LLM_TOTAL_TIMEOUT_MS;
+      _trace.providerAttempts = [];
+    }
 
     const storeName = process.env.STORE_NAME || 'TechStore';
 
@@ -730,6 +885,7 @@ QUY TẮC BẮT BUỘC:
     // ── Provider rotation: thử lần lượt từng provider ────────────────────────
     for (let attempt = 0; attempt < this.providers.length; attempt++) {
       const provider = this.providers[attempt];
+      const attemptStart = Date.now();
       try {
         if (process.env.NODE_ENV !== 'production') {
           logger.debug(
@@ -742,7 +898,7 @@ QUY TẮC BẮT BUỘC:
           {
             model: provider.model,
             messages,
-            response_format: { type: 'json_object' }, // Yêu cầu LLM trả về JSON thuần, không có text ngoài
+            response_format: { type: 'json_object' },
             temperature: LLM_TEMPERATURE,
             max_tokens: LLM_MAX_TOKENS,
           },
@@ -755,48 +911,82 @@ QUY TẮC BẮT BUỘC:
           },
         );
 
-        // Trích xuất text response từ cấu trúc JSON của OpenAI-compatible API
-        // httpResponse.data.choices[0].message.content = nội dung tin nhắn của LLM
         const rawLLMOutput = httpResponse.data.choices?.[0]?.message?.content;
         if (!rawLLMOutput) {
-          // LLM trả về choices rỗng (hiếm nhưng có thể xảy ra) → thử provider tiếp theo
           logger.warn(`LLM trả về choices rỗng (${provider.model}) — thử provider tiếp theo`);
+          if (_trace)
+            _trace.providerAttempts.push({
+              index: attempt + 1,
+              total: this.providers.length,
+              model: provider.model,
+              status: 'retry',
+              timeMs: Date.now() - attemptStart,
+              rawLength: 0,
+              errorCode: 'empty_choices',
+            });
           continue;
         }
 
         if (process.env.NODE_ENV !== 'production')
           logger.debug(`Đã nhận phản hồi từ ${provider.model}`);
 
-        // Parse JSON response và map tên sản phẩm về object thực trong DB
+        if (_trace)
+          _trace.providerAttempts.push({
+            index: attempt + 1,
+            total: this.providers.length,
+            model: provider.model,
+            url: provider.url,
+            status: 'ok',
+            timeMs: Date.now() - attemptStart,
+            rawLength: rawLLMOutput.length,
+            errorCode: null,
+          });
+
         return this.parseLLMOutput(rawLLMOutput, products, userMessage);
       } catch (error) {
         const status = error.response?.status;
 
-        // Lỗi tạm thời → thử provider tiếp theo
         if (
-          status === 429 || // Rate limit — quá nhiều request / phút
-          status === 402 || // Quota hết — không còn credit
-          status === 500 || // Server lỗi nội bộ
-          status === 503 || // Service tạm không khả dụng
-          !error.response // Network error (timeout, DNS fail, connection refused)
+          status === 429 ||
+          status === 402 ||
+          status === 500 ||
+          status === 503 ||
+          !error.response
         ) {
           logger.warn(
             `[Rotation] augmentAndGenerate provider ${attempt + 1}/${this.providers.length} (${provider.model}) lỗi ${status || error.code}, thử tiếp...`,
           );
+          if (_trace)
+            _trace.providerAttempts.push({
+              index: attempt + 1,
+              total: this.providers.length,
+              model: provider.model,
+              status: 'retry',
+              timeMs: Date.now() - attemptStart,
+              rawLength: null,
+              errorCode: String(status || error.code),
+            });
           continue;
         }
 
-        // Lỗi không phục hồi (400 = request sai format, 401 = API key không hợp lệ)
-        // Thử provider tiếp theo cũng sẽ gặp lỗi tương tự → dừng ngay
         logger.error(
           `Chi tiết lỗi LLM API (${provider.model}):`,
           error.response?.data || error.message,
         );
+        if (_trace)
+          _trace.providerAttempts.push({
+            index: attempt + 1,
+            total: this.providers.length,
+            model: provider.model,
+            status: 'break',
+            timeMs: Date.now() - attemptStart,
+            rawLength: null,
+            errorCode: String(status || error.code),
+          });
         break;
       }
     }
 
-    // Tất cả providers đều thất bại → fallback về keyword matching
     return this.simpleKeywordMatch(userMessage, products);
   }
 
@@ -921,9 +1111,11 @@ QUY TẮC BẮT BUỘC:
     return cleared;
   }
 
-  // registerSession: endpoint giữ cho FE backward-compat (FE vẫn gọi).
-  // TODO: xóa khi FE không còn gọi POST /chatbot/session/register nữa.
+  // registerSession: FE gọi khi mở chat widget, trước khi gửi tin nhắn đầu tiên.
+  // Ghi session ID vào file tạm để demo script --watch detect session UI ngay lập tức
+  // (demo script chạy process riêng, không chia sẻ RAM với server).
   registerSession(sessionId) {
+    this.lastRegisteredSessionId = sessionId;
     logger.debug(`[Session] UI registered session: ${sessionId}`);
   }
 

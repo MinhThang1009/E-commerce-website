@@ -57,8 +57,8 @@ class AIService {
    * @returns {Promise<Object>} Kết quả từ ChatbotService:
    *   `{ response: string, products: Array, suggestions: Array, intent: string }`
    */
-  async handleMessage({ message, userId, sessionId }) {
-    return this.chatbotService.handleMessage(message, userId, sessionId);
+  async handleMessage({ message, userId, sessionId, enableTrace = false }) {
+    return this.chatbotService.handleMessage(message, userId, sessionId, { enableTrace });
   }
 
   clearSession(sessionId) {

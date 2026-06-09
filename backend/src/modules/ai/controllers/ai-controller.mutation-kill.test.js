@@ -78,6 +78,7 @@ describe('AIController — mutation kill', () => {
         message: 'Mua laptop',
         userId: 9,
         sessionId: 'sess-9',
+        enableTrace: true,
       });
     });
   });

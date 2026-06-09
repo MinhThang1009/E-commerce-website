@@ -28,7 +28,9 @@ describe('AIService', () => {
         userId: 1,
         sessionId: 'sess',
       });
-      expect(service.chatbotService.handleMessage).toHaveBeenCalledWith('hello', 1, 'sess');
+      expect(service.chatbotService.handleMessage).toHaveBeenCalledWith('hello', 1, 'sess', {
+        enableTrace: false,
+      });
       expect(result.response).toBe('hi');
     });
   });

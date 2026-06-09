@@ -3518,9 +3518,11 @@ describe('ChatbotService.handleMessage — line 349: re-throw khi error.statusCo
     const originalRetrieve = chatbotService._retrieveProducts.bind(chatbotService);
     chatbotService._retrieveProducts = jest.fn().mockRejectedValue(err);
 
-    await expect(chatbotService.handleMessage('tìm sản phẩm', null, null)).rejects.toMatchObject({
-      statusCode: 404,
-    });
+    await expect(chatbotService.handleMessage('tìm laptop Dell', null, null)).rejects.toMatchObject(
+      {
+        statusCode: 404,
+      },
+    );
 
     chatbotService._retrieveProducts = originalRetrieve;
   });
@@ -3529,7 +3531,7 @@ describe('ChatbotService.handleMessage — line 349: re-throw khi error.statusCo
     const originalRetrieve = chatbotService._retrieveProducts.bind(chatbotService);
     chatbotService._retrieveProducts = jest.fn().mockRejectedValue(new Error('generic error'));
 
-    const result = await chatbotService.handleMessage('tìm iphone', null, null);
+    const result = await chatbotService.handleMessage('tìm laptop Asus', null, null);
 
     expect(result).toHaveProperty('response');
     expect(result.intent).toBe('general');

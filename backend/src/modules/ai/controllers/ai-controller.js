@@ -16,8 +16,15 @@ class AIController {
     try {
       const { message, sessionId } = req.body;
       const userId = req.user?.id ?? null; // chỉ trust JWT, không nhận userId từ body
+      const returnTrace = req.query?.trace === 'true';
       this.logger.info('Chatbot', { messageLength: message.length, userId, sessionId });
-      const data = await this.aiService.handleMessage({ message, userId, sessionId });
+      const data = await this.aiService.handleMessage({
+        message,
+        userId,
+        sessionId,
+        enableTrace: true,
+      });
+      if (!returnTrace) delete data.trace;
       res.json({ status: 'success', data });
     } catch (err) {
       // 400 = expected user error (validation) → WARN; 5xx = unexpected → ERROR
@@ -61,6 +68,17 @@ class AIController {
     try {
       const { sessionId } = req.body;
       this.aiService.registerSession(sessionId);
+      // Ghi file tạm để demo script --watch detect session UI ngay lập tức
+      try {
+        const path = require('path');
+        require('fs').writeFileSync(
+          path.join(__dirname, '..', '..', '..', 'data', '.last-session-id'),
+          sessionId,
+          'utf8',
+        );
+      } catch {
+        /* ignore — chỉ ảnh hưởng demo script */
+      }
       res.json({ status: 'success' });
     } catch (err) {
       next(err);

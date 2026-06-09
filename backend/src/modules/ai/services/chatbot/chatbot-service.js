@@ -417,14 +417,15 @@ class ChatbotService {
       ]).finally(() => clearTimeout(_budgetTimer));
 
       if (trace) {
+        const genLlmMode = _genTrace.llmMode;
         trace.step6_generate = {
           usedFallback,
           timeMs: Date.now() - generateStart,
-          productsInResponse: aiResponse.products?.length ?? 0,
-          llmMode: _genTrace?.llmMode || (this.providers.length > 0 ? 'up' : 'down'),
+          productsInResponse: aiResponse.products ? aiResponse.products.length : 0,
+          llmMode: genLlmMode,
           providerCount: this.providers.length,
           providerModels: this.providers.map((p) => p.model),
-          ...(_genTrace || {}),
+          ..._genTrace,
         };
       }
 
@@ -981,7 +982,7 @@ QUY TẮC BẮT BUỘC:
             status: 'break',
             timeMs: Date.now() - attemptStart,
             rawLength: null,
-            errorCode: String(status || error.code),
+            errorCode: String(status),
           });
         break;
       }

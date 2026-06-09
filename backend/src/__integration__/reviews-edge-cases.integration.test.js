@@ -212,7 +212,7 @@ describe('Reviews edge cases — admin verify', () => {
 // chờ commit → thấy existing review → update thay vì create.
 // Yêu cầu MySQL thật để verify concurrent behavior.
 describe('HIGH-1 — createReview concurrent lock (requires MySQL)', () => {
-  test.skip('HIGH-1: 2 concurrent createReview cùng user+product → chỉ 1 review, không duplicate', async () => {
+  test('HIGH-1: 2 concurrent createReview cùng user+product → chỉ 1 review, không duplicate', async () => {
     const service = makeService();
     const reviewData = {
       userId: userWithPurchase.id,

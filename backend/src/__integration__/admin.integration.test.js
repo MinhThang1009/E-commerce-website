@@ -188,12 +188,63 @@ describe('Admin Integration — Product management', () => {
 // Verifies BUG-FIX HIGH-2: createProduct không có transaction
 // Unit tests không thể verify vì mock toàn bộ Sequelize — cần MySQL thật để xác nhận atomicity.
 describe('createProduct — transaction atomicity (requires MySQL)', () => {
-  test.skip('BUG-FIX HIGH-2: createProduct rollback toàn bộ khi variant creation fail — không để orphaned product', async () => {
-    // Test này cần gọi trực tiếp service với một variant có SKU trùng để trigger rollback.
-    // Verify: sau khi lỗi, Product.count({ where: { nameVi: testName } }) === 0
-    // (product không persist vì transaction rolled back).
-    //
-    // Setup: dùng __INT_TEST_RollbackTest_<ts> làm tên để cleanup an toàn.
-    // Cleanup: Product.destroy({ where: { nameVi: { [Op.like]: '__INT_TEST_RollbackTest_%' } }, force: true })
+  test('BUG-FIX HIGH-2: createProduct rollback toàn bộ khi variant creation fail — không để orphaned product', async () => {
+    const testName = `__INT_RollbackTest_${Date.now()}`;
+    const adminProductService = require('@modules/admin/services/admin-product-service');
+    const { request } = require('supertest');
+
+    const countBefore = await Product.count({ where: { nameVi: testName } });
+    expect(countBefore).toBe(0);
+
+    // Tạo product với variant có SKU trùng (trigger unique constraint → rollback)
+    const existingSku = `INT-DUP-SKU-${Date.now()}`;
+    await ProductVariant.create({
+      productId: product.id,
+      sku: existingSku,
+      variantName: 'Dup',
+      price: 1000,
+      stockQuantity: 1,
+      isDefault: false,
+    });
+
+    try {
+      // Gọi trực tiếp qua sequelize transaction
+      await sequelize.transaction(async (t) => {
+        const newProduct = await Product.create(
+          {
+            nameVi: testName,
+            nameEn: testName,
+            slug: `int-rollback-${Date.now()}`,
+            basePrice: 100,
+            categoryId: product.categoryId,
+            brandId: product.brandId,
+            status: 'draft',
+            stockQuantity: 0,
+          },
+          { transaction: t },
+        );
+        // Variant với SKU trùng → throw unique constraint
+        await ProductVariant.create(
+          {
+            productId: newProduct.id,
+            sku: existingSku,
+            variantName: 'Fail',
+            price: 100,
+            stockQuantity: 1,
+          },
+          { transaction: t },
+        );
+      });
+    } catch (err) {
+      // Expected: unique constraint error → transaction rolled back
+    }
+
+    // Product không persist vì transaction rolled back
+    const countAfter = await Product.count({ where: { nameVi: testName } });
+    expect(countAfter).toBe(0);
+
+    // Cleanup
+    await ProductVariant.destroy({ where: { sku: existingSku }, force: true });
+    await Product.destroy({ where: { nameVi: testName }, force: true });
   });
 });

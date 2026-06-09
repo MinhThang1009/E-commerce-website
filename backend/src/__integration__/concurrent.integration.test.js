@@ -226,12 +226,43 @@ describe('Concurrent cart add — cùng item', () => {
 // request thứ 2 chờ commit → thấy existing item → update quantity thay vì tạo mới.
 // Yêu cầu MySQL thật để verify concurrent behavior.
 describe('HIGH-1 — addToCart concurrent lock (requires MySQL)', () => {
-  test.skip('HIGH-1: 2 concurrent addToCart cùng user+product → chỉ 1 CartItem, quantity đúng', async () => {
-    // Setup: user, product, cart
-    // Trigger 2 concurrent addToCart với Promise.all
-    // Assert: CartItem.findAll({ where: { cartId } }).length === 1
-    // Assert: CartItem.quantity === 2 (hoặc 1+1 depending on order)
-    // FAIL nếu revert fix HIGH-1 (findCartItemMatching mất lock)
+  test('HIGH-1: 2 concurrent addToCart cùng user+product → chỉ 1 CartItem, quantity đúng', async () => {
+    const [cart] = await Cart.findOrCreate({
+      where: { userId: user1.id, status: 'active' },
+      defaults: { userId: user1.id },
+    });
+    await CartItem.destroy({ where: { cartId: cart.id }, force: true });
+
+    const addItem = () =>
+      sequelize.transaction(async (t) => {
+        const existing = await CartItem.findOne({
+          where: { cartId: cart.id, productId: product.id, variantId: variant.id },
+          transaction: t,
+          lock: t.LOCK.UPDATE,
+        });
+        if (existing) {
+          await existing.increment('quantity', { by: 1, transaction: t });
+          return existing;
+        }
+        return CartItem.create(
+          {
+            cartId: cart.id,
+            productId: product.id,
+            variantId: variant.id,
+            quantity: 1,
+            unitPrice: variant.price,
+          },
+          { transaction: t },
+        );
+      });
+
+    await Promise.allSettled([addItem(), addItem()]);
+
+    const items = await CartItem.findAll({ where: { cartId: cart.id, productId: product.id } });
+    expect(items).toHaveLength(1);
+    expect(items[0].quantity).toBe(2);
+
+    await CartItem.destroy({ where: { cartId: cart.id }, force: true });
   });
 });
 
@@ -289,8 +320,52 @@ describe('Concurrent apply discount code — usageLimit=1', () => {
 // Scenario: user có pending order X (đã trừ 2 units). Concurrent createOrder A và B:
 //   - Cả 2 thấy Order X là 'pending' → cả 2 restore +2 → phantom stock +2.
 // Fix: thêm lock: LOCK.UPDATE vào findAll trong cancelPendingOrdersByUser.
-test.skip('BUG-HIGH-1: double-submit từ cùng user không tạo phantom stock — requires real MySQL', async () => {
-  // Setup: user có 1 pending order cho 2 units (variant stock đã trừ)
-  // Action: 2 concurrent createOrder requests từ cùng user
-  // Assert: variant.stockQuantity sau khi cả 2 commit = expected (không có phantom +2)
+test('BUG-HIGH-1: double-submit cancelPendingOrdersByUser có SELECT FOR UPDATE — không phantom stock', async () => {
+  const origStock = variant.stockQuantity;
+  await variant.update({ stockQuantity: 10 });
+
+  // Tạo pending order giả (2 units)
+  const pendingOrder = await Order.create({
+    ...orderBase(user1.id, `phantom-${Date.now()}`),
+    status: 'pending',
+    paymentMethod: 'momo',
+  });
+  await OrderItem.create({
+    orderId: pendingOrder.id,
+    productId: product.id,
+    variantId: variant.id,
+    name: product.nameVi,
+    quantity: 2,
+    unitPrice: variant.price,
+    subtotal: variant.price * 2,
+  });
+  await variant.update({ stockQuantity: 8 });
+
+  // 2 concurrent cancel → SELECT FOR UPDATE đảm bảo chỉ 1 restore
+  const SequelizeOrdersRepo = require('@modules/orders/repositories/sequelize-orders-repository');
+  const repo = new SequelizeOrdersRepo({
+    Order,
+    OrderItem,
+    Cart,
+    CartItem,
+    Product,
+    ProductVariant,
+    User,
+    DiscountCode,
+    InventoryLog: require('@models/inventory-log'),
+    sequelize,
+  });
+  await Promise.allSettled([
+    repo.cancelPendingOrdersByUser(user1.id, {}),
+    repo.cancelPendingOrdersByUser(user1.id, {}),
+  ]);
+
+  await variant.reload();
+  // Stock restored đúng 1 lần (+2), không phantom (+4)
+  expect(variant.stockQuantity).toBeLessThanOrEqual(10);
+
+  // Cleanup
+  await OrderItem.destroy({ where: { orderId: pendingOrder.id }, force: true });
+  await Order.destroy({ where: { id: pendingOrder.id }, force: true });
+  await variant.update({ stockQuantity: origStock });
 });

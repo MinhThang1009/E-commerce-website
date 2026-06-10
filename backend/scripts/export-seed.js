@@ -8,6 +8,8 @@
  * Output: backend/data/seed_data.sql (overwrite)
  */
 require('dotenv').config();
+// Bắt buộc trước khi require src/* — config/sequelize dùng alias @config
+require('module-alias/register');
 const path = require('path');
 const fs = require('fs');
 const sequelize = require('../src/config/sequelize');

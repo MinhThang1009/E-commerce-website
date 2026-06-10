@@ -148,6 +148,78 @@ describe('ReviewsService', () => {
       expect(reviewsRepository.getProductRatingsAggregate).toHaveBeenCalledWith(1);
       expect(reviewsRepository.updateProductRating).toHaveBeenCalled();
     });
+
+    // -------- deadlock retry (REGRESSION: 2 concurrent upsert deadlock ER 1213) --------
+    // Gap lock của 2 tx SELECT FOR UPDATE trên row chưa tồn tại tương thích nhau
+    // → cùng INSERT → MySQL rollback 1 tx với ER_LOCK_DEADLOCK. Tx thua phải retry.
+
+    const deadlockError = () =>
+      Object.assign(new Error('Deadlock found when trying to get lock'), {
+        parent: { code: 'ER_LOCK_DEADLOCK' },
+      });
+
+    test('transaction deadlock (ER 1213) → retry và thành công (đi nhánh update)', async () => {
+      const existingReview = { id: 7, rating: 3 };
+      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
+      reviewsRepository.hasUserPurchasedProduct.mockResolvedValue(true);
+      // Lần 1 deadlock; lần retry thấy review của tx thắng → update
+      reviewsRepository.runInTransaction
+        .mockRejectedValueOnce(deadlockError())
+        .mockImplementation((work) => work({ LOCK: { UPDATE: 'UPDATE' } }));
+      reviewsRepository.findReviewByUserAndProduct.mockResolvedValue(existingReview);
+      reviewsRepository.findReviewByPkWithUser.mockResolvedValue(existingReview);
+
+      const result = await service.createReview({
+        userId: 1,
+        productId: 1,
+        rating: 5,
+        title: 'T',
+        comment: 'C',
+      });
+
+      expect(reviewsRepository.runInTransaction).toHaveBeenCalledTimes(2);
+      expect(result.review).toBe(existingReview);
+    });
+
+    test('deadlock liên tục quá số lần retry → throw lỗi cuối', async () => {
+      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
+      reviewsRepository.hasUserPurchasedProduct.mockResolvedValue(true);
+      reviewsRepository.runInTransaction.mockRejectedValue(deadlockError());
+
+      await expect(
+        service.createReview({ userId: 1, productId: 1, rating: 5, title: 'T', comment: 'C' }),
+      ).rejects.toThrow('Deadlock');
+      // 1 lần đầu + 2 retries = 3
+      expect(reviewsRepository.runInTransaction).toHaveBeenCalledTimes(3);
+    });
+
+    test('lỗi KHÔNG phải deadlock → throw ngay, không retry', async () => {
+      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
+      reviewsRepository.hasUserPurchasedProduct.mockResolvedValue(true);
+      reviewsRepository.runInTransaction.mockRejectedValue(new Error('DB down'));
+
+      await expect(
+        service.createReview({ userId: 1, productId: 1, rating: 5, title: 'T', comment: 'C' }),
+      ).rejects.toThrow('DB down');
+      expect(reviewsRepository.runInTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    test('deadlock báo qua err.original (không có err.parent) → vẫn retry', async () => {
+      const existingReview = { id: 8, rating: 4 };
+      reviewsRepository.findProductById.mockResolvedValue({ id: 1 });
+      reviewsRepository.hasUserPurchasedProduct.mockResolvedValue(true);
+      reviewsRepository.runInTransaction
+        .mockRejectedValueOnce(
+          Object.assign(new Error('Deadlock'), { original: { code: 'ER_LOCK_DEADLOCK' } }),
+        )
+        .mockImplementation((work) => work({ LOCK: { UPDATE: 'UPDATE' } }));
+      reviewsRepository.findReviewByUserAndProduct.mockResolvedValue(existingReview);
+      reviewsRepository.findReviewByPkWithUser.mockResolvedValue(existingReview);
+
+      await service.createReview({ userId: 1, productId: 1, rating: 5, title: 'T', comment: 'C' });
+
+      expect(reviewsRepository.runInTransaction).toHaveBeenCalledTimes(2);
+    });
   });
 
   // -------- updateReview --------

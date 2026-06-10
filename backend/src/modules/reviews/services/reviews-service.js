@@ -42,36 +42,54 @@ class ReviewsService {
     }
 
     let review;
-    await this.reviewsRepository.runInTransaction(async (tx) => {
-      const existing = await this.reviewsRepository.findReviewByUserAndProduct(userId, productId, {
-        transaction: tx,
-        lock: tx.LOCK.UPDATE,
-      });
-
-      if (existing) {
-        Object.assign(existing, {
-          rating,
-          title,
-          content: comment,
-          images: images || [],
-          isVerified: true,
-        });
-        review = await this.reviewsRepository.saveReview(existing, { transaction: tx });
-      } else {
-        review = await this.reviewsRepository.createReview(
-          {
-            productId,
+    // SELECT FOR UPDATE trên row CHƯA tồn tại → 2 tx đồng thời cùng giữ gap lock
+    // (gap lock tương thích nhau) rồi cùng INSERT vào gap → deadlock ER 1213,
+    // MySQL rollback 1 tx. Retry tx thua: lần chạy lại block đến khi tx thắng
+    // commit, thấy review đã tồn tại → đi nhánh update (đúng ngữ nghĩa upsert).
+    const MAX_DEADLOCK_RETRIES = 2;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await this.reviewsRepository.runInTransaction(async (tx) => {
+          const existing = await this.reviewsRepository.findReviewByUserAndProduct(
             userId,
-            rating,
-            title,
-            content: comment,
-            images: images || [],
-            isVerified: true,
-          },
-          { transaction: tx },
-        );
+            productId,
+            {
+              transaction: tx,
+              lock: tx.LOCK.UPDATE,
+            },
+          );
+
+          if (existing) {
+            Object.assign(existing, {
+              rating,
+              title,
+              content: comment,
+              images: images || [],
+              isVerified: true,
+            });
+            review = await this.reviewsRepository.saveReview(existing, { transaction: tx });
+          } else {
+            review = await this.reviewsRepository.createReview(
+              {
+                productId,
+                userId,
+                rating,
+                title,
+                content: comment,
+                images: images || [],
+                isVerified: true,
+              },
+              { transaction: tx },
+            );
+          }
+        });
+        break;
+      } catch (err) {
+        const isDeadlock =
+          err?.parent?.code === 'ER_LOCK_DEADLOCK' || err?.original?.code === 'ER_LOCK_DEADLOCK';
+        if (!isDeadlock || attempt >= MAX_DEADLOCK_RETRIES) throw err;
       }
-    });
+    }
 
     const created = await this.reviewsRepository.findReviewByPkWithUser(review.id);
     await this._refreshProductRating(productId);

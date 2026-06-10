@@ -14,7 +14,11 @@ Sinh bởi `node scripts/eval-intent-classifier.js` trên bộ 173 labeled queri
 
 Bài học ghi lại:
 - Vector của 2 embedding model khác nhau KHÔNG so sánh được — cache/eval phải
-  nhất quán provider (salt theo provider trong cache).
+  nhất quán provider (salt theo provider trong cache). **Đã fix triệt để
+  (2026-06-10):** eval script + runtime đều PIN provider primary
+  (`generateEmbeddingWithMeta(..., { pin })`) — không còn khả năng vector
+  fallback lọt vào cache/so sánh. Salt cache đổi từ fingerprint 'jina+hf'
+  sang tên provider (`activeName`) — lần eval đầu sau thay đổi sẽ re-embed.
 - `mean` toàn bộ examples pha loãng nhóm catch-all (off_topic) → dùng top-k mean.
 - Nhãn ranh giới pricing (hỏi giá SP cụ thể) vs product_search (browse theo budget)
   phải nhất quán giữa INTENT_EXAMPLES và dataset.

@@ -243,6 +243,9 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 - **Rate limiters:** `apiLimiter` = 100 req/15min (prod) / 1000 (dev); `authLimiter` = 10 req/60min; `otpLimiter` = 5 req/15min; `chatbotLimiter` = 20 req/60s; `chatLimiter` = 30 req/5min; `destructiveLimiter` = 10 req/15min. Không có dev override cho chatbot limiters.
 - **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products (server.js:125). Log "Vector store lệch >5% so với DB ... Tự động rebuild..." là bình thường.
 - **Intent classify 2 tầng (2026-06-10):** embedding classifier là PRIMARY (`INTENT_CLASSIFIER=embedding` default), regex `classifyIntent()` là fallback — KHÔNG xóa regex. Calibrate/eval bằng `node scripts/eval-intent-classifier.js` (gate: pipeline ≥ regex từng intent trên `scripts/eval-intent-dataset.json`). Rollback tức thì: `INTENT_CLASSIFIER=regex`. Câu trộn off-topic+sản phẩm (EC2b) giờ KHÔNG bị block — by design.
+- **Cross-model vector guard (2026-06-10):** vector của 2 embedding model KHÔNG so sánh được bằng cosine. `generateEmbeddingWithMeta()` trả `{vector, provider}` (+opts `pin` để khóa 1 provider); vector store ghi `provider` per-item và semantic search skip item lệch provider; intent classifier pin examples theo `unifiedEmbedding.activeName` — query rơi vào provider fallback → tự xuống tầng regex. KHÔNG quay lại `generateEmbedding()` trần cho path so sánh vector.
+- **Provider rotation LLM:** lỗi 400/401 KHÔNG break rotation — mỗi provider có key/URL/model riêng nên luôn thử hết chain (bounded ≤3 + `LLM_TOTAL_TIMEOUT_MS`).
+- **`npm run db:export-seed`:** KHÔNG chạy để overwrite `seed_data.sql` khi DB dev chứa residue test (kiểm tra trước: số brands/categories/products so với seed). Cần thêm sản phẩm vào seed → tạo qua model rồi append rows thủ công.
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
 - **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, `ReviewFeedback`, `AuditLog`, `BrandCategory` — không reference lại.
 - **Stock decrement:** LUÔN trong transaction với SELECT FOR UPDATE — không decrement bên ngoài unitOfWork.
@@ -263,14 +266,14 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 174 | 5.608 | ~13s | `jest.config.js` |
-| BE Integration Tests | 38 | 211 | ~57s | `jest.integration.config.js` |
-| BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
+| BE Unit Tests | 174 | 5.626 | ~13s | `jest.config.js` |
+| BE Integration Tests | 21 | 227 | ~60s | `jest.integration.config.js` |
+| BE API HTTP Tests | 18 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **284** | **~7.531** | | |
+| **Tổng** | **246** | **~7.565** | | |
 
-> Cập nhật 2026-06-10 (logic-audit module ai: 15 fixes + 50 regression tests BE unit, +1 integration; số suites/tests đo trực tiếp bằng `npm run test:fast` — baseline cũ 215/5.381 đã lệch so với thực đo từ trước audit).
+> Cập nhật 2026-06-10 (logic-audit module ai: 15 fixes + 50 regression tests; batch fix backlog cùng ngày: +18 tests — cross-model guard, PRICE_UNIT k/nghìn, setSpecKeyMap, rotation, deadlock-retry reviews. Suites/tests đo trực tiếp: unit `npm run test`, integration `npm run test:integration`; cột suites integration/API trước đây ghi 38/39 là số stale).
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%

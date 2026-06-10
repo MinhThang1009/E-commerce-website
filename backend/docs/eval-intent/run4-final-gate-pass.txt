@@ -1,0 +1,140 @@
+[2026-06-10 11:16:30]  ✅  INFO   ✅ UnifiedEmbedding khởi tạo — primary: [Jina v3] | fallback: multilingual-e5-large-instruct → multilingual-e5-large
+Embedding examples (cache hit nếu đã chạy trước)...
+
+══ Accuracy per-intent ═══════════════════════════════════
+Intent           | Regex          | Pipeline (2 tầng)
+-----------------|----------------|------------------
+product_search   | 66% (33/50)    | 68% (34/50)
+pricing          | 88% (23/26)    | 88% (23/26)
+order_inquiry    | 48% (12/25)    | 68% (17/25)
+policy           | 68% (17/25)    | 72% (18/25)
+general          | 100% (24/24)   | 100% (24/24)
+off_topic        | 17% (4/23)     | 26% (6/23)
+-----------------|----------------|------------------
+TỔNG             | 65% (113/173)  | 71% (122/173)
+
+══ Mismatches (pipeline sai hoặc regex sai) ══════════════
+[PS-04] "Huawei Mate 70 có bán không?"
+   expected=product_search  regex=general  pipeline=general  embScore=0.423
+[PS-12] "cái đó có bao nhiêu RAM?"
+   expected=product_search  regex=pricing  pipeline=pricing  embScore=0.353
+[PS-13] "nó có màu gì?"
+   expected=product_search  regex=general  pipeline=general  embScore=0.386
+[PS-21] "mình muốn mua quà sinh nhật cho bạn gái, budget 15 triệu"
+   expected=product_search  regex=pricing  pipeline=pricing  embScore=0.379
+[PS-24] "con nào ngon nhất tầm 25 củ?"
+   expected=product_search  regex=general  pipeline=general  embScore=0.359
+[PS-27] "nên mua điện thoại hay laptop với budget 20 triệu?"
+   expected=product_search  regex=pricing  pipeline=product_search  embScore=0.566
+[PS-28] "flagship nào chụp đêm đẹp nhất hiện nay?"
+   expected=product_search  regex=general  pipeline=general  embScore=0.346
+[PS-30] "máy này quay phim 4K được không?"
+   expected=product_search  regex=general  pipeline=general  embScore=0.301
+[PS-35] "tai nghe nghe nhạc bass mạnh tầm 2 triệu"
+   expected=product_search  regex=general  pipeline=general  embScore=0.493
+[PS-37] "tai nghe chống ồn nào ngon dưới 2 củ"
+   expected=product_search  regex=general  pipeline=general  embScore=0.448
+[PS-40] "pin con này có tụt nhanh không vậy"
+   expected=product_search  regex=general  pipeline=general  embScore=0.392
+[PS-44] "máy nào lướt web mượt cho mẹ em dùng"
+   expected=product_search  regex=general  pipeline=general  embScore=0.406
+[PS-45] "co con lap nao man 16 inch khong"
+   expected=product_search  regex=general  pipeline=general  embScore=0.405
+[PS-46] "gợi ý con tai nghe gaming ngon đi"
+   expected=product_search  regex=general  pipeline=general  embScore=0.453
+[PS-47] "đt 5 củ có con nào ổn không"
+   expected=product_search  regex=general  pipeline=general  embScore=0.321
+[PS-49] "màn 120hz tầm trung có con nào ngon"
+   expected=product_search  regex=general  pipeline=general  embScore=0.448
+[PS-50] "đt nào selfie đẹp cho nữ vậy shop"
+   expected=product_search  regex=general  pipeline=general  embScore=0.463
+[PR-01] "bóng đá Samsung S25 Ultra giá bao nhiêu"
+   expected=pricing  regex=off_topic  pipeline=off_topic  embScore=0.485
+[PR-10] "what is the cheapest smartphone you have?"
+   expected=pricing  regex=pricing  pipeline=product_search  embScore=0.554
+[PR-24] "con này đang sale còn nhiêu vậy"
+   expected=pricing  regex=general  pipeline=pricing  embScore=0.599
+[PR-26] "tai nghe airpods pro giờ còn nhiêu"
+   expected=pricing  regex=product_search  pipeline=product_search  embScore=0.418
+[OI-02] "iPhone 17 Pro còn hàng không? Giao về Đà Nẵng mất mấy ngày?"
+   expected=order_inquiry  regex=product_search  pipeline=product_search  embScore=0.505
+[OI-03] "đơn của em đặt hôm thứ 2 giờ tới đâu rồi"
+   expected=order_inquiry  regex=general  pipeline=order_inquiry  embScore=0.654
+[OI-04] "bao lâu thì giao tới Cần Thơ vậy shop"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.496
+[OI-07] "đơn ORD123 sao chưa thấy gì vậy"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.507
+[OI-08] "khi nào hàng tới nơi vậy"
+   expected=order_inquiry  regex=general  pipeline=order_inquiry  embScore=0.776
+[OI-15] "my package hasn't arrived yet"
+   expected=order_inquiry  regex=general  pipeline=order_inquiry  embScore=0.645
+[OI-16] "can you deliver tomorrow morning?"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.534
+[OI-17] "hủy đơn vừa đặt được không"
+   expected=order_inquiry  regex=general  pipeline=order_inquiry  embScore=0.701
+[OI-18] "đổi địa chỉ nhận hàng được không shop"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.467
+[OI-21] "sao đơn của em bị hoàn về rồi"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.511
+[OI-22] "giao tới Bình Dương mất mấy ngày"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.497
+[OI-24] "mã vận đơn của em là gì vậy"
+   expected=order_inquiry  regex=general  pipeline=order_inquiry  embScore=0.613
+[OI-25] "sao đơn em tự nhiên bị huỷ vậy shop"
+   expected=order_inquiry  regex=general  pipeline=general  embScore=0.371
+[PL-04] "mua online có được kiểm tra hàng trước khi nhận không"
+   expected=policy  regex=general  pipeline=general  embScore=0.514
+[PL-05] "trả góp 0% có áp dụng cho iPhone không shop"
+   expected=policy  regex=product_search  pipeline=product_search  embScore=0.340
+[PL-13] "máy dùng 2 tuần bị lỗi màn hình thì sao"
+   expected=policy  regex=general  pipeline=general  embScore=0.425
+[PL-17] "mua rồi muốn đổi màu khác được không"
+   expected=policy  regex=general  pipeline=general  embScore=0.450
+[PL-18] "có xuất hóa đơn VAT cho công ty không"
+   expected=policy  regex=general  pipeline=general  embScore=0.247
+[PL-20] "1 đổi 1 trong 30 ngày đúng không shop"
+   expected=policy  regex=general  pipeline=policy  embScore=0.571
+[PL-21] "pin chai có được thay miễn phí không"
+   expected=policy  regex=general  pipeline=general  embScore=0.408
+[PL-22] "chế độ hậu mãi bên mình thế nào"
+   expected=policy  regex=general  pipeline=general  embScore=0.414
+[OT-02] "hôm nay trời đẹp nhỉ"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.510
+[OT-03] "bầu cử tổng thống mỹ ai thắng vậy"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.255
+[OT-04] "kể chuyện cười cho vui đi"
+   expected=off_topic  regex=general  pipeline=off_topic  embScore=0.624
+[OT-05] "giá vàng hôm nay bao nhiêu"
+   expected=off_topic  regex=pricing  pipeline=pricing  embScore=0.465
+[OT-06] "công thức làm bánh mì tại nhà"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.320
+[OT-07] "đội tuyển việt nam đá lúc mấy giờ"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.407
+[OT-10] "dạo này chứng khoán sao rồi"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.313
+[OT-11] "tỷ số trận MU tối qua bao nhiêu"
+   expected=off_topic  regex=pricing  pipeline=pricing  embScore=0.533
+[OT-12] "thoi tiet sai gon cuoi tuan co mua khong"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.319
+[OT-13] "bài hát nào đang hot trend vậy"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.436
+[OT-14] "ăn gì ngon ở quận 1"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.250
+[OT-16] "kết quả xổ số miền bắc hôm qua"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.390
+[OT-17] "who is the president of america"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.239
+[OT-18] "tell me a joke"
+   expected=off_topic  regex=general  pipeline=off_topic  embScore=0.692
+[OT-19] "what is 15 times 23"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.251
+[OT-20] "viết giúp em bài văn tả mẹ"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.309
+[OT-21] "mai có mưa không nhỉ"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.368
+[OT-22] "đội nào vô địch world cup 2026"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.254
+[OT-23] "cách trị mụn hiệu quả tại nhà"
+   expected=off_topic  regex=general  pipeline=general  embScore=0.184
+
+✓ GATE PASS — pipeline ≥ regex trên mọi intent. Có thể bật INTENT_CLASSIFIER=embedding mặc định.

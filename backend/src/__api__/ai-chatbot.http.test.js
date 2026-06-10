@@ -14,13 +14,15 @@ afterAll(async () => {
 });
 
 describe('POST /api/chatbot/message', () => {
+  // Timeout 120s: test chạy FULL pipeline với LLM thật khi env có provider —
+  // ngân sách server LLM_TOTAL_TIMEOUT_MS có thể tới 90s, jest default 30s sẽ flaky
   test('message hợp lệ → 200 hoặc 5xx (demo key)', async () => {
     const res = await request(app)
       .post('/api/chatbot/message')
       .send({ message: 'laptop dưới 20 triệu' });
     expect([200, 500, 503]).toContain(res.status);
     if (res.status === 200) expect(res.body.status).toBe('success');
-  });
+  }, 120000);
 
   test('message rỗng → 400', async () => {
     const res = await request(app).post('/api/chatbot/message').send({ message: '' });

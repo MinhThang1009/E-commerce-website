@@ -236,6 +236,39 @@ describe('simpleKeywordMatch — price range filter', () => {
       expect(p.price).toBeGreaterThanOrEqual(30000000);
     });
   });
+
+  // Đơn vị nghìn: "dưới 500k" trước đây KHÔNG được lọc giá (PRICE_UNIT thiếu k/nghìn)
+  test('"dưới 500k" → ×1.000, lọc đúng phụ kiện giá rẻ', () => {
+    const cheapCase = makeProduct({ id: 10, name: 'Ốp lưng iPhone', price: 250000 });
+    const expensiveCase = makeProduct({ id: 11, name: 'Ốp lưng da cao cấp', price: 900000 });
+    const result = simpleKeywordMatch('ốp lưng dưới 500k', [cheapCase, expensiveCase]);
+    expect(result.products.length).toBeGreaterThan(0);
+    result.products.forEach((p) => {
+      expect(p.price).toBeLessThanOrEqual(500000);
+    });
+  });
+
+  test('"tầm 300 nghìn" → window ±20% quanh 300.000', () => {
+    const inRange = makeProduct({ id: 12, name: 'Tai nghe có dây', price: 290000 });
+    const outRange = makeProduct({ id: 13, name: 'Tai nghe bluetooth', price: 2000000 });
+    const result = simpleKeywordMatch('tai nghe tầm 300 nghìn', [inRange, outRange]);
+    expect(result.products.length).toBeGreaterThan(0);
+    result.products.forEach((p) => {
+      expect(p.price).toBeGreaterThanOrEqual(240000);
+      expect(p.price).toBeLessThanOrEqual(360000);
+    });
+  });
+
+  test('"200-500 ngàn" → dải giá nhân đúng hệ số nghìn', () => {
+    const inRange = makeProduct({ id: 14, name: 'Cáp sạc nhanh', price: 350000 });
+    const outRange = makeProduct({ id: 15, name: 'Cáp sạc thường', price: 90000 });
+    const result = simpleKeywordMatch('cáp sạc 200-500 ngàn', [inRange, outRange]);
+    expect(result.products.length).toBeGreaterThan(0);
+    result.products.forEach((p) => {
+      expect(p.price).toBeGreaterThanOrEqual(200000);
+      expect(p.price).toBeLessThanOrEqual(500000);
+    });
+  });
 });
 
 // ── simpleKeywordMatch — category prefix filter (lines 299-302) ──────────────

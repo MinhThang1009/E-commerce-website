@@ -117,11 +117,14 @@ function simpleKeywordMatch(userMessage, products) {
   const queryForVersionExtract = lowerMessage
     // Strip dải giá: "15-20 triệu", "10 đến 15tr"
     .replace(
-      /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
+      /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|million|thousand|nghìn|ngàn|ngan\b|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
       ' ',
     )
-    // Strip giá đơn: "20 triệu", "500k", "10đ"
-    .replace(/\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu, ' ')
+    // Strip giá đơn: "20 triệu", "500k", "10đ", "20 million"
+    .replace(
+      /\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|million|thousand|nghìn|ngàn|ngan\b|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
+      ' ',
+    )
     // Strip số ngân sách KHÔNG kèm đơn vị: "tầm 20", "dưới 15" — shorthand phổ biến,
     // user ngầm hiểu là triệu; nếu giữ lại sẽ bị version filter nhầm thành số model
     .replace(
@@ -258,8 +261,13 @@ function simpleKeywordMatch(userMessage, products) {
   //
   // Safety: chỉ thu hẹp kết quả khi price filter còn ít nhất 1 sản phẩm,
   //   nếu không có sản phẩm nào trong tầm giá thì giữ nguyên (không over-filter).
-  const PRICE_UNIT = '(?:tr(?:iệu)?|triệu|million|m\\b)';
+  // Capturing group để biết đơn vị: k/nghìn/ngàn = ×1.000, tr/triệu/million = ×1.000.000
+  // ("tai nghe dưới 500k" trước đây không được lọc giá vì thiếu đơn vị nghìn)
+  const PRICE_UNIT = '(tr(?:iệu)?|triệu|million|m\\b|k\\b|nghìn|nghin\\b|ngàn|ngan\\b|thousand)';
   const NUM = '(\\d+(?:[.,]\\d+)?)';
+  const toVnd = (numStr, unit) =>
+    parseFloat(numStr.replace(',', '.')) *
+    (/^(?:k|nghìn|nghin|ngàn|ngan|thousand)$/.test(unit) ? 1_000 : 1_000_000);
 
   let minPrice = 0;
   let maxPrice = Infinity;
@@ -278,17 +286,17 @@ function simpleKeywordMatch(userMessage, products) {
   );
 
   if (rangeMatch) {
-    minPrice = parseFloat(rangeMatch[1].replace(',', '.')) * 1_000_000;
-    maxPrice = parseFloat(rangeMatch[2].replace(',', '.')) * 1_000_000;
+    minPrice = toVnd(rangeMatch[1], rangeMatch[3]);
+    maxPrice = toVnd(rangeMatch[2], rangeMatch[3]);
   } else if (maxMatch) {
-    maxPrice = parseFloat(maxMatch[1].replace(',', '.')) * 1_000_000;
+    maxPrice = toVnd(maxMatch[1], maxMatch[2]);
   } else if (approxMatch) {
     // "tầm 20 triệu" → window ±20% để không quá cứng (16M–24M)
-    const center = parseFloat(approxMatch[1].replace(',', '.')) * 1_000_000;
+    const center = toVnd(approxMatch[1], approxMatch[2]);
     minPrice = center * 0.8;
     maxPrice = center * 1.2;
   } else if (minMatch) {
-    minPrice = parseFloat(minMatch[1].replace(',', '.')) * 1_000_000;
+    minPrice = toVnd(minMatch[1], minMatch[2]);
   }
 
   if (minPrice > 0 || maxPrice < Infinity) {

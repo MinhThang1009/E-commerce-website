@@ -39,8 +39,16 @@ module.exports = ({ aiController }) => {
     validateRequest(chatMessageSchema),
     aiController.streamMessage,
   );
-  // SSE: terminal kết nối để nhận pipeline events real-time khi UI gửi query
-  router.get('/events', optionalAuthenticate, aiController.subscribeEvents);
+  // SSE: terminal kết nối để nhận pipeline events real-time khi UI gửi query.
+  // chatLimiter chống mở connection vô hạn / brute-force sessionId;
+  // sessionSchema validate query param (bắt buộc, max 128) trước khi giữ socket mở.
+  router.get(
+    '/events',
+    chatLimiter,
+    optionalAuthenticate,
+    validateRequest(sessionSchema, 400, 'query'),
+    aiController.subscribeEvents,
+  );
   /**
    * @swagger
    * /api/chatbot/cart/add:

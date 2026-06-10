@@ -263,12 +263,12 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 176 | 5.581 | ~13s | `jest.config.js` |
+| BE Unit Tests | 174 | 5.608 | ~13s | `jest.config.js` |
 | BE Integration Tests | 38 | 211 | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **286** | **~7.504** | | |
+| **Tổng** | **284** | **~7.531** | | |
 
 > Cập nhật 2026-06-10 (logic-audit module ai: 15 fixes + 50 regression tests BE unit, +1 integration; số suites/tests đo trực tiếp bằng `npm run test:fast` — baseline cũ 215/5.381 đã lệch so với thực đo từ trước audit).
 

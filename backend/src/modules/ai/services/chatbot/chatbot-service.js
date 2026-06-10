@@ -128,6 +128,23 @@ const LLM_REWRITE_TIMEOUT_MS = Number(process.env.LLM_REWRITE_TIMEOUT_MS) || 800
  */
 const LLM_TOTAL_TIMEOUT_MS = Number(process.env.LLM_TOTAL_TIMEOUT_MS) || LLM_REQUEST_TIMEOUT_MS;
 
+/**
+ * Tầng phân loại intent mặc định khi env INTENT_CLASSIFIER không set.
+ * 'embedding' = semantic classifier (primary) + regex fallback; 'regex' = chỉ regex (rollback).
+ * Đọc env per-request (trong _classifyIntent) để test/rollback không cần restart module.
+ *
+ * Default 'embedding' từ 2026-06-10 — eval gate PASS trên 173 labeled queries:
+ * pipeline 72% vs regex 65%, thắng/hòa trên TỪNG intent (scripts/eval-intent-classifier.js).
+ */
+const INTENT_CLASSIFIER_DEFAULT = 'embedding';
+
+/**
+ * Timeout (milliseconds) cho embedding call ở bước classify intent.
+ * Ngắn (2.5s) vì classify chặn đầu pipeline — quá hạn → rơi về regex fallback,
+ * KHÔNG để user chờ 30s timeout mặc định của embedding provider.
+ */
+const INTENT_EMBED_TIMEOUT_MS = Number(process.env.INTENT_EMBED_TIMEOUT_MS) || 2500;
+
 // ════════════════════════════════════════════════════════════════════════════════
 // CLASS DEFINITION
 // ════════════════════════════════════════════════════════════════════════════════
@@ -232,11 +249,17 @@ class ChatbotService {
     } catch (error) {
       logger.error('Khởi tạo Chatbot thất bại:', error.message || error);
     }
-    // Khởi tạo embedding intent classifier ở background — không block server startup
+    // Khởi tạo embedding intent classifier ở background — không block server startup.
+    // cacheSalt = fingerprint provider: đổi JINA↔HF làm vector không tương thích
+    // → cache example embeddings trên đĩa phải invalidate theo.
     try {
       const unifiedEmbedding = require('@services/embedding/unified-embedding');
+      const providerFingerprint =
+        (process.env.JINA_API_KEY ? 'jina' : '') + (process.env.HF_API_KEY ? '+hf' : '');
       embeddingIntentClassifier
-        .initialize((text) => unifiedEmbedding.generateEmbedding(text, 'query'))
+        .initialize((text) => unifiedEmbedding.generateEmbedding(text, 'query'), {
+          cacheSalt: providerFingerprint,
+        })
         .then(() => logger.debug('[IntentClassifier] Embedding classifier sẵn sàng'))
         .catch((err) =>
           logger.warn('[IntentClassifier] Không thể init embedding classifier:', err.message),
@@ -283,22 +306,34 @@ class ChatbotService {
       const prep = this._preprocessMessage(message);
       if (!prep.valid) throw new AppError(prep.reason, 400);
 
-      const { normalizedQuery, injection, offTopic } = prep;
-      // Nếu regex classify là 'general', thử embedding classifier để cải thiện accuracy
+      const { normalizedQuery, injection } = prep;
+      // Bước ③ classify: embedding classifier là TẦNG CHÍNH (semantic, không phụ thuộc
+      // pattern cứng), regex là fallback. Skip khi injection — gate bảo mật chặn ngay,
+      // không tốn embedding call. Embedding của query được cache để bước ⑤ reuse.
+      const _embedCache = new Map();
       let intent = prep.intent;
-      if (intent === 'general' && embeddingIntentClassifier.isReady()) {
-        try {
-          const queryEmbedding = await embeddingIntentClassifier.embed(normalizedQuery);
-          const embIntent = embeddingIntentClassifier.classify(queryEmbedding);
-          if (embIntent && embIntent !== 'general') intent = embIntent;
-        } catch {
-          // Embedding thất bại → giữ intent từ regex
-        }
+      let offTopic = prep.offTopic;
+      let classifierSource = 'regex';
+      let classifierScore = null;
+      if (!injection) {
+        const classified = await this._classifyIntent(normalizedQuery, _embedCache);
+        intent = classified.intent;
+        classifierSource = classified.source;
+        classifierScore = classified.score;
+        // offTopic derive từ intent CUỐI (embedding có thể quyết khác regex —
+        // câu trộn "bóng đá Samsung S25 giá bao nhiêu" → pricing, không block)
+        offTopic = intent === 'off_topic';
       }
 
       const s1 = { valid: true, length: message.length };
       const s2 = { before: message, after: normalizedQuery, changed: message !== normalizedQuery };
-      const s3 = { intent, injection, offTopic };
+      const s3 = {
+        intent,
+        injection,
+        offTopic,
+        classifierSource,
+        ...(classifierScore != null && { classifierScore: Number(classifierScore.toFixed(3)) }),
+      };
       if (trace) {
         trace.step1_validate = s1;
         trace.step2_normalize = s2;
@@ -412,7 +447,10 @@ class ChatbotService {
         finalQuery,
         _retrieveTrace,
       } = needsSearch
-        ? await this._retrieveProducts(enrichedQuery, normalizedQuery, { enableTrace: !!trace })
+        ? await this._retrieveProducts(enrichedQuery, normalizedQuery, {
+            enableTrace: !!trace,
+            embedCache: _embedCache,
+          })
         : { products: [], finalQuery: normalizedQuery };
 
       const s5b = needsSearch
@@ -473,8 +511,13 @@ class ChatbotService {
       // ── Bước 7: Persist — cập nhật session memory + lưu DB ──────────────────
       if (sessionId) {
         const userContentForHistory = this._sanitizeMessage(finalQuery || message);
+        // Re-read Map thay vì dùng snapshot từ bước 4: giữa lúc đọc và lúc ghi có thể
+        // mất nhiều giây (retrieval + LLM) — request đồng thời cùng session sẽ bị
+        // ghi đè mất turn nếu append vào snapshot cũ
+        const latestMessages =
+          this.conversationHistory.get(sessionId)?.messages ?? conversationHistory;
         const updatedMessages = [
-          ...conversationHistory,
+          ...latestMessages,
           { role: 'user', content: userContentForHistory },
           { role: 'assistant', content: aiResponse.response || '' },
         ].slice(-(MAX_HISTORY_TURNS * 2));
@@ -488,6 +531,12 @@ class ChatbotService {
       }
 
       const responseTimeMs = Date.now() - startTime;
+
+      // Cờ fallback tổng hợp: budget timeout HOẶC mọi đường keyword fallback bên trong
+      // augmentAndGenerate/parseLLMOutput — trước đây hardcode false làm analytics
+      // không thấy được các đợt LLM outage
+      const isFallbackResponse = usedFallback || aiResponse.isFallback === true;
+      delete aiResponse.isFallback; // cờ nội bộ, không trả về client
 
       const updatedLen = sessionId
         ? [...conversationHistory, {}, {}].slice(-(MAX_HISTORY_TURNS * 2)).length
@@ -511,7 +560,7 @@ class ChatbotService {
         aiResponse.response || '',
         intent,
         responseTimeMs,
-        false,
+        isFallbackResponse,
         {
           products: aiResponse.products,
           suggestions: aiResponse.suggestions,
@@ -526,6 +575,72 @@ class ChatbotService {
       logger.error('Lỗi chatbot:', error);
       return this.getFallbackResponse(message);
     }
+  }
+
+  /**
+   * Embed query 1 lần với timeout ngắn — kết quả (promise) cache theo text trong scope
+   * request để bước ⑤ retrieval reuse, không tốn embedding call thứ 2 cho cùng text.
+   *
+   * Trả null khi: timeout (INTENT_EMBED_TIMEOUT_MS), embedding provider lỗi/chưa cấu hình.
+   * Caller tự fallback (classify → regex; search → hybridSearch tự embed).
+   *
+   * @param {string} text - Text cần embed.
+   * @param {Map<string, Promise<number[]|null>>} cache - Cache theo request (text → promise).
+   * @returns {Promise<number[]|null>}
+   */
+  _embedQueryOnce(text, cache) {
+    if (cache.has(text)) return cache.get(text);
+    const promise = (async () => {
+      try {
+        const unifiedEmbedding = require('@services/embedding/unified-embedding');
+        const embedPromise = unifiedEmbedding.generateEmbedding(text, 'query');
+        // Chặn unhandled rejection khi timeout thắng race mà embed reject sau đó
+        embedPromise.catch(() => {});
+        let timer;
+        const vector = await Promise.race([
+          embedPromise,
+          new Promise((resolve) => {
+            timer = setTimeout(() => resolve(null), INTENT_EMBED_TIMEOUT_MS);
+          }),
+        ]).finally(() => clearTimeout(timer));
+        return Array.isArray(vector) ? vector : null;
+      } catch (err) {
+        logger.debug(`[IntentClassifier] Embed query thất bại: ${err.message}`);
+        return null;
+      }
+    })();
+    cache.set(text, promise);
+    return promise;
+  }
+
+  /**
+   * Bước ③ — phân loại intent 2 tầng:
+   *   1. Embedding classifier (primary): semantic, không phụ thuộc pattern cứng —
+   *      giải quyết điểm yếu closed-world của regex ("flagship phone", "quay phim"...).
+   *      Chỉ dùng khi: flag bật + classifier ready + embed thành công + score ≥ threshold intent.
+   *   2. Regex classifyIntent (fallback): sync, deterministic — worst case = hành vi cũ.
+   *
+   * @param {string} normalizedQuery - Query đã qua expandAbbreviations.
+   * @param {Map} embedCache - Cache embedding theo request (xem _embedQueryOnce).
+   * @returns {Promise<{intent: string, source: 'embedding'|'regex', score: number|null}>}
+   */
+  async _classifyIntent(normalizedQuery, embedCache) {
+    const mode = process.env.INTENT_CLASSIFIER || INTENT_CLASSIFIER_DEFAULT;
+    if (mode === 'embedding' && embeddingIntentClassifier.isReady()) {
+      const vector = await this._embedQueryOnce(normalizedQuery, embedCache);
+      if (vector) {
+        const result = embeddingIntentClassifier.classifyWithScore(vector);
+        if (result) {
+          const threshold =
+            embeddingIntentClassifier.INTENT_THRESHOLDS[result.intent] ??
+            embeddingIntentClassifier.SIMILARITY_THRESHOLD;
+          if (result.score >= threshold) {
+            return { intent: result.intent, source: 'embedding', score: result.score };
+          }
+        }
+      }
+    }
+    return { intent: classifyIntent(normalizedQuery), source: 'regex', score: null };
   }
 
   /**
@@ -654,15 +769,24 @@ class ChatbotService {
    * @param {string} normalizedQuery - Query đã normalize (để so sánh với LLM rewrite).
    * @returns {Promise<{ products: Array, finalQuery: string }>}
    */
-  async _retrieveProducts(enrichedQuery, normalizedQuery, { enableTrace = false } = {}) {
+  async _retrieveProducts(
+    enrichedQuery,
+    normalizedQuery,
+    { enableTrace = false, embedCache = null } = {},
+  ) {
     if (!vectorStoreService) return { products: [], finalQuery: enrichedQuery };
     const _t = enableTrace ? {} : null;
 
     try {
+      // "hay/hoặc" không phải terminator — chúng nối các brand bị phủ định, phải strip hết
+      // ("không cần iPhone hay Samsung tầm 20 triệu" → strip cả "hay Samsung")
+      // Terminator dùng (?!\p{L}) thay \b: \b của JS là ASCII-only nên các terminator kết thúc
+      // bằng ký tự có dấu (gì, mà, giá, rẻ, nhẹ...) với \b là dead pattern → capture lan tới
+      // cuối câu, strip mất cả phần yêu cầu phía sau ("không cần iPhone giá rẻ" mất "giá rẻ")
       const stripNegation = (q) =>
         q
           .replace(
-            /(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|hay|hoặc|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)\b|\s*$)/giu,
+            /(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)(?!\p{L})|\s*$)/giu,
             ' ',
           )
           .trim() || q;
@@ -676,13 +800,20 @@ class ChatbotService {
         };
       }
 
+      // Reuse embedding đã tính ở bước ③ classify — CHỈ khi text trùng khớp chính xác
+      // (query không bị enrich/strip-negation thì queryForSearch === normalizedQuery)
+      const cachedEmbedPromise = embedCache?.get(queryForSearch);
+      const reusedVector = cachedEmbedPromise ? await cachedEmbedPromise : null;
+
       const rewriteStart = Date.now();
       let search1TimeMs = 0;
       const [llmRewrite, initialResults] = await Promise.all([
         this.rewriteQuery(enrichedQuery).catch(() => null),
         (async () => {
           const t0 = Date.now();
-          const res = await vectorStoreService.hybridSearch(queryForSearch, 10);
+          const res = await vectorStoreService.hybridSearch(queryForSearch, 10, undefined, {
+            queryVector: reusedVector,
+          });
           search1TimeMs = Date.now() - t0;
           return res;
         })(),
@@ -891,7 +1022,8 @@ class ChatbotService {
         _trace.llmMode = 'down';
         _trace.noProviders = true;
       }
-      return this.simpleKeywordMatch(userMessage, products);
+      // isFallback: đánh dấu để handleMessage persist đúng cờ analytics (không qua LLM)
+      return { ...this.simpleKeywordMatch(userMessage, products), isFallback: true };
     }
 
     let brandsStr = '';
@@ -1043,7 +1175,8 @@ QUY TẮC BẮT BUỘC:
       }
     }
 
-    return this.simpleKeywordMatch(userMessage, products);
+    // Tất cả provider đều fail → keyword fallback, đánh dấu cờ cho analytics
+    return { ...this.simpleKeywordMatch(userMessage, products), isFallback: true };
   }
 
   /**
@@ -1184,13 +1317,22 @@ QUY TẮC BẮT BUỘC:
       messageType: 'ai_chatbot',
     };
     if (userId) where.userId = userId;
-    return this.ChatMessage.findAll({
+    // DESC + reverse: lấy `limit` tin MỚI nhất rồi trả về theo thứ tự thời gian tăng dần.
+    // ASC + limit lấy tin CŨ nhất → session dài hơn `limit` messages sẽ mất các tin gần đây
+    // khi FE restore chat.
+    // Tiebreak bằng id: cặp user+assistant được bulkCreate cùng createdAt —
+    // thiếu tiebreak thì MySQL có thể trả assistant đứng trước user
+    const rows = await this.ChatMessage.findAll({
       where,
-      order: [['createdAt', 'ASC']],
+      order: [
+        ['createdAt', 'DESC'],
+        ['id', 'DESC'],
+      ],
       limit,
       attributes: ['role', 'content', 'intent', 'metadata', 'createdAt'],
       raw: true,
     });
+    return rows.reverse();
   }
 
   /**

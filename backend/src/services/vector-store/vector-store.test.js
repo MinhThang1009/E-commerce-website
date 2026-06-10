@@ -401,6 +401,32 @@ describe('search()', () => {
     expect(results[0].score).toBeCloseTo(1);
   });
 
+  it('truyền queryVector tính sẵn → KHÔNG gọi embedding API, kết quả vẫn đúng', async () => {
+    // Reuse embedding từ bước intent-classify của chatbot — tiết kiệm 1 API call
+    const queryVec = makeVector(EXPECTED_DIM);
+    store.items = [
+      {
+        vector: queryVec,
+        text: 'laptop',
+        metadata: { id: 1, name: 'Laptop' },
+      },
+    ];
+
+    const results = await store.hybridSearch('laptop', 5, 0.45, { queryVector: queryVec });
+    expect(mockEn).not.toHaveBeenCalled(); // embedding bị skip nhờ vector sẵn
+    expect(results).toHaveLength(1);
+    expect(results[0].score).toBeCloseTo(1);
+  });
+
+  it('không truyền queryVector → embed như cũ (backward-compat)', async () => {
+    const queryVec = makeVector(EXPECTED_DIM);
+    mockEn.mockResolvedValue(queryVec);
+    store.items = [{ vector: queryVec, text: 'laptop', metadata: { id: 1, name: 'Laptop' } }];
+
+    await store.hybridSearch('laptop');
+    expect(mockEn).toHaveBeenCalledWith('laptop', 'query');
+  });
+
   it('kết quả có score < 0.45 → bị lọc bỏ', async () => {
     // Query vector trực giao với item vector → similarity = 0
     const queryVec = Array(EXPECTED_DIM).fill(0);

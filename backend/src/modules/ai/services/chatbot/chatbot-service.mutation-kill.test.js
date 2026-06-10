@@ -113,14 +113,26 @@ describe('getSessionMessages', () => {
     expect(mockFindAll).not.toHaveBeenCalled();
   });
 
-  it('có sessionId → findAll đúng where/order/limit/attributes', async () => {
-    mockFindAll.mockResolvedValue([{ role: 'user', content: 'x' }]);
+  // Verifies [M6]: query DESC lấy N tin MỚI nhất, sau đó reverse về thứ tự thời gian
+  // (trước fix: ASC + limit → session dài mất các tin gần đây khi FE restore)
+  it('có sessionId → findAll DESC + reverse về thứ tự thời gian tăng dần', async () => {
+    mockFindAll.mockResolvedValue([
+      { role: 'assistant', content: 'mới nhất' },
+      { role: 'user', content: 'cũ hơn' },
+    ]);
     const res = await svc.getSessionMessages('s1', 20);
-    expect(res).toEqual([{ role: 'user', content: 'x' }]);
+    // reverse: tin cũ hơn đứng trước để FE render đúng chiều hội thoại
+    expect(res).toEqual([
+      { role: 'user', content: 'cũ hơn' },
+      { role: 'assistant', content: 'mới nhất' },
+    ]);
     expect(mockFindAll).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ sessionId: 's1', messageType: 'ai_chatbot' }),
-        order: [['createdAt', 'ASC']],
+        order: [
+          ['createdAt', 'DESC'],
+          ['id', 'DESC'],
+        ],
         limit: 20,
         attributes: ['role', 'content', 'intent', 'metadata', 'createdAt'],
         raw: true,
@@ -190,6 +202,91 @@ describe('_persistMessages', () => {
       expect.stringContaining('Không thể lưu'),
       'connection dropped',
     );
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// handleMessage — session write re-read (chống lost-update giữa 2 request đồng thời)
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('handleMessage — session memory re-read trước khi ghi', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  // Verifies [M15]: turn của request đồng thời (ghi vào Map TRONG LÚC request này chờ LLM)
+  // không bị mất khi request này ghi history — trước fix append vào snapshot cũ từ bước 4
+  it('message ghi vào Map giữa chừng (request song song) vẫn còn sau khi handleMessage ghi', async () => {
+    const sid = 'sess-race';
+    svc.conversationHistory.set(sid, {
+      messages: [{ role: 'user', content: 'turn cũ' }],
+      lastAccess: Date.now(),
+    });
+
+    jest.spyOn(svc, 'augmentAndGenerate').mockImplementation(async () => {
+      // Mô phỏng request đồng thời hoàn thành trước: ghi thêm 1 turn vào Map
+      const entry = svc.conversationHistory.get(sid);
+      svc.conversationHistory.set(sid, {
+        messages: [
+          ...entry.messages,
+          { role: 'user', content: 'turn song song' },
+          { role: 'assistant', content: 'trả lời song song' },
+        ],
+        lastAccess: Date.now(),
+      });
+      return { response: 'ok', products: [], suggestions: [], intent: 'general' };
+    });
+
+    await svc.handleMessage('tìm laptop Dell mới', null, sid);
+
+    const contents = svc.conversationHistory.get(sid).messages.map((m) => m.content);
+    expect(contents).toContain('turn song song'); // không bị ghi đè mất
+    expect(contents).toContain('ok'); // turn hiện tại vẫn được append
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// isFallback persist + stripNegation terminator
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('persist isFallback khi LLM down', () => {
+  // Verifies: keyword fallback (0 provider) phải được ghi DB với isFallback=true
+  // — trước fix hardcode false làm analytics không thấy LLM outage
+  it('0 provider → assistant row có isFallback=true, cờ không lộ ra response', async () => {
+    const origProviders = svc.providers;
+    svc.providers = [];
+    mockBulkCreate.mockResolvedValue([]);
+
+    const out = await svc.handleMessage('tìm laptop Dell mới', null, 'sess-fb');
+    await Promise.resolve();
+
+    expect(out.isFallback).toBeUndefined(); // cờ nội bộ đã bị xóa khỏi response
+    const rows = mockBulkCreate.mock.calls[0][0];
+    expect(rows[1].role).toBe('assistant');
+    expect(rows[1].isFallback).toBe(true);
+
+    svc.providers = origProviders;
+  });
+});
+
+describe('_retrieveProducts — stripNegation giữ phần yêu cầu sau mệnh đề phủ định', () => {
+  // Verifies: terminator có dấu (giá, rẻ) hoạt động — \b ASCII-only từng làm capture
+  // lan tới cuối câu, strip mất "giá rẻ"
+  it('"không cần iphone giá rẻ" → query search vẫn còn "giá rẻ"', async () => {
+    const origProviders = svc.providers;
+    svc.providers = []; // rewriteQuery → null nhanh
+    const vs = require('@services/vector-store/vector-store');
+    vs.items = [];
+    vs.hybridSearch.mockResolvedValue([{ metadata: { id: 1, name: 'X' }, score: 0.9 }]);
+
+    await svc._retrieveProducts(
+      'mình muốn mua điện thoại, không cần iphone giá rẻ',
+      'mình muốn mua điện thoại, không cần iphone giá rẻ',
+    );
+
+    const searchedQuery = vs.hybridSearch.mock.calls[0][0];
+    expect(searchedQuery).toContain('giá rẻ'); // yêu cầu giá không bị strip oan
+    expect(searchedQuery).not.toContain('iphone'); // brand bị phủ định thì strip
+
+    svc.providers = origProviders;
   });
 });
 

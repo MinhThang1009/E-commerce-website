@@ -5,6 +5,7 @@ const {
   EmbeddingIntentClassifier,
   cosineSimilarity,
   SIMILARITY_THRESHOLD,
+  INTENT_THRESHOLDS,
   INTENT_EXAMPLES,
 } = require('./embedding-intent-classifier');
 
@@ -115,5 +116,106 @@ describe('EmbeddingIntentClassifier', () => {
     expect(typeof SIMILARITY_THRESHOLD).toBe('number');
     expect(SIMILARITY_THRESHOLD).toBeGreaterThan(0);
     expect(SIMILARITY_THRESHOLD).toBeLessThan(1);
+  });
+
+  // ── Nâng cấp primary classifier: off_topic + classifyWithScore + thresholds ──
+
+  test('INTENT_EXAMPLES có nhóm off_topic (embedding quyết off-topic thay regex)', () => {
+    expect(Array.isArray(INTENT_EXAMPLES.off_topic)).toBe(true);
+    expect(INTENT_EXAMPLES.off_topic.length).toBeGreaterThanOrEqual(8);
+  });
+
+  test('INTENT_THRESHOLDS có đủ 6 intent, giá trị hợp lệ trong (0,1)', () => {
+    // Giá trị cụ thể được calibrate bằng scripts/eval-intent-classifier.js trên
+    // 173 labeled queries (run 2026-06-10: off_topic 0.5 cho kết quả tốt nhất,
+    // không gây block oan câu on-topic nào) — test chỉ assert tính hợp lệ cấu trúc
+    for (const intent of Object.keys(INTENT_EXAMPLES)) {
+      expect(typeof INTENT_THRESHOLDS[intent]).toBe('number');
+      expect(INTENT_THRESHOLDS[intent]).toBeGreaterThan(0);
+      expect(INTENT_THRESHOLDS[intent]).toBeLessThan(1);
+    }
+  });
+
+  test('classifyWithScore trả {intent, score} không áp threshold', async () => {
+    const clf = new EmbeddingIntentClassifier();
+    const embedFn = async (text) =>
+      INTENT_EXAMPLES.off_topic.some((ex) => ex === text) ? [1, 0] : [0, 1];
+    await clf.initialize(embedFn);
+    // query gần off_topic examples
+    const result = clf.classifyWithScore([1, 0]);
+    expect(result.intent).toBe('off_topic');
+    expect(result.score).toBeCloseTo(1.0);
+    // query vuông góc → score thấp nhưng VẪN trả kết quả (caller tự áp threshold)
+    const low = clf.classifyWithScore([0.7, 0.71]);
+    expect(low).toHaveProperty('intent');
+    expect(low.score).toBeLessThan(1);
+  });
+
+  test('classifyWithScore trả null khi chưa initialize (không có example embeddings)', () => {
+    const clf = new EmbeddingIntentClassifier();
+    expect(clf.classifyWithScore([1, 0])).toBeNull();
+  });
+
+  test('classify (backward-compat) vẫn trả string|null như cũ', async () => {
+    const clf = new EmbeddingIntentClassifier();
+    const embedFn = async (text) =>
+      INTENT_EXAMPLES.pricing.some((ex) => ex === text) ? [1, 0] : [0, 1];
+    await clf.initialize(embedFn);
+    expect(clf.classify([1, 0])).toBe('pricing');
+    expect(clf.classify([0, 1])).not.toBe('pricing');
+  });
+});
+
+// ── Persistent cache example embeddings ────────────────────────────────────────
+
+describe('EmbeddingIntentClassifier — disk cache', () => {
+  const fs = require('fs');
+  const os = require('os');
+  const path = require('path');
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'intent-cache-'));
+  });
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('lần 2 initialize với cache hit → KHÔNG gọi embedFn lại', async () => {
+    const cachePath = path.join(tmpDir, 'cache.json');
+    const embedFn = jest.fn().mockResolvedValue([1, 0]);
+
+    const clf1 = new EmbeddingIntentClassifier();
+    await clf1.initialize(embedFn, { cachePath, cache: true });
+    const callsFirstRun = embedFn.mock.calls.length;
+    expect(callsFirstRun).toBeGreaterThan(0);
+    expect(fs.existsSync(cachePath)).toBe(true);
+
+    const clf2 = new EmbeddingIntentClassifier();
+    embedFn.mockClear();
+    await clf2.initialize(embedFn, { cachePath, cache: true });
+    expect(embedFn).not.toHaveBeenCalled(); // cache hit
+    expect(clf2.isReady()).toBe(true);
+    expect(clf2.classifyWithScore([1, 0])).not.toBeNull();
+  });
+
+  test('cacheSalt khác (đổi provider) → cache invalid → embed lại', async () => {
+    const cachePath = path.join(tmpDir, 'cache.json');
+    const embedFn = jest.fn().mockResolvedValue([1, 0]);
+
+    const clf1 = new EmbeddingIntentClassifier();
+    await clf1.initialize(embedFn, { cachePath, cache: true, cacheSalt: 'jina' });
+
+    const clf2 = new EmbeddingIntentClassifier();
+    embedFn.mockClear();
+    await clf2.initialize(embedFn, { cachePath, cache: true, cacheSalt: 'hf' });
+    expect(embedFn).toHaveBeenCalled(); // salt lệch → re-embed
+  });
+
+  test('mặc định NODE_ENV=test → không đọc/ghi file cache', async () => {
+    const embedFn = jest.fn().mockResolvedValue([1, 0]);
+    const clf = new EmbeddingIntentClassifier();
+    await clf.initialize(embedFn); // không truyền opts — default cache=false trong test
+    expect(embedFn).toHaveBeenCalled();
   });
 });

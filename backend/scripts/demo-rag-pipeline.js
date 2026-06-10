@@ -120,10 +120,42 @@ async function computePipeline(query, llmMode, providedSessionId = null) {
   trace.step2_normalize = { changed: normalized !== query, before: query, after: normalized };
 
   // ── STEP 3: CLASSIFY INTENT + SECURITY ────────────────────────────────────
-  const intent = classifyIntent(normalized);
+  // 2 tầng như production: embedding classifier (primary) + regex (fallback).
+  // Demo hiển thị cả 2 để thấy tầng nào quyết định.
+  const intentRegex = classifyIntent(normalized);
   const injection = isPromptInjection(query);
+  let intent = intentRegex;
+  let classifierSource = 'regex';
+  let intentEmbedding = null;
+  if (!injection) {
+    try {
+      const classifier = require('@modules/ai/services/chatbot/intent/embedding-intent-classifier');
+      const unified = require('@services/embedding/unified-embedding');
+      const salt =
+        (process.env.JINA_API_KEY ? 'jina' : '') + (process.env.HF_API_KEY ? '+hf' : '');
+      if (salt) {
+        await classifier.initialize((t) => unified.generateEmbedding(t, 'query'), {
+          cacheSalt: salt,
+          cache: true,
+        });
+        const vec = await unified.generateEmbedding(normalized, 'query');
+        const r = classifier.classifyWithScore(vec);
+        if (r) {
+          const threshold =
+            classifier.INTENT_THRESHOLDS[r.intent] ?? classifier.SIMILARITY_THRESHOLD;
+          intentEmbedding = { intent: r.intent, score: +r.score.toFixed(3), threshold };
+          if (r.score >= threshold) {
+            intent = r.intent;
+            classifierSource = 'embedding';
+          }
+        }
+      }
+    } catch {
+      /* embedding không khả dụng → giữ regex (đúng production fallback) */
+    }
+  }
   const offTopic = intent === 'off_topic';
-  trace.step3_security = { intent, injection, offTopic };
+  trace.step3_security = { intent, intentRegex, intentEmbedding, classifierSource, injection, offTopic };
   if (injection) { trace.blocked = 'injection'; return { trace, aiResponse: null }; }
   if (offTopic) { trace.blocked = 'off_topic'; return { trace, aiResponse: null }; }
 
@@ -453,6 +485,22 @@ function displayPipeline(t, query, aiResponse = null, { showBanner = false } = {
   const s3 = t.step3_security;
   if (s3) {
     console.log(kv('  Intent phân loại:', `${C.cyan}${C.bold}${s3.intent}${C.reset}`));
+    // 2 tầng classify: embedding (primary) + regex (fallback) — hiển thị tầng nào quyết định
+    if (s3.classifierSource) {
+      const embStr = s3.intentEmbedding
+        ? `${s3.intentEmbedding.intent} (score ${s3.intentEmbedding.score} / ngưỡng ${s3.intentEmbedding.threshold})`
+        : 'không khả dụng (thiếu API key / lỗi)';
+      console.log(kv('  ├ Tầng embedding:', embStr));
+      console.log(kv('  ├ Tầng regex:', s3.intentRegex));
+      console.log(
+        kv(
+          '  └ Tầng quyết định:',
+          s3.classifierSource === 'embedding'
+            ? `${C.green}${C.bold}embedding${C.reset} (score ≥ ngưỡng)`
+            : `${C.yellow}regex${C.reset} (embedding dưới ngưỡng / không khả dụng)`,
+        ),
+      );
+    }
     console.log(kv('  Prompt injection:', s3.injection
       ? `${C.red}${C.bold}PHÁT HIỆN  ->  BLOCK${C.reset}`
       : `${C.green}Không phát hiện${C.reset}`));

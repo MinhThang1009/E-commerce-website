@@ -33,6 +33,8 @@ backend/logs/
 # Runtime-generated data (vector store, rebuild via npm run ai:rebuild-vectors)
 backend/data/vector-db.json
 backend/data/vector-db.json.bak
+backend/data/intent-example-embeddings.json
+backend/data/eval-query-embeddings.json
 
 # Upload files — không commit binary files vào git
 backend/uploads/*

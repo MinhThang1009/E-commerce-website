@@ -1,0 +1,730 @@
+{
+  "_readme": "Bộ eval phân loại intent — nhãn ground truth = KEY của nhóm (ý người dùng thật, KHÔNG phải output regex hiện tại). Dùng bởi scripts/eval-intent-classifier.js làm gate trước khi bật INTENT_CLASSIFIER=embedding. KHÔNG copy nguyên văn câu trong INTENT_EXAMPLES vào đây (eval đo generalization, không đo học thuộc).",
+  "_format": "groups[<intent>] = [{ id, query, note? }]. id = <PREFIX>-<STT>. note = nhãn cần duyệt / lý do bẫy.",
+  "_stats": {
+    "product_search": 50,
+    "pricing": 26,
+    "order_inquiry": 25,
+    "policy": 25,
+    "general": 24,
+    "off_topic": 23
+  },
+  "groups": {
+    "product_search": [
+      {
+        "id": "PS-01",
+        "query": "tư vấn laptop tầm 20 triệu cho SV kỹ thuật"
+      },
+      {
+        "id": "PS-02",
+        "query": "ss a57 vs op reno15 cái nào chụp ảnh đẹp hơn?"
+      },
+      {
+        "id": "PS-03",
+        "query": "điện thoại tầm 15-20 triệu không cần iPhone"
+      },
+      {
+        "id": "PS-04",
+        "query": "Huawei Mate 70 có bán không?"
+      },
+      {
+        "id": "PS-05",
+        "query": "mb pro mới nhất"
+      },
+      {
+        "id": "PS-06",
+        "query": "best earbuds under 5 million?"
+      },
+      {
+        "id": "PS-07",
+        "query": "best tablet for studying under 15 million?"
+      },
+      {
+        "id": "PS-08",
+        "query": "smartwatch nào đáng mua nhất?"
+      },
+      {
+        "id": "PS-09",
+        "query": "laptop r5 tầm 15 triệu"
+      },
+      {
+        "id": "PS-10",
+        "query": "điện thoại dưới 15 triệu"
+      },
+      {
+        "id": "PS-11",
+        "query": "laptop trên 30 triệu"
+      },
+      {
+        "id": "PS-12",
+        "query": "cái đó có bao nhiêu RAM?"
+      },
+      {
+        "id": "PS-13",
+        "query": "nó có màu gì?"
+      },
+      {
+        "id": "PS-14",
+        "query": "còn MacBook Pro mới nhất thì sao?"
+      },
+      {
+        "id": "PS-15",
+        "query": "so sánh 2 cái vừa hỏi giúp mình"
+      },
+      {
+        "id": "PS-16",
+        "query": "tôi là sinh viên, cần laptop nhẹ, pin lâu, dưới 20 triệu"
+      },
+      {
+        "id": "PS-17",
+        "query": "so sánh iPhone 17 Pro và Samsung Galaxy S25 Ultra"
+      },
+      {
+        "id": "PS-18",
+        "query": "Google Pixel 9 Pro có bán không?"
+      },
+      {
+        "id": "PS-19",
+        "query": "điện thoại nào có camera tốt nhất trong tầm 20-30 triệu?"
+      },
+      {
+        "id": "PS-20",
+        "query": "iPhone 17 Pro hay Pro Max đáng mua hơn? Mình chủ yếu chụp ảnh"
+      },
+      {
+        "id": "PS-21",
+        "query": "mình muốn mua quà sinh nhật cho bạn gái, budget 15 triệu"
+      },
+      {
+        "id": "PS-22",
+        "query": "tôi không thích Samsung, tư vấn điện thoại tầm 20 triệu đi"
+      },
+      {
+        "id": "PS-23",
+        "query": "laptop nào tốt cho lập trình và chạy Docker?"
+      },
+      {
+        "id": "PS-24",
+        "query": "con nào ngon nhất tầm 25 củ?"
+      },
+      {
+        "id": "PS-25",
+        "query": "điện thoại chụp ảnh đẹp, pin lâu, dưới 20 triệu, không phải Xiaomi"
+      },
+      {
+        "id": "PS-26",
+        "query": "tôi đang dùng iPhone 15, nên upgrade lên gì?"
+      },
+      {
+        "id": "PS-27",
+        "query": "nên mua điện thoại hay laptop với budget 20 triệu?"
+      },
+      {
+        "id": "PS-28",
+        "query": "flagship nào chụp đêm đẹp nhất hiện nay?",
+        "note": "audit: regex 'ship' từng route order_inquiry"
+      },
+      {
+        "id": "PS-29",
+        "query": "laptop có trackpad rộng dùng sướng không?",
+        "note": "audit: 'track'"
+      },
+      {
+        "id": "PS-30",
+        "query": "máy này quay phim 4K được không?",
+        "note": "audit: 'phim' từng bị off_topic"
+      },
+      {
+        "id": "PS-31",
+        "query": "đồng hồ đo sức khỏe loại nào chính xác?",
+        "note": "audit: 'sức khỏe'"
+      },
+      {
+        "id": "PS-32",
+        "query": "mua laptop cho giáo viên soạn giáo án",
+        "note": "audit: 'giá+o'"
+      },
+      {
+        "id": "PS-33",
+        "query": "tablet xem phim màn đẹp pin trâu"
+      },
+      {
+        "id": "PS-34",
+        "query": "smartwatch theo dõi giấc ngủ tốt không?"
+      },
+      {
+        "id": "PS-35",
+        "query": "tai nghe nghe nhạc bass mạnh tầm 2 triệu"
+      },
+      {
+        "id": "PS-36",
+        "query": "shop ơi tư vấn em con lap đồ họa với"
+      },
+      {
+        "id": "PS-37",
+        "query": "tai nghe chống ồn nào ngon dưới 2 củ"
+      },
+      {
+        "id": "PS-38",
+        "query": "macbook m4 với m3 chênh nhau nhiều không"
+      },
+      {
+        "id": "PS-39",
+        "query": "con s25 ultra zoom xa được không"
+      },
+      {
+        "id": "PS-40",
+        "query": "pin con này có tụt nhanh không vậy"
+      },
+      {
+        "id": "PS-41",
+        "query": "best gaming laptop under 30 million"
+      },
+      {
+        "id": "PS-42",
+        "query": "nghe nói shop sắp về iphone mới hả?"
+      },
+      {
+        "id": "PS-43",
+        "query": "đánh giá con xiaomi 15 đi shop",
+        "note": "bẫy: 'đánh giá' chứa 'giá' — regex dễ nói pricing"
+      },
+      {
+        "id": "PS-44",
+        "query": "máy nào lướt web mượt cho mẹ em dùng"
+      },
+      {
+        "id": "PS-45",
+        "query": "co con lap nao man 16 inch khong"
+      },
+      {
+        "id": "PS-46",
+        "query": "gợi ý con tai nghe gaming ngon đi"
+      },
+      {
+        "id": "PS-47",
+        "query": "đt 5 củ có con nào ổn không",
+        "note": "bẫy: nhắc tiền nhưng ý là tư vấn theo budget"
+      },
+      {
+        "id": "PS-48",
+        "query": "recommend a phone with good battery life"
+      },
+      {
+        "id": "PS-49",
+        "query": "màn 120hz tầm trung có con nào ngon"
+      },
+      {
+        "id": "PS-50",
+        "query": "đt nào selfie đẹp cho nữ vậy shop"
+      }
+    ],
+    "pricing": [
+      {
+        "id": "PR-01",
+        "query": "bóng đá Samsung S25 Ultra giá bao nhiêu",
+        "note": "câu trộn — policy mới: embedding quyết theo nghĩa tổng thể"
+      },
+      {
+        "id": "PR-02",
+        "query": "ip17 pro bnh"
+      },
+      {
+        "id": "PR-03",
+        "query": "Samsung S99 Ultra giá bao nhiêu"
+      },
+      {
+        "id": "PR-04",
+        "query": "iphone 17 gia bao nhieu"
+      },
+      {
+        "id": "PR-05",
+        "query": "iPhone 15 Pro giá bao nhiêu?"
+      },
+      {
+        "id": "PR-06",
+        "query": "Google Pixel 9 Pro giá bao nhiêu?"
+      },
+      {
+        "id": "PR-07",
+        "query": "ip17pm giá bao nhiêu"
+      },
+      {
+        "id": "PR-08",
+        "query": "ip16 pm giá bao nhiêu"
+      },
+      {
+        "id": "PR-09",
+        "query": "rl c85 giá bao nhiêu"
+      },
+      {
+        "id": "PR-10",
+        "query": "what is the cheapest smartphone you have?"
+      },
+      {
+        "id": "PR-11",
+        "query": "iPhone 17 giá bao nhiêu?"
+      },
+      {
+        "id": "PR-12",
+        "query": "điện thoại rẻ nhất shop có giá bao nhiêu?"
+      },
+      {
+        "id": "PR-13",
+        "query": "Is the MacBook Pro good for video editing? What's the price?"
+      },
+      {
+        "id": "PR-14",
+        "query": "iphone 17 pro max 256gb giá nhiêu v"
+      },
+      {
+        "id": "PR-15",
+        "query": "con S25 Ultra giờ còn bao nhiêu tiền"
+      },
+      {
+        "id": "PR-16",
+        "query": "how much for the cheapest gaming laptop?"
+      },
+      {
+        "id": "PR-17",
+        "query": "con ip17 bản thường giá sao shop"
+      },
+      {
+        "id": "PR-18",
+        "query": "gia s25 ultra bao nhieu tien vay"
+      },
+      {
+        "id": "PR-19",
+        "query": "cho em xin bảng giá laptop gaming"
+      },
+      {
+        "id": "PR-20",
+        "query": "macbook air rẻ nhất là con nào, nhiêu tiền"
+      },
+      {
+        "id": "PR-21",
+        "query": "price of the galaxy watch?"
+      },
+      {
+        "id": "PR-22",
+        "query": "how much does the cheapest ipad cost"
+      },
+      {
+        "id": "PR-23",
+        "query": "ip16 với ip17 chênh nhau bao nhiêu tiền"
+      },
+      {
+        "id": "PR-24",
+        "query": "con này đang sale còn nhiêu vậy"
+      },
+      {
+        "id": "PR-25",
+        "query": "giá niêm yết với giá bán có khác nhau không"
+      },
+      {
+        "id": "PR-26",
+        "query": "tai nghe airpods pro giờ còn nhiêu"
+      }
+    ],
+    "order_inquiry": [
+      {
+        "id": "OI-01",
+        "query": "hôm nay mưa to đi mua điện thoại có ship không"
+      },
+      {
+        "id": "OI-02",
+        "query": "iPhone 17 Pro còn hàng không? Giao về Đà Nẵng mất mấy ngày?"
+      },
+      {
+        "id": "OI-03",
+        "query": "đơn của em đặt hôm thứ 2 giờ tới đâu rồi"
+      },
+      {
+        "id": "OI-04",
+        "query": "bao lâu thì giao tới Cần Thơ vậy shop"
+      },
+      {
+        "id": "OI-05",
+        "query": "do you ship to Hanoi?"
+      },
+      {
+        "id": "OI-06",
+        "query": "kiểm tra đơn hàng giúp em với"
+      },
+      {
+        "id": "OI-07",
+        "query": "đơn ORD123 sao chưa thấy gì vậy"
+      },
+      {
+        "id": "OI-08",
+        "query": "khi nào hàng tới nơi vậy"
+      },
+      {
+        "id": "OI-09",
+        "query": "em đặt 3 hôm rồi mà chưa thấy ship"
+      },
+      {
+        "id": "OI-10",
+        "query": "don hang cua minh toi dau roi"
+      },
+      {
+        "id": "OI-11",
+        "query": "ship COD được không shop"
+      },
+      {
+        "id": "OI-12",
+        "query": "phí ship về quận 7 nhiêu vậy"
+      },
+      {
+        "id": "OI-13",
+        "query": "giao hang gio hanh chinh hay ca buoi toi"
+      },
+      {
+        "id": "OI-14",
+        "query": "where is my order"
+      },
+      {
+        "id": "OI-15",
+        "query": "my package hasn't arrived yet"
+      },
+      {
+        "id": "OI-16",
+        "query": "can you deliver tomorrow morning?"
+      },
+      {
+        "id": "OI-17",
+        "query": "hủy đơn vừa đặt được không"
+      },
+      {
+        "id": "OI-18",
+        "query": "đổi địa chỉ nhận hàng được không shop",
+        "note": "NHÃN CẦN DUYỆT: có thể coi là policy"
+      },
+      {
+        "id": "OI-19",
+        "query": "shipper gọi mà em lỡ máy, giờ làm sao"
+      },
+      {
+        "id": "OI-20",
+        "query": "track đơn ở đâu vậy shop"
+      },
+      {
+        "id": "OI-21",
+        "query": "sao đơn của em bị hoàn về rồi"
+      },
+      {
+        "id": "OI-22",
+        "query": "giao tới Bình Dương mất mấy ngày"
+      },
+      {
+        "id": "OI-23",
+        "query": "tối nay có giao hàng được không"
+      },
+      {
+        "id": "OI-24",
+        "query": "mã vận đơn của em là gì vậy"
+      },
+      {
+        "id": "OI-25",
+        "query": "sao đơn em tự nhiên bị huỷ vậy shop"
+      }
+    ],
+    "policy": [
+      {
+        "id": "PL-01",
+        "query": "chính sách đổi trả như thế nào nếu máy bị lỗi?"
+      },
+      {
+        "id": "PL-02",
+        "query": "bh ip17 pro bao lâu"
+      },
+      {
+        "id": "PL-03",
+        "query": "iPhone 17 Pro bảo hành bao lâu? Rơi vỡ màn hình có được đổi không?"
+      },
+      {
+        "id": "PL-04",
+        "query": "mua online có được kiểm tra hàng trước khi nhận không"
+      },
+      {
+        "id": "PL-05",
+        "query": "trả góp 0% có áp dụng cho iPhone không shop"
+      },
+      {
+        "id": "PL-06",
+        "query": "can I return it if I don't like it?"
+      },
+      {
+        "id": "PL-07",
+        "query": "máy lỗi nguồn trong thời gian bảo hành thì sao"
+      },
+      {
+        "id": "PL-08",
+        "query": "máy rơi vô nước có được bảo hành không"
+      },
+      {
+        "id": "PL-09",
+        "query": "mất hóa đơn thì còn bảo hành được không"
+      },
+      {
+        "id": "PL-10",
+        "query": "doi tra trong vong bao nhieu ngay"
+      },
+      {
+        "id": "PL-11",
+        "query": "chính sách thu cũ lên đời thế nào"
+      },
+      {
+        "id": "PL-12",
+        "query": "bao hanh chinh hang hay bao hanh cua shop"
+      },
+      {
+        "id": "PL-13",
+        "query": "máy dùng 2 tuần bị lỗi màn hình thì sao"
+      },
+      {
+        "id": "PL-14",
+        "query": "warranty period for laptops?"
+      },
+      {
+        "id": "PL-15",
+        "query": "is there an exchange policy?"
+      },
+      {
+        "id": "PL-16",
+        "query": "refund mất bao lâu mới về tài khoản"
+      },
+      {
+        "id": "PL-17",
+        "query": "mua rồi muốn đổi màu khác được không"
+      },
+      {
+        "id": "PL-18",
+        "query": "có xuất hóa đơn VAT cho công ty không",
+        "note": "NHÃN CẦN DUYỆT: có thể coi là general"
+      },
+      {
+        "id": "PL-19",
+        "query": "bảo hành tại nhà hay phải mang ra cửa hàng"
+      },
+      {
+        "id": "PL-20",
+        "query": "1 đổi 1 trong 30 ngày đúng không shop"
+      },
+      {
+        "id": "PL-21",
+        "query": "pin chai có được thay miễn phí không"
+      },
+      {
+        "id": "PL-22",
+        "query": "chế độ hậu mãi bên mình thế nào"
+      },
+      {
+        "id": "PL-23",
+        "query": "hàng xách tay có được bảo hành không"
+      },
+      {
+        "id": "PL-24",
+        "query": "gói bảo hành mở rộng mua thế nào"
+      },
+      {
+        "id": "PL-25",
+        "query": "đổi trả có mất phí gì không"
+      }
+    ],
+    "general": [
+      {
+        "id": "GE-01",
+        "query": "xin chào"
+      },
+      {
+        "id": "GE-02",
+        "query": "cho hỏi giờ mở cửa của shop"
+      },
+      {
+        "id": "GE-03",
+        "query": "cảm ơn shop nhiều nha"
+      },
+      {
+        "id": "GE-04",
+        "query": "ủa shop còn hoạt động không vậy"
+      },
+      {
+        "id": "GE-05",
+        "query": "what time do you open?"
+      },
+      {
+        "id": "GE-06",
+        "query": "ok để mình suy nghĩ thêm"
+      },
+      {
+        "id": "GE-07",
+        "query": "alo shop ơi"
+      },
+      {
+        "id": "GE-08",
+        "query": "có ai ở đó không"
+      },
+      {
+        "id": "GE-09",
+        "query": "shop tên gì vậy"
+      },
+      {
+        "id": "GE-10",
+        "query": "cho xin địa chỉ cửa hàng với"
+      },
+      {
+        "id": "GE-11",
+        "query": "fanpage của shop là gì"
+      },
+      {
+        "id": "GE-12",
+        "query": "shop có làm việc chủ nhật không"
+      },
+      {
+        "id": "GE-13",
+        "query": "ban la bot hay nguoi that vay"
+      },
+      {
+        "id": "GE-14",
+        "query": "cho nói chuyện với nhân viên thật được không"
+      },
+      {
+        "id": "GE-15",
+        "query": "thanks bạn nhé"
+      },
+      {
+        "id": "GE-16",
+        "query": "ờ vậy thôi"
+      },
+      {
+        "id": "GE-17",
+        "query": "good morning"
+      },
+      {
+        "id": "GE-18",
+        "query": "are you a robot?"
+      },
+      {
+        "id": "GE-19",
+        "query": "test thử cái coi"
+      },
+      {
+        "id": "GE-20",
+        "query": "hello hello nghe rõ không"
+      },
+      {
+        "id": "GE-21",
+        "query": "shop mình uy tín không vậy",
+        "note": "NHÃN CẦN DUYỆT: trust question — có thể coi là general hoặc policy"
+      },
+      {
+        "id": "GE-22",
+        "query": "lâu rồi mới ghé lại shop"
+      },
+      {
+        "id": "GE-23",
+        "query": "ok chốt vậy đi"
+      },
+      {
+        "id": "GE-24",
+        "query": "ib em với"
+      }
+    ],
+    "off_topic": [
+      {
+        "id": "OT-01",
+        "query": "thời tiết hà nội hôm nay thế nào"
+      },
+      {
+        "id": "OT-02",
+        "query": "hôm nay trời đẹp nhỉ"
+      },
+      {
+        "id": "OT-03",
+        "query": "bầu cử tổng thống mỹ ai thắng vậy"
+      },
+      {
+        "id": "OT-04",
+        "query": "kể chuyện cười cho vui đi"
+      },
+      {
+        "id": "OT-05",
+        "query": "giá vàng hôm nay bao nhiêu",
+        "note": "bẫy: 'giá' khiến regex nói pricing"
+      },
+      {
+        "id": "OT-06",
+        "query": "công thức làm bánh mì tại nhà"
+      },
+      {
+        "id": "OT-07",
+        "query": "đội tuyển việt nam đá lúc mấy giờ"
+      },
+      {
+        "id": "OT-08",
+        "query": "phim mới của marvel có hay không"
+      },
+      {
+        "id": "OT-09",
+        "query": "where can I watch the new james bond movie"
+      },
+      {
+        "id": "OT-10",
+        "query": "dạo này chứng khoán sao rồi"
+      },
+      {
+        "id": "OT-11",
+        "query": "tỷ số trận MU tối qua bao nhiêu"
+      },
+      {
+        "id": "OT-12",
+        "query": "thoi tiet sai gon cuoi tuan co mua khong"
+      },
+      {
+        "id": "OT-13",
+        "query": "bài hát nào đang hot trend vậy"
+      },
+      {
+        "id": "OT-14",
+        "query": "ăn gì ngon ở quận 1"
+      },
+      {
+        "id": "OT-15",
+        "query": "lịch chiếu phim CGV hôm nay"
+      },
+      {
+        "id": "OT-16",
+        "query": "kết quả xổ số miền bắc hôm qua"
+      },
+      {
+        "id": "OT-17",
+        "query": "who is the president of america"
+      },
+      {
+        "id": "OT-18",
+        "query": "tell me a joke"
+      },
+      {
+        "id": "OT-19",
+        "query": "what is 15 times 23"
+      },
+      {
+        "id": "OT-20",
+        "query": "viết giúp em bài văn tả mẹ"
+      },
+      {
+        "id": "OT-21",
+        "query": "mai có mưa không nhỉ"
+      },
+      {
+        "id": "OT-22",
+        "query": "đội nào vô địch world cup 2026"
+      },
+      {
+        "id": "OT-23",
+        "query": "cách trị mụn hiệu quả tại nhà"
+      }
+    ]
+  }
+}

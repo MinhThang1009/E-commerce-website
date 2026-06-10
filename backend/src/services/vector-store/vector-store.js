@@ -486,10 +486,13 @@ class HybridVectorStore {
    * @param {number} [limit=5] - Số kết quả tối đa trả về.
    * @param {number} [minScore=0] - Ngưỡng cosine similarity tối thiểu (0-1).
    *   Mặc định 0 để lấy tất cả — caller tự lọc. hybridSearch truyền DEFAULT_MIN_SCORE (0.45).
+   * @param {number[]|null} [precomputedVector=null] - Vector query đã embed sẵn (caller reuse
+   *   từ bước classify) — có thì bỏ qua embedding call, tiết kiệm 1 API call + latency.
    * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần theo score.
    */
-  async _semanticSearch(query, limit, minScore) {
-    const queryVector = await embeddingService.generateEmbedding(query, 'query');
+  async _semanticSearch(query, limit, minScore, precomputedVector = null) {
+    const queryVector =
+      precomputedVector ?? (await embeddingService.generateEmbedding(query, 'query'));
 
     const scoredItems = this.items.map((item) => {
       // Tương thích ngược với vector-db.json cũ (field vectorEn từ schema trước khi unified)
@@ -528,16 +531,19 @@ class HybridVectorStore {
    * @param {string} query - Query text đã normalize.
    * @param {number} [limit=5] - Số kết quả tối đa trả về.
    * @param {number} [minScore=0.45] - Ngưỡng cosine similarity tối thiểu (DEFAULT_MIN_SCORE).
+   * @param {Object} [opts]
+   * @param {number[]|null} [opts.queryVector] - Embedding của `query` đã tính sẵn (chatbot reuse
+   *   từ bước intent-classify). CHỈ truyền khi vector tương ứng đúng text `query` này.
    * @returns {Promise<Array<Object>>} Kết quả merged, sắp xếp theo score giảm dần.
    *   Mỗi item có `score` (0-1) và optional `lowConfidence: true` (keyword-only).
    */
-  async hybridSearch(query, limit = 5, minScore = DEFAULT_MIN_SCORE) {
+  async hybridSearch(query, limit = 5, minScore = DEFAULT_MIN_SCORE, { queryVector = null } = {}) {
     try {
       await this.loadPromise;
 
       // Bước 1: Chạy song song 2 phương pháp search — lấy gấp đôi limit để có dư cho merge
       const [vectorResults, keywordResults] = await Promise.all([
-        this._semanticSearch(query, limit * 2, minScore),
+        this._semanticSearch(query, limit * 2, minScore, queryVector),
         Promise.resolve(this._keywordSearch(query, limit * 2)),
       ]);
 

@@ -51,7 +51,7 @@
 |------|-----|-----------|----------|
 | ① | **Validate** | `validateMessage()` | Chặn input xấu sớm (rỗng, quá dài, không có chữ/số) |
 | ② | **Normalize** | `expandAbbreviations()` | Chuẩn hoá viết tắt (`ip→iPhone`), EN→VI (`smartphone→điện thoại`), không dấu→có dấu (`gia→giá`) |
-| ③ | **Classify & Gate** | `classifyIntent()` + `isPromptInjection()` | Phân loại 6 intent + chặn injection (15 loại, 24 regex, OWASP LLM01) / off-topic |
+| ③ | **Classify & Gate** | `_classifyIntent()` (embedding primary + regex fallback) + `isPromptInjection()` | Phân loại 6 intent 2 TẦNG: embedding classifier (semantic, `INTENT_CLASSIFIER=embedding` mặc định) → dưới threshold/lỗi → regex `classifyIntent()`; chặn injection (15 loại, 24 regex, OWASP LLM01) / off-topic |
 | ④ | **Load Session** | `conversationHistory.get(sessionId)` | Lấy lịch sử hội thoại từ RAM Map cho multi-turn context |
 | ⑤ | **Retrieve** | `_enrichQueryFromHistory()` (⑤a) + `_retrieveProducts()` (⑤b) | Giải quyết đại từ + hybrid search (vector + keyword) lấy sản phẩm liên quan |
 | ⑥ | **Augment & Generate** | `augmentAndGenerate()` | LLM UP: ⑥a (Augment) build prompt với products → ⑥b (Generate) gọi LLM → parse JSON. LLM DOWN: ⑥.1-⑥.5 `simpleKeywordMatch()`. Toàn bộ bọc trong `Promise.race` ngân sách `LLM_TOTAL_TIMEOUT_MS` — vượt hạn → fallback keyword |
@@ -76,8 +76,8 @@ flowchart TD
     subgraph PREP["_preprocessMessage(message)"]
         B["N1 · ①  validateMessage"]
         B -->|hợp lệ| C["N2 · ②  expandAbbreviations"]
-        C --> D["N3a · ③  classifyIntent"]
-        D --> D2["N3b · ③  isPromptInjection<br/>(sequential sau classifyIntent)"]
+        C --> D["N3a · ③  embedding classifier<br/>(score ≥ threshold → dùng;<br/>dưới ngưỡng/lỗi → regex classifyIntent)"]
+        D --> D2["N3b · ③  isPromptInjection<br/>(regex trên message GỐC, chạy trước embed)"]
     end
 
     B -->|không hợp lệ| BERR["BERR · ❌ AppError 400 (bad request)"]
@@ -236,7 +236,9 @@ Phân loại vào 1 trong 6 intents theo thứ tự ưu tiên (intent đầu ti�
 | 14 | Ký tự ẩn | zero-width space, bidirectional override | Stealth injection | — |
 | 15 | Delimiter giả | `### ADMIN`, `[SYSTEM]`, `[CHỈ THỊ QUẢN TRỊ]` | Boundary confusion | — |
 
-**`offTopic = intent === 'off_topic'`** — derive trực tiếp từ intent, không gọi `isOffTopic()` riêng.
+**`offTopic = intent === 'off_topic'`** — derive trực tiếp từ intent CUỐI (sau cả 2 tầng), không gọi `isOffTopic()` riêng.
+
+> **③ hai tầng (nâng cấp 2026-06-10):** `classifyIntent()` regex ở trên giờ là **tầng fallback**. Tầng chính là **embedding classifier** (`embedding-intent-classifier.js`): embed `normalizedQuery` (timeout 2,5s) → cosine top-3 với câu ví dụ của 6 intent → dùng khi score ≥ `INTENT_THRESHOLDS[intent]`. Embedding được **reuse** cho hybrid search ở bước ⑤ (không tốn call thứ 2). Lý do nâng cấp: regex là closed-world — "flagship phone" (chứa "ship"), "quay phim" (chứa "phim") từng bị misroute/block. Hệ quả behavior: **câu trộn off-topic + sản phẩm** ("bóng đá Samsung S25 Ultra giá bao nhiêu" — EC2b) được phân loại theo nghĩa tổng thể → trả lời về sản phẩm thay vì block. Eval gate: `node scripts/eval-intent-classifier.js` trên 173 labeled queries — pipeline 73% vs regex 65%, thắng/hòa từng intent. Rollback: env `INTENT_CLASSIFIER=regex`.
 
 **Gate check trong `handleMessage`** ([line 257-306](backend/src/modules/ai/services/chatbot/chatbot-service.js#L257-L306)):
 - `injection` check **TRƯỚC** `offTopic`

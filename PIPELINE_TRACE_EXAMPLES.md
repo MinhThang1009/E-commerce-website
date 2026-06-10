@@ -15,7 +15,7 @@
 - [Path 3 — VALIDATE_ERROR: quá dài](#path-3--validate_error-quá-dài)
 - [Path 4 — INJECTION_BLOCK](#path-4--injection_block)
 - [Path 5 — OFFTOPIC_BLOCK: đơn giản](#path-5--offtopic_block-đơn-giản)
-- [Path 6 — OFFTOPIC_BLOCK: có brand nhưng off_topic thắng](#path-6--offtopic_block-có-brand-nhưng-off_topic-thắng)
+- [Path 6 — Câu trộn off-topic + sản phẩm: embedding quyết theo nghĩa tổng thể](#path-6--câu-trộn-off-topic--sản-phẩm-embedding-quyết-theo-nghĩa-tổng-thể)
 - [Path 7 — LLM UP: multi-criteria (happy path đầy đủ)](#path-7--llm-up-multi-criteria-happy-path-đầy-đủ)
 - [Path 8 — LLM UP + abbreviation chuỗi](#path-8--llm-up--abbreviation-chuỗi)
 - [Path 9 — LLM UP + session pronoun](#path-9--llm-up--session-pronoun)
@@ -45,7 +45,7 @@
 | **Entry** | A, PREP | User gửi message → `_preprocessMessage()` gom 4 phép kiểm tra |
 | **① Validate** | N1, BERR | 3 rules (rỗng, >500 chars, không có chữ/số) → fail thì HTTP 400 |
 | **② Normalize** | N2 | Expand viết tắt: `ip→iPhone`, `bnh→bao nhiêu`, `smartphone→điện thoại` |
-| **③ Classify & Gate** | N3a, N3b, G1, G2, EINJ, EOT | Phân loại 6 intent + chặn injection (15 patterns) / off-topic |
+| **③ Classify & Gate** | N3a, N3b, G1, G2, EINJ, EOT | Phân loại 6 intent 2 TẦNG (embedding primary → regex fallback) + chặn injection (15 patterns) / off-topic |
 | **④ Session** | N4 | Load history từ RAM Map → cho N5a resolve đại từ + N6a-4 gửi LLM |
 | **⑤ Retrieve** | N5a, N5b, N5b-1→4, N5b-2a, N5b-2b | Enrich query (pronoun/implicit) → strip negation → rewrite ∥ search → fallback |
 | **⑥ Augment & Generate** | **LLM UP:** N6-check, N6a-1→4, N6b-1→2, N6b-fail | Augment (⑥a: catalog+sanitize+prompt+messages) → Generate (⑥b: LLM POST+parse) |
@@ -94,8 +94,17 @@
 - `"bh mb pro"` → `"bảo hành MacBook pro"`
 - `"best earbuds"` → `"best tai nghe"`
 
-### N3a — ③ classifyIntent `ai-policy.js:244`
-**Tại sao:** Intent quyết định 2 việc: (1) gate off_topic chặn query ngoài phạm vi, (2) response format ở keyword fallback (💰📋🔍🌟). Chạy trên **normalizedQuery** (đã expand) vì "bnh" sau expand thành "bao nhiêu" mới match `pricing`. Thứ tự ưu tiên (match đầu tiên return ngay):
+### N3a — ③ classify intent 2 TẦNG: embedding (primary) → regex `classifyIntent` (fallback)
+
+> **Nâng cấp 2026-06-10:** N3a giờ là `_classifyIntent()` trong chatbot-service — embed
+> `normalizedQuery` (timeout 2,5s, vector reuse cho bước ⑤) → `classifyWithScore()` cosine
+> top-3 với câu ví dụ 6 intent → dùng khi score ≥ `INTENT_THRESHOLDS[intent]`
+> (pricing 0.45 / product_search 0.55 / còn lại 0.5). Dưới ngưỡng / embed lỗi / thiếu
+> API key / `INTENT_CLASSIFIER=regex` → rơi về tầng regex bên dưới. Các trace per-path
+> trong tài liệu này mô tả **tầng regex (fallback)** — vẫn đúng nguyên khi embedding
+> không quyết; chạy `node scripts/demo-rag-pipeline.js "<query>" --down` để xem cả 2 tầng.
+
+**Tầng fallback — regex `classifyIntent` `ai-policy.js`:** Intent quyết định 2 việc: (1) gate off_topic chặn query ngoài phạm vi, (2) response format ở keyword fallback (💰📋🔍🌟). Chạy trên **normalizedQuery** (đã expand) vì "bnh" sau expand thành "bao nhiêu" mới match `pricing`. Thứ tự ưu tiên (match đầu tiên return ngay):
 1. `off_topic` — thời tiết, bóng đá, phim, nấu ăn, tin tức...
 2. `order_inquiry` — đơn hàng, ship, giao hàng, tracking
 3. `policy` — bảo hành, đổi trả, chính sách
@@ -103,9 +112,10 @@
 5. `product_search` — brand, tư vấn, so sánh
 6. `general` — default (không match pattern nào)
 
-**Ví dụ:**
-- `"bóng đá Samsung S25 giá bao nhiêu"` → `off_topic` (ưu tiên 1 thắng pricing ưu tiên 4)
-- `"cái đó có bao nhiêu RAM?"` → `pricing` ("bao nhiêu" match ưu tiên 4, dù hỏi specs)
+**Ví dụ (minh họa khác biệt 2 tầng):**
+- `"bóng đá Samsung S25 giá bao nhiêu"` → embedding: `pricing` (nghĩa tổng thể, score 0.485 ≥ 0.45) → **trả lời về sản phẩm**; regex fallback: `off_topic` (ưu tiên 1 thắng pricing)
+- `"kể chuyện cười đi"` → embedding: `off_topic` (0.608) → block đúng; regex: `general` (miss)
+- `"cái đó có bao nhiêu RAM?"` → regex: `pricing` ("bao nhiêu" match ưu tiên 4, dù hỏi specs)
 
 ### N3b — ③ isPromptInjection `ai-policy.js` (INJECTION_PATTERNS=289-329, isPromptInjection=331)
 **Tại sao:** Chặn prompt injection TRƯỚC khi query đến LLM. Chạy trên **message GỐC** (không phải normalizedQuery) vì expand có thể biến đổi pattern.
@@ -468,7 +478,7 @@ messages = [
 
 ---
 
-## Path 6 — OFFTOPIC_BLOCK: có brand nhưng off_topic thắng
+## Path 6 — Câu trộn off-topic + sản phẩm: embedding quyết theo nghĩa tổng thể
 
 > **EC2b**: `"bóng đá Samsung S25 Ultra giá bao nhiêu"`
 
@@ -476,12 +486,12 @@ messages = [
 |------|------|---------------|---------|
 | ① | **N1** | ✅ | |
 | ② | **N2** | Giữ nguyên | `Samsung` là tên đầy đủ, không phải abbreviation (`ss` mới là) |
-| ③ | **N3a** | intent = **`off_topic`** | `bóng đá` match off_topic (ưu tiên 1). `classifyIntent` check tuần tự — match đầu tiên return ngay. Dù có `Samsung S25` (product_search, ưu tiên 5) + `giá bao nhiêu` (pricing, ưu tiên 4) → không được check |
+| ③ | **N3a** | tầng embedding: intent = **`pricing`** (score 0.485 ≥ 0.45) | Embedding phân loại theo NGHĨA TỔNG THỂ: user nhắc tên SP + hỏi giá → ý định mua hàng. Tầng regex (nếu fallback): `off_topic` vì `bóng đá` match ưu tiên 1 — chính là lý do nâng cấp 2 tầng |
 | ③ | **N3b** | injection = No | |
-| Gate | **G1→G2** | G2 BLOCK | Trade-off: false positive (chặn nhầm) ít hại hơn tốn LLM cho off-topic |
-| ④–⑥ | — | Không thực thi | |
-| ⑦ | **N7b** | persist(fallback) | |
-| **Kết quả** | | ℹ️ Off-topic block dù có "Samsung S25 Ultra giá bao nhiêu" | Thứ tự ưu tiên intent quyết định |
+| Gate | **G1→G2** | Pass | offTopic derive từ intent CUỐI (embedding) → không block |
+| ④–⑥ | — | Thực thi bình thường | Retrieval tìm Samsung S25 Ultra → LLM/keyword trả lời về sản phẩm |
+| ⑦ | **N7a/N7b** | persist | |
+| **Kết quả** | | ✅ Trả lời giá Samsung S25 Ultra (behavior mới 2026-06-10) | Khi embedding không khả dụng (thiếu API key) → fallback regex → block như cũ |
 
 ---
 

@@ -880,7 +880,7 @@ sequenceDiagram
         API-->>CW: 400 Bad Request
     else Message hợp lệ
         Policy->>Policy: expandAbbreviations<br/>ip→iPhone pm→Pro Max ss→Samsung<br/>mb→MacBook op→OPPO rl→realme<br/>r5→AMD Ryzen 5 r7→AMD Ryzen 7<br/>bnh→bao nhiêu bh→bảo hành
-        Policy->>Policy: classifyIntent(normalizedQuery) → off_topic<br/>isPromptInjection(message)
+        Policy->>Policy: classify 2 tầng: embedding (primary)<br/>→ fallback regex classifyIntent → off_topic<br/>isPromptInjection(message)
 
         alt prompt injection (guard 1 — check TRƯỚC off_topic)
             API->>API: detectLanguage(message) → VI hoặc EN
@@ -1635,7 +1635,7 @@ flowchart TD
     B --> C["validateMessage<br/>≤500 ký tự, phải có chữ/số"]
     C -->|Không hợp lệ| D([400 Bad Request])
     C -->|Hợp lệ| E["expandAbbreviations<br/>12 mục brand/hội thoại tiêu biểu (xem bảng) — ABBREV_MAP còn section EN→VI và VI không dấu→có dấu"]
-    E --> F{"Guard 1: isPromptInjection (check TRƯỚC)<br/>Guard 2: classifyIntent === off_topic<br/>Rule-based regex, 0 API call"}
+    E --> F{"Guard 1: isPromptInjection (regex, check TRƯỚC)<br/>Guard 2: intent === off_topic<br/>(embedding classifier primary → fallback regex)"}
     F -->|"injection → 🛡️ / off_topic → ℹ️ (text khác)"| G["Response cố định (VI/EN qua detectLanguage)<br/>_persistMessages isFallback async<br/>KHÔNG update chat history"]
     G --> H([Trả kết quả])
     F -->|pass| I([Sang sơ đồ 6b: Retrieval])

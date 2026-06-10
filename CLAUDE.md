@@ -242,6 +242,7 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 - **New backend module:** `node scripts/new-module.mjs --name=<name> --type=simple|ddd-lite` — không copy thủ công.
 - **Rate limiters:** `apiLimiter` = 100 req/15min (prod) / 1000 (dev); `authLimiter` = 10 req/60min; `otpLimiter` = 5 req/15min; `chatbotLimiter` = 20 req/60s; `chatLimiter` = 30 req/5min; `destructiveLimiter` = 10 req/15min. Không có dev override cho chatbot limiters.
 - **Vector Store:** auto-rebuild khi vector count lệch >5% so với active products (server.js:125). Log "Vector store lệch >5% so với DB ... Tự động rebuild..." là bình thường.
+- **Intent classify 2 tầng (2026-06-10):** embedding classifier là PRIMARY (`INTENT_CLASSIFIER=embedding` default), regex `classifyIntent()` là fallback — KHÔNG xóa regex. Calibrate/eval bằng `node scripts/eval-intent-classifier.js` (gate: pipeline ≥ regex từng intent trên `scripts/eval-intent-dataset.json`). Rollback tức thì: `INTENT_CLASSIFIER=regex`. Câu trộn off-topic+sản phẩm (EC2b) giờ KHÔNG bị block — by design.
 - **Cron Jobs:** daily 2AM + weekly Sunday 3AM — không disable trừ khi có lý do rõ ràng.
 - **Models đã drop hoàn toàn:** `Collection`, `EmailCampaign`, `NewsletterSubscriber`, `ImportLog`, `Banner`, `News`, `LoyaltyHistory`, `WarrantyPackage`, `ProductWarranty`, `ReviewFeedback`, `AuditLog`, `BrandCategory` — không reference lại.
 - **Stock decrement:** LUÔN trong transaction với SELECT FOR UPDATE — không decrement bên ngoài unitOfWork.
@@ -262,14 +263,14 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 215 | 5.381 | ~12s | `jest.config.js` |
-| BE Integration Tests | 38 | 210 | ~57s | `jest.integration.config.js` |
+| BE Unit Tests | 176 | 5.581 | ~13s | `jest.config.js` |
+| BE Integration Tests | 38 | 211 | ~57s | `jest.integration.config.js` |
 | BE API HTTP Tests | 39 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **325** | **~7.303** | | |
+| **Tổng** | **286** | **~7.504** | | |
 
-> Cập nhật 2026-06-07 (§F ai+search-history audit: refactor tests do fix bugs — tổng BE unit giảm 1 xuống 5.381).
+> Cập nhật 2026-06-10 (logic-audit module ai: 15 fixes + 50 regression tests BE unit, +1 integration; số suites/tests đo trực tiếp bằng `npm run test:fast` — baseline cũ 215/5.381 đã lệch so với thực đo từ trước audit).
 
 - **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%

@@ -252,3 +252,61 @@ describe('isAvailable() và activeName', () => {
     expect(loadService().activeName).toBe('none');
   });
 });
+
+// ── generateEmbeddingWithMeta — provider metadata + pin ───────────────────────
+describe('generateEmbeddingWithMeta', () => {
+  beforeEach(() => mockAxiosPost.mockReset());
+
+  it('trả {vector, provider} — provider là model đã tạo vector', async () => {
+    const svc = loadService({ jina: 'j' });
+    const vec = makeVector();
+    mockAxiosPost.mockResolvedValue({ data: { data: [{ embedding: vec }] } });
+    const result = await svc.generateEmbeddingWithMeta('text', 'query');
+    expect(result).toEqual({ vector: vec, provider: 'Jina v3' });
+  });
+
+  it('primary fail → fallback, provider phản ánh model THẬT đã dùng', async () => {
+    const svc = loadService({ jina: 'j', hf: 'h' });
+    const vec = makeVector();
+    mockAxiosPost.mockRejectedValueOnce(new Error('jina down')).mockResolvedValue({ data: [vec] });
+    const result = await svc.generateEmbeddingWithMeta('text', 'query');
+    expect(result.provider).toBe('multilingual-e5-large-instruct');
+    expect(result.vector).toEqual(vec);
+  });
+
+  it('pin = provider cụ thể → KHÔNG fallback khi provider đó fail', async () => {
+    const svc = loadService({ jina: 'j', hf: 'h' });
+    mockAxiosPost.mockRejectedValue(new Error('jina down'));
+    await expect(
+      svc.generateEmbeddingWithMeta('text', 'query', { pin: 'Jina v3' }),
+    ).rejects.toThrow('jina down');
+    expect(mockAxiosPost).toHaveBeenCalledTimes(1); // không thử e5
+  });
+
+  it('pin thành công → chỉ gọi đúng provider được pin', async () => {
+    const svc = loadService({ jina: 'j', hf: 'h' });
+    const vec = makeVector();
+    mockAxiosPost.mockResolvedValue({ data: [vec] }); // e5-instruct format
+    const result = await svc.generateEmbeddingWithMeta('text', 'query', {
+      pin: 'multilingual-e5-large-instruct',
+    });
+    expect(result.provider).toBe('multilingual-e5-large-instruct');
+    expect(mockAxiosPost).toHaveBeenCalledTimes(1);
+    // Gọi đúng URL e5-instruct, không phải Jina
+    expect(mockAxiosPost.mock.calls[0][0]).toContain('e5-large-instruct');
+  });
+
+  it('pin provider không được cấu hình → throw với tên provider', async () => {
+    const svc = loadService({ hf: 'h' }); // không có Jina
+    await expect(
+      svc.generateEmbeddingWithMeta('text', 'query', { pin: 'Jina v3' }),
+    ).rejects.toThrow('Provider embedding "Jina v3" không được cấu hình');
+  });
+
+  it('generateEmbedding (legacy) delegate qua WithMeta — trả vector thuần', async () => {
+    const svc = loadService({ jina: 'j' });
+    const vec = makeVector();
+    mockAxiosPost.mockResolvedValue({ data: { data: [{ embedding: vec }] } });
+    await expect(svc.generateEmbedding('text', 'query')).resolves.toEqual(vec);
+  });
+});

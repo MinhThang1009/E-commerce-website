@@ -155,7 +155,13 @@ class HybridVectorStore {
 
   /** Map spec key EN→VI — set bởi index-products.js, persist ra file để server load lại. */
   setSpecKeyMap(map) {
-    this._specKeyMap = map || {};
+    // Map rỗng/null → giữ nguyên map hiện tại: translateSpecKeys trả {} khi không có LLM,
+    // ghi đè sẽ XÓA file map tốt đã build trước đó (data loss thực tế đã xảy ra)
+    if (!map || Object.keys(map).length === 0) {
+      logger.debug('[VectorStore] setSpecKeyMap nhận map rỗng — giữ map hiện tại, không persist');
+      return;
+    }
+    this._specKeyMap = map;
     // Persist để server đang chạy (hooks) dùng được khi tạo/sửa sản phẩm mới
     try {
       fs.writeFileSync(this._specKeyMapPath, JSON.stringify(this._specKeyMap, null, 2), 'utf8');
@@ -253,7 +259,10 @@ class HybridVectorStore {
 
       const textToEmbed = HybridVectorStore.buildEmbeddingText(product, this._specKeyMap);
 
-      const vector = await embeddingService.generateEmbedding(textToEmbed, 'passage');
+      const { vector, provider } = await embeddingService.generateEmbeddingWithMeta(
+        textToEmbed,
+        'passage',
+      );
       if (!vector || !Array.isArray(vector)) throw new Error('vector không hợp lệ');
       if (vector.length !== EXPECTED_DIM) {
         throw new Error(`vector sai chiều: mong đợi ${EXPECTED_DIM}, nhận được ${vector.length}`);
@@ -263,6 +272,9 @@ class HybridVectorStore {
 
       this.items.push({
         vector,
+        // Model đã tạo vector — vector của 2 model khác nhau không so sánh được,
+        // _semanticSearch dùng field này để skip item lệch provider với query
+        provider,
         text: textToEmbed,
         metadata: {
           id: product.id,
@@ -488,17 +500,37 @@ class HybridVectorStore {
    *   Mặc định 0 để lấy tất cả — caller tự lọc. hybridSearch truyền DEFAULT_MIN_SCORE (0.45).
    * @param {number[]|null} [precomputedVector=null] - Vector query đã embed sẵn (caller reuse
    *   từ bước classify) — có thì bỏ qua embedding call, tiết kiệm 1 API call + latency.
+   * @param {string|null} [queryProvider=null] - Model đã tạo precomputedVector (đi kèm bắt buộc
+   *   khi truyền precomputedVector) — để guard cross-model với items trong store.
    * @returns {Promise<Array<Object>>} Items có score ≥ minScore, sắp xếp giảm dần theo score.
    */
-  async _semanticSearch(query, limit, minScore, precomputedVector = null) {
-    const queryVector =
-      precomputedVector ?? (await embeddingService.generateEmbedding(query, 'query'));
+  async _semanticSearch(query, limit, minScore, precomputedVector = null, queryProvider = null) {
+    let queryVector = precomputedVector;
+    if (!queryVector) {
+      ({ vector: queryVector, provider: queryProvider } =
+        await embeddingService.generateEmbeddingWithMeta(query, 'query'));
+    }
 
-    const scoredItems = this.items.map((item) => {
+    // Guard cross-model: vector của 2 model khác nhau không so sánh được bằng cosine
+    // (bài học eval intent: Jina timeout → query embed bằng e5 vs index Jina → score rác).
+    // Item thiếu field provider (index cũ) → không có thông tin, chấp nhận so sánh như trước.
+    let skippedMismatch = 0;
+    const scoredItems = [];
+    for (const item of this.items) {
+      if (queryProvider && item.provider && item.provider !== queryProvider) {
+        skippedMismatch++;
+        continue;
+      }
       // Tương thích ngược với vector-db.json cũ (field vectorEn từ schema trước khi unified)
       const docVector = item.vector || item.vectorEn;
-      return { ...item, score: this.cosineSimilarity(queryVector, docVector) };
-    });
+      scoredItems.push({ ...item, score: this.cosineSimilarity(queryVector, docVector) });
+    }
+    if (skippedMismatch > 0) {
+      logger.warn(
+        `[VectorStore] Bỏ qua ${skippedMismatch}/${this.items.length} items lệch provider ` +
+          `(query: ${queryProvider}) — semantic search giảm coverage, keyword search vẫn bù`,
+      );
+    }
 
     return scoredItems
       .filter((item) => isFinite(item.score) && item.score >= minScore)
@@ -534,16 +566,23 @@ class HybridVectorStore {
    * @param {Object} [opts]
    * @param {number[]|null} [opts.queryVector] - Embedding của `query` đã tính sẵn (chatbot reuse
    *   từ bước intent-classify). CHỈ truyền khi vector tương ứng đúng text `query` này.
+   * @param {string|null} [opts.queryProvider] - Model đã tạo queryVector — bắt buộc đi kèm
+   *   queryVector để guard cross-model (xem _semanticSearch).
    * @returns {Promise<Array<Object>>} Kết quả merged, sắp xếp theo score giảm dần.
    *   Mỗi item có `score` (0-1) và optional `lowConfidence: true` (keyword-only).
    */
-  async hybridSearch(query, limit = 5, minScore = DEFAULT_MIN_SCORE, { queryVector = null } = {}) {
+  async hybridSearch(
+    query,
+    limit = 5,
+    minScore = DEFAULT_MIN_SCORE,
+    { queryVector = null, queryProvider = null } = {},
+  ) {
     try {
       await this.loadPromise;
 
       // Bước 1: Chạy song song 2 phương pháp search — lấy gấp đôi limit để có dư cho merge
       const [vectorResults, keywordResults] = await Promise.all([
-        this._semanticSearch(query, limit * 2, minScore, queryVector),
+        this._semanticSearch(query, limit * 2, minScore, queryVector, queryProvider),
         Promise.resolve(this._keywordSearch(query, limit * 2)),
       ]);
 

@@ -185,6 +185,9 @@ class EmbeddingIntentClassifier {
     this._exampleEmbeddings = {}; // intent → number[][]
     this._embedFn = null;
     this._ready = false;
+    // Tên embedding provider đã tạo example embeddings — caller so với provider của
+    // query vector để guard cross-model (vector 2 model khác nhau không so sánh được)
+    this.provider = null;
   }
 
   /**
@@ -207,6 +210,8 @@ class EmbeddingIntentClassifier {
    * @param {Object} [opts]
    * @param {string} [opts.cachePath] - Đường dẫn file cache (default: data/intent-example-embeddings.json)
    * @param {string} [opts.cacheSalt] - Fingerprint provider để invalidate cache khi đổi embedding model
+   * @param {string|null} [opts.provider] - Tên provider tạo example embeddings (expose qua
+   *   `this.provider` để caller guard cross-model với query vector)
    * @param {boolean} [opts.cache] - false để bỏ qua đọc/ghi cache (mặc định tắt trong NODE_ENV=test
    *   — unit test phải hermetic, không phụ thuộc/ghi file trên đĩa)
    */
@@ -215,10 +220,12 @@ class EmbeddingIntentClassifier {
     {
       cachePath = DEFAULT_CACHE_PATH,
       cacheSalt = '',
+      provider = null,
       cache = process.env.NODE_ENV !== 'test',
     } = {},
   ) {
     this._embedFn = embedFn;
+    this.provider = provider;
     const hash = this._cacheHash(cacheSalt);
 
     // Thử load cache — lỗi đọc/parse coi như cache miss, không throw

@@ -10,10 +10,18 @@
  *   - reuse embedding: hybridSearch nhận queryVector khi text trùng
  */
 
+// Mock trả {vector, provider} theo contract generateEmbeddingWithMeta;
+// generateEmbedding (legacy) derive từ cùng mock để 2 API nhất quán
 const mockGenerateEmbedding = jest.fn();
 jest.mock('@services/embedding/unified-embedding', () => ({
-  generateEmbedding: (...a) => mockGenerateEmbedding(...a),
+  activeName: 'mock-provider',
+  isAvailable: () => true,
+  generateEmbeddingWithMeta: (...a) => mockGenerateEmbedding(...a),
+  generateEmbedding: async (...a) => (await mockGenerateEmbedding(...a)).vector,
 }));
+
+// Helper: resolved value đúng shape WithMeta
+const meta = (vector, provider = 'mock-provider') => ({ vector, provider });
 
 const mockHybridSearch = jest.fn();
 jest.mock('@services/vector-store/vector-store', () => ({
@@ -61,11 +69,14 @@ function primeClassifier() {
     general: [[-1, 0, 0]],
   };
   classifier._ready = true;
+  // Examples coi như được embed bằng provider primary — khớp với query mock
+  classifier.provider = 'mock-provider';
 }
 
 function resetClassifier() {
   classifier._exampleEmbeddings = {};
   classifier._ready = false;
+  classifier.provider = null;
 }
 
 beforeEach(() => {
@@ -87,13 +98,13 @@ afterAll(() => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('_embedQueryOnce', () => {
-  it('embed thành công → trả vector + cache theo text (gọi API đúng 1 lần)', async () => {
-    mockGenerateEmbedding.mockResolvedValue([0, 1]);
+  it('embed thành công → trả {vector, provider} + cache theo text (gọi API đúng 1 lần)', async () => {
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1]));
     const cache = new Map();
-    const v1 = await svc._embedQueryOnce('iphone giá', cache);
-    const v2 = await svc._embedQueryOnce('iphone giá', cache);
-    expect(v1).toEqual([0, 1]);
-    expect(v2).toEqual([0, 1]);
+    const r1 = await svc._embedQueryOnce('iphone giá', cache);
+    const r2 = await svc._embedQueryOnce('iphone giá', cache);
+    expect(r1).toEqual({ vector: [0, 1], provider: 'mock-provider' });
+    expect(r2).toEqual({ vector: [0, 1], provider: 'mock-provider' });
     expect(mockGenerateEmbedding).toHaveBeenCalledTimes(1);
     expect(mockGenerateEmbedding).toHaveBeenCalledWith('iphone giá', 'query');
   });
@@ -126,7 +137,7 @@ describe('_classifyIntent', () => {
   it('flag=embedding + confident → intent từ embedding kèm score', async () => {
     process.env.INTENT_CLASSIFIER = 'embedding';
     primeClassifier();
-    mockGenerateEmbedding.mockResolvedValue([0, 1, 0]); // trùng pricing example → score 1.0
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0])); // trùng pricing example → score 1.0
 
     const out = await svc._classifyIntent('câu hỏi bất kỳ', new Map());
     expect(out).toEqual({ intent: 'pricing', source: 'embedding', score: expect.any(Number) });
@@ -137,7 +148,7 @@ describe('_classifyIntent', () => {
     process.env.INTENT_CLASSIFIER = 'embedding';
     primeClassifier();
     // Vector vuông góc với MỌI example (trục thứ 3) → best score 0 < 0.55
-    mockGenerateEmbedding.mockResolvedValue([0, 0, 1]);
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 0, 1]));
 
     const out = await svc._classifyIntent('chính sách bảo hành', new Map());
     expect(out.source).toBe('regex');
@@ -172,6 +183,18 @@ describe('_classifyIntent', () => {
     expect(out.source).toBe('regex');
     expect(mockGenerateEmbedding).not.toHaveBeenCalled();
   });
+
+  it('query embed bằng provider FALLBACK (≠ provider của examples) → bỏ tầng embedding, dùng regex', async () => {
+    process.env.INTENT_CLASSIFIER = 'embedding';
+    primeClassifier(); // examples provider = 'mock-provider'
+    // Provider primary timeout → query rơi vào model fallback — vector khác không gian,
+    // score so với examples là rác → guard phải chặn
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0], 'fallback-model'));
+
+    const out = await svc._classifyIntent('iPhone giá bao nhiêu', new Map());
+    expect(out.source).toBe('regex');
+    expect(out.intent).toBe('pricing'); // regex vẫn phân loại đúng
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -182,7 +205,7 @@ describe('handleMessage với embedding classifier', () => {
   it('câu trộn: embedding nói pricing → KHÔNG block off-topic, đi tiếp retrieval', async () => {
     process.env.INTENT_CLASSIFIER = 'embedding';
     primeClassifier();
-    mockGenerateEmbedding.mockResolvedValue([0, 1, 0]); // → pricing (score 1.0)
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0])); // → pricing (score 1.0)
 
     // "bóng đá" khiến REGEX nói off_topic — embedding phải thắng
     const out = await svc.handleMessage('bóng đá Samsung S25 Ultra giá bao nhiêu', null, null);
@@ -194,7 +217,7 @@ describe('handleMessage với embedding classifier', () => {
   it('off-topic thuần: embedding score cao cho off_topic → block với response ngoài phạm vi', async () => {
     process.env.INTENT_CLASSIFIER = 'embedding';
     primeClassifier();
-    mockGenerateEmbedding.mockResolvedValue([1, 0, 0]); // → off_topic (score 1.0 ≥ 0.6)
+    mockGenerateEmbedding.mockResolvedValue(meta([1, 0, 0])); // → off_topic (score 1.0 ≥ 0.6)
 
     const out = await svc.handleMessage('kết quả bóng đá tối qua thế nào', null, null);
 
@@ -212,23 +235,23 @@ describe('handleMessage với embedding classifier', () => {
     expect(mockGenerateEmbedding).not.toHaveBeenCalled();
   });
 
-  it('reuse: hybridSearch lần đầu nhận queryVector đã embed ở bước classify', async () => {
+  it('reuse: hybridSearch lần đầu nhận queryVector + queryProvider đã embed ở bước classify', async () => {
     process.env.INTENT_CLASSIFIER = 'embedding';
     primeClassifier();
-    mockGenerateEmbedding.mockResolvedValue([0, 1, 0]); // pricing → needsSearch=true
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0])); // pricing → needsSearch=true
 
     await svc.handleMessage('iPhone 16 giá bao nhiêu', null, null);
 
     // 1 embedding call duy nhất cho cả classify lẫn search
     expect(mockGenerateEmbedding).toHaveBeenCalledTimes(1);
     const firstSearchOpts = mockHybridSearch.mock.calls[0][3];
-    expect(firstSearchOpts).toEqual({ queryVector: [0, 1, 0] });
+    expect(firstSearchOpts).toEqual({ queryVector: [0, 1, 0], queryProvider: 'mock-provider' });
   });
 
   it('trace step3 ghi classifierSource + classifierScore', async () => {
     process.env.INTENT_CLASSIFIER = 'embedding';
     primeClassifier();
-    mockGenerateEmbedding.mockResolvedValue([0, 1, 0]);
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0]));
 
     const out = await svc.handleMessage('iPhone 16 giá bao nhiêu', null, null, {
       enableTrace: true,
@@ -239,7 +262,7 @@ describe('handleMessage với embedding classifier', () => {
 
   it('flag mặc định (chưa set env) = embedding → classifier được gọi', async () => {
     primeClassifier();
-    mockGenerateEmbedding.mockResolvedValue([1, 0, 0]); // → off_topic
+    mockGenerateEmbedding.mockResolvedValue(meta([1, 0, 0])); // → off_topic
     const out = await svc.handleMessage('thời tiết hôm nay thế nào', null, null);
     expect(out.intent).toBe('off_topic');
     expect(mockGenerateEmbedding).toHaveBeenCalled(); // default embedding → có embed

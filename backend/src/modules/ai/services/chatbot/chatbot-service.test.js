@@ -2669,14 +2669,14 @@ describe('ChatbotService.rewriteQuery', () => {
     expect(result).toBeNull();
   });
 
-  test('break (không retry) khi lỗi 400 (không phải 429/402/500/503)', async () => {
+  test('lỗi 400 → vẫn rotate qua TẤT CẢ providers (key/model riêng từng provider)', async () => {
     addFakeProvider({ key: 'key-1' });
     addFakeProvider({ key: 'key-2' });
     const err400 = Object.assign(new Error('Bad request'), { response: { status: 400 } });
     axios.post.mockRejectedValue(err400);
     const result = await chatbotService.rewriteQuery('test query');
-    // Chỉ gọi 1 lần vì break sau lỗi 400
-    expect(axios.post).toHaveBeenCalledTimes(1);
+    // Cả 2 providers đều được thử — 400 ở provider 1 không suy ra provider 2 cũng lỗi
+    expect(axios.post).toHaveBeenCalledTimes(2);
     expect(result).toBeNull();
   });
 });
@@ -2958,7 +2958,7 @@ describe('ChatbotService.augmentAndGenerate — provider rotation', () => {
     expect(result).toBeDefined();
   });
 
-  test('break không retry khi lỗi 400 (không phải retryable)', async () => {
+  test('lỗi 400 → vẫn rotate qua TẤT CẢ providers rồi mới fallback', async () => {
     addFakeProvider({ key: 'k1' });
     addFakeProvider({ key: 'k2' });
 
@@ -2967,9 +2967,10 @@ describe('ChatbotService.augmentAndGenerate — provider rotation', () => {
 
     const result = await chatbotService.augmentAndGenerate('test', [], []);
 
-    // Chỉ gọi 1 lần vì break sau 400
-    expect(axios.post).toHaveBeenCalledTimes(1);
+    // Cả 2 providers đều được thử — 400 ở provider 1 không suy ra provider 2 cũng lỗi
+    expect(axios.post).toHaveBeenCalledTimes(2);
     expect(result).toBeDefined();
+    expect(result.isFallback).toBe(true);
   });
 
   test('retry khi 402 (payment required)', async () => {
@@ -3470,17 +3471,17 @@ describe('ChatbotService.handleMessage — line 248: prep.valid = false', () => 
 });
 
 // ============================================================
-// Line 319: finalQuery || message — binary-expr branch[1]
-// finalQuery falsy → dùng message gốc khi persist
+// Persist bước 7: session history lưu LỜI USER THẬT (normalizedQuery),
+// KHÔNG lưu finalQuery (bản enrich/LLM-rewrite) — tránh méo lời user
+// và enrich chồng lên bản đã enrich ở lượt sau
 // ============================================================
 
-describe('ChatbotService.handleMessage — line 319: finalQuery || message branch[1]', () => {
-  it('dùng message gốc khi _retrieveProducts trả về finalQuery = undefined/falsy', async () => {
-    // Spy trên _retrieveProducts để trả về finalQuery = '' (falsy)
+describe('ChatbotService.handleMessage — persist history bằng normalizedQuery, không phải finalQuery', () => {
+  it('history lưu lời user gốc kể cả khi finalQuery đã bị LLM rewrite khác hẳn', async () => {
     const originalRetrieve = chatbotService._retrieveProducts.bind(chatbotService);
     chatbotService._retrieveProducts = jest.fn().mockResolvedValue({
       products: [],
-      finalQuery: '', // falsy → finalQuery || message dùng message
+      finalQuery: 'REWRITTEN-BY-LLM hoàn toàn khác', // bản rewrite — KHÔNG được lưu vào history
     });
 
     const mockAugment = jest.fn().mockResolvedValue({
@@ -3497,8 +3498,10 @@ describe('ChatbotService.handleMessage — line 319: finalQuery || message branc
     await chatbotService.handleMessage('tìm iphone', null, 'sess-finalquery');
 
     const entry = chatbotService.conversationHistory.get('sess-finalquery');
-    // Khi finalQuery = '' → session lưu sanitizedMessage của message gốc
     expect(entry).toBeDefined();
+    const userMsg = entry.messages.find((m) => m.role === 'user');
+    expect(userMsg.content).toContain('iphone');
+    expect(userMsg.content).not.toContain('REWRITTEN-BY-LLM');
 
     chatbotService._retrieveProducts = originalRetrieve;
     chatbotService.augmentAndGenerate = originalAugment;

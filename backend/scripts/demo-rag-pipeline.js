@@ -131,14 +131,17 @@ async function computePipeline(query, llmMode, providedSessionId = null) {
     try {
       const classifier = require('@modules/ai/services/chatbot/intent/embedding-intent-classifier');
       const unified = require('@services/embedding/unified-embedding');
-      const salt =
-        (process.env.JINA_API_KEY ? 'jina' : '') + (process.env.HF_API_KEY ? '+hf' : '');
-      if (salt) {
-        await classifier.initialize((t) => unified.generateEmbedding(t, 'query'), {
-          cacheSalt: salt,
-          cache: true,
+      if (unified.isAvailable()) {
+        // PIN provider primary cho examples lẫn query (đồng bộ chatbot-service):
+        // vector 2 model khác nhau không so sánh được
+        const pin = unified.activeName;
+        await classifier.initialize(
+          async (t) => (await unified.generateEmbeddingWithMeta(t, 'query', { pin })).vector,
+          { cacheSalt: pin, provider: pin, cache: true },
+        );
+        const { vector: vec } = await unified.generateEmbeddingWithMeta(normalized, 'query', {
+          pin,
         });
-        const vec = await unified.generateEmbedding(normalized, 'query');
         const r = classifier.classifyWithScore(vec);
         if (r) {
           const threshold =
@@ -216,8 +219,11 @@ async function computePipeline(query, llmMode, providedSessionId = null) {
   if (!needsSearch) {
     trace.step5_retrieve = { enrichedQuery, skipped: true, reason: `Intent "${intent}" không cần Hybrid Search`, productsFound: 0 };
   } else {
+    // Đồng bộ NGUYÊN VĂN với chatbot-service._retrieveProducts stripNegation:
+    // terminator dùng (?!\p{L}) thay \b (ASCII-only, chết sau ký tự có dấu);
+    // hay/hoặc KHÔNG phải terminator (chúng nối các brand bị phủ định, phải strip hết)
     const stripNeg = (q) => q
-      .replace(/(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|hay|hoặc|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)\b|\s*$)/igu, ' ')
+      .replace(/(?:không\s+(?:cần|muốn|thích|dùng|phải|có)|tránh|avoid|don't\s+want)\s+[\p{L}\p{N}\s,/]+?(?=[\s,]+(?:gì|được|cũng|mà|nhưng|tầm|dưới|trên|khoảng|giá|pin|màn|nhẹ|mỏng|ram|cpu|chip|mới|tốt|rẻ|đắt|bền|under|about|around|with|for)(?!\p{L})|\s*$)/giu, ' ')
       .trim() || q;
     const queryForRetrieval = stripNeg(enrichedQuery);
 

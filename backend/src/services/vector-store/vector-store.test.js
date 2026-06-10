@@ -15,6 +15,10 @@ jest.mock('@utils/logger', () => ({
 const mockEnEmbed = jest.fn();
 jest.mock('@services/embedding/unified-embedding', () => ({
   generateEmbedding: mockEnEmbed,
+  generateEmbeddingWithMeta: async (...a) => ({
+    vector: await mockEnEmbed(...a),
+    provider: 'mock-model',
+  }),
   activeName: 'mock-model',
 }));
 
@@ -58,6 +62,7 @@ describe('HybridVectorStore — load()', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
   });
@@ -151,6 +156,7 @@ describe('cosineSimilarity (thuật toán thuần)', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -228,6 +234,7 @@ describe('clear()', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -270,6 +277,10 @@ describe('upsertProduct()', () => {
 
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -300,6 +311,8 @@ describe('upsertProduct()', () => {
     expect(store.items[0].metadata.id).toBe(1);
     expect(store.items[0].metadata.name).toBe('Laptop');
     expect(store.items[0].vector).toHaveLength(EXPECTED_DIM);
+    // Ghi lại model đã tạo vector — _semanticSearch dùng để guard cross-model
+    expect(store.items[0].provider).toBe('mock-model');
   });
 
   it('thêm cùng productId lần 2 → cập nhật, không tạo duplicate', async () => {
@@ -363,6 +376,10 @@ describe('search()', () => {
 
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -425,6 +442,64 @@ describe('search()', () => {
 
     await store.hybridSearch('laptop');
     expect(mockEn).toHaveBeenCalledWith('laptop', 'query');
+  });
+
+  it('cross-model guard: item lệch provider với query → bị skip khỏi semantic, item cùng provider vẫn được chấm', async () => {
+    const queryVec = makeVector(EXPECTED_DIM);
+    mockEn.mockResolvedValue(queryVec); // query embed bằng 'mock-model'
+    store.items = [
+      // Item index bằng model KHÁC (vd Jina down lúc rebuild → e5) — cosine vô nghĩa
+      {
+        vector: queryVec,
+        provider: 'other-model',
+        text: 'laptop A',
+        metadata: { id: 1, name: 'Laptop A' },
+      },
+      // Item cùng model với query → so sánh bình thường
+      {
+        vector: queryVec,
+        provider: 'mock-model',
+        text: 'laptop B',
+        metadata: { id: 2, name: 'Laptop B' },
+      },
+    ];
+
+    const results = await store.hybridSearch('laptop');
+    const ids = results.map((r) => r.metadata.id);
+    expect(ids).toContain(2);
+    // Item 1 chỉ có thể xuất hiện qua keyword-injection (lowConfidence), không qua semantic
+    const item1 = results.find((r) => r.metadata.id === 1);
+    if (item1) expect(item1.lowConfidence).toBe(true);
+  });
+
+  it('cross-model guard: item KHÔNG có field provider (index cũ) → vẫn được chấm điểm (legacy)', async () => {
+    const queryVec = makeVector(EXPECTED_DIM);
+    mockEn.mockResolvedValue(queryVec);
+    store.items = [{ vector: queryVec, text: 'laptop', metadata: { id: 1, name: 'Laptop' } }];
+
+    const results = await store.hybridSearch('laptop');
+    expect(results).toHaveLength(1);
+    expect(results[0].score).toBeCloseTo(1);
+  });
+
+  it('cross-model guard với queryVector tính sẵn: queryProvider lệch → semantic skip toàn bộ', async () => {
+    const queryVec = makeVector(EXPECTED_DIM);
+    store.items = [
+      {
+        vector: queryVec,
+        provider: 'mock-model',
+        text: 'laptop',
+        metadata: { id: 1, name: 'Laptop' },
+      },
+    ];
+
+    const results = await store.hybridSearch('zzz', 5, 0.45, {
+      queryVector: queryVec,
+      queryProvider: 'fallback-model', // vector tới từ model fallback ≠ index
+    });
+    // Semantic skip (lệch provider) + keyword không match 'zzz' → rỗng
+    expect(results).toEqual([]);
+    expect(mockEn).not.toHaveBeenCalled();
   });
 
   it('kết quả có score < 0.45 → bị lọc bỏ', async () => {
@@ -528,6 +603,7 @@ describe('save()', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
   });
@@ -631,6 +707,10 @@ describe('buildEmbeddingText — uncovered branches', () => {
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -803,6 +883,7 @@ describe('HybridVectorStore.cosineSimilarity — !isFinite guards', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -847,6 +928,10 @@ describe('hybridSearch — boost & inject branches', () => {
     mockEn = jest.fn();
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -924,6 +1009,7 @@ describe('_keywordSearch — empty query và edge cases', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -997,6 +1083,7 @@ describe('cosineSimilarity — additional edge cases', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1046,6 +1133,10 @@ describe('buildEmbeddingText — variants & specs branches', () => {
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1258,6 +1349,7 @@ describe('setSpecKeyMap & _localizeSpecKey', () => {
     }));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: jest.fn(),
+      generateEmbeddingWithMeta: jest.fn(),
       activeName: 'mock-model',
     }));
     mockWriteFileSync = jest.fn();
@@ -1278,9 +1370,20 @@ describe('setSpecKeyMap & _localizeSpecKey', () => {
     expect(mockWriteFileSync).toHaveBeenCalled();
   });
 
-  it('setSpecKeyMap(null) → map rỗng', () => {
+  it('setSpecKeyMap(null) → giữ map hiện tại, không persist (chống data loss)', () => {
+    store.setSpecKeyMap({ battery: 'Pin' });
+    mockWriteFileSync.mockClear();
     store.setSpecKeyMap(null);
-    expect(store._specKeyMap).toEqual({});
+    expect(store._specKeyMap).toEqual({ battery: 'Pin' });
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
+  });
+
+  it('setSpecKeyMap({}) → giữ map hiện tại, không ghi đè file map tốt', () => {
+    store.setSpecKeyMap({ battery: 'Pin' });
+    mockWriteFileSync.mockClear();
+    store.setSpecKeyMap({});
+    expect(store._specKeyMap).toEqual({ battery: 'Pin' });
+    expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
   it('setSpecKeyMap khi writeFileSync throw → bỏ qua lỗi (catch block)', () => {
@@ -1321,6 +1424,10 @@ describe('upsertProduct — metadata specs & variants', () => {
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1471,6 +1578,10 @@ describe('buildEmbeddingText — variants branches (L88, L93, L101)', () => {
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1594,6 +1705,10 @@ describe('buildEmbeddingText — line 123: descriptionEn truthy branch[0]', () =
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1665,6 +1780,10 @@ describe('buildEmbeddingText — line 144: tags không phải array → dùng st
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1737,6 +1856,10 @@ describe('upsertProduct metadata — lines 272-273: basePrice/compareAtPrice = n
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({
@@ -1820,6 +1943,10 @@ describe('upsertProduct metadata variants — lines 299, 305', () => {
     mockEn = jest.fn().mockResolvedValue(makeVector(EXPECTED_DIM));
     jest.mock('@services/embedding/unified-embedding', () => ({
       generateEmbedding: mockEn,
+      generateEmbeddingWithMeta: async (...a) => ({
+        vector: await mockEn(...a),
+        provider: 'mock-model',
+      }),
       activeName: 'mock-model',
     }));
     jest.mock('fs', () => ({

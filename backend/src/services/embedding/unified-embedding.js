@@ -21,7 +21,10 @@
  *
  * Fallback chain: Jina v3 (JINA_API_KEY) → HF e5-instruct (HF_API_KEY) → HF e5-base (HF_API_KEY).
  * Provider nào lỗi → tự động thử provider tiếp theo. Provider cuối lỗi → throw Error.
- * Tất cả 3 providers đều output vector 1024 chiều — có thể dùng lẫn trong cùng vector store.
+ *
+ * ⚠️ Cả 3 providers đều output 1024 chiều nhưng vector của 2 MODEL KHÁC NHAU không
+ * so sánh được bằng cosine (không gian embedding khác nhau). Caller cần guard
+ * cross-model → dùng generateEmbeddingWithMeta() để biết provider đã tạo vector.
  */
 const axios = require('axios');
 const logger = require('@utils/logger');
@@ -220,6 +223,56 @@ class UnifiedEmbeddingService {
   }
 
   /**
+   * Sinh vector embedding kèm tên provider đã tạo ra nó.
+   *
+   * Vector của 2 model khác nhau KHÔNG so sánh được bằng cosine (bài học từ eval
+   * intent classifier: Jina timeout giữa chừng → query embed bằng e5 trong khi index
+   * là vector Jina → score rác). Caller cần biết provider để guard cross-model:
+   * vector store chỉ chấm điểm item cùng provider; intent classifier chỉ tin
+   * vector cùng provider với examples.
+   *
+   * @param {string} text - Text cần embedding.
+   * @param {string} [type='query'] - 'passage' (indexing) hoặc 'query' (search).
+   * @param {Object} [opts]
+   * @param {string|null} [opts.pin=null] - Tên provider BẮT BUỘC dùng (không fallback).
+   *   Dùng khi caller cần vector nhất quán 1 model (vd: embed bộ examples của classifier).
+   * @returns {Promise<{vector: number[], provider: string}>}
+   * @throws {Error} Không có provider khả dụng, hoặc tất cả (hoặc provider pin) thất bại.
+   */
+  async generateEmbeddingWithMeta(text, type = 'query', { pin = null } = {}) {
+    const chain = pin ? this.providers.filter((p) => p.name === pin) : this.providers;
+    if (chain.length === 0) {
+      throw new Error(
+        pin
+          ? `Provider embedding "${pin}" không được cấu hình`
+          : 'Chưa cấu hình provider embedding (JINA_API_KEY hoặc HF_API_KEY)',
+      );
+    }
+
+    for (let i = 0; i < chain.length; i++) {
+      const provider = chain[i];
+      try {
+        const embeddingVector = await provider.fn(text, type);
+        if (!pin && i > 0) {
+          // i > 0 nghĩa là đang dùng provider thứ 2 hoặc 3 — primary bị skip
+          logger.debug(`UnifiedEmbedding: dùng fallback [${provider.name}]`);
+        }
+        return { vector: embeddingVector, provider: provider.name };
+      } catch (err) {
+        const isLastProvider = i === chain.length - 1;
+        if (!isLastProvider) {
+          logger.warn(
+            `UnifiedEmbedding: [${provider.name}] thất bại → thử [${chain[i + 1].name}]: ${err.message}`,
+          );
+        } else {
+          logger.error(`UnifiedEmbedding: tất cả providers thất bại: ${err.message}`);
+          throw err;
+        }
+      }
+    }
+  }
+
+  /**
    * Sinh vector embedding từ text — thử lần lượt từng provider cho đến khi thành công.
    *
    * Fallback chain: thử từng provider theo thứ tự [0] → [1] → [2].
@@ -234,31 +287,7 @@ class UnifiedEmbeddingService {
    * @throws {Error} Nếu không có provider nào được cấu hình, hoặc tất cả providers đều thất bại.
    */
   async generateEmbedding(text, type = 'query') {
-    if (this.providers.length === 0) {
-      throw new Error('Chưa cấu hình provider embedding (JINA_API_KEY hoặc HF_API_KEY)');
-    }
-
-    for (let i = 0; i < this.providers.length; i++) {
-      const provider = this.providers[i];
-      try {
-        const embeddingVector = await provider.fn(text, type);
-        if (i > 0) {
-          // i > 0 nghĩa là đang dùng provider thứ 2 hoặc 3 — primary bị skip
-          logger.debug(`UnifiedEmbedding: dùng fallback [${provider.name}]`);
-        }
-        return embeddingVector;
-      } catch (err) {
-        const isLastProvider = i === this.providers.length - 1;
-        if (!isLastProvider) {
-          logger.warn(
-            `UnifiedEmbedding: [${provider.name}] thất bại → thử [${this.providers[i + 1].name}]: ${err.message}`,
-          );
-        } else {
-          logger.error(`UnifiedEmbedding: tất cả providers thất bại: ${err.message}`);
-          throw err;
-        }
-      }
-    }
+    return (await this.generateEmbeddingWithMeta(text, type)).vector;
   }
 }
 

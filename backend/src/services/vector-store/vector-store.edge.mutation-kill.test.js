@@ -18,6 +18,7 @@ jest.mock('@utils/logger', () => ({
 const mockEmbed = jest.fn();
 jest.mock('@services/embedding/unified-embedding', () => ({
   generateEmbedding: (...a) => mockEmbed(...a),
+  generateEmbeddingWithMeta: async (...a) => ({ vector: await mockEmbed(...a), provider: 'mock' }),
   activeName: 'mock',
 }));
 

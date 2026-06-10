@@ -36,29 +36,36 @@ const intentRegex = classifyIntent(normalized);
 const queryForVersionExtract = normalized
   .toLowerCase()
   .replace(
-    /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
+    /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|million|thousand|nghìn|ngàn|ngan\b|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
     ' ',
   )
-  .replace(/\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu, ' ')
+  .replace(
+    /\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|million|thousand|nghìn|ngàn|ngan\b|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
+    ' ',
+  )
   .replace(/\b(?:tầm|tâm|khoảng|dưới|trên|budget|around|under|over|about)\s*\d+(?:[.,]\d+)?\b/giu, ' ')
   .replace(/\b\d+\s*(?:gb|tb|mb|mah|hz|mp|w\b|mm|cm|inch)\b/gi, ' ');
 const standaloneNums = queryForVersionExtract.match(/\b\d{2,}\b/g) || [];
 const embeddedNums = [...queryForVersionExtract.matchAll(/[a-zA-Z]+(\d{2,})\b/g)].map((m) => m[1]);
 const versionNums = [...new Set([...standaloneNums, ...embeddedNums])];
 
-// Bước 5: Price range detection
-const PRICE_UNIT = '(?:tr(?:iệu)?|triệu|million|m\\b)';
+// Bước 5: Price range detection — đồng bộ keyword-fallback.js:
+// capturing unit, k/nghìn/ngàn = ×1.000, tr/triệu/million = ×1.000.000
+const PRICE_UNIT = '(tr(?:iệu)?|triệu|million|m\\b|k\\b|nghìn|nghin\\b|ngàn|ngan\\b|thousand)';
 const NUM = '(\\d+(?:[.,]\\d+)?)';
+const toVnd = (numStr, unit) =>
+  parseFloat(numStr.replace(',', '.')) *
+  (/^(?:k|nghìn|nghin|ngàn|ngan|thousand)$/.test(unit) ? 1e3 : 1e6);
 const rangeMatch = normalized.toLowerCase().match(new RegExp(`${NUM}\\s*(?:[-–]|đến|tới)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'));
 const maxMatch   = normalized.toLowerCase().match(new RegExp(`(?:dưới|under|below|tối\\s*đa|max)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'));
 const approxMatch= normalized.toLowerCase().match(new RegExp(`(?:tầm|tâm|khoảng|around|budget|about)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'));
 const minMatch   = normalized.toLowerCase().match(new RegExp(`(?:trên|over|above|tối\\s*thiểu|min)\\s*${NUM}\\s*${PRICE_UNIT}`, 'i'));
 
 let priceFilter = null;
-if (rangeMatch)       priceFilter = { type: 'range', min: +rangeMatch[1]*1e6, max: +rangeMatch[2]*1e6 };
-else if (maxMatch)    priceFilter = { type: 'max',   max: +maxMatch[1]*1e6 };
-else if (approxMatch) priceFilter = { type: 'approx', center: +approxMatch[1]*1e6, min: +approxMatch[1]*0.8*1e6, max: +approxMatch[1]*1.2*1e6 };
-else if (minMatch)    priceFilter = { type: 'min',   min: +minMatch[1]*1e6 };
+if (rangeMatch)       priceFilter = { type: 'range', min: toVnd(rangeMatch[1], rangeMatch[3]), max: toVnd(rangeMatch[2], rangeMatch[3]) };
+else if (maxMatch)    priceFilter = { type: 'max',   max: toVnd(maxMatch[1], maxMatch[2]) };
+else if (approxMatch) priceFilter = { type: 'approx', center: toVnd(approxMatch[1], approxMatch[2]), min: toVnd(approxMatch[1], approxMatch[2])*0.8, max: toVnd(approxMatch[1], approxMatch[2])*1.2 };
+else if (minMatch)    priceFilter = { type: 'min',   min: toVnd(minMatch[1], minMatch[2]) };
 
 // Bước 6: Pronoun detection
 const PRONOUN_RE = /(?:^|\s)[\p{L}\p{N}]*(?:đó|này|kia)(?=[\s,?.!]|$)|(?:^|\s)nó(?=[\s,?.!]|$)|so sánh|cả hai|2 cái|hai cái/iu;
@@ -74,19 +81,22 @@ const negationTerms = negMatch
   : [];
 
 (async () => {
-  // Bước 3b: tầng embedding classifier (primary trong production) — best effort
+  // Bước 3b: tầng embedding classifier (primary trong production) — best effort.
+  // PIN provider primary cho cả examples lẫn query (đồng bộ chatbot-service):
+  // vector 2 model khác nhau không so sánh được
   let intentEmbedding = null;
-  const salt =
-    (process.env.JINA_API_KEY ? 'jina' : '') + (process.env.HF_API_KEY ? '+hf' : '');
-  if (validation.valid && !injection && salt) {
+  const unified = require('@services/embedding/unified-embedding');
+  if (validation.valid && !injection && unified.isAvailable()) {
     try {
       const classifier = require('@modules/ai/services/chatbot/intent/embedding-intent-classifier');
-      const unified = require('@services/embedding/unified-embedding');
-      await classifier.initialize((t) => unified.generateEmbedding(t, 'query'), {
-        cacheSalt: salt,
-        cache: true,
+      const pin = unified.activeName;
+      await classifier.initialize(
+        async (t) => (await unified.generateEmbeddingWithMeta(t, 'query', { pin })).vector,
+        { cacheSalt: pin, provider: pin, cache: true },
+      );
+      const { vector: vec } = await unified.generateEmbeddingWithMeta(normalized, 'query', {
+        pin,
       });
-      const vec = await unified.generateEmbedding(normalized, 'query');
       const r = classifier.classifyWithScore(vec);
       if (r) {
         const threshold =

@@ -157,11 +157,11 @@ const INTENT_EMBED_TIMEOUT_MS = Number(process.env.INTENT_EMBED_TIMEOUT_MS) || 2
  * Có nhiều providers → tự động chuyển sang provider tiếp theo khi gặp lỗi.
  * Hiện tại có 1 provider (cấu hình qua env), nhưng code hỗ trợ mở rộng.
  *
- * **Khi nào retry, khi nào không?**
- * Retry (chuyển provider tiếp): HTTP 429 (rate limit), 402 (quota hết),
- *   500/503 (server lỗi), network error (không kết nối được) — lỗi tạm thời.
- * Không retry: HTTP 400 (bad request — request sai format), 401 (auth fail — key sai)
- *   — lỗi cố định, dùng provider tiếp theo cũng sẽ lỗi tương tự.
+ * **Khi nào retry?**
+ * LUÔN chuyển provider tiếp theo khi lỗi — kể cả 400/401: mỗi provider có key/URL/model
+ * RIÊNG nên lỗi cố định ở provider này (key sai, model invalid) không suy ra provider
+ * khác cũng lỗi. Lỗi bất thường (400/401/403) được log chi tiết để admin sửa config.
+ * Vòng lặp bounded (≤3 providers) + ngân sách LLM_TOTAL_TIMEOUT_MS chặn trên tổng thời gian.
  *
  * **Session memory structure:**
  * ```
@@ -250,16 +250,23 @@ class ChatbotService {
       logger.error('Khởi tạo Chatbot thất bại:', error.message || error);
     }
     // Khởi tạo embedding intent classifier ở background — không block server startup.
-    // cacheSalt = fingerprint provider: đổi JINA↔HF làm vector không tương thích
-    // → cache example embeddings trên đĩa phải invalidate theo.
+    // PIN toàn bộ examples vào provider PRIMARY (không fallback): vector của 2 model
+    // không so sánh được — examples trộn provider làm score rác vĩnh viễn (cache đĩa).
+    // Primary down lúc boot → init fail → classifier không ready → tầng regex (an toàn).
+    // cacheSalt = tên provider: đổi primary (JINA↔HF) → cache đĩa tự invalidate.
     try {
       const unifiedEmbedding = require('@services/embedding/unified-embedding');
-      const providerFingerprint =
-        (process.env.JINA_API_KEY ? 'jina' : '') + (process.env.HF_API_KEY ? '+hf' : '');
+      const primaryProvider = unifiedEmbedding.activeName;
       embeddingIntentClassifier
-        .initialize((text) => unifiedEmbedding.generateEmbedding(text, 'query'), {
-          cacheSalt: providerFingerprint,
-        })
+        .initialize(
+          async (text) =>
+            (
+              await unifiedEmbedding.generateEmbeddingWithMeta(text, 'query', {
+                pin: primaryProvider,
+              })
+            ).vector,
+          { cacheSalt: primaryProvider, provider: primaryProvider },
+        )
         .then(() => logger.debug('[IntentClassifier] Embedding classifier sẵn sàng'))
         .catch((err) =>
           logger.warn('[IntentClassifier] Không thể init embedding classifier:', err.message),
@@ -509,8 +516,13 @@ class ChatbotService {
       onStep?.('6', s6);
 
       // ── Bước 7: Persist — cập nhật session memory + lưu DB ──────────────────
+      let updatedMsgCount = 0;
       if (sessionId) {
-        const userContentForHistory = this._sanitizeMessage(finalQuery || message);
+        // Lưu lời user THẬT (đã normalize) chứ không phải finalQuery: finalQuery là bản
+        // enrich/LLM-rewrite — lưu nó làm history méo lời user, lượt sau enrich chồng
+        // tiếp lên bản đã enrich (lỗi rewrite sai lan truyền vĩnh viễn trong session).
+        // Enrich đại từ chỉ đọc ASSISTANT messages nên không mất thông tin khi đổi.
+        const userContentForHistory = this._sanitizeMessage(normalizedQuery || message);
         // Re-read Map thay vì dùng snapshot từ bước 4: giữa lúc đọc và lúc ghi có thể
         // mất nhiều giây (retrieval + LLM) — request đồng thời cùng session sẽ bị
         // ghi đè mất turn nếu append vào snapshot cũ
@@ -526,6 +538,7 @@ class ChatbotService {
           messages: updatedMessages,
           lastAccess: Date.now(),
         });
+        updatedMsgCount = updatedMessages.length;
 
         this._evictStaleSessions();
       }
@@ -538,13 +551,10 @@ class ChatbotService {
       const isFallbackResponse = usedFallback || aiResponse.isFallback === true;
       delete aiResponse.isFallback; // cờ nội bộ, không trả về client
 
-      const updatedLen = sessionId
-        ? [...conversationHistory, {}, {}].slice(-(MAX_HISTORY_TURNS * 2)).length
-        : 0;
       const s7 = {
         sessionId,
         responseTimeMs,
-        updatedMsgCount: updatedLen,
+        updatedMsgCount,
         lastAccessTime: new Date().toLocaleTimeString('vi-VN'),
       };
       if (trace) {
@@ -585,25 +595,26 @@ class ChatbotService {
    * Caller tự fallback (classify → regex; search → hybridSearch tự embed).
    *
    * @param {string} text - Text cần embed.
-   * @param {Map<string, Promise<number[]|null>>} cache - Cache theo request (text → promise).
-   * @returns {Promise<number[]|null>}
+   * @param {Map<string, Promise<{vector: number[], provider: string}|null>>} cache
+   *   Cache theo request (text → promise). Kèm provider để caller guard cross-model.
+   * @returns {Promise<{vector: number[], provider: string}|null>}
    */
   _embedQueryOnce(text, cache) {
     if (cache.has(text)) return cache.get(text);
     const promise = (async () => {
       try {
         const unifiedEmbedding = require('@services/embedding/unified-embedding');
-        const embedPromise = unifiedEmbedding.generateEmbedding(text, 'query');
+        const embedPromise = unifiedEmbedding.generateEmbeddingWithMeta(text, 'query');
         // Chặn unhandled rejection khi timeout thắng race mà embed reject sau đó
         embedPromise.catch(() => {});
         let timer;
-        const vector = await Promise.race([
+        const result = await Promise.race([
           embedPromise,
           new Promise((resolve) => {
             timer = setTimeout(() => resolve(null), INTENT_EMBED_TIMEOUT_MS);
           }),
         ]).finally(() => clearTimeout(timer));
-        return Array.isArray(vector) ? vector : null;
+        return Array.isArray(result?.vector) ? result : null;
       } catch (err) {
         logger.debug(`[IntentClassifier] Embed query thất bại: ${err.message}`);
         return null;
@@ -627,9 +638,15 @@ class ChatbotService {
   async _classifyIntent(normalizedQuery, embedCache) {
     const mode = process.env.INTENT_CLASSIFIER || INTENT_CLASSIFIER_DEFAULT;
     if (mode === 'embedding' && embeddingIntentClassifier.isReady()) {
-      const vector = await this._embedQueryOnce(normalizedQuery, embedCache);
-      if (vector) {
-        const result = embeddingIntentClassifier.classifyWithScore(vector);
+      const embedded = await this._embedQueryOnce(normalizedQuery, embedCache);
+      // Guard cross-model: examples của classifier được embed bằng provider primary
+      // (pin tại init). Query rơi vào provider fallback → vector khác không gian,
+      // score vô nghĩa → bỏ qua tầng embedding, dùng regex.
+      const compatible =
+        embedded &&
+        (!embedded.provider || embedded.provider === embeddingIntentClassifier.provider);
+      if (compatible) {
+        const result = embeddingIntentClassifier.classifyWithScore(embedded.vector);
         if (result) {
           const threshold =
             embeddingIntentClassifier.INTENT_THRESHOLDS[result.intent] ??
@@ -803,7 +820,7 @@ class ChatbotService {
       // Reuse embedding đã tính ở bước ③ classify — CHỈ khi text trùng khớp chính xác
       // (query không bị enrich/strip-negation thì queryForSearch === normalizedQuery)
       const cachedEmbedPromise = embedCache?.get(queryForSearch);
-      const reusedVector = cachedEmbedPromise ? await cachedEmbedPromise : null;
+      const reusedEmbed = cachedEmbedPromise ? await cachedEmbedPromise : null;
 
       const rewriteStart = Date.now();
       let search1TimeMs = 0;
@@ -812,7 +829,8 @@ class ChatbotService {
         (async () => {
           const t0 = Date.now();
           const res = await vectorStoreService.hybridSearch(queryForSearch, 10, undefined, {
-            queryVector: reusedVector,
+            queryVector: reusedEmbed?.vector ?? null,
+            queryProvider: reusedEmbed?.provider ?? null,
           });
           search1TimeMs = Date.now() - t0;
           return res;
@@ -978,14 +996,9 @@ class ChatbotService {
         continue; // LLM trả về rỗng → thử provider tiếp theo
       } catch (err) {
         const status = err.response?.status;
-        // Lỗi tạm thời → thử provider tiếp theo
-        if (status === 429 || status === 402 || status === 500 || status === 503 || !err.response) {
-          logger.debug(`[LLM Rewrite] Provider ${i + 1} lỗi (${status || err.code}), thử tiếp...`);
-          continue;
-        }
-        // Lỗi không phục hồi (400 bad request, 401 auth fail) → dừng, không thử tiếp
-        logger.debug(`[LLM Rewrite] Provider ${i + 1} lỗi không phục hồi được (${status}), dừng`);
-        break;
+        // LUÔN thử provider tiếp theo — kể cả 400/401: mỗi provider có key/URL/model riêng,
+        // key sai hay model invalid ở provider này không suy ra provider khác cũng lỗi
+        logger.debug(`[LLM Rewrite] Provider ${i + 1} lỗi (${status || err.code}), thử tiếp...`);
       }
     }
     return null; // Tất cả providers đều lỗi hoặc không cải thiện được → dùng query gốc
@@ -1134,44 +1147,30 @@ QUY TẮC BẮT BUỘC:
       } catch (error) {
         const status = error.response?.status;
 
-        if (
-          status === 429 ||
-          status === 402 ||
-          status === 500 ||
-          status === 503 ||
-          !error.response
-        ) {
-          logger.warn(
-            `[Rotation] augmentAndGenerate provider ${attempt + 1}/${this.providers.length} (${provider.model}) lỗi ${status || error.code}, thử tiếp...`,
-          );
-          if (_trace)
-            _trace.providerAttempts.push({
-              index: attempt + 1,
-              total: this.providers.length,
-              model: provider.model,
-              status: 'retry',
-              timeMs: Date.now() - attemptStart,
-              rawLength: null,
-              errorCode: String(status || error.code),
-            });
-          continue;
-        }
-
-        logger.error(
-          `Chi tiết lỗi LLM API (${provider.model}):`,
-          error.response?.data || error.message,
+        // LUÔN rotate sang provider tiếp theo — kể cả 400/401: providers có key/URL/model
+        // KHÁC NHAU nên lỗi auth/bad-request ở provider này không suy ra provider khác cũng
+        // lỗi (vd model name invalid trên OpenRouter trả 400 nhưng provider 2 model khác vẫn
+        // chạy). Vòng lặp bounded (≤3 providers) + LLM_TOTAL_TIMEOUT_MS chặn trên tổng thời gian.
+        logger.warn(
+          `[Rotation] augmentAndGenerate provider ${attempt + 1}/${this.providers.length} (${provider.model}) lỗi ${status || error.code}, thử tiếp...`,
         );
+        if (status && status !== 429 && status !== 402 && status !== 500 && status !== 503) {
+          // Lỗi bất thường (400/401/403...) → log chi tiết để admin biết cần sửa config
+          logger.error(
+            `Chi tiết lỗi LLM API (${provider.model}):`,
+            error.response?.data || error.message,
+          );
+        }
         if (_trace)
           _trace.providerAttempts.push({
             index: attempt + 1,
             total: this.providers.length,
             model: provider.model,
-            status: 'break',
+            status: 'retry',
             timeMs: Date.now() - attemptStart,
             rawLength: null,
-            errorCode: String(status),
+            errorCode: String(status || error.code),
           });
-        break;
       }
     }
 

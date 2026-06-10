@@ -92,7 +92,7 @@ describe('augmentAndGenerate với _trace', () => {
     chatbotService.providers = origProviders;
   });
 
-  test('thu thập break attempt khi provider lỗi 401', async () => {
+  test('provider lỗi 401 → vẫn rotate hết các providers (key riêng từng provider)', async () => {
     const _trace = {};
     const origProviders = chatbotService.providers;
     chatbotService.providers = [
@@ -110,9 +110,10 @@ describe('augmentAndGenerate với _trace', () => {
 
     await chatbotService.augmentAndGenerate('test', [{ name: 'P1', price: 100 }], [], _trace);
 
-    expect(_trace.providerAttempts).toHaveLength(1);
-    expect(_trace.providerAttempts[0].status).toBe('break');
+    expect(_trace.providerAttempts).toHaveLength(2);
+    expect(_trace.providerAttempts[0].status).toBe('retry');
     expect(_trace.providerAttempts[0].errorCode).toBe('401');
+    expect(_trace.providerAttempts[1].status).toBe('retry');
 
     axios.post = origPost;
     chatbotService.providers = origProviders;
@@ -462,7 +463,7 @@ describe('final branch — 423-427 + 984', () => {
     chatbotService.providers = origProviders;
   });
 
-  test('augmentAndGenerate break path with status=403 + trace', async () => {
+  test('augmentAndGenerate lỗi 403 → trace retry + errorCode 403', async () => {
     const _trace = {};
     const origProviders = chatbotService.providers;
     chatbotService.providers = [{ key: 'k', url: 'http://f', model: 'brk' }];
@@ -475,7 +476,7 @@ describe('final branch — 423-427 + 984', () => {
       throw err;
     });
     await chatbotService.augmentAndGenerate('q', [{ name: 'P', price: 1 }], [], _trace);
-    expect(_trace.providerAttempts[0].status).toBe('break');
+    expect(_trace.providerAttempts[0].status).toBe('retry');
     // status=403 truthy → String(403)
     expect(_trace.providerAttempts[0].errorCode).toBe('403');
     axios.post = origPost;

@@ -35,8 +35,8 @@ const CASES = INTENTS.flatMap((intent) =>
 
 // Cache embedding của query xuống đĩa — vòng calibrate (chỉnh examples/threshold rồi
 // chạy lại) không tốn lại 173 API calls. Key theo salt provider.
-// Lưu ý giới hạn: nếu provider primary timeout giữa run, vector fallback (model khác)
-// lọt vào cache → score nhiễu; xóa file cache nếu thấy hàng loạt score thấp bất thường.
+// PIN vào provider primary (không fallback): bài học run 2 — Jina timeout giữa run,
+// vector e5 lọt vào cache trong khi examples là Jina → score rác toàn bộ.
 const QUERY_CACHE_PATH = path.join(__dirname, '..', 'data', 'eval-query-embeddings.json');
 let queryCache = {};
 try {
@@ -50,9 +50,11 @@ async function embedQueryCached(unifiedEmbedding, text, salt) {
     .update(salt + '|' + text)
     .digest('hex');
   if (queryCache[key]) return queryCache[key];
-  const v = await unifiedEmbedding.generateEmbedding(text, 'query');
-  queryCache[key] = v;
-  return v;
+  const { vector } = await unifiedEmbedding.generateEmbeddingWithMeta(text, 'query', {
+    pin: unifiedEmbedding.activeName,
+  });
+  queryCache[key] = vector;
+  return vector;
 }
 
 function pct(hit, total) {
@@ -60,18 +62,21 @@ function pct(hit, total) {
 }
 
 async function main() {
-  const providerFingerprint =
-    (process.env.JINA_API_KEY ? 'jina' : '') + (process.env.HF_API_KEY ? '+hf' : '');
-  if (!providerFingerprint) {
+  if (!unifiedEmbedding.isAvailable()) {
     console.error('✗ Thiếu JINA_API_KEY/HF_API_KEY — không thể eval embedding classifier.');
     process.exit(2);
   }
+  // Salt = tên provider primary — đồng bộ với runtime (chatbot-service cũng salt theo
+  // activeName) để cache examples dùng chung được giữa eval và server
+  const providerFingerprint = unifiedEmbedding.activeName;
 
-  console.log(`Embedding examples (cache hit nếu đã chạy trước)...`);
-  await classifier.initialize((t) => unifiedEmbedding.generateEmbedding(t, 'query'), {
-    cacheSalt: providerFingerprint,
-    cache: true,
-  });
+  console.log(`Embedding examples bằng [${providerFingerprint}] (cache hit nếu đã chạy trước)...`);
+  await classifier.initialize(
+    async (t) =>
+      (await unifiedEmbedding.generateEmbeddingWithMeta(t, 'query', { pin: providerFingerprint }))
+        .vector,
+    { cacheSalt: providerFingerprint, provider: providerFingerprint, cache: true },
+  );
 
   const stats = {};
   for (const intent of INTENTS) stats[intent] = { total: 0, regexHit: 0, pipelineHit: 0 };

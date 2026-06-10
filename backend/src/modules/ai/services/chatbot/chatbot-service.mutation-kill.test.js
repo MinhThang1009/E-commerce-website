@@ -487,11 +487,13 @@ describe('LLM HTTP — rewriteQuery/augmentAndGenerate/catalog/gates (2 provider
       expect(axios.post).toHaveBeenCalledTimes(2);
     });
 
-    it('provider 1 lỗi 400 (không phục hồi) → DỪNG, không thử provider 2', async () => {
-      axios.post.mockRejectedValueOnce({ response: { status: 400 } });
+    it('provider 1 lỗi 400 → VẪN thử provider 2 (key/model riêng, lỗi không lan)', async () => {
+      axios.post
+        .mockRejectedValueOnce({ response: { status: 400 } })
+        .mockResolvedValueOnce(llmReply('fixed query'));
       const out = await svc.rewriteQuery('q');
-      expect(out).toBeNull();
-      expect(axios.post).toHaveBeenCalledTimes(1);
+      expect(out).toBe('fixed query');
+      expect(axios.post).toHaveBeenCalledTimes(2);
     });
 
     it('content rỗng → thử provider tiếp theo', async () => {
@@ -562,10 +564,11 @@ describe('LLM HTTP — rewriteQuery/augmentAndGenerate/catalog/gates (2 provider
       expect(axios.post).toHaveBeenCalledTimes(2);
     });
 
-    it('lỗi 400 → DỪNG rotation (không thử provider 2) → fallback', async () => {
-      axios.post.mockRejectedValueOnce({ response: { status: 400 } });
-      await svc.augmentAndGenerate('q', []);
-      expect(axios.post).toHaveBeenCalledTimes(1);
+    it('lỗi 400 → VẪN rotate sang provider 2; cả 2 lỗi → fallback', async () => {
+      axios.post.mockRejectedValue({ response: { status: 400 } });
+      const out = await svc.augmentAndGenerate('q', []);
+      expect(out.isFallback).toBe(true);
+      expect(axios.post).toHaveBeenCalledTimes(2);
     });
   });
 

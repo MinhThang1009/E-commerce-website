@@ -102,6 +102,37 @@ describe('expandAbbreviations', () => {
     expect(expandAbbreviations('tip')).toBe('tip');
   });
 
+  // Verifies [M5]: "gia" trong từ ghép không bị expand thành "giá"
+  it.each([
+    ['laptop cho gia đình', 'laptop cho gia đình'],
+    ['tham gia chương trình khuyến mãi', 'tham gia chương trình khuyến mãi'],
+    ['đồ gia dụng', 'đồ gia dụng'],
+    ['gia hạn bảo hành', 'gia hạn bảo hành'],
+    // Từ ghép kết thúc bằng ký tự có dấu — \b ASCII-only từng làm lookahead chết
+    ['máy xay gia vị', 'máy xay gia vị'],
+    ['laptop cho gia sư', 'laptop cho gia sư'],
+  ])('không expand "gia" trong từ ghép: "%s"', (input, expected) => {
+    expect(expandAbbreviations(input)).toBe(expected);
+  });
+
+  // Multi-word "khong co"/"co khong" phải chạy TRƯỚC "\\bkhong\\b" — nếu không "co" mất dấu
+  it('"khong co" → "không có" (không phải "không co")', () => {
+    expect(expandAbbreviations('khong co')).toBe('không có');
+  });
+  it('"co khong" → "có không"', () => {
+    expect(expandAbbreviations('co khong')).toBe('có không');
+  });
+
+  // "b" sau/trước chữ số không phải đại từ
+  it('"16b" / "5b" KHÔNG bị expand thành "bạn"', () => {
+    expect(expandAbbreviations('usb 16b')).not.toContain('bạn');
+    expect(expandAbbreviations('5b')).not.toContain('bạn');
+  });
+
+  it('"gia re" vẫn expand thành "giá rẻ"', () => {
+    expect(expandAbbreviations('gia re')).toBe('giá rẻ');
+  });
+
   it('flag i: chữ HOA vẫn expand ("IP16" → "iPhone 16")', () => {
     expect(expandAbbreviations('IP16')).toBe('iPhone 16');
   });
@@ -136,7 +167,21 @@ describe('isOffTopic', () => {
     expect(isOffTopic(kw)).toBe(true);
   });
 
-  it.each(['iphone 16', 'tư vấn laptop', 'bảo hành sản phẩm'])('on-topic: "%s" → false', (kw) => {
+  it.each([
+    'iphone 16',
+    'tư vấn laptop',
+    'bảo hành sản phẩm',
+    // Verifies [M10]: từ khóa off-topic đứng sau động từ use-case sản phẩm → KHÔNG block
+    'điện thoại quay phim tốt',
+    'điện thoại xem phim có nét không',
+    'đồng hồ theo dõi sức khỏe',
+    'tablet for watching movies',
+    'smartwatch with health tracking',
+    'tai nghe nghe music hay',
+    'điện thoại nghe âm nhạc tốt',
+    'máy tính bảng đọc tin tức',
+    'phone for playing music',
+  ])('on-topic: "%s" → false', (kw) => {
     expect(isOffTopic(kw)).toBe(false);
   });
 });
@@ -181,12 +226,19 @@ describe('isPromptInjection', () => {
     expect(isPromptInjection(t)).toBe(true);
   });
 
-  it.each(['iphone 16 giá bao nhiêu', 'tư vấn laptop gaming', 'so sánh galaxy s24'])(
-    'benign: "%s" → false',
-    (t) => {
-      expect(isPromptInjection(t)).toBe(false);
-    },
-  );
+  it.each([
+    'iphone 16 giá bao nhiêu',
+    'tư vấn laptop gaming',
+    'so sánh galaxy s24',
+    // Verifies [M4]: câu mua sắm bình thường chứa "từ nay"/"từ giờ"/"quên hết" không bị block
+    'có khuyến mãi từ nay đến tết không',
+    'từ giờ tới cuối tuần có giảm giá gì không',
+    'tôi quên hết mật khẩu tài khoản rồi',
+    // "đóng vai trò" là cụm từ thường, không phải role-play injection
+    'pin đóng vai trò quan trọng khi chọn máy',
+  ])('benign: "%s" → false', (t) => {
+    expect(isPromptInjection(t)).toBe(false);
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -231,6 +283,12 @@ describe('classifyIntent', () => {
     ['which one', 'product_search'],
     ['xin chào', 'general'],
     ['hello there', 'general'],
+    // Verifies [M9]: substring không còn route nhầm — "flagship"/"trackpad"/"recorder"
+    // không phải order_inquiry; "giáo viên"/"đánh giá" không phải pricing
+    ['flagship phone', 'product_search'],
+    ['laptop có trackpad không', 'product_search'],
+    ['laptop cho giáo viên', 'product_search'],
+    ['laptop được đánh giá cao', 'product_search'],
   ])('classify "%s" → %s', (input, expected) => {
     expect(classifyIntent(input)).toBe(expected);
   });

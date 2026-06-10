@@ -214,7 +214,11 @@ function extractProductsFromText(responseText, retrievedProducts, alreadyMatched
       inStock: p.inStock !== undefined ? p.inStock : true,
       stockQuantity: p.stockQuantity,
       rating: null,
-      discount: compare && compare > price ? Math.round(((compare - price) / compare) * 100) : 0,
+      // price != null bắt buộc: compare > null luôn true → discount sai thành 100%
+      discount:
+        price != null && compare && compare > price
+          ? Math.round(((compare - price) / compare) * 100)
+          : 0,
     };
   });
 }
@@ -326,8 +330,9 @@ function parseLLMOutput(rawLLMOutput, products, userMessage) {
             inStock: product.inStock !== undefined ? product.inStock : true,
             stockQuantity: product.stockQuantity,
             rating: null,
+            // resolvedPrice != null bắt buộc: compare > null luôn true → discount sai thành 100%
             discount:
-              resolvedCompare && resolvedCompare > resolvedPrice
+              resolvedPrice != null && resolvedCompare && resolvedCompare > resolvedPrice
                 ? Math.round(((resolvedCompare - resolvedPrice) / resolvedCompare) * 100)
                 : 0,
           });
@@ -380,7 +385,8 @@ function parseLLMOutput(rawLLMOutput, products, userMessage) {
 
   // Fallback: không parse được JSON → dùng keyword matching đơn giản
   // simpleKeywordMatch không dùng LLM, chỉ so khớp từ khóa trong câu hỏi với tên sản phẩm
-  return simpleKeywordMatch(userMessage, products);
+  // isFallback: cờ analytics — response này không phải output LLM
+  return { ...simpleKeywordMatch(userMessage, products), isFallback: true };
 }
 
 module.exports = { parseLLMOutput, extractJSON };

@@ -24,6 +24,16 @@ const logger = require('@utils/logger');
 
 const toNum = (v) => (v == null ? v : Number(v));
 
+/**
+ * Format giá cho dòng liệt kê sản phẩm.
+ * Giá null (sản phẩm chỉ có giá theo variant) → text thay thế, tránh lộ "undefined đ" ra user.
+ */
+const formatListPrice = (product, isEn) => {
+  const p = toNum(product.price ?? product.basePrice);
+  if (p == null) return isEn ? 'price updating' : 'giá đang cập nhật';
+  return isEn ? `${p.toLocaleString('vi-VN')} ₫` : `${p.toLocaleString('vi-VN')} đ`;
+};
+
 /** Build product card object chuẩn cho frontend. Dùng chung ở nhiều chỗ. */
 const toProductCard = (product) => {
   const p = toNum(product.price ?? product.basePrice);
@@ -38,7 +48,8 @@ const toProductCard = (product) => {
     inStock: product.inStock,
     stockQuantity: product.stockQuantity,
     rating: null,
-    discount: c && c > p ? Math.round(((c - p) / c) * 100) : 0,
+    // p != null bắt buộc: c > null luôn true với c dương → discount sai thành 100%
+    discount: p != null && c && c > p ? Math.round(((c - p) / c) * 100) : 0,
   };
 };
 
@@ -101,14 +112,22 @@ function simpleKeywordMatch(userMessage, products) {
   //   1. Strip dải giá (15-20 triệu), giá đơn (20 triệu), thông số kỹ thuật (128GB, 4000mAh)
   //   2. Extract standalone 2+ digit numbers: \b\d{2,}\b  (bắt "17" trong "iPhone 17")
   //   3. Extract số embedded trong model code: [a-zA-Z]+(\d{2,})\b (bắt "99" từ "S99", "57" từ "A57")
+  // Đơn vị "đ" dùng (?!\p{L}) thay \b — \b của JS là ASCII-only nên "đ\b" không bao giờ
+  // match ("15000000đ" sẽ không được strip → số giá bị nhầm thành số model)
   const queryForVersionExtract = lowerMessage
     // Strip dải giá: "15-20 triệu", "10 đến 15tr"
     .replace(
-      /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ\b|vnd|đồng)\b/gi,
+      /\b\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu,
       ' ',
     )
     // Strip giá đơn: "20 triệu", "500k", "10đ"
-    .replace(/\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ\b|vnd|đồng)\b/gi, ' ')
+    .replace(/\b\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ(?!\p{L})|vnd|đồng)(?!\p{L})/giu, ' ')
+    // Strip số ngân sách KHÔNG kèm đơn vị: "tầm 20", "dưới 15" — shorthand phổ biến,
+    // user ngầm hiểu là triệu; nếu giữ lại sẽ bị version filter nhầm thành số model
+    .replace(
+      /\b(?:tầm|tâm|khoảng|dưới|trên|budget|around|under|over|about)\s*\d+(?:[.,]\d+)?\b/giu,
+      ' ',
+    )
     // Strip thông số kỹ thuật: "128GB", "4000mAh", "165Hz", "48MP"
     // Không strip "inch" vì "14 inch" trong tên sản phẩm là identifier (MacBook Pro 14 inch M5),
     // không phải thông số thuần túy → cần giữ "14" để version filter hoạt động đúng.
@@ -207,14 +226,18 @@ function simpleKeywordMatch(userMessage, products) {
   // Pattern capture group bắt phần sau động từ đến khi gặp từ kết thúc mệnh đề.
   // Ví dụ: "không muốn iPhone, Samsung hay OPPO" → excludedTerms = ["iphone","samsung","oppo"]
   // Ví dụ: "avoid Apple products" → excludedTerms = ["apple","products"]
+  // "hay/hoặc/or" KHÔNG nằm trong terminator: chúng nối các item trong danh sách bị loại
+  // ("không muốn iPhone, Samsung hay OPPO" phải loại CẢ 3) — connective được lọc khỏi
+  // excludedTerms ở bước split bên dưới
   const negationMatch = lowerMessage.match(
-    /(?:không\s+(?:muốn|thích|dùng)|tránh|avoid|don't\s+want|not\s+interested\s+in)\s+([\p{L}\p{N}\s,/]+?)(?=\s+(?:gì|hay|hoặc|được|cũng|mà|nhưng|,|$)|\s*$)/iu,
+    /(?:không\s+(?:muốn|thích|dùng)|tránh|avoid|don't\s+want|not\s+interested\s+in)\s+([\p{L}\p{N}\s,/]+?)(?=\s+(?:gì|được|cũng|mà|nhưng|,|$)|\s*$)/iu,
   );
   if (negationMatch) {
+    const NEGATION_CONNECTIVES = new Set(['hay', 'hoặc', 'hoac', 'and']);
     const excludedTerms = negationMatch[1]
       .toLowerCase()
       .split(/[\s,/]+/)
-      .filter((w) => w.length > 2);
+      .filter((w) => w.length > 2 && !NEGATION_CONNECTIVES.has(w));
     if (excludedTerms.length > 0) {
       matchedProducts = matchedProducts.filter(
         (p) => !excludedTerms.some((term) => p.name?.toLowerCase().includes(term)),
@@ -260,7 +283,7 @@ function simpleKeywordMatch(userMessage, products) {
   } else if (maxMatch) {
     maxPrice = parseFloat(maxMatch[1].replace(',', '.')) * 1_000_000;
   } else if (approxMatch) {
-    // "tầm 20 triệu" → window ±20% để không quá cứng (18M–24M)
+    // "tầm 20 triệu" → window ±20% để không quá cứng (16M–24M)
     const center = parseFloat(approxMatch[1].replace(',', '.')) * 1_000_000;
     minPrice = center * 0.8;
     maxPrice = center * 1.2;
@@ -293,12 +316,13 @@ function simpleKeywordMatch(userMessage, products) {
   // Ví dụ đúng:  "laptop tầm 20 triệu" → "laptop" prefix → bỏ Tablet ✅
   // Ví dụ skip:  "so sánh MacBook vs iPhone" → "macbook" prefix 0 sản phẩm, "iphone" prefix 0
   //              → không filter ✅ (MacBook name bắt đầu bằng "laptop", không phải "macbook")
-  const categoryPrefixTerms = searchTerms
-    .filter((t) => t.length > 4 && !/^\d+$/.test(t) && t !== lowerMessage)
-    .filter((t) => {
-      const prefixCount = matchedProducts.filter((p) => p.name?.toLowerCase().startsWith(t)).length;
-      return prefixCount > 0 && prefixCount < matchedProducts.length;
-    });
+  // Set dedup: query lặp từ ("laptop nào là laptop tốt") tạo 2 term trùng → length===1 fail oan
+  const categoryPrefixTerms = [
+    ...new Set(searchTerms.filter((t) => t.length > 4 && !/^\d+$/.test(t) && t !== lowerMessage)),
+  ].filter((t) => {
+    const prefixCount = matchedProducts.filter((p) => p.name?.toLowerCase().startsWith(t)).length;
+    return prefixCount > 0 && prefixCount < matchedProducts.length;
+  });
 
   // Không áp dụng category filter khi query là so sánh nhiều sản phẩm.
   // "so sánh iPhone vs MacBook" → user muốn xem CẢ 2, không filter về 1 category.
@@ -385,10 +409,17 @@ function simpleKeywordMatch(userMessage, products) {
         : isEn
           ? ' (currently out of stock)'
           : ' (hiện đang hết hàng)';
+      // price null → câu thay thế, không nội suy "undefined" vào response
+      const priceClause =
+        price != null
+          ? isEn
+            ? `is priced at ${price.toLocaleString('vi-VN')} ₫`
+            : `có giá ${price.toLocaleString('vi-VN')} đ`
+          : isEn
+            ? 'price is being updated'
+            : 'đang cập nhật giá';
       return {
-        response: isEn
-          ? `💰 ${top.name} is priced at ${price?.toLocaleString('vi-VN')} ₫${stockSuffix}`
-          : `💰 ${top.name} có giá ${price?.toLocaleString('vi-VN')} đ${stockSuffix}`,
+        response: `💰 ${top.name} ${priceClause}${stockSuffix}`,
         products: uniqueProducts.slice(0, 3).map(toProductCard),
         suggestions: isEn
           ? ['View details', 'Compare models', 'Get advice']
@@ -400,7 +431,7 @@ function simpleKeywordMatch(userMessage, products) {
     // Generic: list sản phẩm tìm thấy
     const topProducts = uniqueProducts.slice(0, 5);
     const productList = topProducts
-      .map((p) => `• ${p.name} - ${toNum(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ`)
+      .map((p) => `• ${p.name} - ${formatListPrice(p, isEn)}`)
       .join('\n');
     return {
       response: isEn
@@ -429,7 +460,7 @@ function simpleKeywordMatch(userMessage, products) {
       .slice(0, 5);
 
     const productList = newProducts
-      .map((p) => `• ${p.name} - ${toNum(p.price ?? p.basePrice)?.toLocaleString('vi-VN')} đ`)
+      .map((p) => `• ${p.name} - ${formatListPrice(p, isEn)}`)
       .join('\n');
 
     return {

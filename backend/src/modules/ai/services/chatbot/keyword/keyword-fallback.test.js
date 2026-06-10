@@ -99,6 +99,28 @@ describe('simpleKeywordMatch — versionNumbers exist nhưng filtered empty (lin
   });
 });
 
+// ── [M7] giá null → không lộ "undefined" ra response ─────────────────────────
+
+describe('simpleKeywordMatch — sản phẩm không có giá (price + basePrice đều null)', () => {
+  // Verifies [M7]: vector metadata price = basePrice (nullable) — SP chỉ có giá variant
+  // từng sinh "có giá undefined đ" / "• Tên - undefined đ"
+  test('pricing intent → response không chứa "undefined", có text cập nhật giá', () => {
+    const products = [
+      makeProduct({ id: 1, name: 'iPhone 14 Pro', price: null, basePrice: null, inStock: true }),
+    ];
+    const result = simpleKeywordMatch('iPhone 14 Pro giá bao nhiêu', products);
+    expect(result.response).not.toContain('undefined');
+    expect(result.response).toContain('đang cập nhật giá');
+  });
+
+  test('generic list → dòng sản phẩm không chứa "undefined"', () => {
+    const products = [makeProduct({ id: 1, name: 'iPhone 14 Pro', price: null, basePrice: null })];
+    const result = simpleKeywordMatch('tư vấn iphone 14', products);
+    expect(result.response).not.toContain('undefined');
+    expect(result.response).toContain('giá đang cập nhật');
+  });
+});
+
 // ── getFallbackResponse ───────────────────────────────────────────────────────
 
 describe('getFallbackResponse', () => {

@@ -68,6 +68,17 @@ describe('buildAugmentedPrompt — product list formatting', () => {
     expect(result).toContain('25');
   });
 
+  // Verifies [M7]: cả price lẫn basePrice null → không đưa "NaN đ" vào prompt cho LLM
+  test('price + basePrice đều null → prompt không chứa "NaN", có text đang cập nhật', () => {
+    const result = buildAugmentedPrompt(
+      'test',
+      [makeProduct({ price: null, basePrice: null })],
+      {},
+    );
+    expect(result).not.toContain('NaN');
+    expect(result).toContain('Giá từ: đang cập nhật');
+  });
+
   // Line 32: p.name?.toLowerCase() || '' — null name
   test('product với name=null → dùng "" làm tên (line 32)', () => {
     const products = [makeProduct({ name: null })];

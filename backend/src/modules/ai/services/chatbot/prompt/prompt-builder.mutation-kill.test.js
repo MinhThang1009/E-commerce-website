@@ -165,6 +165,25 @@ describe('version warning', () => {
     expect(hasVersionWarning(buildAugmentedPrompt('iPhone 7', galaxy))).toBe(false);
   });
 
+  // Verifies [M2]: số đầu của dải giá không phải số model — trước fix "15" trong "15-20 triệu"
+  // sinh cảnh báo sai khiến LLM bị ép trả "Cửa hàng chưa có..."
+  it('dải giá "15-20 triệu" → KHÔNG cảnh báo (số 15 là giá, không phải model)', () => {
+    expect(hasVersionWarning(buildAugmentedPrompt('điện thoại tầm 15-20 triệu', galaxy))).toBe(
+      false,
+    );
+  });
+
+  it('dải giá "15 đến 20 triệu" → KHÔNG cảnh báo', () => {
+    expect(
+      hasVersionWarning(buildAugmentedPrompt('điện thoại từ 15 đến 20 triệu giá tốt', galaxy)),
+    ).toBe(false);
+  });
+
+  it('dải giá + số model thật → CHỈ cảnh báo số model ("17"), không kèm "15"', () => {
+    const out = buildAugmentedPrompt('iPhone 17 tầm 15-20 triệu', galaxy);
+    expect(out).toContain('Query đề cập đến số "17"');
+  });
+
   // Regex: lookahead loại đơn vị, \s* (0+ space)
   it('số dính đơn vị "256gb" → KHÔNG cảnh báo', () => {
     expect(hasVersionWarning(buildAugmentedPrompt('máy 256gb ram', galaxy))).toBe(false);

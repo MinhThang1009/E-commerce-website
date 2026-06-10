@@ -138,6 +138,23 @@ describe('pricing response', () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe('version filter & brand coherence', () => {
+  // Verifies: "đ" sát số giá phải được strip — "đ\b" cũ là dead pattern (\b ASCII-only)
+  it('giá viết liền "15000000đ" KHÔNG bị nhầm thành số model → vẫn trả sản phẩm', () => {
+    const out = simpleKeywordMatch('điện thoại 15000000đ có không', [
+      prod({ id: 1, name: 'điện thoại iPhone 16' }),
+    ]);
+    expect(out.products.length).toBeGreaterThan(0);
+  });
+
+  // Verifies: số ngân sách KHÔNG kèm đơn vị ("tầm 20") không phải số model
+  it('"điện thoại tầm 20" (thiếu "triệu") KHÔNG trả notFound', () => {
+    const out = simpleKeywordMatch('điện thoại tầm 20', [
+      prod({ id: 1, name: 'điện thoại iPhone 16' }),
+    ]);
+    expect(out.products.length).toBeGreaterThan(0);
+    expect(out.response).not.toContain('🚫');
+  });
+
   it('số model không có sản phẩm → notFound EN', () => {
     const out = simpleKeywordMatch('iPhone 17', [prod()]);
     expect(out.products).toHaveLength(0);
@@ -167,6 +184,25 @@ describe('filters', () => {
       prod({ id: 2, name: 'điện thoại iPhone 16' }),
     ]);
     expect(out.products.map((p) => p.id)).toEqual([2]);
+  });
+
+  // Verifies [M12]: connective "hay/hoặc" không cắt danh sách phủ định — loại CẢ các brand sau "hay"
+  it('negation list "không muốn iPhone, Samsung hay OPPO" → loại cả 3', () => {
+    const out = simpleKeywordMatch('điện thoại không muốn iPhone, Samsung hay OPPO', [
+      prod({ id: 1, name: 'điện thoại Samsung S25' }),
+      prod({ id: 2, name: 'điện thoại iPhone 16' }),
+      prod({ id: 3, name: 'điện thoại OPPO Reno 12' }),
+      prod({ id: 4, name: 'điện thoại Xiaomi 15' }),
+    ]);
+    expect(out.products.map((p) => p.id)).toEqual([4]);
+  });
+
+  // Verifies [M14]: price null + compareAtPrice có giá trị → discount = 0, không phải 100%
+  it('price null + compareAtPrice set → discount 0 (không hiển thị "giảm 100%")', () => {
+    const out = simpleKeywordMatch('iPhone', [
+      prod({ price: null, basePrice: null, compareAtPrice: 36000000 }),
+    ]);
+    expect(out.products[0].discount).toBe(0);
   });
 
   it('price approx "tầm 20 triệu" → giữ trong ±20% (loại 40tr)', () => {

@@ -65,7 +65,13 @@ function buildAugmentedPrompt(userMessage, products) {
                 p.description && p.description !== p.shortDescription
                   ? ` - Mô tả: ${p.description.substring(0, 300)}`
                   : '';
-              return `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'}${descStr}${p.specifications ? '. Thông số: ' + p.specifications : ''}${variantsStr} - Giá từ: ${Number(p.price ?? p.basePrice).toLocaleString('vi-VN')} đ - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}${ratingStr}`;
+              // Giá null (SP chỉ có giá variant) → ghi rõ thay vì "NaN đ" làm LLM bịa giá
+              const priceVal = p.price ?? p.basePrice;
+              const priceStr =
+                priceVal != null
+                  ? `${Number(priceVal).toLocaleString('vi-VN')} đ`
+                  : 'đang cập nhật (xem giá theo phiên bản nếu có)';
+              return `- ${p.lowConfidence ? '⚠️[low confidence] ' : ''}${p.name} (${p.category || 'Sản phẩm'}): ${p.shortDescription || 'Mô tả đang cập nhật'}${descStr}${p.specifications ? '. Thông số: ' + p.specifications : ''}${variantsStr} - Giá từ: ${priceStr} - Tình trạng: ${p.inStock ? 'Còn hàng' : 'Hết hàng'}${ratingStr}`;
             })(),
           )
           .join('\n')
@@ -79,8 +85,15 @@ function buildAugmentedPrompt(userMessage, products) {
   //   2. Loại trừ số là đơn vị đo lường (gb, tb, hz, mAh, triệu, nghìn, k đồng...)
   //   3. Kiểm tra xem mỗi số có xuất hiện trong TÊN sản phẩm nào không
   //   4. Số không xuất hiện → thêm vào danh sách "missing versions" → sinh cảnh báo
+  // Strip dải giá TRƯỚC khi extract — "15-20 triệu"/"15 đến 20 triệu" có số đầu không đứng
+  // cạnh đơn vị nên lookahead bên dưới không loại được → bị nhầm thành số model
+  // (đồng bộ với keyword-fallback.js bước version extract)
+  const queryWithoutPriceRanges = userMessage.replace(
+    /\b\d+(?:[.,]\d+)?\s*(?:[-–]|đến|tới|to)\s*\d+(?:[.,]\d+)?\s*(?:tr(?:iệu)?|nghìn|k\b|đ\b|vnd|đồng|million|m\b)\b/gi,
+    ' ',
+  );
   const queryVersions =
-    userMessage.match(
+    queryWithoutPriceRanges.match(
       /\b\d{2,4}\b(?!\s*(?:gb|tb|mb|mah|hz|mp|w|mm|cm|inch|triệu|nghìn|tr|k|đ|"|'))/gi,
     ) || [];
   const productNames = products.map((p) => p.name?.toLowerCase() || '');

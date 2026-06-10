@@ -279,6 +279,43 @@ describe('AI Repository Integration — addToCart', () => {
     await cart.destroy({ force: true });
   });
 
+  // Verifies [M8]: SP không có variant + body không gửi variantId — trước fix Sequelize throw
+  // 'WHERE parameter "variantId" has invalid "undefined" value' → 500
+  test('addToCart không truyền variantId với SP không có variant → tạo item variantId=null', async () => {
+    const { Cart, CartItem, Brand } = require('@models');
+    const brand2 = await Brand.findOne({ where: { slug: `int-ai-brand-${TS}` } });
+    const noVariantProduct = await Product.create({
+      nameVi: `__INT_AI_NoVar_${TS}`,
+      nameEn: `__INT_AI_NoVar_EN_${TS}`,
+      baseName: `__INT_AI_NoVar_${TS}`,
+      slug: `int-ai-novar-${TS}`,
+      description: 'sp không variant',
+      basePrice: 2_000_000,
+      categoryId: testCategory.id,
+      brandId: brand2.id,
+      status: 'active',
+      stockQuantity: 5,
+    });
+
+    try {
+      const item = await aiRepo.addToCart({
+        userId: user.id,
+        productId: noVariantProduct.id,
+        quantity: 1,
+      });
+      expect(item).not.toBeNull();
+      expect(item.variantId).toBeNull();
+      expect(Number(item.unitPrice)).toBe(2_000_000);
+    } finally {
+      const cart = await Cart.findOne({ where: { userId: user.id } });
+      if (cart) {
+        await CartItem.destroy({ where: { cartId: cart.id }, force: true });
+        await cart.destroy({ force: true });
+      }
+      await noVariantProduct.destroy({ force: true });
+    }
+  });
+
   test('addToCart tái sử dụng cart hiện có', async () => {
     const { Cart, CartItem } = require('@models');
 

@@ -169,6 +169,44 @@ describe('SequelizeAIRepository — branch coverage', () => {
     expect(updateFn).toHaveBeenCalledWith({ quantity: 3 }, expect.any(Object));
   });
 
+  // Verifies [M1]: item MỚI cũng phải bị chặn khi quantity vượt stock (trước fix chỉ check stock > 0)
+  test('addToCart: item mới + quantity vượt variant stock → throw cartQuantityExceedsStock', async () => {
+    repo.Product.findByPk.mockResolvedValue({
+      id: 1,
+      status: 'active',
+      stockQuantity: 10,
+      variants: [{ id: 10, stockQuantity: 2 }],
+    });
+    repo.ProductVariant.findOne.mockResolvedValue({ id: 10, price: 100 });
+    repo.ProductVariant.findByPk.mockResolvedValue({ price: 100 });
+    jest.spyOn(models.Cart, 'findOrCreate').mockResolvedValue([{ id: 1 }]);
+    jest.spyOn(models.CartItem, 'findOne').mockResolvedValue(null); // chưa có item → nhánh create
+    const createSpy = jest.spyOn(models.CartItem, 'create').mockResolvedValue({ id: 1 });
+    await expect(repo.addToCart({ userId: 1, productId: 1, quantity: 50 })).rejects.toMatchObject({
+      statusCode: 400,
+      message: 'ai.cartQuantityExceedsStock',
+    });
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  // Verifies [M1]: SP không variant — item mới quantity vượt product.stockQuantity → throw
+  test('addToCart: item mới không variant + quantity vượt product stock → throw', async () => {
+    repo.Product.findByPk.mockResolvedValue({
+      id: 1,
+      status: 'active',
+      stockQuantity: 3,
+      variants: [],
+    });
+    repo.ProductVariant.findOne.mockResolvedValue(null);
+    jest.spyOn(models.Cart, 'findOrCreate').mockResolvedValue([{ id: 1 }]);
+    jest.spyOn(models.CartItem, 'findOne').mockResolvedValue(null);
+    jest.spyOn(models.CartItem, 'create').mockResolvedValue({ id: 1 });
+    await expect(repo.addToCart({ userId: 1, productId: 1, quantity: 5 })).rejects.toMatchObject({
+      statusCode: 400,
+      message: 'ai.cartQuantityExceedsStock',
+    });
+  });
+
   test('addToCart: no existing item → CartItem.create', async () => {
     repo.Product.findByPk.mockResolvedValue({
       id: 1,
@@ -182,6 +220,42 @@ describe('SequelizeAIRepository — branch coverage', () => {
     jest.spyOn(models.CartItem, 'create').mockResolvedValue({ id: 1 });
     await repo.addToCart({ userId: 1, productId: 1, quantity: 1 });
     expect(models.CartItem.create).toHaveBeenCalled();
+  });
+
+  // Verifies [M8]: body không gửi variantId (undefined) → phải normalize thành null trước khi
+  // đưa vào where — Sequelize 6 throw "invalid undefined value" nếu where chứa undefined
+  test('addToCart: variantId undefined → where dùng null, không phải undefined', async () => {
+    repo.Product.findByPk.mockResolvedValue({
+      id: 1,
+      status: 'active',
+      stockQuantity: 10,
+      variants: [],
+    });
+    repo.ProductVariant.findOne.mockResolvedValue(null);
+    jest.spyOn(models.Cart, 'findOrCreate').mockResolvedValue([{ id: 1 }]);
+    const findOneSpy = jest.spyOn(models.CartItem, 'findOne').mockResolvedValue(null);
+    const createSpy = jest.spyOn(models.CartItem, 'create').mockResolvedValue({ id: 1 });
+    await repo.addToCart({ userId: 1, productId: 1, quantity: 1 }); // variantId KHÔNG truyền
+    expect(findOneSpy.mock.calls[0][0].where.variantId).toBeNull();
+    expect(createSpy.mock.calls[0][0].variantId).toBeNull();
+  });
+
+  // Verifies [M11]: variant.price null (schema cho phép) → unitPrice fallback basePrice
+  test('addToCart: variant.price null → unitPrice fallback basePrice', async () => {
+    repo.Product.findByPk.mockResolvedValue({
+      id: 1,
+      status: 'active',
+      stockQuantity: 10,
+      basePrice: 5000000,
+      variants: [{ id: 10, stockQuantity: 5 }],
+    });
+    repo.ProductVariant.findOne.mockResolvedValue({ id: 10, price: null });
+    repo.ProductVariant.findByPk.mockResolvedValue({ price: null });
+    jest.spyOn(models.Cart, 'findOrCreate').mockResolvedValue([{ id: 1 }]);
+    jest.spyOn(models.CartItem, 'findOne').mockResolvedValue(null);
+    const createSpy = jest.spyOn(models.CartItem, 'create').mockResolvedValue({ id: 1 });
+    await repo.addToCart({ userId: 1, productId: 1, variantId: 10, quantity: 1 });
+    expect(createSpy.mock.calls[0][0].unitPrice).toBe(5000000);
   });
 
   test('addToCart: existing item + product.variants null → || [] fallback', async () => {

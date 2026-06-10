@@ -80,7 +80,8 @@ class SequelizeAIRepository extends IAIRepository {
       }
 
       // Resolve variantId nếu không được truyền vào — ưu tiên isDefault=true, fallback về variant đầu tiên
-      let resolvedVariantId = variantId;
+      // `?? null`: body không gửi variantId → undefined; Sequelize 6 throw khi where có value undefined
+      let resolvedVariantId = variantId ?? null;
       if (!resolvedVariantId) {
         const defaultVariant = await this.ProductVariant.findOne({
           where: { productId },
@@ -110,7 +111,8 @@ class SequelizeAIRepository extends IAIRepository {
             lock: transaction.LOCK.UPDATE,
           })
         : null;
-      const unitPrice = variant ? variant.price : (product.basePrice ?? 0);
+      // variant.price nullable trong schema → fallback basePrice, tránh ghi unitPrice null vào CartItem
+      const unitPrice = (variant ? variant.price : null) ?? product.basePrice ?? 0;
       // findOrCreate atomic: tránh race condition tạo duplicate active cart (khớp pattern cart module)
       const [cart] = await Cart.findOrCreate({
         where: { userId, status: 'active' },
@@ -123,22 +125,25 @@ class SequelizeAIRepository extends IAIRepository {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
-      if (existing) {
-        // Kiểm tra quantity tích lũy không vượt stockQuantity
-        const resolvedVariantForStock = (product.variants || []).find(
-          (v) => String(v.id) === String(resolvedVariantId),
-        );
-        if (
-          resolvedVariantForStock &&
-          existing.quantity + quantity > resolvedVariantForStock.stockQuantity
-        ) {
+      // Giới hạn stock áp dụng cho CẢ item mới lẫn item đã có (đồng bộ với cart module _assertStock)
+      // — trước đây chỉ nhánh update check, nhánh create cho phép quantity vượt stock
+      const resolvedVariantForStock = (product.variants || []).find(
+        (v) => String(v.id) === String(resolvedVariantId),
+      );
+      const assertWithinStock = (totalQuantity) => {
+        if (resolvedVariantForStock && totalQuantity > resolvedVariantForStock.stockQuantity) {
           throw new AppError('ai.cartQuantityExceedsStock', 400);
-        } else if (!resolvedVariantId && existing.quantity + quantity > product.stockQuantity) {
+        } else if (!resolvedVariantId && totalQuantity > product.stockQuantity) {
           // SP không có variant: dùng product.stockQuantity làm giới hạn
           throw new AppError('ai.cartQuantityExceedsStock', 400);
         }
+      };
+      if (existing) {
+        // Kiểm tra quantity tích lũy không vượt stockQuantity
+        assertWithinStock(existing.quantity + quantity);
         return existing.update({ quantity: existing.quantity + quantity }, { transaction });
       }
+      assertWithinStock(quantity);
       return CartItem.create(
         { cartId: cart.id, productId, variantId: resolvedVariantId, quantity, unitPrice },
         { transaction },

@@ -35,8 +35,10 @@
  *
  * Flag /i: case-insensitive (match cả "GIA" lẫn "gia").
  */
+// Lưu ý: KHÔNG đưa từ trùng với tiếng Anh thông dụng (camera, ram, chip, pin, ban, hang)
+// vào danh sách — "which phone has the best camera" từng bị detect nhầm thành 'vi'.
 const VI_NO_ACCENT =
-  /\b(gia|bao nhieu|dien thoai|san pham|co khong|xem|mua|ban|hang|tim|so sanh|nen mua|tot nhat|gia ca|re nhat|khuyen mai|bao hanh|doi tra|giao hang|co hang|het hang|mau|phien ban|cau hinh|thong so|pin|man hinh|camera|chip|ram|bon nho|chinh hang)\b/i;
+  /\b(gia|bao nhieu|dien thoai|san pham|co khong|xem|mua|tim|so sanh|nen mua|tot nhat|gia ca|re nhat|khuyen mai|bao hanh|doi tra|giao hang|co hang|het hang|mau|phien ban|cau hinh|thong so|man hinh|bo nho|chinh hang)\b/i;
 
 /**
  * Phát hiện ngôn ngữ của đoạn text là tiếng Việt hay tiếng Anh.
@@ -62,7 +64,8 @@ const VI_NO_ACCENT =
  */
 function detectLanguage(text) {
   // Bước 1: Kiểm tra dấu Unicode tiếng Việt — nhanh và chính xác nhất
-  if (/[àáâãèéêìíòóôõùúýăđơưÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
+  // Bao gồm ĩ/ũ (U+0129/U+0169) — nằm NGOÀI dải Ạ-ỹ, thiếu sẽ miss "máy cũ", "kĩ thuật"
+  if (/[àáâãèéêìíĩòóôõùúũýăđơưÀÁÂÃÈÉÊÌÍĨÒÓÔÕÙÚŨÝĂĐƠƯẠ-ỹ]/.test(text)) return 'vi';
 
   // Bước 2: Kiểm tra từ tiếng Việt không dấu phổ biến
   if (VI_NO_ACCENT.test(text)) return 'vi';

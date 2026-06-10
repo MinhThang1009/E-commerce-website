@@ -59,7 +59,8 @@ const ABBREV_MAP = {
   // "r7" → "AMD Ryzen 7"
   '\\br7\\b': 'AMD Ryzen 7',
   // Viết tắt đại từ xưng hô phổ biến trong chat
-  '(?<![\\p{L}])b(?![\\p{L}])': 'bạn',
+  // Loại cả chữ số 2 bên: "16b"/"5b" là mã/dung lượng, không phải đại từ
+  '(?<![\\p{L}\\p{N}])b(?![\\p{L}\\p{N}])': 'bạn',
 
   // Lỗi đánh máy phổ biến — "tâm" (sai) → "tầm" (đúng) khi đứng trước giá
   '\\btâm\\b(?=\\s*\\d)': 'tầm',
@@ -101,7 +102,13 @@ const ABBREV_MAP = {
   '\\btam\\b': 'tầm', // "tầm 20 triệu"
   '\\btrieu\\b': 'triệu', // đơn vị giá — price filter cần có dấu
   '\\bnghin\\b': 'nghìn', // đơn vị giá nhỏ
-  '\\bgia\\b': 'giá', // "giá bao nhiêu"
+  // "gia" → "giá" nhưng KHÔNG đụng từ ghép tiếng Việt: "tham gia", "gia đình", "gia dụng",
+  // "gia hạn"... (kèm biến thể không dấu) — tránh corrupt query thành "tham giá"/"giá đình"
+  // và misclassify intent thành pricing
+  // Lưu ý: dùng (?!\\p{L}) thay \\b sau từ có dấu — \\b của JS là ASCII-only,
+  // "vị\\b"/"sư\\b" không bao giờ match trước khoảng trắng
+  '(?<!tham\\s)\\bgia\\b(?!\\s+(?:đình|dinh|dụng|dung|vị|vi|hạn|han|công|cong|tăng|tang|nhập|nhap|sư|su)(?!\\p{L}))':
+    'giá', // "giá bao nhiêu"
 
   // Trạng thái hàng hóa
   '\\bcon\\s+hang\\b': 'còn hàng',
@@ -139,9 +146,11 @@ const ABBREV_MAP = {
   '\\btai\\s+nghe\\b': 'tai nghe',
 
   // Từ phủ định / trạng thái — ảnh hưởng negation filter và intent
-  '\\bkhong\\b': 'không', // "không cần Samsung", "giao hàng không"
+  // Multi-word TRƯỚC single-word (quy tắc đầu section): '\\bkhong\\b' chạy trước sẽ
+  // nuốt "khong" làm 2 pattern dưới thành dead code, "co" không bao giờ được thêm dấu
   '\\bkhong\\s+co\\b': 'không có',
   '\\bco\\s+khong\\b': 'có không',
+  '\\bkhong\\b': 'không', // "không cần Samsung", "giao hàng không"
   '\\bhet\\b': 'hết', // "hết hàng chưa"
 
   // Trợ từ tìm kiếm thường gặp
@@ -212,8 +221,11 @@ function validateMessage(message) {
  *
  * Danh sách từ khóa gồm cả tiếng Việt và tiếng Anh để xử lý user nhắn bằng cả hai ngôn ngữ.
  */
+// Lookbehind cho phim/movie/music/sức khỏe/health: các từ này là OFF-TOPIC khi user hỏi
+// VỀ chủ đề đó, nhưng là USE-CASE hợp lệ khi đứng sau động từ ngữ cảnh sản phẩm
+// ("điện thoại quay phim tốt", "smartwatch theo dõi sức khỏe", "tablet for watching movies")
 const OFF_TOPIC_PATTERN =
-  /thời tiết|bóng đá|âm nhạc|phim|nấu ăn|sức khỏe|tin tức|weather|football|soccer|music|movie|cooking|health|news/;
+  /thời tiết|bóng đá|(?<!nghe\s+)âm nhạc|(?<!quay\s+)(?<!xem\s+)(?<!coi\s+)(?<!chụp\s+)phim|nấu ăn|(?<!dõi\s+)(?<!đo\s+)sức khỏe|(?<!đọc\s+)(?<!xem\s+)tin tức|weather|football|soccer|(?<!nghe\s+)(?<!for\s+)(?<!play\s+)(?<!playing\s+)music|(?<!watch\s+)(?<!watching\s+)(?<!for\s+)movie|cooking|health(?!\p{L})(?!\s*(?:track|monitor|app|sensor))|news/u;
 
 /**
  * Kiểm tra câu hỏi có ngoài phạm vi tư vấn sản phẩm không.
@@ -254,7 +266,13 @@ function classifyIntent(normalizedText) {
   if (isOffTopic(normalizedText)) return 'off_topic';
 
   // Hỏi về trạng thái đơn hàng, vận chuyển
-  if (/đơn hàng|order|giao hàng|ship|track|delivery|shipping\s*status/.test(lower))
+  // Word boundary bắt buộc: "flagship" chứa "ship", "trackpad" chứa "track",
+  // "recorder" chứa "order" — không có \b thì câu hỏi sản phẩm bị route nhầm sang order_inquiry
+  if (
+    /đơn hàng|\border\b|giao hàng|\bship|\btrack(?:ing)?\b|\bdelivery\b|shipping\s*status/.test(
+      lower,
+    )
+  )
     return 'order_inquiry';
 
   // Hỏi về chính sách mua hàng, bảo hành, đổi trả
@@ -262,7 +280,12 @@ function classifyIntent(normalizedText) {
     return 'policy';
 
   // Hỏi về giá tiền, ngân sách
-  if (/giá|bao nhiêu|tiền|cost|price|how\s*much|affordable|budget|cheap/.test(lower))
+  // "giá" cần boundary: "giáo viên" chứa "giá+o", "đánh giá" (review) không phải hỏi giá
+  if (
+    /(?<!đánh\s)giá(?!\p{L})|bao nhiêu|tiền|cost|price|how\s*much|affordable|budget|cheap/u.test(
+      lower,
+    )
+  )
     return 'pricing';
 
   // Hỏi về sản phẩm cụ thể (tên thương hiệu, loại sản phẩm)
@@ -300,10 +323,13 @@ const INJECTION_PATTERNS = [
   /\bsystem\s*:/i,
   // 3. Đóng vai / role-play (EN + VI)
   /\bact\s+as\b/i,
-  /(đóng\s*vai|giả\s*làm|hành\s*động\s*như)/iu,
+  // (?!\s*trò): "đóng vai trò" là cụm từ thường ("pin đóng vai trò quan trọng"), không phải role-play
+  /(đóng\s*vai(?!\s*trò)|giả\s*làm|hành\s*động\s*như)/iu,
   // 4. Quên quy tắc (EN + VI)
   /\bforget\s+(all|everything|your)\b/i,
-  /quên\s+(hết|tất\s*cả|mọi|đi)\s*(quy\s*tắc|luật|lệnh|hướng\s*dẫn)?/iu,
+  // Object bắt buộc — "quên hết" đứng riêng là câu nói thường ("tôi quên hết mật khẩu"),
+  // chỉ chặn khi đối tượng là quy tắc/luật/lệnh/hướng dẫn
+  /quên\s+(hết|tất\s*cả|mọi|đi)\s*(quy\s*tắc|luật|lệnh|hướng\s*dẫn)/iu,
   // 5. Giả vờ / pretend (EN + VI)
   /\bpretend\s+(to\s+be|you\s+are)\b/i,
   /giả\s*vờ\s+(là|làm)/iu,
@@ -318,7 +344,9 @@ const INJECTION_PATTERNS = [
   /(reveal|show|print|display|hiển\s*thị|cho\s*xem).{0,20}(system\s*prompt|hidden|instructions?|nội\s*dung\s*hệ\s*thống|prompt\s*ẩn)/iu,
   // 10. Ghi đè hành vi — "from now on" / "từ giờ trở đi" (EN + VI)
   /\bfrom\s+now\s+on\b/i,
-  /từ\s*(bây\s*giờ|giờ|nay)\s*(trở\s*đi|về\s*sau)?/iu,
+  // Hậu tố bắt buộc — "từ nay/từ giờ" đứng riêng xuất hiện trong câu hỏi mua sắm bình thường
+  // ("khuyến mãi từ nay đến tết"); biến thể "từ giờ bạn là..." đã được pattern 6 chặn
+  /từ\s*(bây\s*giờ|giờ|nay)\s*(trở\s*đi|về\s*sau)/iu,
   // 11. Bypass / override safety trực tiếp (EN + VI)
   /\b(bypass|override|disable|turn\s*off|remove)\b.{0,20}\b(safety|filter|restriction|guardrail|limit)/i,
   /(vượt\s*qua|tắt|bỏ|gỡ\s*bỏ|phá).{0,20}(giới\s*hạn|bộ\s*lọc|filter|hạn\s*chế|an\s*toàn|bảo\s*vệ)/iu,

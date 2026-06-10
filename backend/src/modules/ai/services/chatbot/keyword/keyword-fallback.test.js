@@ -259,6 +259,25 @@ describe('simpleKeywordMatch — price range filter', () => {
     });
   });
 
+  test('query tiếng Anh hỏi policy không có sản phẩm → policy text tiếng Anh', () => {
+    const result = simpleKeywordMatch('what is your return policy', []);
+    expect(result.intent).toBe('policy');
+    expect(result.response).toContain('Store policies');
+    expect(result.suggestions).toContain('View phones');
+  });
+
+  test('query tiếng Anh hỏi giá + sản phẩm chưa có giá → "price is being updated"', () => {
+    const noPrice = makeProduct({ id: 20, name: 'iPhone 16', price: null, basePrice: null });
+    const result = simpleKeywordMatch('how much is the iPhone 16 price', [noPrice]);
+    expect(result.response).toContain('price is being updated');
+  });
+
+  test('query tiếng Việt hỏi giá + sản phẩm chưa có giá → "đang cập nhật giá"', () => {
+    const noPrice = makeProduct({ id: 21, name: 'iPhone 16', price: null, basePrice: null });
+    const result = simpleKeywordMatch('iPhone 16 giá bao nhiêu', [noPrice]);
+    expect(result.response).toContain('đang cập nhật giá');
+  });
+
   test('"200-500 ngàn" → dải giá nhân đúng hệ số nghìn', () => {
     const inRange = makeProduct({ id: 14, name: 'Cáp sạc nhanh', price: 350000 });
     const outRange = makeProduct({ id: 15, name: 'Cáp sạc thường', price: 90000 });

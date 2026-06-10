@@ -266,16 +266,16 @@ inventory ← orders (subscribe: order.cancelled → ghi inventory log; order.cr
 
 | Suite | Suites | Tests | Runtime | Config |
 |---|---|---|---|---|
-| BE Unit Tests | 174 | 5.626 | ~13s | `jest.config.js` |
+| BE Unit Tests | 174 | 5.639 | ~13s | `jest.config.js` |
 | BE Integration Tests | 21 | 227 | ~60s | `jest.integration.config.js` |
 | BE API HTTP Tests | 18 | 675 | ~160s | `jest.api.config.js` |
 | BE E2E Tests | 5 | 100 | ~22s | `jest.e2e.config.js` |
 | FE Component Tests | 28 | 937 | ~14s | `jest.config.cjs` (frontend/) |
-| **Tổng** | **246** | **~7.565** | | |
+| **Tổng** | **246** | **~7.578** | | |
 
 > Cập nhật 2026-06-10 (logic-audit module ai: 15 fixes + 50 regression tests; batch fix backlog cùng ngày: +18 tests — cross-model guard, PRICE_UNIT k/nghìn, setSpecKeyMap, rotation, deadlock-retry reviews. Suites/tests đo trực tiếp: unit `npm run test`, integration `npm run test:integration`; cột suites integration/API trước đây ghi 38/39 là số stale).
 
-- **BE Coverage thresholds (local `jest.config.js`):** statements 99.7%, branches 99.7%, functions 99.4%, lines 99.7%
+- **BE Coverage thresholds (local `jest.config.js`):** 100% cả 4 metric (statements/branches/functions/lines) — từ 2026-06-10
 - **BE Coverage (CI):** statements ≥97%, lines ≥97%, branches ≥85%, functions ≥95%
 - **FE Coverage:** global 79%+, per-file 100% cho auth pages + schemas/auth.ts (thresholds trong `jest.config.cjs`)
 - **Test-quality (2 tầng bổ sung):** mutation (Stryker, gate=70) + property-based (fast-check, oracle = 25 invariant GATE-A). Bảng score per-module + quy trình: [`QUALITY_CHECKS.md`](QUALITY_CHECKS.md), [`TESTING_STRATEGY.md §13`](TESTING_STRATEGY.md).

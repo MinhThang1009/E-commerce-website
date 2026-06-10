@@ -53,11 +53,12 @@ module.exports = {
     '!src/models/image.js',           // associations removed from index.js — model not used via @models
   ],
   coverageThreshold: {
+    // 100% từ 2026-06-10 — code mới bắt buộc có test cover đầy đủ statements/branches
     global: {
-      statements: 99,
-      branches: 99,
-      functions: 99,
-      lines: 99,
+      statements: 100,
+      branches: 100,
+      functions: 100,
+      lines: 100,
     },
   },
 };

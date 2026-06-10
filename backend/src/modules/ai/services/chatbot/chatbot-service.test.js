@@ -3506,6 +3506,73 @@ describe('ChatbotService.handleMessage — persist history bằng normalizedQuer
     chatbotService._retrieveProducts = originalRetrieve;
     chatbotService.augmentAndGenerate = originalAugment;
   });
+
+  it('normalizedQuery rỗng (defensive) → history fallback về message gốc', async () => {
+    const originalPreprocess = chatbotService._preprocessMessage.bind(chatbotService);
+    chatbotService._preprocessMessage = jest.fn().mockReturnValue({
+      valid: true,
+      normalizedQuery: '', // falsy → nhánh || message
+      intent: 'general',
+      injection: false,
+      offTopic: false,
+    });
+    const mockAugment = jest.fn().mockResolvedValue({
+      response: 'OK',
+      products: [],
+      suggestions: [],
+      intent: 'general',
+    });
+    const originalAugment = chatbotService.augmentAndGenerate.bind(chatbotService);
+    chatbotService.augmentAndGenerate = mockAugment;
+
+    await chatbotService.handleMessage('câu hỏi gốc của user', null, 'sess-empty-norm');
+
+    const entry = chatbotService.conversationHistory.get('sess-empty-norm');
+    const userMsg = entry.messages.find((m) => m.role === 'user');
+    expect(userMsg.content).toContain('câu hỏi gốc');
+
+    chatbotService._preprocessMessage = originalPreprocess;
+    chatbotService.augmentAndGenerate = originalAugment;
+  });
+});
+
+// ============================================================
+// _enrichQueryFromHistory — intro-fallback khi bullet chỉ chứa spec (256GB...)
+// ============================================================
+
+describe('ChatbotService._enrichQueryFromHistory — intro fallback', () => {
+  it('bullet chỉ có dung lượng → lấy tên SP từ dòng intro của response', () => {
+    const history = [
+      { role: 'user', content: 'iPhone 17 có những bản nào' },
+      {
+        role: 'assistant',
+        content: 'Dạ Điện thoại iPhone 17 hiện có các phiên bản sau\n• 256GB - 25.000.000 đ',
+      },
+    ];
+    const out = chatbotService._enrichQueryFromHistory('nó màu gì', history);
+    expect(out).toContain('Điện thoại iPhone 17');
+    expect(out).not.toContain('256GB'); // intro thắng, không dùng spec làm context
+  });
+
+  it('intro không có brand → đành dùng fromBullet (spec) làm context', () => {
+    const history = [
+      { role: 'assistant', content: 'Các phiên bản hiện có như sau\n• 256GB - 25.000.000 đ' },
+    ];
+    const out = chatbotService._enrichQueryFromHistory('nó màu gì', history);
+    expect(out).toContain('256GB');
+  });
+
+  it('bullet strip xong rỗng → null, không enrich (giữ query gốc)', () => {
+    const history = [{ role: 'assistant', content: 'Dạ shop có\n• : 25.000.000 đ' }];
+    const out = chatbotService._enrichQueryFromHistory('nó màu gì', history);
+    expect(out).toBe('nó màu gì');
+  });
+
+  it('response bắt đầu bằng newline (intro rỗng) → không crash, dùng fromBullet', () => {
+    const history = [{ role: 'assistant', content: '\n• 256GB - 25.000.000 đ' }];
+    const out = chatbotService._enrichQueryFromHistory('nó màu gì', history);
+    expect(out).toContain('256GB');
+  });
 });
 
 // ============================================================

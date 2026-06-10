@@ -94,6 +94,32 @@ afterAll(() => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// Constructor — classifier init thành công → log "sẵn sàng" (.then callback)
+// ══════════════════════════════════════════════════════════════════════════════
+
+describe('constructor — classifier init background', () => {
+  it('initialize resolve → log debug "Embedding classifier sẵn sàng"', async () => {
+    const logger = require('@utils/logger');
+    logger.debug.mockClear();
+    jest.isolateModules(() => {
+      // Classifier mock resolve ngay — cover nhánh .then của fire-and-forget init
+      jest.doMock('@modules/ai/services/chatbot/intent/embedding-intent-classifier', () => ({
+        initialize: jest.fn().mockResolvedValue(undefined),
+        isReady: () => false,
+        classifyWithScore: () => null,
+        INTENT_THRESHOLDS: {},
+        SIMILARITY_THRESHOLD: 0.55,
+        provider: null,
+      }));
+      require('./chatbot-service');
+    });
+    // Init là fire-and-forget — flush microtask để .then chạy
+    await new Promise((r) => setImmediate(r));
+    expect(logger.debug).toHaveBeenCalledWith('[IntentClassifier] Embedding classifier sẵn sàng');
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // _embedQueryOnce
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -194,6 +220,39 @@ describe('_classifyIntent', () => {
     const out = await svc._classifyIntent('iPhone giá bao nhiêu', new Map());
     expect(out.source).toBe('regex');
     expect(out.intent).toBe('pricing'); // regex vẫn phân loại đúng
+  });
+
+  it('embed result KHÔNG có provider (legacy) → coi như tương thích, vẫn dùng embedding', async () => {
+    process.env.INTENT_CLASSIFIER = 'embedding';
+    primeClassifier();
+    mockGenerateEmbedding.mockResolvedValue({ vector: [0, 1, 0], provider: undefined });
+
+    const out = await svc._classifyIntent('câu hỏi bất kỳ', new Map());
+    expect(out).toMatchObject({ intent: 'pricing', source: 'embedding' });
+  });
+
+  it('classifier ready nhưng chưa có example embeddings → classifyWithScore null → regex', async () => {
+    process.env.INTENT_CLASSIFIER = 'embedding';
+    classifier._exampleEmbeddings = {}; // ready nhưng rỗng (trạng thái bất thường)
+    classifier._ready = true;
+    classifier.provider = 'mock-provider';
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0]));
+
+    const out = await svc._classifyIntent('iPhone giá bao nhiêu', new Map());
+    expect(out.source).toBe('regex');
+    expect(out.intent).toBe('pricing');
+  });
+
+  it('intent không có trong INTENT_THRESHOLDS → fallback SIMILARITY_THRESHOLD mặc định', async () => {
+    process.env.INTENT_CLASSIFIER = 'embedding';
+    // Intent lạ không nằm trong bảng threshold per-intent → dùng ngưỡng chung 0.55
+    classifier._exampleEmbeddings = { custom_intent: [[0, 1, 0]] };
+    classifier._ready = true;
+    classifier.provider = 'mock-provider';
+    mockGenerateEmbedding.mockResolvedValue(meta([0, 1, 0])); // score 1.0 ≥ 0.55
+
+    const out = await svc._classifyIntent('câu hỏi bất kỳ', new Map());
+    expect(out).toMatchObject({ intent: 'custom_intent', source: 'embedding' });
   });
 });
 

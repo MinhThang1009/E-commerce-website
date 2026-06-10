@@ -309,4 +309,12 @@ describe('generateEmbeddingWithMeta', () => {
     mockAxiosPost.mockResolvedValue({ data: { data: [{ embedding: vec }] } });
     await expect(svc.generateEmbedding('text', 'query')).resolves.toEqual(vec);
   });
+
+  it('gọi 1 tham số → type mặc định "query" (Jina task=retrieval.query)', async () => {
+    const svc = loadService({ jina: 'j' });
+    mockAxiosPost.mockResolvedValue({ data: { data: [{ embedding: makeVector() }] } });
+    const result = await svc.generateEmbeddingWithMeta('text');
+    expect(result.provider).toBe('Jina v3');
+    expect(mockAxiosPost.mock.calls[0][1].task).toBe('retrieval.query');
+  });
 });

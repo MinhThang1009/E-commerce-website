@@ -237,10 +237,10 @@ Coverage được tính trên file `coverage/coverage-summary.json` sau khi ch�
 ```javascript
 coverageThreshold: {
   global: {
-    statements: 99.7, // current: 99.98%
-    branches: 99.7,   // current: 99.81%
-    functions: 99.4,  // current: 99.91%
-    lines: 99.7,      // current: 100%
+    statements: 100, // đạt 100% từ 2026-06-10
+    branches: 100,
+    functions: 100,
+    lines: 100,
   }
 }
 ```
@@ -429,18 +429,18 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 215 | 5.382 | ~12s |
-| BE Integration Tests | 38 | 210 | ~57s |
-| BE API HTTP Tests | 39 | 675 | ~160s |
+| BE Unit Tests | 174 | 5.639 | ~13s |
+| BE Integration Tests | 21 | 227 | ~60s |
+| BE API HTTP Tests | 18 | 675 | ~160s |
 | BE E2E Tests | 5 | 100 | ~22s |
 | FE Component Tests | 28 | 937 | ~12s |
-| **Tổng** | **325** | **~7.304** | |
+| **Tổng** | **246** | **~7.578** | |
 
 **Coverage (local unit tests)**:
-- Statements: 99,98% (threshold 99,7%)
-- Branches: 99,81% (threshold 99,7% — 7 nhánh hard-to-test còn lại: module-level guards, short-circuit ||/&& defensive)
-- Functions: 99,91% (threshold 99,4%)
-- Lines: **100%** (threshold 99,7%)
+- Statements: **100%** (threshold 100%)
+- Branches: **100%** (threshold 100% — các nhánh defensive cuối cùng đã cover 2026-06-10)
+- Functions: **100%** (threshold 100%)
+- Lines: **100%** (threshold 100%)
 
 **Ràng buộc khi thêm code mới**:
 - Mọi service method mới → phải có unit test tương ứng
@@ -554,7 +554,7 @@ const { app, request, createTestUser, createTestProduct } = require('./http-setu
 # 13. Mutation & Property-based Testing
 
 > 5 tầng pyramid trên đo **độ phủ** (code nào được chạy). 2 tầng dưới đo **chất lượng assert**
-> (test có thật sự bắt được bug không) — bổ sung cho nhau. Coverage 99,7%+ KHÔNG đảm bảo code đúng:
+> (test có thật sự bắt được bug không) — bổ sung cho nhau. Coverage 100% KHÔNG đảm bảo code đúng:
 > bug class F1/F2 từng lọt qua hàng nghìn test vì assert "method được gọi" thay vì OUTCOME nghiệp vụ.
 > Quy trình đầy đủ + 6 bước verify: [`QUALITY_CHECKS.md`](QUALITY_CHECKS.md).
 

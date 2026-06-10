@@ -183,6 +183,24 @@ describe('fuzzyExpandQuery', () => {
     expect(result.expanded.toLowerCase()).toContain('iphone15');
   });
 
+  // Verifies: \p{L} segment split — [a-zA-Z] cũ cắt "thoại" thành "tho"+"i" quanh 'ạ'
+  // → "điện thoại" bị corrupt thành "điện Thoại i" trong LLM-down rewrite
+  test('từ tiếng Việt có dấu giữa từ ("thoại") KHÔNG bị cắt/corrupt khi expand', () => {
+    const names = ['Điện thoại iPhone 17', 'Điện thoại Samsung Galaxy'];
+    const result = fuzzyExpandQuery('điện thoại tầm 15 triệu', names);
+    expect(result.expanded).not.toMatch(/Thoại i/);
+    expect(result.expanded).toBe('điện thoại tầm 15 triệu'); // không có gì cần expand
+  });
+
+  // Verifies: stopword guard — "không" từng bị edit-distance expand thành "Thông"
+  // (dist 1 với token "thông" trong "đồng hồ thông minh")
+  test('từ chức năng ("không", "của") KHÔNG bị fuzzy-expand thành token sản phẩm', () => {
+    const names = ['Đồng hồ thông minh Samsung', 'Điện thoại iPhone 17'];
+    const result = fuzzyExpandQuery('điện thoại không cần iPhone', names);
+    expect(result.expanded).not.toMatch(/Thông cần|thông cần/);
+    expect(result.expanded).toBe('điện thoại không cần iPhone');
+  });
+
   test('dedup: expanded đã chứa số model của segment kế tiếp', () => {
     // "Reno11" trong product names, "reno11" → segments ["reno", "11"]
     // Nếu expanded="Reno11" đã chứa "11" → bỏ segment "11" để tránh "Reno11 11"

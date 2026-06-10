@@ -50,7 +50,8 @@ function buildPrefixIndex(productNames) {
 
   for (const name of productNames) {
     // Tách theo whitespace, giữ cả token chữ-số kiểu "A57", "S25"
-    const tokens = name.split(/\s+/).filter((t) => /[a-zA-Z]/.test(t) && t.length >= 3);
+    // \p{L}: nhận cả token thuần tiếng Việt có dấu ("ổn", "đỏ"...)
+    const tokens = name.split(/\s+/).filter((t) => /\p{L}/u.test(t) && t.length >= 3);
 
     for (const token of tokens) {
       const lower = token.toLowerCase();
@@ -129,7 +130,9 @@ function expandLetterToken(token, index, threshold, /* istanbul ignore next */ n
 function expandTokenWithSplit(token, index, /* istanbul ignore next */ threshold = 0.75) {
   // Tách token thành segments: chữ xen số
   // "ip17pm" → ["ip", "17", "pm"]  |  "samsung" → ["samsung"]
-  const segments = token.match(/[a-zA-Z]+|\d+/g) || [token];
+  // \p{L} (Unicode) bắt buộc: [a-zA-Z] cắt "thoại" thành "tho"+"i" quanh ký tự có dấu
+  // → từng corrupt query thành "Thoại i" khi expand
+  const segments = token.match(/\p{L}+|\d+/gu) || [token];
 
   // Nếu chỉ 1 segment và dài ≥ 6 → giữ nguyên (chắc không phải viết tắt)
   if (segments.length === 1 && token.length >= 6) {
@@ -179,6 +182,67 @@ function expandTokenWithSplit(token, index, /* istanbul ignore next */ threshold
   };
 }
 
+// ── Stopwords ─────────────────────────────────────────────────────────────────
+
+/**
+ * Từ chức năng tiếng Việt KHÔNG được fuzzy-expand — edit-distance 1 với token
+ * sản phẩm rất dễ xảy ra ("không"→"thông", "của"→"cũ"...), expand sẽ corrupt query.
+ */
+const VI_STOPWORDS = new Set([
+  'không',
+  'của',
+  'cho',
+  'các',
+  'này',
+  'đó',
+  'kia',
+  'với',
+  'là',
+  'và',
+  'có',
+  'cần',
+  'muốn',
+  'thích',
+  'tầm',
+  'dưới',
+  'trên',
+  'khoảng',
+  'giá',
+  'bao',
+  'nhiêu',
+  'được',
+  'hay',
+  'hoặc',
+  'mà',
+  'thì',
+  'nhé',
+  'vậy',
+  'sao',
+  'nào',
+  'rồi',
+  'chưa',
+  'còn',
+  'hàng',
+  'mua',
+  'bán',
+  'xem',
+  'tìm',
+  'shop',
+  'tiền',
+  'triệu',
+  'nghìn',
+  'the',
+  'and',
+  'for',
+  'with',
+  'how',
+  'much',
+  'what',
+  'best',
+  'under',
+  'over',
+]);
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 /**
@@ -203,6 +267,8 @@ function fuzzyExpandQuery(query, productNames, { threshold = 0.75, debug = false
     if (!part.trim()) return part; // whitespace → giữ nguyên
 
     const lower = part.toLowerCase();
+    if (VI_STOPWORDS.has(lower)) return part; // từ chức năng → không bao giờ expand
+
     const { expanded, score, method } = expandTokenWithSplit(lower, index, threshold);
 
     if (method !== 'keep' && expanded.toLowerCase() !== lower) {

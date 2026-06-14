@@ -1114,7 +1114,7 @@ function printServerResponse(res) {
     '',
     C.bold + C.teal + border,
     centerLine('TECHSTORE RAG CHATBOT  --  PIPELINE DEMO'),
-    centerLine('Dự án công nghệ'),
+    centerLine('KHÓA LUẬN TỐT NGHIỆP'),
     border + C.reset,
   ].join('\n');
   console.log(HEADER);

@@ -1,0 +1,48 @@
+@startuml activity-checkout-2
+' Biểu đồ hoạt động — Đặt hàng Phần 2: Xử lý thanh toán
+' Ground-truth: orders-service.js (thủ công), payment-service.js (online IPN)
+
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam activity {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  DiamondBackgroundColor #FFF2CC
+  DiamondBorderColor #D6B656
+  ArrowColor #4D4D4D
+}
+
+title Đặt hàng — Phần 2: Xử lý thanh toán
+
+start
+:Đơn hàng pending đã được tạo (từ Phần 1);
+if (Phương thức thanh toán?) then (Thủ công\n(COD / chuyển khoản))
+  :Xóa giỏ hàng + tăng usedCount mã;
+  :COMMIT transaction;
+  :Gửi email xác nhận (fire-and-forget);
+  stop
+else (Online\n(MoMo / VNPay))
+  :COMMIT transaction (giữ giỏ chờ IPN);
+  :Sinh URL thanh toán (ký HMAC);
+  :Khách thanh toán trên cổng;
+  :Nhận IPN callback (server-to-server);
+  if (HMAC hợp lệ + số tiền khớp\n+ chưa xử lý?) then (không)
+    :Bỏ qua (idempotent) hoặc từ chối;
+    stop
+  else (có)
+    if (Cổng báo thành công?) then (có)
+      :paymentStatus=paid, status=processing;
+      :Xóa giỏ + tăng usedCount\n+ gửi email (fire-and-forget);
+      stop
+    else (thất bại)
+      :paymentStatus=failed;
+      :Cho phép khách thanh toán lại;
+      stop
+    endif
+  endif
+endif
+
+@enduml

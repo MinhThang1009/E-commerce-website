@@ -40,7 +40,7 @@ node "Tầng Client\n(React 19 · Vite · port 5175)" as Client {
   artifact "Floating Chat Widget" as ChatW
 }
 
-node "Tầng API Server\n(Node.js 20 · Express 4 · port 8888)" as API {
+node "Tầng API Server\n(Node.js 22 · Express 4 · port 8888)" as API {
   artifact "Middleware\n(Helmet · CORS · CSRF · Rate Limit\nbody parse · sanitize · compress)" as MW
 
   node "17 Modules — Modular Monolith" as Mod {
@@ -59,7 +59,7 @@ node "Tầng Dữ liệu" as Data {
 
 cloud "Dịch vụ Ngoài" as Ext {
   artifact "LLM API\n(OpenAI-compatible)" as LLM
-  artifact "Embedding\n(Jina v3 → e5-instruct → e5-base)" as Emb
+  artifact "Embedding\n(Jina v3 → e5-large-instruct → e5-large)" as Emb
   artifact "Cổng thanh toán\n(MoMo · VNPay)" as Pay
   artifact "Gmail SMTP" as Mail
   artifact "Google OAuth 2.0" as GOAuth

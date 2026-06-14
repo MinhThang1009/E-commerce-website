@@ -1,45 +1,82 @@
-\chapter{Giới thiệu}
+\chapter{Đặt vấn đề}
 \label{chap:c1_introduction}
 
 \section{Bối cảnh và lý do chọn đề tài}
 \label{sec:c1_context}
 
-Thị trường thương mại điện tử Việt Nam đạt 32 tỷ USD vào năm 2024 với tốc độ tăng trưởng 27\%~\cite{vecom2024}, trong đó mảng thiết bị công nghệ chiếm tỷ trọng lớn nhất (khoảng 35\%)~\cite{statista_vn_electronics}. Đây là mảng có đặc thù phức tạp: mỗi sản phẩm tồn tại dưới hàng chục biến thể về cấu hình, dung lượng và màu sắc. Người tiêu dùng thường có nhu cầu đa tiêu chí (ví dụ: ``laptop chạy được Premiere, pin cả ngày, dưới 20 triệu'') nhưng bộ lọc truyền thống chỉ hỗ trợ lọc theo tiêu chí rời rạc~\cite{chen2021conversational}.
+Kinh tế số Việt Nam đang bước vào giai đoạn tăng trưởng nhanh và ổn định. Theo báo cáo e-Conomy SEA 2025 của Google và Temasek~\cite{economy_sea_2025}, quy mô kinh tế số Việt Nam ước đạt 39 tỷ USD vào năm 2025, trong đó thương mại điện tử đóng góp khoảng 25 tỷ USD, tăng 17\% so với năm trước. Riêng năm 2024, thị trường thương mại điện tử Việt Nam ghi nhận tổng giá trị giao dịch đạt 32 tỷ USD với tốc độ tăng trưởng khoảng 27\% so với cùng kỳ năm trước, đưa Việt Nam trở thành thị trường thương mại điện tử lớn thứ hai hoặc ba tại Đông Nam Á~\cite{vecom2024}. Nền tảng cho tốc độ tăng trưởng này là hạ tầng kết nối số ngày càng rộng khắp: tính đến quý I năm 2025, Việt Nam có gần 79,8 triệu người dùng internet, tương đương 78,8\% dân số, và tỷ lệ sở hữu điện thoại thông minh đạt 84,4\%, vượt mức trung bình toàn cầu là 63\%~\cite{datareportal_2025}. Đáng chú ý, Việt Nam cũng là quốc gia có tỷ lệ người dùng tương tác với trí tuệ nhân tạo hàng ngày cao nhất khu vực Đông Nam Á, với 81\% người dùng cho biết họ sử dụng các công cụ AI mỗi ngày~\cite{economy_sea_2025}, phản ánh mức độ sẵn sàng tiếp nhận công nghệ thông minh rất cao trong cộng đồng người tiêu dùng.
 
-Kỹ thuật Retrieval-Augmented Generation (RAG)~\cite{lewis2020rag} giải quyết khoảng trống này bằng cách kết hợp truy xuất thông tin từ cơ sở dữ liệu thực tế với khả năng sinh ngôn ngữ tự nhiên của mô hình ngôn ngữ lớn (LLM). Tuy nhiên, các nghiên cứu RAG hiện có chủ yếu tập trung vào tiếng Anh~\cite{lewis2020rag,gao2023retrieval} và chưa giải quyết đồng thời ba thách thức đặc thù của thương mại điện tử tiếng Việt: chuẩn hóa viết tắt thương hiệu (``ip'' cho iPhone, ``ss'' cho Samsung), đồng bộ vector store khi catalog thay đổi, và kết hợp Hybrid Search để tìm kiếm ngữ nghĩa và từ khóa bổ trợ lẫn nhau. Xuất phát từ khoảng trống đó, dự án này nghiên cứu và hiện thực một hệ thống thương mại điện tử hoàn chỉnh tích hợp AI chatbot theo kiến trúc RAG Hybrid cho bối cảnh tiếng Việt.
+Trong cơ cấu thương mại điện tử Việt Nam, thiết bị điện tử và công nghệ là mảng có tỷ trọng lớn nhất, chiếm khoảng 35\% tổng giá trị giao dịch toàn thị trường với quy mô ước tính 16,5 tỷ USD vào năm 2024~\cite{statista_vn_electronics}. Đây cũng là mảng sản phẩm có đặc thù phức tạp nhất: mỗi dòng thiết bị tồn tại dưới hàng chục biến thể về cấu hình bộ xử lý, dung lượng bộ nhớ, màu sắc và mức giá, trong khi thông số kỹ thuật thay đổi liên tục theo chu kỳ ra mắt sản phẩm mới. Người tiêu dùng khi mua laptop, điện thoại hay đồng hồ thông minh thường có nhu cầu rất cụ thể (chẳng hạn như cần tìm một chiếc laptop có thể chạy được phần mềm dựng phim chuyên nghiệp, thời lượng pin đủ dùng cả ngày và giá nằm trong tầm 20 triệu đồng), nhưng bộ lọc tìm kiếm truyền thống chỉ hỗ trợ lọc theo các tiêu chí rời rạc như khoảng giá, thương hiệu hay danh mục, không có khả năng phân tích và đáp ứng yêu cầu được diễn đạt theo cách tự nhiên như vậy~\cite{chen2021conversational}. Khoảng trống này buộc người mua phải tự tra cứu thông tin từ nhiều nguồn khác nhau, kéo dài thời gian ra quyết định và làm giảm đáng kể trải nghiệm mua sắm.
+
+Trước thách thức trên, AI chatbot đang nổi lên như một giải pháp đột phá. Các nghiên cứu thực tiễn cho thấy chatbot AI có thể cải thiện tỷ lệ chuyển đổi đơn hàng lên đến 23\% so với giao diện truyền thống, và tỷ lệ chuyển đổi của nhóm khách hàng tương tác với chatbot cao gấp bốn lần so với nhóm chỉ duyệt thông thường~\cite{glassix2024}. Tuy nhiên, các thế hệ chatbot dựa trên kịch bản cố định hoặc phân loại ý định (intent classification) vẫn không thể tư vấn sản phẩm chính xác vì không có khả năng truy cập dữ liệu catalog thực của hệ thống tại thời điểm hỏi. Kỹ thuật Retrieval-Augmented Generation (RAG)~\cite{lewis2020rag} khắc phục hạn chế căn bản này bằng cách truy xuất thông tin từ dữ liệu thực tế trước khi sinh câu trả lời bằng mô hình ngôn ngữ lớn (LLM), nhờ đó chatbot trả lời dựa trên sản phẩm thực tế thay vì suy luận từ kiến thức huấn luyện chung; thị trường RAG toàn cầu được dự báo tăng trưởng 38--49\% mỗi năm đến năm 2030~\cite{marketsandmarkets_rag2025}. Cơ sở lý thuyết của RAG, vector embedding và Hybrid Search được trình bày chi tiết trong Chương~\ref{chap:c2_theory}.
+
+Trong khi các nghiên cứu RAG hiện có chủ yếu tập trung vào tác vụ hỏi đáp và truy xuất tài liệu trong ngữ cảnh tiếng Anh~\cite{lewis2020rag,gao2023retrieval}, chúng chưa giải quyết đồng thời ba thách thức đặc thù của thương mại điện tử tiếng Việt: chuẩn hóa viết tắt thương hiệu và model theo thói quen người dùng, đồng bộ vector store theo thời gian thực khi catalog sản phẩm thay đổi, và kết hợp Hybrid Search để tìm kiếm ngữ nghĩa và từ khóa bổ trợ lẫn nhau (ba thách thức này được phân tích chi tiết trong Chương~\ref{chap:c2_theory}). Xuất phát từ khoảng trống đó, khóa luận này được thực hiện nhằm nghiên cứu và hiện thực một hệ thống thương mại điện tử hoàn chỉnh tích hợp AI chatbot theo kiến trúc RAG Hybrid, qua đó kiểm chứng tính khả thi và hiệu quả của phương pháp RAG trong bối cảnh tư vấn sản phẩm công nghệ tiếng Việt với các thách thức ngôn ngữ và kỹ thuật đặc thù.
 
 \section{Mô tả bài toán}
 \label{sec:c1_problem}
 
-Bài toán: \textit{Thiết kế và xây dựng hệ thống website thương mại điện tử chuyên bán thiết bị công nghệ, tích hợp AI Chatbot sử dụng kỹ thuật RAG để tư vấn sản phẩm theo thời gian thực, hỗ trợ thanh toán trực tuyến và cung cấp công cụ quản trị toàn diện.}
+\subsection{Phát biểu bài toán}
 
-Dự án hướng đến ba câu hỏi nghiên cứu: (1) RAG Hybrid kết hợp tìm kiếm ngữ nghĩa và từ khóa có hiệu quả hơn phương pháp đơn lẻ cho tư vấn sản phẩm tiếng Việt không? (2) Bước tiền xử lý nào giảm thiểu được ảnh hưởng của viết tắt thương hiệu đến chất lượng retrieval? (3) Modular Monolith có đáp ứng được tính toàn vẹn dữ liệu và kiểm thử độc lập trong hệ thống thương mại điện tử hoàn chỉnh không?
+Bài toán đặt ra trong khóa luận này có thể được phát biểu như sau: \textit{Thiết kế và xây dựng một hệ thống website thương mại điện tử chuyên bán thiết bị công nghệ, tích hợp AI Chatbot sử dụng kỹ thuật RAG để tư vấn sản phẩm theo thời gian thực, hỗ trợ thanh toán trực tuyến và cung cấp công cụ quản trị toàn diện cho người vận hành.}
 
-Hệ thống phục vụ bốn nhóm tác nhân (guest, customer, staff, admin) theo nguyên tắc đặc quyền tối thiểu. Chatbot nhận câu hỏi tiếng Việt tự nhiên và trả về phản hồi kèm sản phẩm gợi ý từ catalog thực tế. Phạm vi: bán lẻ thiết bị công nghệ, giao tiếp HTTP REST, vector store đồng bộ với catalog.
+\subsection{Câu hỏi nghiên cứu}
+
+Từ vấn đề thực tiễn nêu trên, khóa luận hướng đến giải quyết ba câu hỏi nghiên cứu chính.
+
+Câu hỏi thứ nhất: kiến trúc RAG Hybrid kết hợp tìm kiếm ngữ nghĩa và tìm kiếm từ khóa theo cơ chế bổ trợ lẫn nhau có hiệu quả hơn phương pháp đơn lẻ trong bài toán tư vấn sản phẩm công nghệ tiếng Việt hay không, và ở những loại truy vấn nào sự kết hợp này thể hiện ưu thế rõ nhất?
+
+Câu hỏi thứ hai: thói quen viết tắt tên thương hiệu và model sản phẩm trong tiếng Việt ảnh hưởng đến chất lượng truy xuất trong RAG pipeline ở mức độ nào, và bước tiền xử lý ngôn ngữ nào có thể giảm thiểu hiệu quả ảnh hưởng đó?
+
+Câu hỏi thứ ba: kiến trúc Modular Monolith có đáp ứng được các yêu cầu về tính toàn vẹn dữ liệu trong giao dịch đồng thời, khả năng kiểm thử độc lập từng module và tích hợp đồng bộ vector store trong một hệ thống thương mại điện tử hoàn chỉnh hay không?
+
+\subsection{Đầu vào và đầu ra}
+
+Hệ thống phục vụ bốn nhóm tác nhân với phạm vi quyền hạn phân tầng rõ ràng. Khách vãng lai (người dùng chưa đăng nhập) có thể duyệt sản phẩm, thêm vào giỏ hàng tạm thời và tương tác với chatbot AI mà không cần tài khoản. Khách hàng đã đăng nhập được mở rộng thêm quyền đặt hàng, thanh toán trực tuyến, theo dõi đơn hàng và viết đánh giá sản phẩm. Nhân viên (staff) truy cập giao diện quản trị để thực hiện các nghiệp vụ vận hành như quản lý sản phẩm, xử lý đơn hàng, kiểm soát tồn kho và quản lý mã giảm giá. Quản trị viên (admin) có thêm quyền quản lý tài khoản người dùng và xem báo cáo phân tích chuyên sâu, nhưng không thực hiện trực tiếp các tác vụ nghiệp vụ; sự phân tách trách nhiệm này thể hiện nguyên tắc đặc quyền tối thiểu trong vận hành hệ thống.
+
+Đầu vào đặc thù của thành phần chatbot AI là câu hỏi bằng ngôn ngữ tự nhiên tiếng Việt (hoặc tiếng Anh) của người dùng liên quan đến sản phẩm, cùng với ngữ cảnh hội thoại từ các lượt trước trong cùng phiên làm việc. Hệ thống đầu ra tương ứng là phản hồi tiếng Việt tự nhiên, kèm theo danh sách sản phẩm gợi ý phù hợp nhất với nhu cầu của người dùng.
+
+\subsection{Phạm vi và giả định}
+
+Hệ thống tập trung vào mảng bán lẻ thiết bị công nghệ tiêu dùng (laptop, điện thoại, đồng hồ thông minh, máy tính bảng, phụ kiện). Giao tiếp giữa người dùng và hệ thống thực hiện qua giao thức HTTP REST, dữ liệu sản phẩm được lưu trữ trong cơ sở dữ liệu quan hệ và đồng bộ vào vector store để phục vụ tìm kiếm ngữ nghĩa. Hệ thống giả định có kết nối đến ít nhất một nhà cung cấp dịch vụ embedding để vector hóa dữ liệu sản phẩm, và có thể triển khai với bất kỳ LLM API nào tương thích giao thức OpenAI.
 
 \section{Mục tiêu và phạm vi nghiên cứu}
 \label{sec:c1_objectives}
 
 \subsection{Mục tiêu nghiên cứu}
 
-Dự án đặt ra năm mục tiêu:
-\begin{enumerate}
-  \item Nghiên cứu và đề xuất kiến trúc RAG Hybrid cho tư vấn sản phẩm tiếng Việt, giải quyết đồng thời chuẩn hóa viết tắt, đồng bộ catalog và kết hợp tìm kiếm ngữ nghĩa với từ khóa.
-  \item Thiết kế backend Modular Monolith với DI và UnitOfWork cùng frontend Feature-Based.
-  \item Tích hợp cổng thanh toán MoMo và VNPay với HMAC và idempotency.
-  \item Xây dựng bộ kiểm thử đa tầng ($\sim$7.303 ca kiểm thử, coverage $>$99\%).
-  \item Đánh giá hiệu quả chatbot RAG qua các kịch bản thực tế đại diện.
-\end{enumerate}
+Khóa luận đặt ra năm mục tiêu nghiên cứu và triển khai, được tổ chức theo chiều hướng từ nghiên cứu phương pháp đến cài đặt hệ thống và đánh giá kết quả.
+
+Mục tiêu thứ nhất là nghiên cứu kỹ thuật Retrieval-Augmented Generation (RAG) và đề xuất kiến trúc RAG Hybrid phù hợp với bài toán tư vấn sản phẩm công nghệ tiếng Việt, trong đó trọng tâm là thiết kế pipeline giải quyết đồng thời các thách thức đặc thù: chuẩn hóa ngôn ngữ viết tắt, đồng bộ catalog theo thời gian thực, và kết hợp tìm kiếm ngữ nghĩa với tìm kiếm từ khóa theo cơ chế bổ trợ lẫn nhau.
+
+Mục tiêu thứ hai là thiết kế và hiện thực kiến trúc backend theo mô hình Modular Monolith, áp dụng Dependency Injection và UnitOfWork pattern để đảm bảo tính toàn vẹn dữ liệu trong các giao dịch đồng thời, đồng thời xây dựng giao diện người dùng theo mô hình Feature-Based nhằm đảm bảo khả năng phát triển và kiểm thử độc lập từng tính năng.
+
+Mục tiêu thứ ba là tích hợp hai cổng thanh toán trực tuyến MoMo và VNPay, hiện thực cơ chế xác thực chữ ký HMAC và idempotency cho IPN callback nhằm đảm bảo tính chính xác của giao dịch trong điều kiện kết nối không ổn định và kịch bản cổng gửi lại thông báo nhiều lần.
+
+Mục tiêu thứ tư là xây dựng chiến lược kiểm thử đa tầng với hơn 7.578 ca kiểm thử trên năm tầng từ unit test đến E2E, đạt coverage 100\% ở tầng unit, và thiết lập CI/CD pipeline tự động hóa quy trình kiểm tra chất lượng khi có thay đổi mã nguồn.
+
+Mục tiêu thứ năm là đánh giá hiệu quả thực tế của chatbot RAG qua các kịch bản đại diện gồm tìm kiếm ngữ nghĩa, truy vấn theo tên model cụ thể, xử lý viết tắt và phát hiện câu hỏi ngoài phạm vi, từ đó rút ra bài học kinh nghiệm và xác định hướng cải tiến cho các ứng dụng RAG tiếng Việt tiếp theo.
 
 \subsection{Phạm vi nghiên cứu}
 
-Về kỹ thuật, dự án tập trung vào kiến trúc Modular Monolith và Feature-Based, kỹ thuật RAG Hybrid Search, tích hợp LLM qua API, và kiểm thử đa tầng. Về chức năng, hệ thống bao gồm toàn bộ luồng mua sắm (duyệt, giỏ hàng, đặt hàng, thanh toán) và chatbot AI tư vấn sản phẩm. Hệ thống không bao gồm logistics thực tế, collaborative filtering hay quản lý kho vật lý.
+Về mặt kỹ thuật, khóa luận tập trung vào bốn lĩnh vực chính. Lĩnh vực đầu tiên là kiến trúc phần mềm, cụ thể là mô hình Modular Monolith cho phía server và Feature-Based cho phía client. Lĩnh vực thứ hai là xử lý ngôn ngữ tự nhiên và tìm kiếm ngữ nghĩa, bao gồm kỹ thuật embedding vector và Hybrid Search kết hợp tìm kiếm ngữ nghĩa với tìm kiếm từ khóa. Lĩnh vực thứ ba là tích hợp các mô hình ngôn ngữ lớn thông qua API vào ứng dụng thương mại điện tử thực tế. Lĩnh vực thứ tư là chiến lược kiểm thử phần mềm đa tầng, bao gồm kiểm thử đơn vị, tích hợp, API HTTP, E2E và component.
+
+Về mặt chức năng, hệ thống bao gồm toàn bộ luồng từ duyệt sản phẩm, thêm vào giỏ, đặt hàng, thanh toán, đến theo dõi và nhận hàng. Chatbot AI hỗ trợ tư vấn sản phẩm và thêm sản phẩm vào giỏ hàng trực tiếp qua giao diện chat mà không cần rời khỏi trang hiện tại. Hệ thống không bao gồm tích hợp logistics thực tế, hệ thống gợi ý dựa trên lịch sử hành vi người dùng theo hướng collaborative filtering, hay quản lý kho hàng vật lý.
 
 \subsection{Phương pháp nghiên cứu}
 
-Dự án áp dụng phương pháp nghiên cứu thiết kế (design science research) qua bốn giai đoạn: khảo sát lý thuyết RAG và công nghệ liên quan, thiết kế kiến trúc và pipeline RAG Hybrid, hiện thực hệ thống kèm kiểm thử đa tầng, và đánh giá hiệu quả chatbot qua kịch bản thực tế.
+Khóa luận áp dụng phương pháp nghiên cứu thiết kế (design science research), triển khai qua bốn giai đoạn liên tiếp. Giai đoạn đầu là khảo sát lý thuyết và công nghệ liên quan, bao gồm tổng quan về kỹ thuật RAG, các phương pháp Hybrid Search, kiến trúc phần mềm Modular Monolith và tích hợp cổng thanh toán trực tuyến. Giai đoạn hai là thiết kế: đề xuất kiến trúc tổng thể, thiết kế pipeline RAG Hybrid và cơ sở dữ liệu dựa trên phân tích yêu cầu chức năng và phi chức năng thu được từ khảo sát. Giai đoạn ba là hiện thực: xây dựng toàn bộ hệ thống theo thiết kế đề xuất kèm bộ kiểm thử đa tầng đảm bảo chất lượng. Giai đoạn bốn là đánh giá: kiểm tra hiệu quả chatbot RAG qua các kịch bản thực tế đại diện, đo lường thời gian phản hồi và phân tích kết quả để trả lời các câu hỏi nghiên cứu đã đặt ra.
 
-\section{Cấu trúc dự án}
+\section{Cấu trúc khóa luận}
 \label{sec:c1_structure}
 
-Dự án gồm bốn chương: \textbf{Chương 1} trình bày bối cảnh và mục tiêu; \textbf{Chương 2} tổng hợp nền tảng lý thuyết RAG, Hybrid Search và kiến trúc phần mềm; \textbf{Chương 3} phân tích yêu cầu, thiết kế kiến trúc, cơ sở dữ liệu và pipeline RAG; \textbf{Chương 4} trình bày kết quả thực nghiệm gồm cài đặt, kiểm thử và đánh giá hiệu quả chatbot. Phần \textbf{Kết luận} tổng kết kết quả và đề xuất hướng phát triển.
+Khóa luận được tổ chức thành bốn chương chính, mỗi chương đề cập đến một khía cạnh cụ thể của quá trình nghiên cứu và xây dựng hệ thống.
+
+\textbf{Chương 1: Đặt vấn đề} (chương hiện tại) trình bày bối cảnh thực tiễn, lý do lựa chọn đề tài, phát biểu bài toán, mục tiêu nghiên cứu và cấu trúc tổng thể của khóa luận. Chương này cung cấp nền tảng để người đọc hiểu được động lực và phạm vi của công trình.
+
+\textbf{Chương 2: Nền tảng và công nghệ sử dụng} tổng hợp các kiến thức lý thuyết nền tảng liên quan đến đề tài, bao gồm: kiến trúc thương mại điện tử, kỹ thuật RAG và xử lý ngôn ngữ tự nhiên, vector embedding và tìm kiếm ngữ nghĩa, các framework và thư viện được sử dụng trong khóa luận. Đây là cơ sở lý thuyết cho các quyết định thiết kế và cài đặt trong các chương sau.
+
+\textbf{Chương 3: Phân tích và thiết kế hệ thống} mô tả chi tiết quá trình phân tích yêu cầu, thiết kế kiến trúc hệ thống, thiết kế cơ sở dữ liệu và thiết kế chi tiết RAG pipeline. Chương này bao gồm các sơ đồ Use Case, sơ đồ tuần tự, ERD và sơ đồ kiến trúc tổng thể.
+
+\textbf{Chương 4: Cài đặt, kiểm thử và triển khai hệ thống} trình bày quá trình cài đặt các thành phần chính của hệ thống, chiến lược và kết quả kiểm thử, phân tích đóng góp của sinh viên, và hướng dẫn triển khai. Đặc biệt, chương này đánh giá chi tiết hiệu quả của chatbot RAG thông qua các kịch bản thực tế.
+
+\textbf{Kết luận và Hướng phát triển} tổng kết các kết quả đạt được, nhìn nhận những hạn chế còn tồn tại và đề xuất hướng mở rộng trong tương lai.

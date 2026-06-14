@@ -1,4 +1,5 @@
 @startuml sequence-06-token-refresh
+autoactivate on
 ' Sơ đồ sequence — Làm mới Access Token (§3.6)
 ' Ground-truth: auth-service.js:214-243, auth-controller.js:119-129
 ' auth/routes.js:91, auth/module.js:53-71, middlewares/authenticate.js

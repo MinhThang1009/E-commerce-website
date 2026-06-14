@@ -1,4 +1,5 @@
 @startuml sequence-03c-chatbot-generate
+autoactivate on
 ' Sơ đồ sequence — Chatbot RAG (3c): Generate & Persist (§3.3c)
 ' Ground-truth: chatbot-service.js:327-379, augmentAndGenerate:685-800
 
@@ -51,14 +52,12 @@ else LLM UP
   alt Thành công
     LLM -->> API : JSON response
     note right of API: parseLLMOutput: hallucination detect + dedup
-  else 429 / 402 / 500 / 503 — lỗi tạm thời
-    note right of API: Provider rotation → thử provider tiếp theo
-    API ->> LLM : POST /chat/completions  [provider 2, ...]
+  else Lỗi LLM (4xx/5xx/timeout — kể cả 400/401)
+    note right of API: LUÔN rotation → thử provider tiếp theo\n(400/401/403 chỉ log chi tiết, không dừng)
+    API ->> LLM : POST /chat/completions  [provider 2, 3]
     alt Tất cả providers thất bại
       note right of API: simpleKeywordMatch fallback
     end
-  else 400 / 401 — lỗi cố định
-    note right of API: Dừng ngay → simpleKeywordMatch fallback
   end
 else Budget timer hết
   note right of API: simpleKeywordMatch fallback — không để user chờ

@@ -1,4 +1,5 @@
 @startuml sequence-02b-checkout-payment-url
+autoactivate on
 ' Sơ đồ sequence — Checkout (2b): Tạo URL thanh toán online (§3.2b)
 ' Ground-truth: payment-service.js:120-131, 216-227 + momo-service.js + vnpay-service.js
 
@@ -47,7 +48,7 @@ note right of API
 end note
 GW -->> API : MoMo: { payUrl, resultCode, ... }
 note left of GW: VNPay: paymentUrl (string)
-API -->> FE : 200  { paymentUrl }
+API -->> FE : 200  { data } — MoMo: data.payUrl · VNPay: data.paymentUrl
 FE -->> User : Redirect → cổng thanh toán (MoMo / VNPay)
 
 note over User, GW: Người dùng xác nhận thanh toán tại cổng

@@ -1,4 +1,5 @@
 @startuml sequence-03b-chatbot-retrieve
+autoactivate on
 ' Sơ đồ sequence — Chatbot RAG (3b): Session & Retrieve (§3.3b)
 ' Ground-truth: chatbot-service.js:317-576 (_enrichQueryFromHistory, _retrieveProducts, rewriteQuery)
 

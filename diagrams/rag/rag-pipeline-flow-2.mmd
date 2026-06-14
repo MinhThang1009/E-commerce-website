@@ -1,27 +1,17 @@
 %%{init: {
   'theme': 'base',
-  'flowchart': {'wrappingWidth': 500},
+  'flowchart': {'wrappingWidth': 320},
   'themeVariables': {
     'primaryColor': '#DAE8FC',
     'primaryTextColor': '#000000',
     'primaryBorderColor': '#6C8EBF',
     'lineColor': '#4D4D4D',
     'secondaryColor': '#eff6ff',
-    'noteBkgColor': '#fffde7',
-    'noteBorderColor': '#6C8EBF'
+    'fontSize': '18px'
   }
 }}%%
 flowchart TD
-    START([Tin nhắn từ người dùng])
-    V["① Xác thực đầu vào (Validate)"]
-    V_DEC{"Hợp lệ?"}
-    ERR([❌ Lỗi 400])
-    N["② Chuẩn hóa & Phân loại (Normalize & Classify)"]
-    SEC{"③ Có prompt injection?"}
-    INJ([🛡️ Từ chối / Injection])
-    OFT_DEC{"Ngoài phạm vi (off-topic)?"}
-    OFT([ℹ️ Từ chối / Off-topic])
-    S["④ Tải lịch sử hội thoại (Session)"]
+    PREV([⟶ Từ bước Tải lịch sử hội thoại])
     R["⑤ Truy xuất sản phẩm (Retrieval)"]
     R_DEC{"Có kết quả?"}
     RFB["Dự phòng (Low Confidence Fallback)"]
@@ -31,16 +21,7 @@ flowchart TD
     P["⑦ Lưu trữ lịch sử (Persist)"]
     OUT([Kết quả: message · products])
 
-    START --> V
-    V --> V_DEC
-    V_DEC -->|Không hợp lệ| ERR
-    V_DEC -->|Hợp lệ| N
-    N --> SEC
-    SEC -->|Có| INJ
-    SEC -->|Không| OFT_DEC
-    OFT_DEC -->|Có| OFT
-    OFT_DEC -->|Không| S
-    S --> R
+    PREV --> R
     R --> R_DEC
     R_DEC -->|Có kết quả| G
     R_DEC -->|Không có kết quả| RFB

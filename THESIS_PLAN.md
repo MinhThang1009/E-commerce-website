@@ -724,7 +724,7 @@ skinparam actorStyle awesome
 ```
 User message
   → [1] validateMessage: độ dài ≤500 ký tự, có chữ/số
-  → [2] expandAbbreviations (71 regex patterns) + classifyIntent (6 intents) [song song]
+  → [2] expandAbbreviations (73 regex patterns) + classifyIntent (6 intents) [song song]
   → [3] isPromptInjection? → [YES] trả lời từ chối ngay
         isOffTopic?        → [YES] trả lời lịch sự từ chối ngay
   → [4] loadSession: lấy lịch sử từ Map<sessionId, {messages, lastAccess}>
@@ -923,7 +923,7 @@ erDiagram
 
 [Online — Runtime]
   User query (tiếng Việt)
-  → Preprocessing: expandAbbreviations (71 patterns)
+  → Preprocessing: expandAbbreviations (73 patterns)
   → Embedding (same providers, type='query')
   → Hybrid Search: dense (cosine≥0.45) + sparse (BM25-inspired, name×3)
   → Top-K products + overlap boost 0.05
@@ -1219,7 +1219,7 @@ Nếu chưa đủ → **KHÔNG** đánh dấu [ ] là [x] trong QUICK-REF.
 
 ### C4 — §"Cài đặt RAG Pipeline và ChatbotService" (viết lại sau PHASE 5)
 **Đọc trước:** `diagrams/sequence/sequence-03a/b/c.puml` + `chatbot-service.js`.
-**Viết:** Text kết nối 3 sub-diagram. Tham chiếu lại Advanced RAG từ C2 (không giải thích lại taxonomy — C2 đã làm). Nhấn mạnh đặc thù implementation: expandAbbreviations 71 patterns (Vietnamese NLP challenge từ C2), Promise.all parallelism để giảm latency, fallback keyword khi LLM không khả dụng.
+**Viết:** Text kết nối 3 sub-diagram. Tham chiếu lại Advanced RAG từ C2 (không giải thích lại taxonomy — C2 đã làm). Nhấn mạnh đặc thù implementation: expandAbbreviations 73 patterns (Vietnamese NLP challenge từ C2), Promise.all parallelism để giảm latency, fallback keyword khi LLM không khả dụng.
 
 ### C3 — §"Thiết kế luồng giỏ hàng" (thêm D9 sau khi vẽ)
 **Đọc trước:** `backend/src/modules/cart/services/cart-service.js` (mergeCart, getCart inline-merge), `frontend/src/features/cart/` (useCartMerge, validateCart).

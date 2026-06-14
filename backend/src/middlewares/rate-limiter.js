@@ -57,7 +57,13 @@ const PROXY_STORES = {
 // Rate limiter chung cho API
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'development' ? 1000 : 100,
+  // RATE_LIMIT_MAX cho phép cấu hình ngưỡng qua biến môi trường (vd khi đo hiệu năng);
+  // mặc định giữ nguyên 1000 (dev) / 100 (prod).
+  max: process.env.RATE_LIMIT_MAX
+    ? Number(process.env.RATE_LIMIT_MAX)
+    : process.env.NODE_ENV === 'development'
+      ? 1000
+      : 100,
   standardHeaders: true,
   legacyHeaders: false,
   store: PROXY_STORES.api,

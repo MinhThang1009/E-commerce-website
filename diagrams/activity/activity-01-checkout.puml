@@ -1,0 +1,77 @@
+@startuml activity-01-checkout
+' Biểu đồ hoạt động — Luồng đặt hàng và thanh toán (§3.x)
+' Ground-truth: orders-service.js (createOrder), payment-service.js (IPN)
+
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam activity {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  DiamondBackgroundColor #FFF2CC
+  DiamondBorderColor #D6B656
+  ArrowColor #4D4D4D
+}
+
+title Biểu đồ hoạt động — Đặt hàng và thanh toán
+
+start
+:Khách xác nhận giỏ hàng,\nđịa chỉ giao hàng và phương thức thanh toán;
+:Mở transaction (UnitOfWork);
+:Hủy các đơn pending cũ\n+ hoàn tồn kho (trong transaction);
+
+repeat
+  :SELECT FOR UPDATE khóa biến thể sản phẩm;
+  if (Tồn kho đủ và sản phẩm đang bán?) then (không)
+    :Rollback transaction;
+    :Trả lỗi hết hàng / ngừng kinh doanh;
+    stop
+  else (có)
+    :Trừ tồn kho + ghi inventory_logs;
+  endif
+repeat while (Còn biến thể trong giỏ?) is (còn)
+->không;
+
+if (Có áp mã giảm giá?) then (có)
+  :SELECT FOR UPDATE khóa mã giảm giá;
+  if (Mã hợp lệ?\n(còn lượt, chưa hết hạn, đạt đơn tối thiểu)) then (không)
+    :Rollback transaction;
+    :Trả lỗi mã không hợp lệ;
+    stop
+  else (có)
+    :Áp giảm giá vào tổng tiền;
+  endif
+else (không)
+endif
+
+:Tạo đơn hàng (status=pending,\npaymentStatus=pending) + order_items snapshot giá;
+
+if (Phương thức thanh toán?) then (Thủ công\n(COD / chuyển khoản))
+  :Xóa giỏ hàng + tăng usedCount mã;
+  :COMMIT transaction;
+  :Gửi email xác nhận (fire-and-forget);
+  stop
+else (Online\n(MoMo / VNPay))
+  :COMMIT transaction\n(giữ giỏ và mã chờ IPN);
+  :Sinh URL thanh toán (ký HMAC);
+  :Khách thanh toán trên cổng;
+  :Nhận IPN callback (server-to-server);
+  if (Chữ ký HMAC hợp lệ\n+ số tiền khớp + chưa xử lý?) then (không)
+    :Bỏ qua (idempotent) hoặc từ chối;
+    stop
+  else (có)
+    if (Cổng báo thành công?) then (có)
+      :paymentStatus=paid, status=processing;
+      :Xóa giỏ + tăng usedCount\n+ gửi email (fire-and-forget);
+      stop
+    else (thất bại)
+      :paymentStatus=failed;
+      :Cho phép khách thanh toán lại;
+      stop
+    endif
+  endif
+endif
+
+@enduml

@@ -1,4 +1,5 @@
 @startuml sequence-03a-chatbot-preprocess
+autoactivate on
 ' Sơ đồ sequence — Chatbot RAG (3a): Tiền xử lý & Gate check (§3.3a)
 ' Ground-truth: chatbot-service.js:259-314, ai-policy.js, ai-controller.js, ai/routes.js
 
@@ -46,7 +47,7 @@ end
 
 note right of API
   expandAbbreviations: ip→iPhone, ss→Samsung, mb→MacBook
-  bnh→bao nhiêu, smartphone→điện thoại, không dấu→có dấu (50+ patterns)
+  bnh→bao nhiêu, smartphone→điện thoại, không dấu→có dấu (73 patterns)
 end note
 
 == ③  Classify & Gate check ==

@@ -38,7 +38,7 @@ Hiện tại ~18 dòng LaTeX nhưng mỗi bước là 1 đoạn dài (render ~10
 | Bước | C3 hiện tại (vấn đề) | C3 sửa thành |
 |---|---|---|
 | Bước 1 | "Hàm `validateMessage` trong `AIPolicy` kiểm tra..." | "Module chính sách AI kiểm tra tính hợp lệ: không rỗng, ≤500 ký tự, chứa ít nhất chữ/số. Vi phạm → kết thúc pipeline." |
-| Bước 2 | "Hàm `expandAbbreviations` áp dụng 71 mẫu regex..." + "`classifyIntent` phân loại..." | "Bước chuẩn hóa áp dụng bảng ánh xạ 71 mẫu regex (dưới 1ms), sau đó phân loại câu hỏi vào 6 nhóm ý định." |
+| Bước 2 | "Hàm `expandAbbreviations` áp dụng 73 mẫu regex..." + "`classifyIntent` phân loại..." | "Bước chuẩn hóa áp dụng bảng ánh xạ 73 mẫu regex (dưới 1ms), sau đó phân loại câu hỏi vào 6 nhóm ý định." |
 | Bước 3 | "`isPromptInjection` so khớp 15 mẫu..." + "`intent === 'off_topic'`" | "Kiểm tra tuần tự: phát hiện prompt injection (15 mẫu tấn công) rồi lọc câu hỏi ngoài phạm vi. Cả hai thoát sớm, không gọi LLM." |
 | Bước 4 | "`Map<sessionId, {messages, lastAccess}>`" + "`_enrichQueryFromHistory`" | "Đọc lịch sử phiên từ bộ nhớ server, bổ sung tên sản phẩm từ lượt trước vào query nếu phát hiện đại từ thay thế." |
 | Bước 5 | "`Promise.all`" + "`rewriteQuery` timeout 8s" + "`hybridSearch(query, 10)`" | "Chạy song song tìm kiếm Hybrid Search (topK=10, ngưỡng 0.45) và LLM rewrite query. Không có kết quả vượt ngưỡng → fallback topK=3, minScore=0, đánh dấu độ tin cậy thấp." |

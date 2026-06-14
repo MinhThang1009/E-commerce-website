@@ -1,4 +1,5 @@
 @startuml seq_cart_merge
+autoactivate on
 skinparam dpi 180
 skinparam backgroundColor #FFFFFF
 skinparam shadowing false
@@ -37,7 +38,7 @@ Hook -> Hook : đọc localStorage\ncartItems
 alt Có item trong localStorage
   note over Hook : Strategy 1:\naddToCart tuần tự từng item
   Hook -> API : GET /api/cart\n(refetch trước)
-  API -> DB : findOrCreateCart(userId)
+  API -> DB : findOrCreateActiveCartByUserId(userId)
   API --> Hook : cart hiện tại
   loop mỗi item trong localStorage
     Hook -> API : POST /api/cart\n(addToCart)

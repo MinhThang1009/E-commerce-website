@@ -1,4 +1,5 @@
 @startuml sequence-02c-checkout-ipn
+autoactivate on
 ' Sơ đồ sequence — Checkout (2c): IPN Callback & Return URL (§3.2c)
 ' Ground-truth: payment-service.js:142-300
 

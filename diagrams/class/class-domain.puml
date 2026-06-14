@@ -1,0 +1,136 @@
+@startuml class-domain
+' Biểu đồ lớp — Mô hình miền (domain model) TechStore (§3.x)
+' Ground-truth: backend/src/models/*.js
+
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam class {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  ArrowColor #4D4D4D
+  AttributeFontColor #000000
+}
+skinparam classAttributeIconSize 0
+hide circle
+
+title Biểu đồ lớp — Mô hình miền TechStore
+
+class User {
+  +id: int
+  +email: string
+  +role: {customer, staff, admin}
+  +isEmailVerified: bool
+  +isActive: bool
+}
+
+class Address {
+  +id: int
+  +recipientName: string
+  +phone: string
+  +isDefault: bool
+}
+
+class Category {
+  +id: int
+  +nameVi: string
+  +slug: string
+  +parentId: int
+}
+
+class Brand {
+  +id: int
+  +nameVi: string
+  +slug: string
+}
+
+class Product {
+  +id: int
+  +nameVi: string
+  +basePrice: decimal
+  +status: {active, inactive, draft, archived}
+  +toggleStatus()
+}
+
+class ProductVariant {
+  +id: int
+  +sku: string
+  +price: decimal
+  +stockQuantity: int
+  +isDefault: bool
+}
+
+class Cart {
+  +id: int
+  +sessionId: string
+  +status: {active, merged, converted, abandoned}
+}
+
+class CartItem {
+  +id: int
+  +quantity: int
+  +unitPrice: decimal
+}
+
+class Order {
+  +id: int
+  +number: string
+  +status: {pending, processing, shipped, delivered, cancelled}
+  +paymentStatus: {pending, paid, failed, refunded}
+  +paymentMethod: string
+  +total: decimal
+  +canTransitionTo(state)
+}
+
+class OrderItem {
+  +id: int
+  +name: string
+  +unitPrice: decimal
+  +quantity: int
+}
+
+class DiscountCode {
+  +id: int
+  +code: string
+  +discountType: string
+  +usedCount: int
+  +usageLimit: int
+}
+
+class Review {
+  +id: int
+  +rating: int
+  +comment: text
+}
+
+class InventoryLog {
+  +id: int
+  +changeType: {sale, restock, adjustment, return}
+  +changeAmount: int
+}
+
+User "1" -- "0..*" Address
+User "1" -- "0..*" Order
+User "1" o-- "0..1" Cart
+User "1" -- "0..*" Review
+
+Category "1" -- "0..*" Product
+Category "1" -- "0..*" Category : parent
+Brand "1" -- "0..*" Product
+
+Product "1" *-- "1..*" ProductVariant
+Product "1" -- "0..*" Review
+Product "1" -- "0..*" InventoryLog
+
+Cart "1" *-- "0..*" CartItem
+CartItem "0..*" -- "1" Product
+CartItem "0..*" -- "0..1" ProductVariant
+
+Order "1" *-- "1..*" OrderItem
+Order "0..*" -- "0..1" DiscountCode : áp dụng
+OrderItem "0..*" -- "1" Product
+OrderItem "0..*" -- "0..1" ProductVariant
+
+@enduml

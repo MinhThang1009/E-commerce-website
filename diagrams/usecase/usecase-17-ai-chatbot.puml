@@ -1,8 +1,10 @@
 @startuml usecase-17-ai-chatbot
 ' Sơ đồ use case — AI Chatbot + Search History (§2.7)
 ' Ground-truth:
-'   ai/routes.js — 5 routes (basePath /api/chatbot):
+'   ai/routes.js — 7 routes (basePath /api/chatbot):
 '     POST /chatbot/message                  — chatbotLimiter + optionalAuthenticate
+'     POST /chatbot/message/stream           — chatbotLimiter + optionalAuthenticate
+'     GET  /chatbot/events                   — chatLimiter + optionalAuthenticate (SSE)
 '     POST /chatbot/cart/add                 — authenticate
 '     POST /chatbot/session/clear            — chatbotLimiter + optionalAuthenticate
 '     POST /chatbot/session/register         — chatbotLimiter + optionalAuthenticate
@@ -12,7 +14,7 @@
 '     GET    /search-histories               — apiLimiter + authenticate
 '     DELETE /search-histories/:id           — apiLimiter + authenticate
 '     DELETE /search-histories               — destructiveLimiter + authenticate
-' Denominator: 9 routes → 6 UC
+' Denominator: 11 routes → 6 UC (message + stream + events gộp UC_ai_msg)
 '   (session clear+register+messages gộp — cùng guard optionalAuthenticate;
 '    search DELETE /:id + DELETE / gộp — cùng guard authenticate)
 left to right direction

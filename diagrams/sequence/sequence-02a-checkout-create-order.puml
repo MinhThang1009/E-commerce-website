@@ -1,4 +1,5 @@
 @startuml sequence-02a-checkout-create-order
+autoactivate on
 ' Sơ đồ sequence — Checkout (2a): Tạo đơn hàng (§3.2a)
 ' Ground-truth: orders-service.js:65-434, orders/routes.js, orders-controller.js
 

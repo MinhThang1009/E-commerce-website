@@ -1,15 +1,48 @@
-\chapter{Nền tảng lý thuyết}
+\chapter{Nền tảng và công nghệ sử dụng}
 \label{chap:c2_theory}
 
-\section{Kiến trúc Modular Monolith cho thương mại điện tử}
+\section{Tổng quan thương mại điện tử}
 \label{sec:c2_ecommerce_overview}
 
-Thiết kế hệ thống thương mại điện tử hoàn chỉnh đòi hỏi phối hợp nhiều thành phần: danh mục sản phẩm, giỏ hàng đồng bộ giữa guest và user, đặt hàng với tính toàn vẹn ACID, và phân quyền đa tác nhân~\cite{turban2018electronic}. \textbf{Modular Monolith}~\cite{richter2020modular} là kiến trúc cân bằng giữa monolithic và microservices: triển khai như một ứng dụng đơn nhất nhưng tổ chức nội bộ thành các module với ranh giới rõ ràng, giao tiếp qua EventBus, shared models và shared services. Kiến trúc này phù hợp với giai đoạn phát triển ban đầu và có thể chuyển sang microservices khi cần.
+\subsection{Khái niệm và đặc điểm thương mại điện tử}
 
-\section{Các phương pháp chatbot và khoảng trống kỹ thuật}
+Thương mại điện tử (Electronic Commerce, viết tắt là e-commerce) là hình thức kinh doanh và trao đổi hàng hóa, dịch vụ thông qua mạng internet và các phương tiện điện tử. Khác với thương mại truyền thống, thương mại điện tử cho phép giao dịch diễn ra không phụ thuộc vào thời gian và địa lý, với khả năng phục vụ đồng thời hàng triệu người dùng~\cite{turban2018electronic}. Thị trường thương mại điện tử Việt Nam đạt 32 tỷ USD vào năm 2024, tăng 27\% so với năm trước, trong đó mảng thiết bị công nghệ chiếm tỷ trọng lớn nhất với khoảng 35\% tổng giá trị giao dịch~\cite{vecom2024}.
+
+Thiết kế một hệ thống thương mại điện tử hoàn chỉnh đòi hỏi phối hợp chặt chẽ giữa các thành phần có đặc thù kỹ thuật và yêu cầu nhất quán khác nhau~\cite{turban2018electronic}. Danh mục sản phẩm với tìm kiếm và lọc đa chiều quyết định khả năng khám phá sản phẩm; quản lý giỏ hàng cần đồng bộ trạng thái liền mạch giữa phiên khách vãng lai và tài khoản đã đăng nhập; quy trình đặt hàng yêu cầu tính toàn vẹn giao dịch ACID khi trừ tồn kho đồng thời cho nhiều người mua; hệ thống phân quyền đa tác nhân kiểm soát ranh giới truy cập back-office. Sự phụ thuộc lẫn nhau chặt chẽ giữa các thành phần này đặt ra yêu cầu kiến trúc phần mềm phải có ranh giới module rõ ràng, đảm bảo mỗi module có thể phát triển và kiểm thử độc lập nhưng vẫn chia sẻ được transaction và dữ liệu khi cần. Bên cạnh đó, xu hướng tích hợp AI chatbot tư vấn sản phẩm đang ngày càng phổ biến vì bộ lọc tĩnh truyền thống không đáp ứng được nhu cầu tìm kiếm được diễn đạt theo ngôn ngữ tự nhiên~\cite{chen2021conversational}.
+
+\subsection{Kiến trúc Modular Monolith}
+
+Kiến trúc của các hệ thống thương mại điện tử đã trải qua nhiều giai đoạn phát triển. Kiến trúc nguyên khối (monolithic) truyền thống đặt toàn bộ logic nghiệp vụ trong một ứng dụng duy nhất, đơn giản để triển khai nhưng khó mở rộng và bảo trì khi hệ thống lớn lên. Kiến trúc microservices chia nhỏ hệ thống thành các dịch vụ độc lập triển khai riêng biệt, giải quyết được vấn đề khả năng mở rộng nhưng tăng đáng kể độ phức tạp vận hành, đặc biệt với đội nhóm nhỏ~\cite{newman2015building}.
+
+\textbf{Modular Monolith} là kiến trúc cân bằng giữa hai hướng trên: hệ thống vẫn được triển khai như một ứng dụng đơn nhất nhưng được tổ chức nội bộ thành các module với ranh giới rõ ràng, mỗi module tự đóng gói HTTP layer, business logic, database queries và event handlers riêng~\cite{richter2020modular}. Các module giao tiếp thông qua ba cơ chế: EventBus (pub/sub bất đồng bộ cho side effects), shared models (inject qua DI khi cần query dữ liệu module khác), và shared services (email, vector store, được truyền tường minh qua constructor). Kiến trúc này phù hợp với giai đoạn phát triển ban đầu và có thể chuyển sang microservices trong tương lai khi cần thiết.
+
+\section{Các phương pháp chatbot hỗ trợ mua sắm và hạn chế}
 \label{sec:c2_chatbot_survey}
 
-\textbf{Chatbot rule-based}~\cite{adamopoulou2020chatbots} phản hồi dựa trên tập luật cố định, phù hợp cho tác vụ cấu trúc (tra cứu đơn hàng, chính sách đổi trả) nhưng không hiểu ngôn ngữ tự nhiên và không truy vấn được catalog thực tế~\cite{folstad2017chatbots}. \textbf{Chatbot ML truyền thống}~\cite{chen2021conversational} cải thiện qua intent classification và NER, nhưng vẫn trả lời từ kho mẫu cố định, không tổng hợp được thông tin đa nguồn và cần hàng nghìn mẫu gán nhãn. Bảng~\ref{tab:chatbot_comparison} tổng hợp so sánh.
+Phần này phân tích các thế hệ chatbot đã và đang được ứng dụng trong thương mại điện tử, từ đó xác định khoảng trống kỹ thuật mà hệ thống TechStore hướng đến giải quyết.
+
+\subsection{Chatbot theo kịch bản (rule-based chatbot)}
+\label{subsec:c2_rulebased}
+
+Thế hệ chatbot đầu tiên và phổ biến nhất trong thương mại điện tử là \textbf{chatbot theo kịch bản} (rule-based chatbot): hệ thống phản hồi dựa trên tập luật cố định, cây quyết định hoặc khớp từ khóa định sẵn~\cite{adamopoulou2020chatbots}. Người dùng được dẫn dắt qua các lựa chọn có sẵn thay vì nhập câu hỏi tự do.
+
+\textbf{Ưu điểm} của mô hình này bao gồm: phản hồi hoàn toàn có thể dự đoán và kiểm soát, không phát sinh thông tin ngoài kịch bản lập trình, chi phí triển khai thấp, và độ trễ phản hồi nhỏ. Với các tác vụ có cấu trúc cố định như tra cứu trạng thái đơn hàng, kiểm tra chính sách đổi trả hay điều hướng đến danh mục sản phẩm, chatbot rule-based hoạt động ổn định và đáng tin cậy. Đây là lý do hầu hết các sàn thương mại điện tử lớn hiện nay đều triển khai loại chatbot này ở tầng chăm sóc khách hàng cơ bản.
+
+Tuy nhiên, mô hình rule-based bộc lộ những hạn chế nghiêm trọng khi yêu cầu tư vấn sản phẩm thực sự. Trước hết, hệ thống không có khả năng hiểu ngôn ngữ tự nhiên ngoài kịch bản: câu hỏi như \textit{``tôi cần laptop chạy được Premiere dưới 20 triệu, pin dùng cả ngày''} không khớp bất kỳ luật định sẵn nào, dẫn đến phản hồi mặc định vô nghĩa hoặc chuyển tiếp sang nhân viên hỗ trợ~\cite{folstad2017chatbots}. Tiếp theo, mọi thông tin về thông số kỹ thuật, tồn kho hay giá đều phải được nhúng cứng vào kịch bản vì chatbot không có cơ chế truy vấn cơ sở dữ liệu để trả lời chính xác tại thời điểm hỏi. Ngoài ra, mỗi khi danh mục thay đổi, toàn bộ kịch bản phải cập nhật thủ công; với hàng nghìn SKU biến động liên tục, đây là gánh nặng vận hành không thể mở rộng. Cuối cùng, bài toán tư vấn công nghệ đòi hỏi kết hợp đồng thời nhiều tiêu chí như ngân sách, nhu cầu sử dụng, thương hiệu và hiệu năng, điều mà cây quyết định tuyến tính không thể xử lý được.
+
+\subsection{Chatbot dựa trên học máy truyền thống}
+\label{subsec:c2_ml_chatbot}
+
+Để khắc phục hạn chế của rule-based, thế hệ tiếp theo ứng dụng học máy, đặc biệt là các mô hình phân loại ý định (intent classification) và nhận dạng thực thể (NER), để chatbot có thể nhận diện mục đích câu hỏi và trích xuất thông tin từ câu hỏi do người dùng nhập tự do~\cite{chen2021conversational}.
+
+\textbf{Ưu điểm} so với rule-based: chatbot có thể xử lý nhiều cách diễn đạt khác nhau cho cùng một ý định, không cần người dùng biết cú pháp cụ thể, và dễ mở rộng sang ngôn ngữ mới qua dữ liệu huấn luyện. Các nền tảng như Dialogflow (Google), Rasa hay Amazon Lex đã phổ biến hóa cách tiếp cận này.
+
+Tuy nhiên, với bài toán tư vấn sản phẩm công nghệ, mô hình ML truyền thống vẫn còn những hạn chế căn bản. Hệ thống chỉ nhận diện được các ý định đã được gán nhãn trong tập huấn luyện; câu hỏi kỹ thuật mới hoặc kết hợp nhiều intent cùng lúc thường bị phân loại sai hoặc rơi vào nhãn ``fallback''. Sau khi phân loại intent, chatbot vẫn phải tra cứu câu trả lời từ kho mẫu phản hồi cố định, không thể tổng hợp thông tin từ nhiều nguồn để tạo câu trả lời mạch lạc và đầy đủ ngữ cảnh. Bên cạnh đó, các cuộc tư vấn nhiều lượt đòi hỏi theo dõi chủ đề liên tục qua nhiều lượt hội thoại, điều mà mô hình intent đơn giản không đảm bảo được. Ngoài ra, để đạt độ chính xác chấp nhận được, cần có hàng nghìn câu hỏi đã gán nhãn cho từng lĩnh vực sản phẩm, đây là nguồn lực không phải doanh nghiệp nào cũng có sẵn.
+
+\subsection{Khoảng trống và hướng tiếp cận của TechStore}
+\label{subsec:c2_gap}
+
+Bảng~\ref{tab:chatbot_comparison} tổng hợp so sánh ba phương pháp theo các tiêu chí liên quan trực tiếp đến bài toán tư vấn sản phẩm công nghệ.
 
 \begin{table}[H]
   \centering
@@ -27,17 +60,19 @@ Thiết kế hệ thống thương mại điện tử hoàn chỉnh đòi hỏi 
     \hline
     Duy trì ngữ cảnh đa lượt & Không & Hạn chế & Có \\
     \hline
-    Bảo trì khi catalog thay đổi & Thủ công & Thủ công & Tự động \\
+    Tư vấn đa ràng buộc đồng thời & Không & Hạn chế & Có \\
+    \hline
+    Bảo trì khi catalog thay đổi & Thủ công & Thủ công & Tự động (đồng bộ lại) \\
+    \hline
+    Kiểm soát nguồn thông tin & Cao & Trung bình & Cao (có truy xuất nguồn) \\
     \hline
   \end{tabular}
 \end{table}
 
-Cả hai thế hệ chatbot truyền thống đều không đáp ứng yêu cầu cốt lõi: trả lời câu hỏi kỹ thuật tự do dựa trên catalog thực tế. RAG kết hợp LLM lấp đầy khoảng trống này.
+Như Bảng~\ref{tab:chatbot_comparison} cho thấy, cả hai thế hệ chatbot truyền thống đều không đáp ứng được yêu cầu cốt lõi của tư vấn sản phẩm công nghệ: trả lời câu hỏi kỹ thuật tự do dựa trên dữ liệu catalog thực tế của hệ thống. Kỹ thuật RAG kết hợp với LLM lấp đầy khoảng trống này bằng cách truy xuất trực tiếp thông tin sản phẩm liên quan từ vector store rồi đưa vào ngữ cảnh để mô hình sinh câu trả lời chính xác, mạch lạc và có căn cứ từ dữ liệu thực. Đây là hướng tiếp cận cốt lõi của TechStore.
 
 \section{Kỹ thuật RAG (Retrieval-Augmented Generation)}
 \label{sec:c2_rag}
-
-Phần này trình bày kỹ thuật RAG từ nền tảng LLM, nguyên lý hoạt động, đến Hybrid Search và các thách thức khi áp dụng cho tiếng Việt.
 
 \subsection{Mô hình ngôn ngữ lớn và giới hạn kiến thức}
 
@@ -88,23 +123,31 @@ BM25 (Best Matching 25)~\cite{robertson1994okapi} là thuật toán tìm kiếm 
 
 Trong đó $k_1$ kiểm soát độ bão hòa tần suất từ, $b$ kiểm soát chuẩn hóa độ dài tài liệu, và $\overline{dl}$ là độ dài tài liệu trung bình.
 
-TechStore triển khai Hybrid Search lấy cảm hứng từ BM25 với cách tính điểm đơn giản hóa phù hợp cấu trúc dữ liệu sản phẩm (chi tiết thiết kế ở Chương~3, §\ref{sec:c3_hybrid_search}).
+Trong hệ thống TechStore, Hybrid Search được triển khai với trọng số ưu tiên cho tên sản phẩm (nhân 3) so với nội dung mô tả (nhân 1), dựa trên quan sát rằng người dùng thường tìm kiếm theo tên thương hiệu và model cụ thể. Các kết quả xuất hiện ở cả hai tìm kiếm được tăng điểm thêm 0.05 (overlap boost), trong khi kết quả chỉ từ tìm kiếm từ khóa được đánh dấu \texttt{lowConfidence=true}. Cần lưu ý rằng triển khai thực tế sử dụng phương pháp lấy cảm hứng từ BM25 với cách tính điểm đơn giản hóa phù hợp với cấu trúc dữ liệu sản phẩm, thay vì áp dụng đầy đủ công thức BM25 chuẩn vốn được thiết kế cho tập tài liệu văn bản dài.
 
 \subsection{Thách thức ngôn ngữ tiếng Việt trong RAG pipeline}
 \label{sec:c2_vietnamese_nlp}
 
-Tiếng Việt có đặc điểm ngôn ngữ đặc thù ảnh hưởng trực tiếp đến chất lượng retrieval trong RAG~\cite{nguyen2018vncorenlp}: (1) viết tắt thương hiệu phổ biến (``ip'' cho iPhone, ``ss'' cho Samsung) làm giảm độ tương đồng cosine khi vector hóa; (2) gõ không dấu (``dien thoai'', ``gia bao nhieu'') giảm chất lượng embedding; (3) pha trộn tiếng Việt và thuật ngữ kỹ thuật tiếng Anh (``laptop gaming pin trâu dưới 20 triệu''). Mô hình multilingual-e5~\cite{wang2022text} và Jina v3~\cite{sturua2024jina} xử lý được phần nào nhờ huấn luyện đa ngôn ngữ, nhưng hiệu quả phụ thuộc vào việc query đã được chuẩn hóa hay chưa~\cite{ma2023query}.
+Tiếng Việt có đặc điểm ngôn ngữ riêng biệt đòi hỏi xử lý chuyên biệt, bao gồm hệ thống thanh điệu, từ đa âm tiết không phân tách bằng khoảng trắng (ví dụ: ``điện thoại'' là một từ gồm hai âm tiết, nhưng khoảng trắng giữa chúng không mang nghĩa ranh giới từ như tiếng Anh), và xu hướng viết tắt mạnh trong giao tiếp không chính thức~\cite{nguyen2018vncorenlp}. Đặc điểm word segmentation này ảnh hưởng trực tiếp đến chất lượng bước retrieval trong RAG: khi người dùng gõ viết tắt như ``dt'' cho ``điện thoại'' hay ``mtxt'' cho ``máy tính xách tay'', mô hình embedding nhận được token không có ngữ nghĩa đầy đủ, làm giảm độ tương đồng cosine với các sản phẩm tương ứng trong vector store. Khi áp dụng kỹ thuật RAG vào thương mại điện tử tiếng Việt, những đặc điểm này kết hợp với văn hóa giao tiếp trực tuyến tạo ra ba thách thức đặc thù cần giải quyết trước bước vector hóa.
 
-TechStore giải quyết bằng bước chuẩn hóa 71 mẫu regex trước khi vector hóa, hoàn thành dưới 1ms (so với 500--2.000ms nếu dùng LLM rewrite).
+Thách thức đầu tiên là văn hóa viết tắt thương hiệu và model sản phẩm trong ngữ cảnh mua sắm trực tuyến. Người dùng Việt Nam thường rút gọn tên thương hiệu khi nhắn tin nhanh (``ip'' cho iPhone, ``ss'' cho Samsung, ``mb'' cho MacBook, ``bnh'' cho ``bao nhiêu''). Khi các chuỗi viết tắt này được vector hóa trực tiếp, độ tương đồng ngữ nghĩa với dạng đầy đủ có thể không đủ cao để đảm bảo retrieval chính xác, khác với tiếng Anh nơi người dùng thường gõ tên đầy đủ trong ngữ cảnh mua sắm.
 
-\subsection{Query Rewriting trong RAG nâng cao}
+Thách thức thứ hai là hiện tượng gõ không dấu do người dùng tắt bộ gõ tiếng Việt. Các cụm từ như ``dien thoai'', ``gia bao nhieu'', ``pin lau'' là dạng phổ biến trong chat thực tế; mô hình embedding đa ngôn ngữ có thể xử lý được một phần nhờ ngữ cảnh, nhưng chất lượng retrieval giảm đáng kể so với văn bản có dấu chuẩn.
 
-\textbf{Query Rewriting} là kỹ thuật mở rộng của RAG: sử dụng LLM để phân tích câu hỏi gốc và viết lại thành dạng tối ưu hơn cho việc tìm kiếm~\cite{ma2023query}. Ví dụ, câu hỏi ``ip17 bnh'' được viết lại thành ``iPhone 17 giá bao nhiêu'' (dạng đầy đủ hơn, giúp tìm kiếm chính xác hơn). Trong TechStore, quá trình rewriting chạy \textbf{song song} với hybridSearch qua \texttt{Promise.all}: LLM rewrite và Hybrid Search diễn ra đồng thời, giảm độ trễ so với tuần tự, sau đó kết quả tốt hơn được ưu tiên sử dụng.
+Thách thức thứ ba là sự pha trộn tiếng Việt và thuật ngữ kỹ thuật tiếng Anh trong cùng một truy vấn, ví dụ: ``laptop gaming pin trâu dưới 20 triệu''. Các mô hình embedding đa ngôn ngữ như multilingual-e5~\cite{wang2022text} và Jina Embeddings v3~\cite{sturua2024jina} được thiết kế đặc biệt để xử lý ngữ cảnh đa ngôn ngữ này nhờ huấn luyện trên tập dữ liệu đa ngôn ngữ lớn; tuy nhiên, hiệu quả phụ thuộc đáng kể vào việc query đầu vào đã được chuẩn hóa về dạng đầy đủ hay chưa~\cite{ma2023query}.
+
+Để giải quyết đồng thời các thách thức trên, pipeline RAG của TechStore triển khai bước chuẩn hóa ngôn ngữ trước khi vector hóa thông qua hàm ánh xạ 73 mẫu regex được xây dựng từ phân tích thực nghiệm thói quen nhắn tin của người dùng Việt Nam trong ngữ cảnh mua sắm trực tuyến, bao gồm viết tắt thương hiệu, từ không dấu phổ biến và thuật ngữ mua sắm. Việc thực hiện chuẩn hóa ở tầng tiền xử lý thay vì phụ thuộc hoàn toàn vào LLM giúp giảm độ trễ xuống dưới 1ms so với 1.500--5.000ms cho LLM viết lại truy vấn và đảm bảo tính nhất quán của retrieval.
+
+\subsection{Viết lại truy vấn (Query Rewriting) trong RAG nâng cao}
+
+\textbf{Viết lại truy vấn} (Query Rewriting) là kỹ thuật mở rộng của RAG: sử dụng LLM để phân tích câu hỏi gốc và viết lại thành dạng tối ưu hơn cho việc tìm kiếm~\cite{ma2023query}. Ví dụ, câu hỏi ``ip17 bnh'' được viết lại thành ``iPhone 17 giá bao nhiêu'' (dạng đầy đủ hơn, giúp tìm kiếm chính xác hơn). Trong TechStore, quá trình viết lại truy vấn chạy \textbf{song song} với hybridSearch qua \texttt{Promise.all}: LLM viết lại và tìm kiếm ngữ nghĩa diễn ra đồng thời, giảm độ trễ so với tuần tự, sau đó kết quả tốt hơn được ưu tiên sử dụng.
 
 \subsection{Lựa chọn kiến trúc vector store}
 \label{sec:c2_vector_store}
 
-TechStore lưu trữ vector trên file JSON cục bộ với tìm kiếm cosine similarity tuyến tính ($O(n)$). Với catalog dưới 10.000 sản phẩm, tìm kiếm hoàn thành trong 30--80ms mà không cần dịch vụ ngoài. Khi cần mở rộng, có thể chuyển sang pgvector hoặc Qdrant bằng cách thay thế lớp \texttt{HybridVectorStore}.
+Trong hệ thống RAG, dữ liệu embedding sản phẩm cần được lưu trữ và truy vấn hiệu quả. Có hai hướng tiếp cận chính: sử dụng cơ sở dữ liệu vector chuyên dụng (Pinecone, Qdrant, Weaviate) hoặc lưu trữ trên file cục bộ. Cơ sở dữ liệu vector chuyên dụng có ưu điểm về khả năng mở rộng và hỗ trợ tìm kiếm xấp xỉ nhanh (HNSW), phù hợp cho catalog hàng triệu sản phẩm; nhược điểm là phụ thuộc dịch vụ ngoài, tăng độ phức tạp triển khai và chi phí vận hành.
+
+TechStore lựa chọn lưu trữ vector trên file JSON cục bộ (\texttt{data/vector-db.json}) với tìm kiếm cosine similarity tuyến tính. Lý do kỹ thuật là với quy mô catalog dưới 10.000 sản phẩm, tìm kiếm tuyến tính hoàn thành trong 30--80ms, đáp ứng yêu cầu thời gian thực. Lựa chọn này loại bỏ phụ thuộc ngoài, đơn giản hóa triển khai và phù hợp với phạm vi khóa luận. Khi catalog vượt ngưỡng này, kiến trúc có thể nâng cấp sang cơ sở dữ liệu vector chuyên dụng bằng cách thay thế lớp \texttt{HybridVectorStore} mà không ảnh hưởng đến các module còn lại.
 
 \section{Bảng tổng quan tech stack}
 \label{sec:c2_tech_summary}
@@ -115,7 +158,8 @@ Bảng~\ref{tab:tech_stack} tổng hợp toàn bộ các công nghệ được s
   \centering
   \caption{Tổng quan công nghệ sử dụng trong hệ thống TechStore}
   \label{tab:tech_stack}
-  \begin{tabular}{|l|l|p{6.5cm}|}
+  \footnotesize
+  \begin{tabular}{|l|l|p{6cm}|}
     \hline
     \textbf{Nhóm} & \textbf{Công nghệ} & \textbf{Mục đích} \\
     \hline
@@ -182,26 +226,127 @@ Bảng~\ref{tab:tech_stack} tổng hợp toàn bộ các công nghệ được s
     & MoMo (HMAC-SHA256) & Ví điện tử \\
     \hline
   \end{tabular}
+  \normalsize
 \end{table}
 
 Bảng~\ref{tab:tech_stack} cho thấy TechStore sử dụng stack công nghệ JavaScript/TypeScript thuần nhất trên cả hai tầng backend và frontend, giúp chia sẻ kiến thức giữa hai phía và giảm chi phí chuyển đổi ngữ cảnh trong quá trình phát triển.
 
-\section{Kiểm thử nâng cao}
+\section{Công nghệ backend}
+\label{sec:c2_backend_tech}
+
+\subsection{Node.js và Express}
+
+Backend dùng Node.js~\cite{tilkov2010node} 22 LTS (mô hình I/O không chặn, phù hợp xử lý nhiều kết nối đồng thời) làm runtime. Express 4 được chọn thay vì các framework có DI tích hợp sẵn như NestJS vì kiến trúc Modular Monolith của TechStore tự triển khai DI thủ công, và Express cho mức kiểm soát middleware tường minh cao nhất mà không phát sinh chi phí trừu tượng thừa.
+
+\subsection{Sequelize ORM và MySQL 8}
+
+Sequelize~\cite{sequelize_docs} (ORM cho Node.js với migrations, associations và transactions) được chọn thay vì Prisma vì tương thích hoàn toàn với JavaScript thuần, hỗ trợ raw query phức tạp và transaction pattern tùy chỉnh như \texttt{SELECT FOR UPDATE} cần thiết cho cơ chế UnitOfWork. MySQL 8 được chọn nhờ hỗ trợ kiểu JSON, khóa hàng (row-level locking) phục vụ xử lý đồng thời và charset utf8mb4 lưu trữ đầy đủ tiếng Việt có dấu lẫn emoji.
+
+\subsection{JWT và bcrypt}
+
+JWT~\cite{jones2015jwt} dùng cho xác thực stateless với chiến lược dual-token: access token (7 ngày) và refresh token (30 ngày, lưu httpOnly cookie chống XSS). Mật khẩu băm bằng bcrypt~\cite{provos1999bcrypt} với cost factor 12 (salt ngẫu nhiên, chống rainbow table và brute force). Mặc dù OWASP khuyến nghị Argon2id cho ứng dụng mới, bcrypt cost=12 vẫn đủ an toàn và được chọn nhờ hệ sinh thái Node.js trưởng thành; Argon2id là hướng nâng cấp khi hệ thống mở rộng.
+
+\subsection{Zod -- Schema Validation}
+
+Zod~\cite{zod_docs} (validation schema cho TypeScript) validate dữ liệu đầu vào: mỗi endpoint có một schema riêng cho request body, query và path params; middleware \texttt{validateRequest} tự trả lỗi 400 chi tiết khi dữ liệu sai, loại bỏ code validation thủ công trong controller.
+
+\subsection{Nodemailer -- Gửi email giao dịch}
+
+Nodemailer~\cite{nodemailer_docs} kết nối Gmail SMTP gửi ba loại email giao dịch: OTP xác thực tài khoản, xác nhận đặt hàng và cập nhật trạng thái vận chuyển; được chọn vì hỗ trợ tốt cấu hình SMTP phức tạp (xác thực OAuth2 với Gmail, kiểm soát retry khi gửi thất bại).
+
+\subsection{Winston -- Ghi nhật ký hệ thống}
+
+TechStore dùng Winston~\cite{winston_docs} ghi nhật ký HTTP request, lỗi và sự kiện theo cấp độ (error/warn/info/debug) với định dạng có cấu trúc, phục vụ phân tích sự cố theo thời gian.
+
+\subsection{Multer và xử lý upload file}
+
+Multer~\cite{multer_docs} xử lý request \texttt{multipart/form-data} khi upload file. TechStore cấu hình \texttt{diskStorage} lưu file tạm với tên sinh bằng \texttt{uuid()} (tránh xung đột tên); \texttt{fileFilter} chỉ chấp nhận MIME \texttt{image/jpeg}, \texttt{image/jpg}, \texttt{image/png}, \texttt{image/webp}, giới hạn 5\,MB và tối đa 10 file mỗi request, từ chối kiểu khác ngay ở tầng middleware trước khi ghi lên disk.
+
+Tuy nhiên, kiểm tra MIME type chỉ là lớp bảo vệ đầu tiên và không đủ vì kẻ tấn công có thể giả mạo header \texttt{Content-Type} để gửi file độc hại. Vì vậy, sau khi Multer lưu file xuống disk, hệ thống thực hiện thêm bước xác minh \textbf{magic bytes}: đọc phần đầu của file và đối chiếu với chữ ký nhị phân đặc trưng của từng định dạng ảnh hợp lệ (JPEG, PNG, WebP). Nếu chữ ký không khớp, file bị xóa ngay và server trả về lỗi HTTP 400. Thiết kế hai lớp bảo vệ này đảm bảo nội dung file thực sự là ảnh, không chỉ dựa vào header mà client khai báo.
+
+\section{Công nghệ frontend}
+\label{sec:c2_frontend_tech}
+
+\subsection{React 19 và TypeScript}
+
+Giao diện xây bằng React~\cite{react_docs} 19 (phiên bản 19.2.7) theo mô hình component-based, tận dụng các API mới như Actions, hook \texttt{use()}, \texttt{useTransition} và \texttt{useOptimistic} cho cập nhật bất đồng bộ và optimistic UI. TypeScript~\cite{typescript_handbook} bổ sung kiểu tĩnh giúp phát hiện lỗi sớm và tăng khả năng bảo trì codebase.
+
+\subsection{Vite và Code Splitting}
+
+Vite~\cite{vite_docs} được chọn thay webpack và Create React App vì hai công cụ đó bundle toàn bộ source trước mỗi lần reload (chậm khi codebase lớn), còn Vite dùng ES modules gốc, chỉ biên dịch module theo yêu cầu nên hot-reload gần như tức thì. Kết hợp \texttt{React.lazy} và \texttt{Suspense}, Vite tự chia nhỏ bundle (code splitting) theo từng feature, giảm kích thước tải ban đầu.
+
+\subsection{Zustand và TanStack Query}
+
+\textbf{Zustand}~\cite{zustand_docs} (quản lý client state, API tối giản) được chọn thay vì Redux vì Redux yêu cầu nhiều boilerplate (reducers, action creators, selectors) phù hợp cho state phức tạp; với 6 store độc lập và logic đơn giản của TechStore, Zustand gọn nhẹ hơn. Hệ thống dùng 6 Zustand store kết hợp Immer: auth-store, cart-store, chat-store, catalog-store, wishlist-store và ui-store. \textbf{TanStack Query}~\cite{tanstack_query_docs} quản lý server state với caching tự động, background refetching và xử lý loading/error, config mặc định staleTime 5 phút và gcTime 10 phút.
+
+\subsection{shadcn/ui và Tailwind CSS}
+
+shadcn/ui (component React trên nền Radix UI -- các primitive accessible, headless như Dialog, Dropdown, Popover -- kết hợp \texttt{cva} quản lý biến thể style) cung cấp source code trực tiếp vào dự án nên tùy chỉnh hoàn toàn, khác thư viện component đóng gói sẵn. TechStore kết hợp shadcn/ui cho component tương tác phức tạp với Tailwind CSS~\cite{tailwindcss_docs} 4.3.0 (utility-first) cho layout và tùy chỉnh chi tiết.
+
+\subsection{Framer Motion}
+
+Framer Motion~\cite{framer_motion_docs} (animation cho React với API khai báo) được dùng cho HeroSection trang chủ với hiệu ứng parallax (\texttt{useScroll}, \texttt{useTransform}) và animation khi cuộn trang. Lý do chọn: parallax cuộn đòi hỏi đồng bộ chính xác giữa scroll position và transform value, điều CSS transitions thuần không làm được nếu không viết JavaScript thủ công; Framer Motion đóng gói logic này theo cách khai báo, tách khỏi business logic.
+
+\subsection{React Router v7}
+
+React Router v7~\cite{react_router_docs} (phiên bản 7.17.0) được chọn thay vì TanStack Router vì hệ sinh thái trưởng thành, tài liệu phong phú và tích hợp sâu với React 19 (TanStack Router type-safe hơn nhưng chưa đủ ổn định cho dự án dài hạn). TechStore khai báo routes trong \texttt{AppRoutes.tsx} với \texttt{React.lazy} cho mỗi feature, kết hợp route bảo vệ (\texttt{ProtectedRoute}, \texttt{AdminRoute}) kiểm soát quyền truy cập.
+
+\subsection{i18next và react-i18next}
+
+i18next~\cite{i18next_docs} (quốc tế hóa cho JavaScript) được chọn thay vì react-intl vì API linh hoạt và hỗ trợ nhiều chiến lược nạp file dịch hơn. TechStore dùng react-i18next với static import để bundle file dịch cùng ứng dụng (phù hợp hai ngôn ngữ hiện tại), cho phép chuyển ngôn ngữ tức thì không cần request mạng; component dùng hook \texttt{useTranslation()} tách nội dung hiển thị khỏi logic.
+
+\subsection{Axios và cơ chế quản lý token}
+
+Axios~\cite{axios_docs} (HTTP client với interceptor) được dùng qua một instance dùng chung cho toàn ứng dụng, tập trung cấu hình xác thực và xử lý lỗi vào một nơi thay vì để mỗi feature tự quản lý, đảm bảo mọi API call nhất quán về header xác thực và timeout.
+
+Hai interceptor được đăng ký trên instance này xử lý toàn bộ vòng đời xác thực: request interceptor tự động inject JWT vào header trước khi gửi và làm mới token nếu đã hết hạn; response interceptor bắt lỗi 401 và điều hướng về trang đăng nhập khi phiên hết hiệu lực. Điểm thiết kế đáng chú ý là cơ chế \textbf{deduplication khi refresh token}: trong SPA, nhiều request có thể đồng thời nhận lỗi 401 nếu token hết hạn đúng lúc, dẫn đến race condition nếu mỗi request đều tự gọi endpoint refresh song song. TechStore giải quyết bằng cờ trạng thái và hàng đợi chờ: chỉ request đầu tiên thực sự gọi API refresh, các request sau xếp hàng và nhận token mới khi refresh hoàn thành, đảm bảo server chỉ nhận đúng một yêu cầu làm mới token.
+
+\section{Xác thực, xử lý media và công cụ vận hành}
+\label{sec:c2_backend_extra}
+
+\subsection{Google OAuth 2.0}
+
+Google OAuth 2.0~\cite{google_oauth_docs} cho phép đăng nhập bằng tài khoản Google. Luồng theo phương thức token exchange: frontend nhận Google ID token từ Google Sign-In SDK gửi lên backend, backend dùng \texttt{google-auth-library} xác minh token với Google API rồi tạo hoặc tra cứu tài khoản TechStore và phát hành JWT theo cơ chế thống nhất với đăng nhập email. Cách này tránh lưu mật khẩu Google và để Google chịu trách nhiệm xác thực danh tính.
+
+\subsection{Sharp -- Xử lý ảnh phía server}
+
+Sharp~\cite{sharp_docs} (xử lý ảnh hiệu năng cao trên nền libvips) được dùng trong module \texttt{image} để chuẩn hóa ảnh sản phẩm sau upload: resize, tự xoay theo EXIF, chuyển sang JPEG/WebP với chất lượng kiểm soát và xóa metadata EXIF (bảo vệ quyền riêng tư), đảm bảo ảnh hiển thị nhất quán và tối ưu kích thước.
+
+\subsection{node-cron -- Tác vụ định kỳ}
+
+node-cron~\cite{node_cron_docs} lập lịch hai cron job trong \texttt{src/jobs/cleanup.js}: job hằng ngày 2 giờ sáng (\texttt{0 2 * * *}) dọn giỏ hàng bỏ dở, OTP và token reset hết hạn, discount hết hạn, lưu trữ tin nhắn chatbot cũ (sau 90 ngày); job hằng tuần 3 giờ sáng Chủ nhật (\texttt{0 3 * * 0}) dọn file ảnh mồ côi. Các tác vụ nền này giúp hệ thống tự duy trì dữ liệu gọn gàng.
+
+\subsection{Swagger/OpenAPI -- Tài liệu API tự động}
+
+Swagger/OpenAPI~\cite{swagger_docs} (chuẩn mô tả API RESTful) được tích hợp qua \texttt{swagger-jsdoc} sinh tài liệu OpenAPI 3.0 từ JSDoc comment trong file route, và \texttt{swagger-ui-express} phục vụ giao diện tương tác tại \texttt{/api-docs}. Tài liệu luôn đồng bộ với code vì sinh tự động từ source, đồng thời cho phép kiểm thử API qua trình duyệt mà không cần Postman.
+
+\section{Kiểm thử và công cụ đảm bảo chất lượng}
 \label{sec:c2_quality}
 
-Ngoài các phương pháp kiểm thử truyền thống (unit test, integration test, E2E test) theo mô hình Test Pyramid~\cite{fowler2012test_pyramid}, TechStore áp dụng thêm hai kỹ thuật kiểm thử nâng cao để đảm bảo chất lượng vượt mức coverage đơn thuần.
+\subsection{Chiến lược kiểm thử đa tầng}
+
+Test Pyramid~\cite{fowler2012test_pyramid} là mô hình tổ chức kiểm thử trong đó unit tests (tầng dưới cùng, nhiều nhất) kiểm tra logic trong isolation, integration tests kiểm tra sự phối hợp giữa các component với database thật, và E2E tests (tầng trên cùng, ít nhất) kiểm tra luồng người dùng hoàn chỉnh. TechStore triển khai đầy đủ 5 tầng: unit, integration, API HTTP, E2E và component test.
+
+\subsection{Jest 29 và Supertest}
+
+Jest~\cite{jest_docs} là framework kiểm thử JavaScript hỗ trợ mocking, snapshot testing và coverage. Supertest~\cite{supertest_docs} là thư viện gửi HTTP request đến Express app trong môi trường test. Trong TechStore, integration tests và API HTTP tests sử dụng Supertest với MySQL database thật (\texttt{techstore\_test}), đảm bảo test phản ánh đúng hành vi thực tế.
+
+\subsection{GitHub Actions và Husky}
+
+GitHub Actions~\cite{github_actions_docs} cung cấp CI/CD pipeline tự động: mỗi push hoặc pull request kích hoạt quy trình lint, typecheck, build và unit test. Husky~\cite{husky_docs} quản lý Git hooks pre-commit: tự động quét secret, kiểm tra kiến trúc (service không import Sequelize trực tiếp, controller không touch ORM) và chạy lint-staged trước mỗi commit.
 
 \subsection{Kiểm thử đột biến (Mutation Testing)}
 
-Kiểm thử đột biến là kỹ thuật đánh giá chất lượng bộ test suite bằng cách tự động chèn các thay đổi nhỏ (mutant) vào source code, ví dụ đổi dấu \texttt{>} thành \texttt{>=} hay xóa một điều kiện, sau đó kiểm tra xem test hiện có có phát hiện được sự thay đổi đó không. Một bộ test tốt sẽ ``giết'' (kill) phần lớn các mutant; mutant còn sống sót (survive) cho thấy test chưa kiểm tra đúng behavior mà chỉ đạt coverage về mặt code execution. Kỹ thuật này bổ sung cho coverage-based testing: một test suite có thể đạt 99\% line coverage mà vẫn bỏ sót các kiểm tra logic quan trọng.
+Kiểm thử đột biến (mutation testing) đánh giá chất lượng bộ test bằng cách tự động chèn các thay đổi nhỏ (mutant) vào mã nguồn (ví dụ đổi \texttt{>} thành \texttt{>=}) rồi kiểm tra test có phát hiện không: test tốt sẽ ``giết'' (kill) phần lớn mutant, còn mutant sống sót cho thấy test mới chỉ đạt coverage thực thi mà chưa kiểm tra đúng hành vi. Kỹ thuật này bổ sung cho coverage truyền thống vì một bộ test đạt coverage cao vẫn có thể bỏ sót kiểm tra logic.
 
 TechStore sử dụng Stryker Mutator~\cite{stryker_docs} với ngưỡng mutation score tối thiểu 70\% cho các module nghiệp vụ quan trọng, đảm bảo bộ test không chỉ thực thi code mà còn xác nhận đúng kết quả nghiệp vụ.
 
 \subsection{Kiểm thử dựa trên thuộc tính (Property-based Testing)}
 
-Kiểm thử dựa trên thuộc tính (property-based testing) là phương pháp kiểm thử trong đó người kiểm thử định nghĩa các bất biến (invariant) mà hệ thống phải thỏa mãn với mọi đầu vào hợp lệ, thay vì viết từng test case thủ công. Framework tự động sinh hàng trăm đầu vào ngẫu nhiên để tìm trường hợp vi phạm. Phương pháp này đặc biệt hiệu quả cho các hàm xử lý dữ liệu nghiệp vụ có không gian đầu vào lớn như tính giá, kiểm tra tồn kho hay phân quyền.
+Kiểm thử dựa trên thuộc tính (property-based testing) là phương pháp kiểm thử trong đó người kiểm thử định nghĩa các bất biến (invariant) mà hệ thống phải thỏa mãn với mọi đầu vào hợp lệ, thay vì viết từng ca kiểm thử thủ công. Framework tự động sinh hàng trăm đầu vào ngẫu nhiên để tìm trường hợp vi phạm. Phương pháp này đặc biệt hiệu quả cho các hàm xử lý dữ liệu nghiệp vụ có không gian đầu vào lớn như tính giá, kiểm tra tồn kho hay phân quyền.
 
 TechStore sử dụng fast-check~\cite{fastcheck_docs} để kiểm tra các bất biến nghiệp vụ quan trọng, bao gồm các ràng buộc về tồn kho, giá sản phẩm và trạng thái đơn hàng, bổ sung cho bộ unit test truyền thống theo hướng example-based.
 
-\bigskip
-Chương này đã trình bày nền tảng lý thuyết về kiến trúc Modular Monolith, kỹ thuật RAG Hybrid kết hợp dense và sparse retrieval, thách thức ngôn ngữ tiếng Việt và các kỹ thuật kiểm thử nâng cao. Các kiến thức này làm cơ sở cho thiết kế chi tiết hệ thống TechStore ở Chương~3.
+\subsection{ESLint, Prettier và module-alias}
+
+ESLint~\cite{eslint_docs} phân tích tĩnh code phát hiện lỗi tiềm ẩn và vi phạm quy ước. Prettier~\cite{prettier_docs} định dạng code tự động. \texttt{module-alias}~\cite{module_alias_docs} cho phép sử dụng alias ngắn gọn (\texttt{@models}, \texttt{@shared}, \texttt{@services}) thay vì đường dẫn tương đối dài trong codebase backend.

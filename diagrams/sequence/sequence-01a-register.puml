@@ -19,6 +19,7 @@ skinparam sequenceActor {
 skinparam noteBorderColor #6C8EBF
 skinparam noteBackgroundColor #fffde7
 skinparam responseMessageBelowArrow true
+autoactivate on
 
 actor "Người dùng" as User
 participant "Frontend (React)" as FE

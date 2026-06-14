@@ -1,0 +1,53 @@
+@startuml activity-checkout-1
+' Biểu đồ hoạt động — Đặt hàng Phần 1: Tạo đơn trong transaction
+' Ground-truth: orders-service.js (createOrder)
+
+skinparam dpi 180
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam activity {
+  BackgroundColor #DAE8FC
+  BorderColor #6C8EBF
+  DiamondBackgroundColor #FFF2CC
+  DiamondBorderColor #D6B656
+  ArrowColor #4D4D4D
+}
+
+title Đặt hàng — Phần 1: Tạo đơn trong transaction
+
+start
+:Khách xác nhận giỏ hàng,\nđịa chỉ và phương thức thanh toán;
+:Mở transaction (UnitOfWork);
+:Hủy đơn pending cũ + hoàn tồn kho;
+
+repeat
+  :SELECT FOR UPDATE khóa biến thể;
+  if (Tồn kho đủ và đang bán?) then (không)
+    :Rollback transaction;
+    :Trả lỗi hết hàng / ngừng kinh doanh;
+    stop
+  else (có)
+    :Trừ tồn kho + ghi inventory_logs;
+  endif
+repeat while (Còn biến thể trong giỏ?) is (còn)
+->không;
+
+if (Có áp mã giảm giá?) then (có)
+  :SELECT FOR UPDATE khóa mã giảm giá;
+  if (Mã hợp lệ?) then (không)
+    :Rollback transaction;
+    :Trả lỗi mã không hợp lệ;
+    stop
+  else (có)
+    :Áp giảm giá vào tổng tiền;
+  endif
+else (không)
+endif
+
+:Tạo đơn hàng (status=pending,\npaymentStatus=pending) + order_items snapshot giá;
+:Chuyển sang xử lý thanh toán (Phần 2);
+stop
+
+@enduml

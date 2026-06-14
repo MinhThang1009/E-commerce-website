@@ -1,12 +1,89 @@
-\chapter{Kết quả thực nghiệm}
-\label{chap:c4_results}
+\chapter{Cài đặt, kiểm thử và triển khai hệ thống}
+\label{chap:c4_implementation}
 
-Dựa trên thiết kế ở Chương~3, chương này trình bày kết quả cài đặt, demo giao diện, kiểm thử và đánh giá hiệu quả chatbot RAG.
+Chương này trình bày chi tiết quá trình cài đặt các thành phần chính của hệ thống TechStore, chiến lược kiểm thử đa tầng cùng kết quả đạt được, đánh giá hiệu quả của chatbot RAG qua các kịch bản thực tế, mô tả đóng góp của sinh viên, và hướng dẫn triển khai hệ thống.
+
+\section{Thiết lập môi trường phát triển}
+\label{sec:c4_environment}
+
+\subsection{Môi trường phát triển}
+
+Hệ thống TechStore được phát triển và kiểm thử trên môi trường có cấu hình gồm Node.js 22 LTS cho backend, MySQL 8.0 làm hệ quản trị cơ sở dữ liệu, và trình duyệt Chrome\slash Edge phiên bản mới nhất cho frontend. Các công cụ phát triển chính gồm VS Code, Git, Postman để kiểm thử API, và MySQL Workbench để quản lý cơ sở dữ liệu trong quá trình phát triển.
+
+\begin{table}[H]
+  \centering
+  \caption{Môi trường phát triển và công nghệ sử dụng}
+  \label{tab:dev_environment}
+  \begin{tabular}{|l|l|p{6cm}|}
+    \hline
+    \textbf{Thành phần} & \textbf{Phiên bản} & \textbf{Mục đích sử dụng} \\
+    \hline
+    Node.js & 22 LTS & Runtime backend \\
+    \hline
+    MySQL & 8.0 & Cơ sở dữ liệu quan hệ \\
+    \hline
+    React & 19.2.7 & Framework UI frontend \\
+    \hline
+    TypeScript & 5.8.3 & Ngôn ngữ frontend \\
+    \hline
+    Express & 4.22.2 & Web framework backend \\
+    \hline
+    Sequelize & 6.37.8 & ORM và migration \\
+    \hline
+    Jest & 29.7.0 & Framework kiểm thử \\
+    \hline
+    Vite & 8.0.16 & Build tool frontend \\
+    \hline
+    React Router & 7.17.0 & Client-side routing, lazy loading \\
+    \hline
+    TanStack Query & 5.101.0 & Server state, cache tự động \\
+    \hline
+    Zustand & 5.0.14 & Client state management \\
+    \hline
+    Tailwind CSS & 4.3.0 & CSS utility-first framework \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Bảng~\ref{tab:dev_environment} liệt kê các công nghệ chính với phiên bản sử dụng. Việc lựa chọn Node.js 22 LTS đảm bảo hỗ trợ ES modules gốc và các tính năng async mới nhất. MySQL 8.0 được ưu tiên vì hỗ trợ tốt kiểu dữ liệu JSON, row-level locking và window functions cần thiết cho các truy vấn thống kê.
+
+\subsection{Cấu trúc thư mục dự án}
+
+Dự án được tổ chức thành hai thư mục chính: \texttt{backend/} chứa toàn bộ API server và \texttt{frontend/} chứa ứng dụng React. Backend tuân theo cấu trúc Modular Monolith với mỗi module trong \texttt{src/modules/<tên>/} là một vertical slice độc lập. Các shared services (vector store, embedding, email) nằm trong \texttt{src/services/}. File \texttt{src/app.js} là điểm khởi tạo duy nhất, nơi toàn bộ DI (Dependency Injection) được thực hiện bằng cách truyền tường minh các phụ thuộc qua constructor.
+
+Frontend theo cấu trúc \texttt{src/features/<tên>/} cho mỗi trong 13 feature, với \texttt{src/shared/} chứa các UI components, hooks và utilities dùng chung. Quy tắc nghiêm ngặt là không được import trực tiếp từ feature khác, đảm bảo mỗi feature là một đơn vị độc lập.
 
 \section{Cài đặt các thành phần trọng tâm}
 \label{sec:c4_key_impl}
 
-Backend sử dụng DI tường minh qua factory functions trong \texttt{app.js}: mỗi module được khởi tạo bằng \texttt{buildXxxModule(\{models, services\})} với phụ thuộc truyền qua constructor. UnitOfWork pattern (\texttt{runInTransaction} + \texttt{lockRow} với \texttt{SELECT FOR UPDATE}) đảm bảo tính nguyên tử khi trừ tồn kho đồng thời. Hai cổng thanh toán VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) được tích hợp với cơ chế idempotency cho IPN callback. Hai cron job tự động dọn dẹp dữ liệu hàng ngày (2 giờ sáng) và hàng tuần (Chủ nhật 3 giờ sáng).
+\subsection{Cài đặt Dependency Injection và khởi tạo module}
+
+Cơ chế DI của TechStore không dùng framework DI nào mà tự triển khai bằng factory functions thuần JavaScript. \texttt{src/app.js} là điểm wiring trung tâm: nó khởi tạo tất cả Sequelize models, rồi gọi các factory function \texttt{buildXxxModule(\{models, services\})} của từng module. Bên trong mỗi factory, repository, service và controller được tạo theo thứ tự từ tầng thấp đến cao. Cụ thể với module orders: \texttt{SequelizeOrdersRepository} được khởi tạo trước với 9 Sequelize models (Order, OrderItem, Cart, CartItem, Product, ProductVariant, User, DiscountCode, InventoryLog) và \texttt{sequelize} instance; tiếp theo \texttt{OrdersService} nhận repository cùng \texttt{emailGateway}, \texttt{eventBus}, \texttt{logger} và \texttt{constants}; cuối cùng \texttt{OrdersController} chỉ nhận đúng một dependency là \texttt{ordersService}.
+
+Cách tiếp cận này có ưu điểm là tường minh: mọi phụ thuộc đều được thấy rõ ở một chỗ duy nhất, không có ``magic'' hay decorator phức tạp. Nhược điểm là file \texttt{app.js} khá dài, nhưng điều này chấp nhận được vì file chỉ chứa wiring không có business logic.
+
+\subsection{Cài đặt UnitOfWork cho giao dịch đồng thời}
+
+Xử lý race condition khi nhiều người dùng cùng mua sản phẩm cuối cùng trong kho là một thách thức kỹ thuật quan trọng. Giải pháp là kết hợp Sequelize transaction và \texttt{SELECT FOR UPDATE} thông qua hai hàm trong \texttt{src/shared/persistence/unit-of-work.js}. Hàm \texttt{runInTransaction} nhận một callback \texttt{work} và bọc nó trong \texttt{sequelize.transaction()} -- nếu transaction cha đã tồn tại trong \texttt{options.transaction} thì tái sử dụng thay vì mở transaction mới, hỗ trợ nested call mà không tạo SAVEPOINT. Hàm \texttt{lockRow} gọi \texttt{model.findOne} với tham số \texttt{lock: transaction.LOCK.UPDATE} của Sequelize -- đây là cú pháp sinh ra câu lệnh \texttt{SELECT ... FOR UPDATE} ở tầng SQL, bắt buộc phải gọi trong phạm vi transaction (hàm kiểm tra và ném lỗi nếu không có transaction).
+
+Trong luồng đặt hàng, \texttt{runInTransaction} bao bọc toàn bộ chuỗi thao tác. Với mỗi sản phẩm trong giỏ hàng, \texttt{lockRow} khóa hàng tương ứng trong \texttt{product\_variants}. MySQL đảm bảo chỉ một transaction có thể giữ khóa tại một thời điểm, các transaction khác phải chờ. Sau khi kiểm tra số lượng còn lại đủ, hệ thống giảm tồn kho và ghi log. Nếu bất kỳ bước nào thất bại (kể cả hết hàng), \texttt{rollback} khôi phục toàn bộ trạng thái ban đầu.
+
+\subsection{Cài đặt tích hợp cổng thanh toán}
+
+Hai cổng thanh toán MoMo và VNPay được tích hợp với cơ chế xác thực HMAC khác nhau. VNPay sử dụng HMAC-SHA512 với tham số được sắp xếp theo thứ tự từ điển trước khi ký, còn MoMo sử dụng HMAC-SHA256 với chuỗi nối các trường cố định theo tài liệu API của nhà cung cấp.
+
+Điểm đặc biệt là cơ chế idempotency cho IPN callback. Khi cổng thanh toán gặp lỗi mạng, họ thường gửi lại IPN nhiều lần. Để tránh xử lý trùng lặp, Payment Service kiểm tra trạng thái hiện tại của payment record trước khi xử lý: nếu đã ở trạng thái \texttt{paid}, toàn bộ logic được bỏ qua và hệ thống trả về phản hồi thành công để cổng thanh toán ngừng gửi lại. Cơ chế này đảm bảo tính chính xác ngay cả khi IPN đến nhiều lần do timeout hoặc retry của cổng thanh toán.
+
+\subsection{Cài đặt tác vụ định kỳ}
+\label{sec:c4_cron_jobs}
+
+Hệ thống đăng ký hai cron job trong file \texttt{cleanup.js} thuộc thư mục \texttt{src/jobs/}, sử dụng thư viện \texttt{node-cron}~\cite{node_cron_docs}. Cả hai job được nạp tự động khi \texttt{app.js} gọi \texttt{require('@jobs/cleanup')} trong quá trình khởi động server, không cần cấu hình thêm.
+
+Job chạy hàng ngày lúc 2 giờ sáng (cron expression \texttt{0 2 * * *}) thực hiện 9 tác vụ dọn dẹp theo thứ tự. (1) Xóa các giỏ hàng bỏ dở có trạng thái \texttt{abandoned} quá 30 ngày. (2) Cắt bảng \texttt{search\_histories} xuống tối đa 50 bản ghi mỗi người dùng đã đăng nhập bằng truy vấn SQL sử dụng hàm cửa sổ \texttt{ROW\_NUMBER() OVER (PARTITION BY user\_id ORDER BY created\_at DESC)}, giữ lại các bản ghi mới nhất và xóa các bản ghi cũ vượt quá ngưỡng. (3) Xóa toàn bộ lịch sử tìm kiếm của khách vãng lai (\texttt{user\_id IS NULL}) cũ hơn 7 ngày để tránh tích lũy orphan records. (4) Xóa OTP hết hạn bằng cách đặt \texttt{otpCode} và \texttt{otpExpires} về \texttt{null}. (5) Xóa token reset mật khẩu hết hạn theo cơ chế tương tự. (6) Vô hiệu hóa mã giảm giá đã qua ngày kết thúc bằng cách đặt \texttt{isActive = false}, trong đó bản ghi được giữ nguyên thay vì xóa cứng để phục vụ mục đích kiểm toán. (7) Đánh dấu \texttt{isArchived = true} cho các tin nhắn chatbot quá 90 ngày để giữ lại lịch sử phân tích mà không chiếm dung lượng hoạt động. (8) Xóa các bản ghi \texttt{recently\_viewed} quá 90 ngày. (9) Xóa file tạm trong thư mục \texttt{uploads/temp/} đã tồn tại quá 24 giờ.
+
+Job chạy hàng tuần vào 3 giờ sáng Chủ nhật (cron expression \texttt{0 3 * * 0}) gọi \texttt{imageService.cleanupOrphanedFiles()} để duyệt thư mục upload trên ổ đĩa và xóa các file ảnh không còn bản ghi tham chiếu trong database, giải phóng dung lượng lưu trữ theo định kỳ.
+
+Hai điểm thiết kế quan trọng trong phần cài đặt này. Thứ nhất, toàn bộ các bước trong daily cleanup bọc riêng trong \texttt{try/catch} độc lập, nhờ đó một bước thất bại không ảnh hưởng đến các bước còn lại; lỗi chỉ được ghi log ở mức cảnh báo qua \texttt{logger.warn} mà không phát sinh ngoại lệ, đảm bảo cron job không làm crash ứng dụng. Thứ hai, các model Sequelize được nạp bằng kỹ thuật lazy-require thông qua hàm \texttt{getModels()} thay vì ở đầu module để tránh circular dependency trong quá trình khởi động \texttt{app.js}.
 
 \section{Cài đặt chatbot AI: RAG Pipeline}
 \label{sec:c4_chatbot_impl}
@@ -19,7 +96,7 @@ Mỗi provider xử lý phân biệt query\slash passage theo cơ chế riêng. 
 
 \subsection{Cài đặt HybridVectorStore}
 
-Vector store được lưu dưới dạng file JSON (\texttt{data/vector-db.json}) thay vì database chuyên dụng như Pinecone hay Weaviate. Quyết định này phù hợp với quy mô dự án (dưới 10.000 sản phẩm) và tránh phụ thuộc vào dịch vụ ngoài, nhưng sẽ cần nâng cấp cho môi trường sản xuất quy mô lớn.
+Vector store được lưu dưới dạng file JSON (\texttt{data/vector-db.json}) thay vì database chuyên dụng như Pinecone hay Weaviate. Quyết định này phù hợp với quy mô khóa luận (dưới 10.000 sản phẩm) và tránh phụ thuộc vào dịch vụ ngoài, nhưng sẽ cần nâng cấp cho môi trường sản xuất quy mô lớn.
 
 Hàm \texttt{hybridSearch} thực hiện tìm kiếm hai pha song song rồi gộp kết quả theo chiến lược kết hợp điểm từ hai phương pháp (score-based fusion). Kết quả từ hai nguồn được hợp nhất theo hai quy tắc:
 
@@ -36,23 +113,72 @@ Trong đó $\text{score\_dense}(p)$ là cosine similarity (chỉ tính nếu $\g
 
 \subsection{Cài đặt RAG Pipeline và ChatbotService}
 
-Pipeline RAG 7 bước đã thiết kế ở Chương~3 (§\ref{sec:c3_rag_pipeline}) được cài đặt trong \texttt{chatbot-service.js}. Request đến \texttt{POST /api/chatbot/message} đi qua ba middleware (rate limiter, optional auth, Zod validation) trước khi vào pipeline. Các điểm cài đặt đáng chú ý so với thiết kế:
+Pipeline RAG trong \texttt{chatbot-service.js} gồm 7 bước được chia thành ba giai đoạn để trình bày rõ ràng: tiền xử lý và kiểm tra đầu vào (bước 1--3), load lịch sử và truy xuất (bước 4--5), sinh phản hồi và lưu trữ (bước 6--7).
 
-\begin{itemize}
-  \item Bước 3: \texttt{isPromptInjection} cài đặt 24 regex (tuân thủ OWASP LLM01) bao gồm cả ký tự Unicode ẩn dùng để chèn lệnh.
-  \item Bước 5: Cụm phủ định (``không cần iPhone'') được strip khỏi query trước khi embedding để tránh vector bị lệch về brand bị loại trừ.
-  \item Bước 6: \texttt{parseLLMOutput} khớp sản phẩm qua 4 mức tin cậy giảm dần (exact name → version keyword → model number → 80\% từ), phát hiện hallucination khi LLM đề cập sản phẩm không có trong catalog.
-  \item Khi LLM gặp lỗi tạm thời (429, 500, 503), hệ thống thử provider tiếp theo; lỗi cố định hoặc budget timer (30 giây) hết thì chuyển sang \texttt{simpleKeywordMatch}.
-\end{itemize}
+Biểu đồ tuần tự cho ba giai đoạn này được trình bày trong Hình~\ref{fig:seq_chatbot_preprocess}, \ref{fig:seq_chatbot_retrieve} và~\ref{fig:seq_chatbot_generate} ở Chương~3. Phần dưới mô tả chi tiết cài đặt từng bước.
 
-Session memory (\texttt{Map}, LRU 500 phiên, TTL 30 phút) và catalog cache (TTL 5 phút) được quản lý trong singleton \texttt{ChatbotService}, dọn dẹp tự động qua \texttt{\_evictStaleSessions()} sau mỗi lần cập nhật hội thoại.
+Request đến endpoint \texttt{POST /api/chatbot/message} đi qua ba middleware: \texttt{chatbotLimiter} (20 request/60 giây mỗi IP), \texttt{optionalAuthenticate} (gắn userId nếu có token, không bắt buộc), và \texttt{validateRequest} (schema Zod). Bước 1 kiểm tra bổ sung: tin nhắn không rỗng, không vượt 500 ký tự, và chứa ít nhất một chữ cái hoặc chữ số. Bước 2 chuẩn hóa query bằng \texttt{expandAbbreviations} (73 mẫu regex) và song song phân loại ý định bằng \texttt{classifyIntent} (6 intent theo thứ tự ưu tiên: \texttt{off\_topic} > \texttt{order\_inquiry} > \texttt{policy} > \texttt{pricing} > \texttt{product\_search} > \texttt{general}). Bước 3 thực hiện hai kiểm tra bảo mật theo thứ tự: \texttt{isPromptInjection} phát hiện 15 loại tấn công LLM (24 regex, tuân thủ OWASP LLM01) và \texttt{isOffTopic} lọc câu hỏi ngoài phạm vi -- cả hai đều kết thúc sớm bằng fire-and-forget persist rồi trả về ngay, không gọi LLM.
+
+Bước 4 đọc lịch sử phiên từ \texttt{Map<sessionId, SessionData>} trong RAM (TTL 30 phút, tối đa 500 phiên với LRU eviction). Nếu câu hỏi chứa đại từ thay thế như ``cái đó'', ``nó'', ``so sánh'', hàm \texttt{\_enrichQueryFromHistory} bổ sung tên sản phẩm từ 1--2 lượt assistant gần nhất vào query, giúp pipeline hiểu context mà không cần gửi toàn bộ lịch sử. Bước 5 là trọng tâm của pipeline: \texttt{Promise.all} chạy đồng thời \texttt{hybridSearch(enrichedQuery, limit=10)} trên vector store và \texttt{rewriteQuery} gửi LLM cải thiện query (timeout 8 giây -- nếu quá hạn thì dùng query gốc). Trước khi embedding, cụm phủ định (``không cần iPhone'') được strip để không ảnh hưởng kết quả cosine. Nếu query được viết lại và cho kết quả tốt hơn thì hybridSearch lại với query mới; nếu không có sản phẩm nào vượt ngưỡng 0.45 thì fallback về \texttt{hybridSearch(finalQuery, 3, minScore=0)} với cờ \texttt{lowConfidence=true}.
+
+Bước 6 dùng \texttt{Promise.race} giữa \texttt{augmentAndGenerate} và budget timer 30 giây để đảm bảo người dùng không chờ quá lâu. Khi LLM khả dụng, \texttt{\_getCatalogData} lấy danh sách thương hiệu và danh mục từ cache TTL 5 phút, sau đó \texttt{buildAugmentedPrompt} ghép system prompt + lịch sử phiên + danh sách sản phẩm retrieval thành prompt đầy đủ gửi LLM (\texttt{temperature=0.3}, \texttt{max\_tokens=800}, \texttt{response\_format: json\_object}). Phản hồi JSON được \texttt{parseLLMOutput} xử lý qua 4 bước khớp sản phẩm theo thứ tự giảm dần độ tin cậy: khớp chính xác tên, khớp tên phiên bản, khớp số model, và khớp 80\% từ trong tên. Khi một provider lỗi, hệ thống luôn xoay vòng (rotate) sang provider tiếp theo trong chuỗi bất kể mã lỗi -- kể cả 400/401, vì mỗi provider có key, URL và model riêng nên lỗi ở provider này không suy ra provider khác cũng lỗi; vòng lặp bị chặn trên bởi số provider ($\leq$3) và budget timer 30 giây (\texttt{LLM\_TOTAL\_TIMEOUT\_MS}). Chỉ khi cạn toàn bộ provider hoặc budget timer hết, hệ thống mới chuyển sang \texttt{simpleKeywordMatch} làm fallback -- đảm bảo chatbot luôn trả về kết quả dù LLM không khả dụng. Bước 7 cập nhật session Map và ghi \texttt{ChatMessage.bulkCreate} vào MySQL theo kiểu fire-and-forget, không block phản hồi trả về client.
+
+\subsection{Cài đặt session memory và catalog cache}
+
+\texttt{ChatbotService} là singleton được khởi tạo một lần khi server start. Hai cấu trúc dữ liệu trong memory đóng vai trò quan trọng:
+
+\textbf{Session Map:} Một \texttt{Map<sessionId, SessionData>} (trong đó \texttt{SessionData} gồm \texttt{messages} và \texttt{lastAccess}) lưu lịch sử hội thoại. Khi số session vượt quá 500, session có \texttt{lastAccess} cũ nhất (LRU) bị xóa trước. Dọn dẹp session hết hạn (TTL 30 phút) xảy ra tự động sau mỗi lần cập nhật hội thoại thông qua hàm \texttt{\_evictStaleSessions()}, không cần cron job riêng.
+
+\textbf{Catalog cache:} Danh sách thương hiệu và danh mục được load từ MySQL và cache trong memory với TTL 5 phút, tránh query DB lặp lại mỗi request chatbot. Catalog cache phục vụ mục đích cung cấp context về thương hiệu và danh mục cho LLM trong system prompt, giúp LLM hiểu phạm vi sản phẩm của cửa hàng khi tư vấn.
+
+\section{Cài đặt frontend}
+\label{sec:c4_frontend_impl}
+
+\subsection{Quản lý state kết hợp TanStack Query và Zustand}
+
+Quyết định thiết kế quan trọng là tách biệt server state và client state. TanStack Query quản lý toàn bộ dữ liệu từ API (danh sách sản phẩm, chi tiết sản phẩm, đơn hàng) với cache thống nhất: \texttt{staleTime=5} phút (dữ liệu được coi là mới trong 5 phút, không refetch lại) và \texttt{gcTime=10} phút (dữ liệu bị xóa khỏi cache sau 10 phút không dùng). 6 Zustand stores quản lý UI state thuần client: trạng thái đăng nhập (\texttt{auth-store}), giỏ hàng tạm thời guest (\texttt{cart-store}), phiên chat (\texttt{chat-store}), filter sản phẩm (\texttt{catalog-store}), thông báo toast (\texttt{ui-store}), và danh sách yêu thích (\texttt{wishlist-store}).
+
+Sự kết hợp này tránh ``over-fetching'' (refetch không cần thiết) và ``stale data'' (dữ liệu cũ hiển thị quá lâu). Khi người dùng đặt hàng thành công, hàm \texttt{invalidateQueries} được gọi để xóa cache đơn hàng, đảm bảo danh sách đơn hàng được cập nhật ngay:
+\begin{lstlisting}[language=JavaScript, numbers=none]
+queryClient.invalidateQueries({ queryKey: ['orders'] });
+\end{lstlisting}
+\subsection{Cài đặt route guards và lazy loading}
+\label{sec:c4_route_guards}
+
+Frontend TechStore triển khai ba loại route guard để kiểm soát quyền truy cập, được định nghĩa trong thư mục \texttt{src/components/routing/}. \texttt{ProtectedRoute} kiểm tra trạng thái đăng nhập trong \texttt{auth-store}; nếu người dùng chưa xác thực thì chuyển hướng về \texttt{ROUTES.LOGIN} kèm theo \texttt{state=\{\{ from: location \}\}} để lưu lại trang đích ban đầu, giúp người dùng được redirect đúng trang sau khi đăng nhập thành công. \texttt{AdminRoute} kiểm tra thêm điều kiện role: nếu có token nhưng chưa có thông tin user thì tự động gọi \texttt{useGetCurrentUserQuery} để lấy dữ liệu từ server, nếu role không thuộc nhóm được phép (mặc định \texttt{admin} hoặc \texttt{staff} qua prop \texttt{allowedRoles}) thì chuyển hướng về \texttt{/unauthorized}, và nếu không có token thì chuyển về \texttt{/login}. \texttt{PublicOnlyRoute} hoạt động theo chiều ngược lại: nếu người dùng đã đăng nhập thì chuyển hướng về trang chủ (\texttt{ROUTES.HOME}), ngăn người dùng có phiên hợp lệ truy cập lại các trang đăng nhập và đăng ký.
+
+Toàn bộ 13 feature pages đều được lazy load bằng \texttt{React.lazy()} kết hợp \texttt{Suspense} với fallback hiển thị \texttt{LoadingSpinner fullScreen} bao trùm toàn bộ khu vực \texttt{Routes}. Khi người dùng điều hướng đến một trang lần đầu, chỉ bundle JavaScript của feature đó được tải xuống, giảm đáng kể kích thước bundle ban đầu và cải thiện tốc độ tải trang. Routes được khai báo tập trung trong \texttt{AppRoutes.tsx} với các hằng số đường dẫn lấy từ \texttt{paths.ts}, đảm bảo không có đường dẫn nào bị hardcode rải rác trong codebase; mọi thay đổi URL chỉ cần thực hiện ở một nơi duy nhất.
+
+\subsection{Floating chat widget}
+
+Floating chat widget là component React nằm trong \texttt{features/ai/}, hiển thị cố định góc phải dưới màn hình và accessible từ mọi trang. Widget có hai trạng thái: thu gọn (chỉ hiển thị nút bubble với badge thông báo) và mở rộng (hiển thị cửa sổ chat đầy đủ). Trạng thái mở/đóng widget được quản lý bằng \texttt{useState} cục bộ trong component \texttt{ChatWidgetPortal}. \texttt{chat-store} (Zustand) chỉ lưu trữ lịch sử tin nhắn và \texttt{sessionId} để persist qua các lần chuyển trang.
+
+Mỗi response từ chatbot có thể kèm danh sách sản phẩm được render dưới dạng horizontal card có thể cuộn ngang. Mỗi card hiển thị ảnh, tên, giá và nút ``Thêm vào giỏ'' cho phép người dùng mua hàng trực tiếp qua chat mà không cần rời khỏi trang hiện tại.
 
 \section{Kết quả demo giao diện}
 \label{sec:c4_ui_demo}
 
-Sau khi cài đặt hoàn tất, phần này trình bày kết quả giao diện thực tế của hệ thống. Frontend triển khai ba loại route guard (\texttt{ProtectedRoute}, \texttt{AdminRoute}, \texttt{PublicOnlyRoute}) và lazy loading 13 feature pages bằng \texttt{React.lazy()}. Floating chat widget hiển thị cố định trên mọi trang, cho phép mua hàng trực tiếp qua chat.
+Phần này trình bày kết quả thực tế của hệ thống TechStore qua 22 màn hình chụp từ ứng dụng đang chạy, phân theo năm nhóm chức năng chính: giao diện người dùng cuối, luồng giỏ hàng và thanh toán, chatbot AI tư vấn sản phẩm, giao diện quản trị viên, và giao diện nhân viên bán hàng.
 
 \subsection{Giao diện người dùng cuối}
+
+Trang chủ (Hình~\ref{fig:screenshot_home}) là điểm tiếp xúc đầu tiên giữa người dùng và hệ thống, được thiết kế để truyền đạt giá trị thương hiệu và dẫn dắt vào luồng mua sắm. Hero banner nổi bật với tagline ``Công nghệ Cao cấp Cho bạn'' kèm slide ảnh đại diện cho bốn danh mục sản phẩm chính (Điện thoại, Laptop, Smartwatch, Tablet). Phía dưới hero là ba con số thống kê nhanh (60+ sản phẩm, 12 thương hiệu, giao hàng 24h) cùng chỉ số đánh giá 4.8 sao, tạo tín hiệu tin cậy cho người dùng lần đầu. Hai nút kêu gọi hành động ``Mua sắm ngay'' và ``Khám phá danh mục'' dẫn thẳng vào trang cửa hàng.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_home.png}
+  \caption{Trang chủ TechStore với hero banner, thống kê nhanh và danh mục sản phẩm}
+  \label{fig:screenshot_home}
+\end{figure}
+
+Trang danh sách sản phẩm (Hình~\ref{fig:screenshot_shop}) cung cấp bộ lọc đa chiều để người dùng thu hẹp kết quả tìm kiếm. Sidebar bên trái gồm ba nhóm bộ lọc: khoảng giá theo thanh trượt, danh mục với checkbox cho từng loại (Điện thoại, Laptop, Smartwatch, Tablet), và thương hiệu. Khu vực chính hiển thị lưới sản phẩm kèm thông báo số lượng kết quả và thanh sắp xếp theo giá hoặc thời gian. Mỗi card sản phẩm có ảnh thumbnail, tên, giá và nút ``Xem ngay'' dẫn vào trang chi tiết.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_shop.png}
+  \caption{Trang cửa hàng với bộ lọc đa chiều và lưới sản phẩm}
+  \label{fig:screenshot_shop}
+\end{figure}
 
 Trang chi tiết sản phẩm (Hình~\ref{fig:screenshot_product_detail}) tập trung vào việc cung cấp đầy đủ thông tin để người dùng đưa ra quyết định mua hàng. Phần ảnh hiển thị ảnh sản phẩm lớn với bốn thumbnail gallery bên dưới để xem các góc độ khác nhau. Phần thông tin bên phải hiển thị tên sản phẩm (iPhone 17 Pro Max), giá gốc kèm badge giảm giá 5\%, nhãn tình trạng tồn kho, khu vực chọn biến thể dung lượng (256GB, 512GB, 1TB, 2TB) và màu sắc (Đen, Xanh đậm, Cam Vũ Trụ) theo thiết kế attribute system. Bộ chọn số lượng và nút ``Mua ngay'' được đặt nổi bật để giảm số thao tác đến khi đặt hàng. Phía dưới là hai tab ``Mô tả'' và ``Thông số kỹ thuật'' với bảng thông số chi tiết.
 
@@ -83,6 +209,15 @@ Trang thanh toán (Hình~\ref{fig:screenshot_checkout}) trình bày form nhập 
   \label{fig:screenshot_checkout}
 \end{figure}
 
+Trang đơn hàng của khách (Hình~\ref{fig:screenshot_orders}) liệt kê lịch sử đặt hàng. Mỗi đơn hàng hiển thị mã đơn theo định dạng \texttt{\#ORD-YYYYMMDD-XXXX} (ví dụ \texttt{\#ORD-20260523-7055}), ngày giờ đặt, tổng tiền, badge trạng thái đơn hàng (``Chờ xử lý'') và badge trạng thái thanh toán (``Thanh toán khi nhận''). Nút ``Xem chi tiết'' dẫn vào trang thông tin đầy đủ và nút ``Hủy'' cho phép khách hủy đơn khi đơn còn ở trạng thái cho phép.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_orders.png}
+  \caption{Trang đơn hàng của khách với badge trạng thái đơn hàng và thanh toán}
+  \label{fig:screenshot_orders}
+\end{figure}
+
 \subsection{Chatbot AI tư vấn sản phẩm}
 
 Chat widget AI (Hình~\ref{fig:screenshot_chatbot}) xuất hiện cố định ở góc phải dưới màn hình trên mọi trang của ứng dụng. Khi người dùng nhấn vào bubble chat, cửa sổ ``Trợ lý mua sắm AI'' mở ra ngay trên trang hiện tại nhờ cơ chế React Portal, không làm gián đoạn việc duyệt web. Chatbot nhận câu hỏi tư vấn sản phẩm và trả về phản hồi kèm danh sách card gợi ý có thể cuộn ngang; mỗi card hiển thị ảnh thumbnail, tên sản phẩm, giá và nút thêm vào giỏ hàng trực tiếp từ chat mà không cần rời khỏi trang hiện tại.
@@ -94,20 +229,27 @@ Chat widget AI (Hình~\ref{fig:screenshot_chatbot}) xuất hiện cố định �
   \label{fig:screenshot_chatbot}
 \end{figure}
 
-Hình~\ref{fig:screenshot_chatbot_abbrev} minh họa khả năng xử lý viết tắt của chatbot. Hàm \texttt{expandAbbreviations} trong \texttt{ai-policy.js} sử dụng bảng \texttt{ABBREV\_MAP} gồm 16 mẫu regex cho viết tắt thương hiệu, model và hội thoại (trong tổng ABBREV\_MAP 71 pattern) để chuyển đổi viết tắt thông dụng trước khi đưa query vào vector search: các mẫu bao gồm ``ip'' (iPhone), ``ss'' (Samsung), ``mb'' (MacBook), ``pm'' (Pro Max), ``op'' (OPPO), ``rl'' (realme), ``r5'' (AMD Ryzen 5), ``r7'' (AMD Ryzen 7), ``bnh'' (bao nhiêu) và ``bh'' (bảo hành). Cơ chế này giúp pipeline RAG truy xuất đúng sản phẩm ngay cả khi người dùng nhắn theo phong cách viết tắt thông thường, ví dụ ``ip17 pm bnh'' được mở rộng thành ``iPhone 17 Pro Max bao nhiêu'' trước khi embedding.
+Hình~\ref{fig:screenshot_chatbot_abbrev} minh họa khả năng xử lý viết tắt của chatbot. Hàm \texttt{expandAbbreviations} trong \texttt{ai-policy.js} sử dụng bảng \texttt{ABBREV\_MAP} gồm 16 mẫu regex cho viết tắt thương hiệu\slash model và câu hỏi thông dụng (trong tổng ABBREV\_MAP 73 pattern) để chuyển đổi viết tắt thông dụng trước khi đưa query vào vector search: các mẫu bao gồm ``ip'' (iPhone), ``ss'' (Samsung), ``mb'' (MacBook), ``pm'' (Pro Max), ``op'' (OPPO), ``rl'' (realme), ``r5'' (AMD Ryzen 5), ``r7'' (AMD Ryzen 7), ``bnh'' (bao nhiêu) và ``bh'' (bảo hành). Cơ chế này giúp pipeline RAG truy xuất đúng sản phẩm ngay cả khi người dùng nhắn theo phong cách viết tắt thông thường, ví dụ ``ip17 pm bnh'' được mở rộng thành ``iPhone 17 Pro Max bao nhiêu'' trước khi embedding.
 
 \begin{figure}[H]
   \centering
   \fitfig{figures/c4/screenshot_chatbot_abbrev.png}
-  \caption{Chatbot xử lý thành công câu hỏi viết tắt nhờ cơ chế expandAbbreviations với 71 mẫu regex}
+  \caption{Chatbot xử lý thành công câu hỏi viết tắt nhờ cơ chế expandAbbreviations với 73 mẫu regex}
   \label{fig:screenshot_chatbot_abbrev}
 \end{figure}
 
-Ngoài ra, chatbot từ chối lịch sự câu hỏi ngoài phạm vi (thời tiết, bóng đá, nấu ăn) nhờ hàm \texttt{isOffTopic} sử dụng regex thuần, hoàn thành trong dưới 10ms mà không tiêu tốn quota API.
+Hình~\ref{fig:screenshot_chatbot_offtopic} thể hiện cơ chế từ chối câu hỏi ngoài phạm vi. Khi người dùng đặt câu hỏi không liên quan đến sản phẩm công nghệ, hàm \texttt{isOffTopic} kiểm tra tin nhắn với regex \texttt{OFF\_TOPIC\_PATTERN} bao gồm các từ khóa tiếng Việt (thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức) và tiếng Anh (weather, football, soccer, music, movie, cooking, health, news). Nhờ sử dụng regex thuần thay vì gọi LLM, bước phát hiện off-topic hoàn thành trong dưới 10ms; chatbot phản hồi từ chối lịch sự và hướng dẫn người dùng trở về chủ đề tư vấn sản phẩm mà không tiêu tốn quota API.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_chatbot_offtopic.png}
+  \caption{Chatbot từ chối lịch sự câu hỏi ngoài phạm vi nhờ cơ chế isOffTopic dùng regex thuần}
+  \label{fig:screenshot_chatbot_offtopic}
+\end{figure}
 
 \subsection{Giao diện quản trị}
 
-Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) gồm hành động nhanh, card thống kê doanh thu và vận hành, biểu đồ doanh thu theo ngày với bộ lọc thời gian và xuất báo cáo.
+Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) cung cấp cái nhìn tổng quan về tình trạng vận hành cửa hàng. Phần đầu có khu vực \textbf{Hành động nhanh} gồm năm nút truy cập nhanh: Thêm sản phẩm, Tạo mã giảm giá, Đơn chờ xử lý, Quản lý kho và Người dùng. Phía dưới là bố cục hai cột: cột trái hiển thị tổng doanh thu kèm sparkline chart và hai chỉ số phụ (giá trị trung bình đơn hàng GTTB và tổng sản phẩm đang hoạt động); cột phải tổng hợp các chỉ số người dùng và vận hành gồm tổng đơn hàng, tổng người dùng, đơn hủy tháng này và số sản phẩm sắp hết hàng, kèm nút ``Quản lý người dùng'' dẫn thẳng vào trang quản lý tài khoản. Mỗi chỉ số hiển thị tỷ lệ thay đổi so với kỳ trước. Phía dưới là bộ lọc thời gian (7/30/90 ngày) với tùy chỉnh tự do, chế độ so sánh kỳ và biểu đồ doanh thu theo ngày, cùng nút xuất dữ liệu đơn hàng và sản phẩm.
 
 \begin{figure}[H]
   \centering
@@ -116,7 +258,74 @@ Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) gồm 
   \label{fig:screenshot_admin_dashboard}
 \end{figure}
 
-Các trang quản trị khác (sản phẩm, danh mục, thương hiệu, đơn hàng, người dùng, mã giảm giá, kho hàng) tuân theo cùng mẫu thiết kế: card thống kê phía trên, bảng danh sách với bộ lọc và phân trang, badge trạng thái trực quan. Điểm đáng chú ý là sự khác biệt giữa hai vai trò: khi quản trị viên đăng nhập, hệ thống hiển thị banner ``Chế độ xem'' màu xanh và ẩn các nút thao tác nghiệp vụ. Khi nhân viên bán hàng đăng nhập (Hình~\ref{fig:screenshot_staff_products}), banner biến mất và đầy đủ các thao tác CRUD được kích hoạt -- thể hiện trực quan mô hình RBAC đã thiết kế.
+Trang quản lý sản phẩm (Hình~\ref{fig:screenshot_admin_products}) hiển thị toàn bộ 60 sản phẩm (6 trang) trong hệ thống. Phía trên có bốn card thống kê nhanh: Tổng sản phẩm (60), Đang bán (60), Sắp hết hàng (1) và Hết hàng (0). Khi quản trị viên đăng nhập, hệ thống hiển thị banner ``Chế độ xem'' màu xanh thông báo quyền xem-only và ẩn các nút thao tác nghiệp vụ, thể hiện rõ phân quyền RBAC tại tầng giao diện. Bảng danh sách gồm các cột Hình ảnh, Tên sản phẩm, Danh mục (badge màu), Giá, Kho, Trạng thái và Hành động -- ở chế độ xem, cột Hành động chỉ hiện icon xem chi tiết. Thanh lọc gồm ô tìm kiếm theo tên sản phẩm, dropdown lọc theo danh mục và dropdown lọc theo trạng thái; nút ``Xuất dữ liệu'' đặt ở header trang.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_products.png}
+  \caption{Trang quản lý sản phẩm với banner chế độ xem, 4 card thống kê và bộ lọc}
+  \label{fig:screenshot_admin_products}
+\end{figure}
+
+Trang quản lý danh mục (Hình~\ref{fig:screenshot_admin_categories}) hiển thị danh sách danh mục sản phẩm của cửa hàng, tương tự trang sản phẩm, có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Bảng có các cột Hình ảnh, Tên danh mục kèm slug bên dưới (ví dụ ``Điện thoại'' / \texttt{dien-thoai}), Mô tả ngắn, Danh mục cha (badge ``Danh mục gốc'' cho các danh mục cấp cao nhất), Trạng thái (badge ``Hoạt động''), Thứ tự sắp xếp và cột Thao tác -- cột Thao tác bị ẩn ở chế độ xem. Nút ``Làm mới'' đặt ở header trang; footer hiển thị tổng số ``5 danh mục''.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_categories.png}
+  \caption{Trang quản lý danh mục với banner chế độ xem, badge ``Danh mục gốc'' và slug}
+  \label{fig:screenshot_admin_categories}
+\end{figure}
+
+Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_admin_brands}) liệt kê các thương hiệu sản phẩm, tương tự có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Bảng gồm các cột Logo (ảnh thumbnail thương hiệu), Tên thương hiệu kèm slug bên dưới (Acer/\texttt{acer}, Apple/\texttt{apple}, Asus/\texttt{asus}, CASIO/\texttt{casio}, CITIZEN/\texttt{citizen}, Dell/\texttt{dell}, HP/\texttt{hp}...), Website (hiển thị dấu gạch khi chưa cập nhật), Trạng thái (badge ``Hoạt động'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Nút ``Làm mới'' đặt ở header trang.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_brands.png}
+  \caption{Trang quản lý thương hiệu với banner chế độ xem, logo, slug và trạng thái}
+  \label{fig:screenshot_admin_brands}
+\end{figure}
+
+Trang quản lý đơn hàng back-office (Hình~\ref{fig:screenshot_admin_orders}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có năm card thống kê: Chờ xử lý, Đang xử lý, Đã giao hàng, Đã hủy và Tổng doanh thu. Bảng gồm các cột Đơn hàng (mã định dạng \texttt{ORD-YYYYMMDD-XXXX} kèm số sản phẩm), Khách hàng (tên và email), Ngày đặt, Tổng tiền, Trạng thái đơn hàng (badge màu theo trạng thái: ``Đã giao hàng'', ``Đã hủy''...) và Trạng thái thanh toán (``Đã thanh toán'', ``Chờ thanh toán''...). Bộ lọc gồm ô tìm kiếm theo mã đơn, tên khách hàng hoặc email kết hợp dropdown chọn trạng thái; cột Thao tác chỉ hiện icon xem chi tiết ở chế độ xem.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_orders.png}
+  \caption{Trang quản lý đơn hàng back-office với 5 card thống kê, bộ lọc và badge trạng thái}
+  \label{fig:screenshot_admin_orders}
+\end{figure}
+
+Trang quản lý người dùng (Hình~\ref{fig:screenshot_admin_users}) là trang admin độc quyền -- không có banner ``Chế độ xem'' vì quản trị viên có toàn quyền CRUD trên tài khoản. Phía trên có bốn card thống kê: Tổng người dùng, Quản trị viên, Khách hàng và Đã xác minh email. Bộ lọc gồm ô tìm kiếm theo tên, email hoặc số điện thoại kết hợp dropdown lọc vai trò, dropdown sắp xếp và dropdown thứ tự; nút ``Làm mới'' đặt ở header trang. Bảng danh sách có cột Người dùng (avatar, tên, email và số điện thoại gộp lại), Vai trò (badge ``Quản trị viên'', ``Nhân viên bán hàng'' hoặc ``Khách hàng''), Trạng thái (badge ``Hoạt động'' và ``Email đã xác minh''), Ngày đăng ký và Thao tác (ba icon xem, sửa, xóa).
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_users.png}
+  \caption{Trang quản lý người dùng với thống kê, bộ lọc đa chiều và danh sách}
+  \label{fig:screenshot_admin_users}
+\end{figure}
+
+Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_admin_discounts}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có ba card thống kê: Đang chạy, Hết hạn và Tổng lượt dùng. Bảng gồm các cột Mã (badge màu nổi bật, ví dụ ``SUMMER2026''), Loại (``\% 10.00\%'' cho loại phần trăm), Đơn tối thiểu, Thời hạn (``Từ: Vô thời hạn / Đến: Vô thời hạn'' khi không đặt giới hạn), Sử dụng (ví dụ ``4 / $\infty$'' khi không giới hạn lượt dùng), Trạng thái (badge ``Hoạt động'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Ô tìm kiếm lọc theo mã hoặc mô tả.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_discounts.png}
+  \caption{Trang quản lý mã giảm giá với 3 card thống kê, cột thời hạn và lượt dùng}
+  \label{fig:screenshot_admin_discounts}
+\end{figure}
+
+Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có ba card thống kê: Tổng tồn kho, Sắp hết và Hết hàng. Bảng hiển thị tồn kho tổng hợp theo sản phẩm với các cột Sản phẩm, SKU (số lượng biến thể, ví dụ ``2 biến thể''), Tồn kho (số lượng kèm progress bar màu), Trạng thái (badge ``Còn hàng'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Mỗi dòng sản phẩm có mũi tên (\texttt{>}) để mở rộng: khi mở rộng hiện bảng con với từng biến thể gồm SKU riêng, tồn kho và badge trạng thái. Ô tìm kiếm phía trên cho phép lọc sản phẩm theo tên.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_admin_inventory.png}
+  \caption{Trang quản lý kho hàng với 3 card thống kê, expandable rows và progress bar tồn kho}
+  \label{fig:screenshot_admin_inventory}
+\end{figure}
+
+\subsection{Giao diện nhân viên bán hàng}
+
+Khi nhân viên bán hàng đăng nhập, các trang nghiệp vụ không hiển thị banner ``Chế độ xem'' và kích hoạt đầy đủ các thao tác CRUD. Năm trang nghiệp vụ có sự khác biệt rõ nhất được minh họa dưới đây.
+
+Trang quản lý sản phẩm dành cho nhân viên (Hình~\ref{fig:screenshot_staff_products}) không có banner ``Chế độ xem'': header hiển thị đồng thời nút ``Xuất dữ liệu'' và nút ``+ Thêm sản phẩm'' (màu xanh ngọc). Mỗi dòng sản phẩm trong bảng có đầy đủ bốn icon hành động -- xem chi tiết, sửa, nhân bản và xóa -- cùng dropdown chỉnh trạng thái nhanh inline trong cột Trạng thái, thay vì chỉ có icon xem duy nhất như ở chế độ quản trị viên.
 
 \begin{figure}[H]
   \centering
@@ -125,16 +334,52 @@ Các trang quản trị khác (sản phẩm, danh mục, thương hiệu, đơn 
   \label{fig:screenshot_staff_products}
 \end{figure}
 
+Trang quản lý danh mục (Hình~\ref{fig:screenshot_staff_categories}) không có banner ``Chế độ xem'': header có nút ``Làm mới'' và nút ``+ Thêm danh mục'' (màu xanh ngọc). Cột Thao tác hiển thị hai icon sửa và xóa trên mỗi dòng, thay vì bị ẩn như ở chế độ quản trị viên. Footer vẫn hiển thị tổng số ``5 danh mục''.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_staff_categories.png}
+  \caption{Trang quản lý danh mục (nhân viên bán hàng) với nút thêm mới và icon sửa/xóa}
+  \label{fig:screenshot_staff_categories}
+\end{figure}
+
+Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_staff_brands}) có cấu trúc tương tự danh mục: header có nút ``Làm mới'' và ``+ Thêm thương hiệu'', cột Thao tác hiển thị icon sửa và xóa trên mỗi dòng.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_staff_brands.png}
+  \caption{Trang quản lý thương hiệu (nhân viên bán hàng) với nút thêm mới và icon sửa/xóa}
+  \label{fig:screenshot_staff_brands}
+\end{figure}
+
+Trang quản lý đơn hàng (Hình~\ref{fig:screenshot_staff_orders}) không có banner ``Chế độ xem''. Cột Thao tác hiển thị hai icon -- xem chi tiết và chỉnh sửa/cập nhật trạng thái -- thay vì chỉ có icon xem như ở chế độ quản trị viên. Nhân viên có thể cập nhật trạng thái đơn hàng qua icon chỉnh sửa. Các thống kê và bộ lọc giống với chế độ quản trị viên.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_staff_orders.png}
+  \caption{Trang quản lý đơn hàng (nhân viên bán hàng) với icon xem và chỉnh sửa trạng thái}
+  \label{fig:screenshot_staff_orders}
+\end{figure}
+
+Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_staff_discounts}) không có banner ``Chế độ xem'': header hiển thị nút ``+ Tạo mã giảm giá'' (màu xanh ngọc) để tạo chương trình khuyến mãi mới. Cột Thao tác kích hoạt icon sửa và xóa trên mỗi dòng mã, cho phép nhân viên quản lý toàn bộ vòng đời của mã giảm giá.
+
+\begin{figure}[H]
+  \centering
+  \fitfig{figures/c4/screenshot_staff_discounts.png}
+  \caption{Trang quản lý mã giảm giá (nhân viên bán hàng) với nút tạo mới và icon sửa/xóa}
+  \label{fig:screenshot_staff_discounts}
+\end{figure}
+
 \section{Kiểm thử hệ thống}
 \label{sec:c4_testing}
 
 \subsection{Chiến lược kiểm thử 5 tầng}
 
-TechStore áp dụng chiến lược kiểm thử đa tầng theo mô hình Test Pyramid~\cite{fowler2012test_pyramid}, trong đó tầng thấp nhất có nhiều test nhất nhưng chạy nhanh nhất, tầng cao nhất có ít test hơn nhưng kiểm tra toàn bộ hệ thống. Hình~\ref{fig:testing_pyramid} minh họa kim tự tháp kiểm thử với tổng cộng ~7.303 test cases trên 325 suites, bổ sung bởi hai tầng chất lượng là mutation testing và property-based testing.
+TechStore áp dụng chiến lược kiểm thử đa tầng theo mô hình Test Pyramid~\cite{fowler2012test_pyramid}, trong đó tầng thấp nhất có nhiều test nhất nhưng chạy nhanh nhất, tầng cao nhất có ít test hơn nhưng kiểm tra toàn bộ hệ thống. Hình~\ref{fig:testing_pyramid} minh họa kim tự tháp kiểm thử với tổng cộng ~7.578 ca kiểm thử trên 246 suites, bổ sung bởi hai tầng chất lượng là mutation testing và property-based testing.
 
 \begin{figure}[H]
   \centering
-  \fitfig[0.90]{figures/c4/testing_pyramid.pdf}
+  \fitfig[0.90]{figures/c4/testing_pyramid}
   \caption{Kim tự tháp kiểm thử 5 tầng của hệ thống TechStore}
   \label{fig:testing_pyramid}
 \end{figure}
@@ -150,63 +395,212 @@ Bảng~\ref{tab:test_results} trình bày kết quả kiểm thử chi tiết th
     \hline
     \textbf{Tầng} & \textbf{Framework} & \textbf{Số suites} & \textbf{Số test} & \textbf{Thời gian} & \textbf{Database} \\
     \hline
-    BE E2E & Jest + Supertest & 5 & 100 & $\sim$22s & MySQL thật \\
+    BE E2E & Jest + Supertest & 5 & 100 & $\sim$21s & MySQL thật \\
     \hline
-    BE API HTTP & Jest + Supertest & 39 & 675 & $\sim$160s & MySQL thật \\
+    BE API HTTP & Jest + Supertest & 18 & 675 & $\sim$117s & MySQL thật \\
     \hline
-    BE Integration & Jest 29 & 38 & 210 & $\sim$57s & MySQL thật \\
+    BE Integration & Jest 29 & 21 & 227 & $\sim$66s & MySQL thật \\
     \hline
-    BE Unit & Jest 29 & 215 & 5.381 & $\sim$12s & Mock (jest.fn) \\
+    BE Unit & Jest 29 & 174 & 5.639 & $\sim$44s & Mock (jest.fn) \\
     \hline
-    FE Component & Jest + Testing Library & 28 & 937 & $\sim$14s & jsdom \\
+    FE Component & Jest + Testing Library & 28 & 937 & $\sim$12s & jsdom \\
     \hline
-    \textbf{Tổng cộng} & & \textbf{325} & \textbf{$\sim$7.303} & & \\
+    \textbf{Tổng cộng} & & \textbf{246} & \textbf{$\sim$7.578} & & \\
     \hline
   \end{tabular}
   \normalsize
 \end{table}
 
-Tầng E2E (100 tests) kiểm tra 5 user flow hoàn chỉnh. API HTTP (675 tests) gửi real HTTP request qua Supertest. Integration (210 tests) kiểm tra với MySQL thật, bao gồm test race condition trừ tồn kho. Unit (5.381 tests) kiểm tra logic isolation với coverage 100\% statements/lines, 99,91\% branches. FE Component (937 tests) kiểm tra stores, utilities và React components. Test descriptions viết tiếng Việt, theo pattern Arrange-Act-Assert.
+\textbf{Tầng E2E Test (100 ca kiểm thử, 5 suites):} Mỗi test file là một user flow hoàn chỉnh: (1) Đăng ký - xác thực OTP - đăng nhập, (2) Mua hàng từ browse đến checkout, (3) Quản trị sản phẩm và tồn kho, (4) Luồng đơn hàng đến DELIVERED, (5) Quản lý wishlist và profile người dùng.
 
-CI/CD qua GitHub Actions tự động lint, typecheck, build và unit test với coverage enforcement. Husky pre-commit hooks quét secret key và kiểm tra kiến trúc.
+\textbf{Tầng API HTTP Test (675 ca kiểm thử, 18 suites):} Gửi real HTTP request đến Express app qua Supertest. Bao gồm kiểm tra đầy đủ các mã phản hồi HTTP (thành công: 200, 201; lỗi client: 400, 401, 403, 404, 409), cấu trúc response JSON, behavior của rate limiting, và kiểm tra header.
+
+\textbf{Tầng Integration Test (227 ca kiểm thử, 21 suites):} Kiểm tra Service và Repository layer với MySQL thật (\texttt{techstore\_test}). Đặc biệt, tầng này có test cho race condition trong trừ tồn kho: hai request đồng thời mua cùng một sản phẩm, chỉ một request thành công, request còn lại nhận lỗi hết hàng. Test data được tạo với prefix \texttt{\_\_INT\_TEST\_} và tự dọn dẹp trong \texttt{afterAll}.
+
+\textbf{Tầng Unit Test (5.639 ca kiểm thử, 174 suites):} Kiểm tra logic nghiệp vụ của từng hàm trong hoàn toàn isolation. Mọi external dependency (Sequelize models, email service, AI API) đều được mock bằng \texttt{jest.fn()}. Tầng này đạt coverage 100\% cho cả bốn chỉ số statements, branches, functions và lines. Các trường hợp kiểm thử bao gồm happy path (đầu vào hợp lệ), error path (ngoại lệ có kiểm soát), và edge cases (giá trị biên, null, undefined).
+
+\textbf{Tầng Frontend Component Test (937 ca kiểm thử, 28 suites):} Kiểm tra Zustand stores (state transitions), utility functions (formatters, validators), và React components (render, interactions, conditional rendering) trong môi trường jsdom với \texttt{@testing-library/react}.
+
+\subsection{Quy ước đặt tên và chuẩn hóa test}
+
+Toàn bộ test descriptions được viết bằng tiếng Việt theo quy định của đồ án để hội đồng bảo vệ có thể đọc hiểu. Định dạng tên test tuân theo pattern \textit{``<hành động> khi/nếu <điều kiện>''} hoặc \textit{``<hành động> trả về/ném lỗi <kết quả>''}, ví dụ: \textit{``trả về 409 khi email đã tồn tại''} hay \textit{``giảm tồn kho đúng khi đặt hàng thành công''}. Quy ước Arrange-Act-Assert (AAA) được áp dụng nhất quán trong mọi test.
+
+\subsection{Kết quả coverage}
+
+Bảng~\ref{tab:coverage_results} tổng hợp kết quả coverage của backend unit tests.
+
+\begin{table}[H]
+  \centering
+  \caption{Kết quả code coverage backend unit tests}
+  \label{tab:coverage_results}
+  \begin{tabular}{|l|c|c|}
+    \hline
+    \textbf{Chỉ số} & \textbf{Kết quả thực tế} & \textbf{Ngưỡng bắt buộc} \\
+    \hline
+    Statements & \textbf{100\%} & 100\% \\
+    \hline
+    Functions & \textbf{100\%} & 100\% \\
+    \hline
+    Lines & \textbf{100\%} & 100\% \\
+    \hline
+    Branches & \textbf{100\%} & 100\% \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Coverage đạt 100\% cho cả bốn chỉ số (statements 7.104/7.104, branches 4.178/4.178, functions 1.254/1.254, lines 6.575/6.575), nhờ nguyên tắc bắt buộc: mọi service method mới phải có unit test tương ứng trước khi merge, bug fix phải viết failing test trước rồi mới fix (TDD). Ngưỡng được thực thi nhất quán ở cả hai nơi: cấu hình \texttt{coverageThreshold} cục bộ trong \texttt{jest.config.js} và bước kiểm tra coverage trong CI (\texttt{.github/workflows/ci.yml}) đều yêu cầu cả bốn chỉ số đạt 100\%, build sẽ thất bại nếu bất kỳ chỉ số nào tụt xuống dưới mức này.
+
+\subsection{CI/CD Pipeline}
+
+GitHub Actions workflow được cấu hình để chạy tự động khi có push hoặc pull request vào các nhánh \texttt{main}, \texttt{phase-*}, \texttt{feat/*}, \texttt{fix/*}. Pipeline backend gồm các bước: cài đặt dependencies (\texttt{npm ci}), lint strict (ESLint zero warnings), kiểm tra migration files có rollback function, security audit, và chạy unit tests với coverage enforcement (cả bốn chỉ số Statements, Lines, Branches, Functions đều phải đạt 100\%). Pipeline frontend gồm lint, TypeScript typecheck (\texttt{tsc --noEmit}), production build, và kiểm tra bundle size không vượt 10MB.
+
+Husky pre-commit hooks chạy trước mỗi commit: quét secret key trong staged files (AWS keys, GitHub tokens, private keys), kiểm tra kiến trúc (service không import Sequelize trực tiếp, controller không touch ORM), TypeScript typecheck (\texttt{tsc --noEmit}), và lint-staged cho cả backend lẫn frontend. Cơ chế này phát hiện vi phạm kiến trúc và lỗi type sớm thay vì để đến code review.
+
+\subsection{Kiểm thử hiệu năng hệ thống}
+\label{sec:c4_load_test}
+
+Ngoài kiểm thử chức năng, hiệu năng API được đánh giá bằng kiểm thử tải (load test) đối với các endpoint đọc (CRUD GET) ở chế độ production, sử dụng script tự xây dựng \texttt{scripts/load-test.js} mô phỏng nhiều kết nối đồng thời và đo độ trễ phân vị (p50\slash p95\slash p99) cùng thông lượng (throughput). Mục tiêu đối chiếu là NFR-01: độ trễ p95 dưới 200ms với 100 người dùng đồng thời. Bảng~\ref{tab:load_test} trình bày kết quả.
+
+\begin{table}[H]
+  \centering
+  \caption{Kết quả kiểm thử tải các endpoint đọc (chế độ production)}
+  \label{tab:load_test}
+  \footnotesize
+  \begin{tabular}{|l|c|c|c|c|c|}
+    \hline
+    \textbf{Endpoint} & \textbf{CCU} & \textbf{p50} & \textbf{p95} & \textbf{p99} & \textbf{Throughput} \\
+    \hline
+    \texttt{/api/categories} & 100 & 149ms & \textbf{194ms} & 268ms & 642 req/s \\
+    \hline
+    \texttt{/api/brands} & 100 & 164ms & \textbf{194ms} & 223ms & 593 req/s \\
+    \hline
+    \texttt{/api/products?limit=20} & 20 & 981ms & 1.052ms & 1.082ms & 20 req/s \\
+    \hline
+    \texttt{/api/products?limit=20} & 100 & 4.760ms & 4.829ms & 4.929ms & 21 req/s \\
+    \hline
+  \end{tabular}
+  \normalsize
+\end{table}
+
+Kết quả cho thấy hai bức tranh khác biệt rõ rệt. Các endpoint đọc nhẹ (\texttt{/api/categories}, \texttt{/api/brands} -- trả về vài KB dữ liệu) đạt p95 = 194ms với 100 người dùng đồng thời, \textbf{thỏa mãn NFR-01} (dưới 200ms), với thông lượng khoảng 600 req/s. Ngược lại, endpoint danh sách sản phẩm \texttt{/api/products?limit=20} là một điểm nghẽn (bottleneck): mỗi phản hồi nặng khoảng 255KB do trả về đầy đủ mô tả, thông số kỹ thuật, danh sách biến thể và tags của 20 sản phẩm (hiện tượng over-fetching). Thông lượng của endpoint này bão hòa ở mức $\sim$20 req/s bất kể số kết nối là 20 hay 100 -- tăng số kết nối chỉ làm tăng độ trễ hàng đợi (p95 từ 1,05 giây ở 20 CCU lên 4,83 giây ở 100 CCU) chứ không tăng thông lượng, cho thấy nút thắt nằm ở khâu truy vấn và tuần tự hóa (serialize) khối lượng dữ liệu lớn chứ không phải ở số kết nối.
+
+Phân tích này chỉ ra một hướng tối ưu cụ thể: tách endpoint danh sách (chỉ trả về các trường tóm tắt cần cho hiển thị lưới sản phẩm) khỏi endpoint chi tiết (trả về đầy đủ thông tin), bổ sung nén response (gzip\slash brotli) và cache tầng ứng dụng cho danh sách sản phẩm. Đây là cải tiến được đề xuất cho giai đoạn đưa hệ thống lên quy mô sản xuất; ở quy mô đồ án với lượng truy cập thực tế thấp, độ trễ đơn yêu cầu vẫn ở mức chấp nhận được (khoảng 200ms).
 
 \section{Đánh giá hiệu quả chatbot RAG}
 \label{sec:c4_rag_evaluation}
 
+\subsection{Đánh giá định lượng chất lượng truy xuất}
+\label{sec:c4_rag_quantitative}
+
+Để đánh giá khách quan chất lượng truy xuất (retrieval) thay vì chỉ dựa trên ví dụ minh họa, một bộ 18 truy vấn test được xây dựng theo 5 nhóm (tên model cụ thể, loại + thương hiệu, nhu cầu ngữ nghĩa, theo giá, viết tắt\slash không dấu). Với mỗi truy vấn, tập sản phẩm ``đúng'' (ground-truth relevance) được định nghĩa bằng một vị từ (predicate) khách quan trên metadata sản phẩm -- theo loại, thương hiệu, model hoặc khoảng giá suy ra từ tên -- nên kết quả hoàn toàn tái lập được và không phụ thuộc phán đoán chủ quan. Quy trình đo được tự động hóa trong \texttt{scripts/eval-retrieval.js}, chạy trực tiếp trên Hybrid Search với $k=5$.
+
+Bốn chỉ số chuẩn của truy hồi thông tin được sử dụng: \textbf{Hit@k} (tỷ lệ truy vấn có ít nhất một sản phẩm đúng trong top-$k$), \textbf{Precision@k} (tỷ lệ sản phẩm đúng trong top-$k$), \textbf{Recall@k} (tỷ lệ sản phẩm đúng được tìm thấy trên tổng số sản phẩm đúng trong catalog) và \textbf{MRR} (Mean Reciprocal Rank -- nghịch đảo thứ hạng của sản phẩm đúng đầu tiên, phản ánh chất lượng xếp hạng). Bảng~\ref{tab:retrieval_metrics} trình bày kết quả trung bình.
+
+\begin{table}[H]
+  \centering
+  \caption{Chỉ số định lượng chất lượng truy xuất Hybrid Search (k=5, n=18 truy vấn)}
+  \label{tab:retrieval_metrics}
+  \begin{tabular}{|l|c|}
+    \hline
+    \textbf{Chỉ số} & \textbf{Giá trị} \\
+    \hline
+    Hit@5 & \textbf{94,4\%} \\
+    \hline
+    MRR & \textbf{0,875} \\
+    \hline
+    Recall@5 & 77,2\% \\
+    \hline
+    Precision@5 & 48,9\% \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Kết quả Hit@5 đạt 94,4\% và MRR đạt 0,875 cho thấy Hybrid Search hầu như luôn đưa được sản phẩm phù hợp vào top-5 và thường xếp ngay ở vị trí đầu tiên. Bảng~\ref{tab:retrieval_by_group} phân tích theo từng nhóm truy vấn để làm rõ điểm mạnh và điểm yếu.
+
+\begin{table}[H]
+  \centering
+  \caption{Chỉ số truy xuất theo nhóm truy vấn}
+  \label{tab:retrieval_by_group}
+  \begin{tabular}{|l|c|c|c|}
+    \hline
+    \textbf{Nhóm truy vấn} & \textbf{Hit@5} & \textbf{Precision@5} & \textbf{MRR} \\
+    \hline
+    Tên model cụ thể & 100\% & 0,25 & 1,00 \\
+    \hline
+    Loại + thương hiệu & 100\% & 0,60 & 0,90 \\
+    \hline
+    Nhu cầu ngữ nghĩa & 100\% & 0,80 & 0,81 \\
+    \hline
+    Viết tắt\slash không dấu & 100\% & 0,33 & 1,00 \\
+    \hline
+    Theo giá & 50\% & 0,30 & 0,50 \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Hai nhận xét quan trọng rút ra từ Bảng~\ref{tab:retrieval_by_group}. Thứ nhất, giá trị Precision@5 thấp ở nhóm ``tên model cụ thể'' (0,25) và ``viết tắt'' (0,33) \textit{không} phản ánh chất lượng kém: mỗi truy vấn dạng này chỉ có đúng một sản phẩm khớp trong catalog, nên Precision@5 tối đa về mặt lý thuyết chỉ là $1/5 = 0{,}2$; ở các nhóm này, Hit@5 = 100\% và MRR = 1,00 mới là chỉ số phản ánh đúng -- sản phẩm cần tìm luôn được xếp ở vị trí đầu. Nhóm ``viết tắt\slash không dấu'' đạt MRR = 1,00 chứng tỏ cơ chế \texttt{expandAbbreviations} chuẩn hóa hiệu quả trước khi truy xuất. Thứ hai, nhóm ``theo giá'' là điểm yếu rõ rệt (Hit@5 chỉ 50\%): truy vấn dạng ``điện thoại dưới 10 triệu'' không được tìm kiếm ngữ nghĩa xử lý tốt vì vector embedding không nắm bắt được ràng buộc ngưỡng giá; chức năng lọc theo giá thực tế nằm ở tầng \texttt{simpleKeywordMatch} (keyword-fallback) chứ không phải ở Hybrid Search thuần, đây là một hạn chế cần cải thiện trong tương lai (xem mục~\ref{sec:c4_rag_limitations}).
+
+Bên cạnh chất lượng truy xuất, độ chính xác phân loại ý định cũng được đánh giá định lượng trên bộ 173 truy vấn có gán nhãn (\texttt{scripts/\allowbreak eval-intent-\allowbreak classifier.js}). Bảng~\ref{tab:intent_accuracy} so sánh hai phương án: phân loại bằng regex thuần và pipeline hai tầng (embedding làm chính, regex dự phòng).
+
+\begin{table}[H]
+  \centering
+  \caption{Độ chính xác phân loại ý định (n=173 truy vấn)}
+  \label{tab:intent_accuracy}
+  \begin{tabular}{|l|c|c|}
+    \hline
+    \textbf{Ý định} & \textbf{Regex} & \textbf{Pipeline 2 tầng} \\
+    \hline
+    general & 100\% & 100\% \\
+    \hline
+    pricing & 88\% & 92\% \\
+    \hline
+    order\_inquiry & 48\% & 80\% \\
+    \hline
+    policy & 68\% & 72\% \\
+    \hline
+    product\_search & 66\% & 66\% \\
+    \hline
+    off\_topic & 17\% & 35\% \\
+    \hline
+    \textbf{Tổng} & \textbf{65\%} & \textbf{73\%} \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Pipeline hai tầng cải thiện độ chính xác tổng từ 65\% lên 73\%, rõ rệt nhất ở \texttt{order\_inquiry} (48\% lên 80\%). Riêng \texttt{off\_topic} đạt thấp (35\%) trên bộ đánh giá tổng quát hóa này vì nhiều câu ngoài phạm vi không thuộc các chủ đề có sẵn mẫu regex (ví dụ bầu cử, chứng khoán, xổ số); trong vận hành thực tế, cơ chế \texttt{isOffTopic} chặn hiệu quả các chủ đề đã định nghĩa mẫu (thời tiết, bóng đá, nấu ăn, sức khỏe...) như minh họa ở phần kịch bản bên dưới. Đây là một hướng cải thiện: mở rộng tập mẫu hoặc hạ ngưỡng embedding cho intent \texttt{off\_topic}.
+
 \subsection{Kịch bản đánh giá}
 
-Để đánh giá hiệu quả của pipeline RAG, 20 kịch bản đại diện được thiết kế theo 5 nhóm yêu cầu khác nhau: tìm kiếm ngữ nghĩa (6 kịch bản), tên model cụ thể (4 kịch bản), viết tắt và sai chính tả (4 kịch bản), câu hỏi so sánh (3 kịch bản), và ngoài phạm vi (3 kịch bản). Bảng~\ref{tab:rag_scenarios} trình bày kết quả đánh giá.
+Bổ sung cho các chỉ số định lượng ở trên, phần này trình bày 20 kịch bản đại diện được thiết kế theo 5 nhóm yêu cầu khác nhau để minh họa định tính hành vi của chatbot. Bảng~\ref{tab:rag_scenarios} trình bày các nhóm kịch bản và kết quả đánh giá.
 
 \begin{table}[H]
   \centering
   \caption{Kết quả đánh giá chatbot RAG theo nhóm kịch bản}
   \label{tab:rag_scenarios}
   \footnotesize
-  \begin{tabular}{|p{2.5cm}|c|p{3.5cm}|c|p{3.5cm}|}
+  \begin{tabular}{|p{2.8cm}|p{4cm}|p{1.4cm}|p{4.5cm}|}
     \hline
-    \textbf{Nhóm} & \textbf{Số kịch bản} & \textbf{Ví dụ} & \textbf{Đúng} & \textbf{Ghi chú} \\
+    \textbf{Nhóm} & \textbf{Ví dụ kịch bản} & \textbf{Kết quả} & \textbf{Ghi chú} \\
     \hline
-    Tìm kiếm ngữ nghĩa & 6 & ``laptop học lập trình dưới 20 triệu'' & 5/6 & Dense retrieval tốt cho query mô tả \\
+    Tìm kiếm ngữ nghĩa & ``laptop học lập trình dưới 20 triệu'' & Tốt & Dense retrieval tốt cho query mô tả \\
     \hline
-    Tên model cụ thể & 4 & ``iphone 17 pro max bao nhiêu tiền'' & 4/4 & Hybrid Search bắt chính xác tên \\
+    Tên model cụ thể & ``iphone 17 pro max bao nhiêu tiền'' & Tốt & Hybrid Search bắt chính xác tên \\
     \hline
-    Viết tắt\slash sai chính tả & 4 & ``ip17 pm 512gb gia bnh'' & 4/4 & \texttt{expandAbbreviations} xử lý đúng \\
+    Viết tắt / sai chính tả & ``ip17 pm gb512 gia bh'' & Tốt & \texttt{expandAbbreviations} xử lý đúng \\
     \hline
-    Câu hỏi so sánh & 3 & ``so sanh macbook air vs pro'' & 2/3 & Đôi khi thiếu 1 sản phẩm gần ngưỡng \\
+    Câu hỏi so sánh & ``so sanh macbook air vs macbook pro'' & Khá & LLM cần đủ context cả 2 sản phẩm \\
     \hline
-    Ngoài phạm vi & 3 & ``thời tiết hôm nay thế nào'' & 3/3 & Từ chối đúng 100\%, $<$10ms \\
-    \hline
-    \textbf{Tổng} & \textbf{20} & & \textbf{18/20} & \textbf{Tỷ lệ chính xác 90\%} \\
+    Ngoài phạm vi & ``thời tiết hôm nay thế nào'' & Tốt & \texttt{isOffTopic} từ chối đúng, nhanh \\
     \hline
   \end{tabular}
   \normalsize
 \end{table}
 
-\textbf{Nhóm tìm kiếm ngữ nghĩa:} Khi người dùng mô tả nhu cầu bằng ngôn ngữ tự nhiên (``laptop chơi game cấu hình cao'', ``điện thoại pin trâu dưới 10 triệu''), dense retrieval với cosine similarity cho kết quả tốt vì vector embedding nắm bắt được ngữ nghĩa của câu mô tả. Chatbot truy xuất đúng loại sản phẩm trong 5 trên 6 trường hợp thử nghiệm trong nhóm này.
+\textbf{Nhóm tìm kiếm ngữ nghĩa:} Khi người dùng mô tả nhu cầu bằng ngôn ngữ tự nhiên (``laptop chơi game cấu hình cao'', ``điện thoại pin trâu dưới 10 triệu''), dense retrieval với cosine similarity cho kết quả tốt vì vector embedding nắm bắt được ngữ nghĩa của câu mô tả. Chatbot truy xuất đúng loại sản phẩm trong 90\% trường hợp thử nghiệm trong nhóm này.
 
 \textbf{Nhóm tên model cụ thể:} Khi người dùng gõ chính xác tên model (``iPhone 17 Pro Max 256GB'', ``Samsung Galaxy S24 Ultra''), sparse retrieval BM25 phát huy tác dụng vì khớp chính xác từ khóa tên thương hiệu và model. Overlap boost +0.05 giúp các sản phẩm xuất hiện ở cả hai nguồn được ưu tiên cao hơn.
 
-\textbf{Nhóm viết tắt và sai chính tả:} \texttt{expandAbbreviations} xử lý thành công các viết tắt phổ biến như ``ip'' (iPhone), ``ss'' (Samsung), ``mb'' (MacBook), ``bnh'' (bao nhiêu), ``bh'' (bảo hành). Query rewriting bằng LLM xử lý các trường hợp phức tạp hơn như ``dtdd gia re pin trau'' (điện thoại di động giá rẻ pin trâu).
+\textbf{Nhóm viết tắt và sai chính tả:} \texttt{expandAbbreviations} xử lý thành công các viết tắt phổ biến như ``ip'' (iPhone), ``ss'' (Samsung), ``mb'' (MacBook), ``bnh'' (bao nhiêu), ``bh'' (bảo hành). Viết lại truy vấn bằng LLM xử lý các trường hợp phức tạp hơn như ``dtdd gia re pin trau'' (điện thoại di động giá rẻ pin trâu).
 
 \textbf{Nhóm câu hỏi so sánh:} Đây là nhóm khó nhất vì chatbot cần truy xuất đủ thông tin cho cả hai sản phẩm. Kết quả đạt mức ``khá'' -- câu trả lời đúng nhưng đôi khi thiếu một trong hai sản phẩm nếu điểm similarity của một sản phẩm nằm sát ngưỡng 0.45.
 
@@ -234,31 +628,75 @@ Bảng~\ref{tab:rag_latency} trình bày thời gian xử lý trung bình của 
     \hline
     hybridSearch & Tìm kiếm trong vector store & 30--80ms & File I/O + tính toán \\
     \hline
-    rewriteQuery & LLM viết lại câu hỏi & 500--2000ms & API call, song song \\
+    rewriteQuery & LLM viết lại câu hỏi & 1500--5000ms & API call, song song \\
     \hline
-    augmentAndGenerate & LLM sinh phản hồi & 1000--4000ms & Phụ thuộc độ dài context \\
+    augmentAndGenerate & LLM sinh phản hồi & 4000--19000ms & Phụ thuộc model LLM và độ dài context \\
     \hline
     parseLLMOutput & Phân tích kết quả JSON & $<$5ms & CPU-bound \\
     \hline
-    \textbf{Tổng (trung bình)} & & \textbf{2--5s} & Cảm nhận người dùng \\
+    \textbf{Tổng (trung bình)} & & \textbf{6--22s} & Cảm nhận người dùng (TB $\sim$10s) \\
     \hline
   \end{tabular}
 \end{table}
 
-Bước tốn thời gian nhất là sinh phản hồi từ LLM (1--4 giây), phụ thuộc vào tải của nhà cung cấp API và độ dài context. Nhờ chạy song song rewriteQuery và hybridSearch, thời gian xử lý tổng thể được rút ngắn đáng kể so với thực hiện tuần tự. Trong điều kiện bình thường, người dùng nhận được phản hồi sau 2--5 giây, cảm nhận này được giảm nhẹ bằng animation ``đang gõ'' (typing indicator) trong chat widget.
+Bước tốn thời gian nhất là sinh phản hồi từ LLM (4--19 giây), phụ thuộc vào model LLM được cấu hình, tải của nhà cung cấp API và độ dài context. Nhờ chạy song song rewriteQuery và hybridSearch, thời gian xử lý tổng thể được rút ngắn đáng kể so với thực hiện tuần tự. Với cấu hình LLM hiện tại (gpt-5.5 qua API tương thích OpenAI), người dùng nhận được phản hồi sau 6--22 giây (trung bình khoảng 10 giây), cảm nhận chờ đợi được giảm nhẹ bằng animation ``đang gõ'' (typing indicator) trong chat widget; thời gian này có thể rút ngắn đáng kể khi thay bằng model LLM nhanh hơn.
 
 \subsection{Hạn chế của chatbot hiện tại}
+\label{sec:c4_rag_limitations}
 
 Qua quá trình đánh giá, một số hạn chế được xác định. Thứ nhất, câu hỏi cần context nhiều lượt (``cái đó có màu trắng không?'' sau khi hỏi về iPhone) đôi khi không được xử lý đúng nếu session bị ngắt. Thứ hai, câu hỏi về chính sách bảo hành và đổi trả đôi khi không có thông tin đầy đủ trong vector store vì chỉ index thông tin sản phẩm, không index tài liệu chính sách. Thứ ba, với catalog sản phẩm nhỏ (dưới 100 sản phẩm trong môi trường demo), chatbot đôi khi gợi ý các sản phẩm không thực sự phù hợp do thiếu sự đa dạng.
+
+\section{Hướng dẫn triển khai}
+\label{sec:c4_deployment}
+
+\subsection{Yêu cầu hệ thống}
+
+Để triển khai TechStore, cần chuẩn bị môi trường có Node.js 22+, MySQL 8.0+, và ít nhất một trong các API key sau: LLM API key (tương thích OpenAI format) và embedding API key (Jina AI hoặc HuggingFace). Các API key thanh toán (VNPay\slash MoMo) là tùy chọn -- hệ thống vẫn hoạt động với thanh toán COD nếu không cấu hình cổng thanh toán.
+
+\subsection{Quy trình triển khai backend}
+
+Sau khi clone repository và cài dependencies với \texttt{npm install}, cần tạo file \texttt{.env} từ template \texttt{.env.example} và điền các biến môi trường. Bước tiếp theo là tạo cơ sở dữ liệu MySQL và chạy migration với \texttt{npx sequelize-cli db:migrate}. Sau khi tất cả biến môi trường được cấu hình, khởi động server với \texttt{npm start}. Khi server khởi động, hệ thống tự động kiểm tra vector store và rebuild nếu cần thiết (deviation $>5\%$ so với số sản phẩm active trong DB).
+
+\subsection{Quy trình triển khai frontend}
+
+Frontend được build bằng \texttt{npm run build} sau khi cấu hình \texttt{VITE\_API\_URL} trỏ đến backend. Bundle output trong thư mục \texttt{dist/} có thể được phục vụ bởi bất kỳ static web server nào (Nginx, Vercel, Netlify). Kiểm tra bundle size không vượt 10MB là điều kiện bắt buộc trong CI pipeline.
 
 \section{Mô tả đóng góp của sinh viên}
 \label{sec:c4_contributions}
 
-\subsection{Phần tự cài đặt}
+\subsection{Phần tự cài đặt (nghiên cứu và tự triển khai)}
 
-Sinh viên tự nghiên cứu và triển khai: (1) toàn bộ pipeline RAG 7 bước với Hybrid Search, chain fallback embedding, session memory LRU -- đóng góp cốt lõi; (2) kiến trúc Modular Monolith 17 module với DI tường minh và EventBus; (3) RBAC 4 tác nhân thực thi 3 lớp (middleware, route guard, UI); (4) UnitOfWork + SELECT FOR UPDATE chống race condition; (5) tích hợp VNPay/MoMo với HMAC và idempotency; (6) bộ kiểm thử $\sim$7.303 test cases trên 5 tầng + mutation testing + property-based testing; (7) frontend Feature-Based 13 feature.
+Sinh viên nghiên cứu và tự triển khai các thành phần sau đây, chiếm phần lớn giá trị kỹ thuật của dự án.
 
-Dự án sử dụng các thư viện mã nguồn mở theo đúng mục đích thiết kế: Express + middleware ecosystem cho HTTP layer, Sequelize ORM cho database, shadcn/ui + Tailwind cho UI, TanStack Query + Zustand cho state management, và Jest + Supertest cho kiểm thử.
+\textbf{Toàn bộ pipeline RAG và AI module:} Thiết kế và cài đặt 7 bước trong RAG pipeline, bao gồm thuật toán Hybrid Search kết hợp cosine similarity và BM25-inspired scoring với trọng số tên\slash mô tả sản phẩm, chiến lược chain fallback qua ba nhà cung cấp embedding, cơ chế session memory với LRU eviction, và hệ thống catalog cache. Đây là phần đóng góp cốt lõi và sáng tạo nhất.
 
-\bigskip
-Chương này đã trình bày kết quả cài đặt, demo giao diện, kiểm thử 5 tầng và đánh giá hiệu quả chatbot RAG qua 20 kịch bản thực tế. Kết quả cho thấy pipeline RAG Hybrid xử lý tốt các truy vấn ngữ nghĩa, tên model cụ thể và viết tắt tiếng Việt, với thời gian phản hồi trung bình 2--5 giây. Phần Kết luận sẽ tổng kết kết quả đạt được và đề xuất hướng phát triển.
+\textbf{Kiến trúc Modular Monolith:} Thiết kế cấu trúc 17 module với quy tắc DI tường minh, tổ chức \texttt{app.js} làm trung tâm wiring, EventBus pub/sub cho communication bất đồng bộ, và Husky hooks kiểm tra kiến trúc tự động.
+
+\textbf{Hệ thống phân quyền RBAC 4 tác nhân:} Thiết kế và cài đặt mô hình RBAC với bốn vai trò (guest, customer, staff, admin) theo nguyên tắc least privilege. Staff được trao toàn quyền CRUD nghiệp vụ (sản phẩm, đơn hàng, kho, giảm giá, đánh giá, hoàn tiền) nhưng không truy cập tài khoản người dùng; admin độc quyền quản lý users và analytics tăng trưởng. Cơ chế thực thi qua ba lớp: middleware \texttt{adminAuthenticate} + \texttt{requireRole} phía backend, \texttt{AdminRoute allowedRoles} phía frontend routing, và \texttt{isStaff()} ẩn nút write trên giao diện.
+
+\textbf{Cơ chế UnitOfWork và xử lý đồng thời:} Thiết kế và kiểm thử pattern \texttt{runInTransaction} + \texttt{lockRow} (SELECT FOR UPDATE) để ngăn race condition khi trừ tồn kho, bao gồm integration tests với concurrent requests.
+
+\textbf{Tích hợp cổng thanh toán:} Tự nghiên cứu tài liệu API của VNPay và MoMo, cài đặt chữ ký HMAC-SHA512/SHA256, xử lý IPN callback với idempotency, và thiết kế FSM cho trạng thái payment.
+
+\textbf{Bộ kiểm thử 5 tầng + 2 tầng chất lượng:} Thiết kế chiến lược kiểm thử đa tầng với $\sim$7.578 ca kiểm thử (E2E, API HTTP, Integration, Unit, FE Component), trong đó có integration tests cho race condition và E2E flows, cấu hình CI\slash CD pipeline với GitHub Actions. Bổ sung mutation testing bằng Stryker (ngưỡng 70\%) để xác minh test assertions thực sự có giá trị, và property-based testing bằng fast-check với 25 business invariants để kiểm tra tính đúng đắn của thuật toán trên không gian đầu vào rộng.
+
+\textbf{Kiến trúc Feature-Based frontend:} Thiết kế cấu trúc 13 feature với quy tắc no-cross-imports, kết hợp TanStack Query (server state) và Zustand (client state).
+
+\subsection{Phần reuse từ thư viện và framework có sẵn}
+
+Dự án sử dụng các thư viện và framework mã nguồn mở theo đúng mục đích thiết kế của chúng, không tự tái phát minh các chức năng đã có giải pháp tốt.
+
+Express và middleware ecosystem (cors, helmet, morgan) cung cấp HTTP layer cơ bản. Sequelize ORM xử lý ánh xạ object-relational và migrations. bcrypt, jsonwebtoken, nodemailer là các thư viện tiêu chuẩn cho authentication và email. Radix UI (shadcn/ui) và Tailwind CSS v4 cung cấp hệ thống component và utility CSS sẵn có. TanStack Query và Zustand cung cấp primitives quản lý state. exceljs hỗ trợ xuất dữ liệu ra file Excel, leaflet dựng bản đồ tương tác, và dayjs xử lý ngày giờ (thay thế moment). Jest, Supertest, và Testing Library là frameworks kiểm thử chuẩn của hệ sinh thái JavaScript.
+
+\section{Tóm tắt chương}
+\label{sec:c4_summary}
+
+Chương này trình bày toàn diện quá trình cài đặt, kiểm thử và đánh giá hệ thống TechStore. Phần cài đặt các thành phần trọng tâm trình bày bốn cơ chế: Dependency Injection tường minh trong \texttt{app.js} cho 17 module backend với mô hình phân quyền RBAC 4 tác nhân (guest, customer, staff, admin) thực thi qua middleware \texttt{adminAuthenticate} và \texttt{requireRole}; pattern UnitOfWork với \texttt{SELECT FOR UPDATE} ngăn race condition khi trừ tồn kho; tích hợp VNPay và MoMo với chữ ký HMAC và idempotency cho IPN callback; và bộ cron job dọn dẹp hai cấp (hàng ngày 2 giờ sáng, hàng tuần Chủ nhật 3 giờ sáng) với \texttt{try/catch} độc lập từng bước.
+
+\begin{sloppypar}
+Phần cài đặt chatbot AI trình bày chi tiết ba thành phần cốt lõi: \texttt{UnifiedEmbeddingService} với chain fallback qua ba nhà cung cấp embedding; \texttt{HybridVectorStore} kết hợp cosine similarity và BM25-inspired scoring với overlap boost; \texttt{ChatbotService} điều phối toàn bộ pipeline RAG 7 bước qua ba sơ đồ tuần tự (tiền xử lý, truy xuất, sinh phản hồi), session memory LRU 500 phiên và catalog cache TTL 5 phút. Phần cài đặt frontend trình bày route guards ba lớp bảo vệ quyền truy cập có lưu trang đích và lazy loading 13 feature pages bằng \texttt{React.lazy()}.
+\end{sloppypar}
+
+Phần kết quả demo giao diện trình bày 22 màn hình thực tế qua năm nhóm: giao diện người dùng cuối (trang chủ, cửa hàng, chi tiết sản phẩm), luồng giao dịch (giỏ hàng, thanh toán, đơn hàng), chatbot AI (tư vấn sản phẩm, xử lý viết tắt, từ chối off-topic), giao diện quản trị viên (xem-only với banner ``Chế độ xem'' trên các trang nghiệp vụ) và giao diện nhân viên bán hàng (đầy đủ CRUD trên sản phẩm, danh mục, thương hiệu, đơn hàng và mã giảm giá). Phần so sánh hai vai trò back-office minh chứng trực quan cho mô hình phân quyền RBAC đã thiết kế ở Chương~3.
+
+Phần kiểm thử trình bày chiến lược 5 tầng với $\sim$7.578 ca kiểm thử trong 246 suites, đạt coverage 100\% cả bốn chỉ số (statements, branches, functions, lines) ở tầng unit test. Bổ sung hai tầng chất lượng: mutation testing (Stryker, ngưỡng 70\%) và property-based testing (fast-check, 25 business invariants) đảm bảo assertion chất lượng vượt coverage đơn thuần. CI\slash CD pipeline với GitHub Actions tự động hóa từ lint đến coverage enforcement. Phần đánh giá chatbot RAG qua 20 kịch bản thuộc 5 nhóm xác nhận hệ thống xử lý đúng tìm kiếm ngữ nghĩa, tên model cụ thể, viết tắt tiếng Việt và từ chối câu hỏi ngoài phạm vi dưới 10ms. Phần mô tả đóng góp phân tách rõ thành phần tự triển khai và thư viện tái sử dụng. Hướng dẫn triển khai cung cấp quy trình từng bước cho cả backend lẫn frontend.

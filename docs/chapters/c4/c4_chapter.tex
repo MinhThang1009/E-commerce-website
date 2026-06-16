@@ -8,44 +8,7 @@ Chương này trình bày chi tiết quá trình cài đặt các thành phần 
 
 \subsection{Môi trường phát triển}
 
-Hệ thống TechStore được phát triển và kiểm thử trên môi trường có cấu hình gồm Node.js 22 LTS cho backend, MySQL 8.0 làm hệ quản trị cơ sở dữ liệu, và trình duyệt Chrome\slash Edge phiên bản mới nhất cho frontend. Các công cụ phát triển chính gồm VS Code, Git, Postman để kiểm thử API, và MySQL Workbench để quản lý cơ sở dữ liệu trong quá trình phát triển.
-
-\begin{table}[H]
-  \centering
-  \caption{Môi trường phát triển và công nghệ sử dụng}
-  \label{tab:dev_environment}
-  \begin{tabular}{|l|l|p{6cm}|}
-    \hline
-    \textbf{Thành phần} & \textbf{Phiên bản} & \textbf{Mục đích sử dụng} \\
-    \hline
-    Node.js & 22 LTS & Runtime backend \\
-    \hline
-    MySQL & 8.0 & Cơ sở dữ liệu quan hệ \\
-    \hline
-    React & 19.2.7 & Framework UI frontend \\
-    \hline
-    TypeScript & 5.8.3 & Ngôn ngữ frontend \\
-    \hline
-    Express & 4.22.2 & Web framework backend \\
-    \hline
-    Sequelize & 6.37.8 & ORM và migration \\
-    \hline
-    Jest & 29.7.0 & Framework kiểm thử \\
-    \hline
-    Vite & 8.0.16 & Build tool frontend \\
-    \hline
-    React Router & 7.17.0 & Client-side routing, lazy loading \\
-    \hline
-    TanStack Query & 5.101.0 & Server state, cache tự động \\
-    \hline
-    Zustand & 5.0.14 & Client state management \\
-    \hline
-    Tailwind CSS & 4.3.0 & CSS utility-first framework \\
-    \hline
-  \end{tabular}
-\end{table}
-
-Bảng~\ref{tab:dev_environment} liệt kê các công nghệ chính với phiên bản sử dụng. Việc lựa chọn Node.js 22 LTS đảm bảo hỗ trợ ES modules gốc và các tính năng async mới nhất. MySQL 8.0 được ưu tiên vì hỗ trợ tốt kiểu dữ liệu JSON, row-level locking và window functions cần thiết cho các truy vấn thống kê.
+Hệ thống TechStore được phát triển và kiểm thử trên Node.js 22 LTS (backend), MySQL 8.0 và trình duyệt Chrome\slash Edge, với các công cụ VS Code, Git, Postman (kiểm thử API) và MySQL Workbench. Danh sách công nghệ và thư viện chính cùng phiên bản đã được trình bày ở Bảng~\ref{tab:tech_stack} (Chương~\ref{chap:c2_theory}).
 
 \subsection{Cấu trúc thư mục dự án}
 
@@ -96,7 +59,7 @@ Mỗi provider xử lý phân biệt query\slash passage theo cơ chế riêng. 
 
 \subsection{Cài đặt HybridVectorStore}
 
-Vector store được lưu dưới dạng file JSON (\texttt{data/vector-db.json}) thay vì database chuyên dụng như Pinecone hay Weaviate. Quyết định này phù hợp với quy mô khóa luận (dưới 10.000 sản phẩm) và tránh phụ thuộc vào dịch vụ ngoài, nhưng sẽ cần nâng cấp cho môi trường sản xuất quy mô lớn.
+Vector store được cài đặt dưới dạng file JSON cục bộ (\texttt{data/vector-db.json}) theo quyết định thiết kế đã trình bày ở mục~\ref{sec:c3_hybrid_search}.
 
 Hàm \texttt{hybridSearch} thực hiện tìm kiếm hai pha song song rồi gộp kết quả theo chiến lược kết hợp điểm từ hai phương pháp (score-based fusion). Kết quả từ hai nguồn được hợp nhất theo hai quy tắc:
 

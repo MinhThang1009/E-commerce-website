@@ -260,9 +260,7 @@ TechStore dùng Winston~\cite{winston_docs} ghi nhật ký HTTP request, lỗi v
 
 \subsection{Multer và xử lý upload file}
 
-Multer~\cite{multer_docs} xử lý request \texttt{multipart/form-data} khi upload file. TechStore cấu hình \texttt{diskStorage} lưu file tạm với tên sinh bằng \texttt{uuid()} (tránh xung đột tên); \texttt{fileFilter} chỉ chấp nhận MIME \texttt{image/jpeg}, \texttt{image/jpg}, \texttt{image/png}, \texttt{image/webp}, giới hạn 5\,MB và tối đa 10 file mỗi request, từ chối kiểu khác ngay ở tầng middleware trước khi ghi lên disk.
-
-Tuy nhiên, kiểm tra MIME type chỉ là lớp bảo vệ đầu tiên và không đủ vì kẻ tấn công có thể giả mạo header \texttt{Content-Type} để gửi file độc hại. Vì vậy, sau khi Multer lưu file xuống disk, hệ thống thực hiện thêm bước xác minh \textbf{magic bytes}: đọc phần đầu của file và đối chiếu với chữ ký nhị phân đặc trưng của từng định dạng ảnh hợp lệ (JPEG, PNG, WebP). Nếu chữ ký không khớp, file bị xóa ngay và server trả về lỗi HTTP 400. Thiết kế hai lớp bảo vệ này đảm bảo nội dung file thực sự là ảnh, không chỉ dựa vào header mà client khai báo.
+Multer~\cite{multer_docs} xử lý request \texttt{multipart/form-data} khi upload file: \texttt{diskStorage} đặt tên file bằng \texttt{uuid()}, \texttt{fileFilter} chỉ chấp nhận MIME ảnh (jpeg/png/webp), giới hạn 5\,MB và tối đa 10 file mỗi request. Vì header \texttt{Content-Type} có thể bị giả mạo, sau khi lưu file hệ thống còn xác minh \textbf{magic bytes} (đối chiếu chữ ký nhị phân đầu file với định dạng ảnh hợp lệ); không khớp thì xóa file và trả lỗi HTTP 400, bảo đảm nội dung thực sự là ảnh chứ không chỉ dựa vào header client khai báo.
 
 \section{Công nghệ frontend}
 \label{sec:c2_frontend_tech}
@@ -297,9 +295,7 @@ i18next~\cite{i18next_docs} (quốc tế hóa cho JavaScript) được chọn th
 
 \subsection{Axios và cơ chế quản lý token}
 
-Axios~\cite{axios_docs} (HTTP client với interceptor) được dùng qua một instance dùng chung cho toàn ứng dụng, tập trung cấu hình xác thực và xử lý lỗi vào một nơi thay vì để mỗi feature tự quản lý, đảm bảo mọi API call nhất quán về header xác thực và timeout.
-
-Hai interceptor được đăng ký trên instance này xử lý toàn bộ vòng đời xác thực: request interceptor tự động inject JWT vào header trước khi gửi và làm mới token nếu đã hết hạn; response interceptor bắt lỗi 401 và điều hướng về trang đăng nhập khi phiên hết hiệu lực. Điểm thiết kế đáng chú ý là cơ chế \textbf{khử trùng lặp (deduplication) khi refresh token}: trong SPA, nhiều request có thể đồng thời nhận lỗi 401 nếu token hết hạn đúng lúc, dẫn đến race condition nếu mỗi request đều tự gọi endpoint refresh song song. TechStore giải quyết bằng cờ trạng thái và hàng đợi chờ: chỉ request đầu tiên thực sự gọi API refresh, các request sau xếp hàng và nhận token mới khi refresh hoàn thành, đảm bảo server chỉ nhận đúng một yêu cầu làm mới token.
+Axios~\cite{axios_docs} được dùng qua một instance dùng chung, tập trung cấu hình xác thực và xử lý lỗi vào một nơi. Hai interceptor xử lý vòng đời xác thực: request interceptor inject JWT (làm mới nếu hết hạn), response interceptor bắt lỗi 401 và điều hướng về trang đăng nhập. Đáng chú ý là cơ chế \textbf{khử trùng lặp (deduplication) khi refresh token}: nhiều request cùng nhận 401 lúc token hết hạn có thể gây race condition; TechStore dùng cờ trạng thái và hàng đợi để chỉ request đầu gọi refresh, các request sau xếp hàng nhận token mới.
 
 \section{Xác thực, xử lý media và công cụ vận hành}
 \label{sec:c2_backend_extra}

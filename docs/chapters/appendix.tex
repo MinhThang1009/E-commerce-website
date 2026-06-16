@@ -1,0 +1,14 @@
+\chapter*{Phụ lục A: Hướng dẫn cài đặt và triển khai hệ thống}
+\label{sec:c4_deployment}
+
+\section*{A.1. Yêu cầu hệ thống}
+
+Để triển khai TechStore, cần môi trường có Node.js 22+, MySQL 8.0+, và ít nhất một trong các API key sau: LLM API key (tương thích OpenAI format) và embedding API key (Jina AI hoặc HuggingFace). API key thanh toán (VNPay\slash MoMo) là tùy chọn -- hệ thống vẫn hoạt động với thanh toán COD nếu không cấu hình cổng thanh toán.
+
+\section*{A.2. Triển khai backend}
+
+Sau khi clone repository và cài dependencies với \texttt{npm install}, tạo file \texttt{.env} từ template \texttt{.env.example} và điền các biến môi trường. Tiếp theo, tạo cơ sở dữ liệu MySQL và chạy migration với \texttt{npm run db:migrate}. Khi đã cấu hình xong biến môi trường, khởi động server với \texttt{npm start}. Lúc khởi động, hệ thống tự kiểm tra vector store và rebuild nếu cần (deviation $>5\%$ so với số sản phẩm active trong DB).
+
+\section*{A.3. Triển khai frontend}
+
+Frontend được build bằng \texttt{npm run build} sau khi cấu hình \texttt{VITE\_API\_URL} trỏ đến backend. Bundle output trong thư mục \texttt{dist/} có thể phục vụ bởi bất kỳ static web server nào (Nginx, Vercel, Netlify). Kiểm tra bundle size không vượt 10MB là điều kiện bắt buộc trong CI pipeline.

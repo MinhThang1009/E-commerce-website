@@ -234,68 +234,16 @@ Bảng~\ref{tab:tech_stack} cho thấy TechStore sử dụng stack công nghệ 
 \section{Công nghệ backend}
 \label{sec:c2_backend_tech}
 
-\subsection{Node.js và Express}
+Backend dùng Node.js~\cite{tilkov2010node} 22 LTS (I/O không chặn) làm runtime; Express 4 được chọn thay NestJS vì Modular Monolith tự triển khai DI thủ công và Express cho mức kiểm soát middleware tường minh nhất. Sequelize~\cite{sequelize_docs} (thay Prisma) hỗ trợ raw query phức tạp và transaction \texttt{SELECT FOR UPDATE} cần cho UnitOfWork, chạy trên MySQL 8 (kiểu JSON, row-level locking, charset utf8mb4 cho tiếng Việt). Xác thực dùng JWT~\cite{jones2015jwt} dual-token (access 7 ngày, refresh 30 ngày trong httpOnly cookie chống XSS) và bcrypt~\cite{provos1999bcrypt} cost factor 12 (Argon2id là hướng nâng cấp).
 
-Backend dùng Node.js~\cite{tilkov2010node} 22 LTS (mô hình I/O không chặn, phù hợp xử lý nhiều kết nối đồng thời) làm runtime. Express 4 được chọn thay vì các framework có DI tích hợp sẵn như NestJS vì kiến trúc Modular Monolith của TechStore tự triển khai DI thủ công, và Express cho mức kiểm soát middleware tường minh cao nhất mà không phát sinh chi phí trừu tượng thừa.
-
-\subsection{Sequelize ORM và MySQL 8}
-
-Sequelize~\cite{sequelize_docs} (ORM cho Node.js với migrations, associations và transactions) được chọn thay vì Prisma vì tương thích hoàn toàn với JavaScript thuần, hỗ trợ raw query phức tạp và transaction pattern tùy chỉnh như \texttt{SELECT FOR UPDATE} cần thiết cho cơ chế UnitOfWork. MySQL 8 được chọn nhờ hỗ trợ kiểu JSON, khóa hàng (row-level locking) phục vụ xử lý đồng thời và charset utf8mb4 lưu trữ đầy đủ tiếng Việt có dấu lẫn emoji.
-
-\subsection{JWT và bcrypt}
-
-JWT~\cite{jones2015jwt} dùng cho xác thực stateless với chiến lược dual-token: access token (7 ngày) và refresh token (30 ngày, lưu httpOnly cookie chống XSS). Mật khẩu băm bằng bcrypt~\cite{provos1999bcrypt} với cost factor 12 (salt ngẫu nhiên, chống rainbow table và brute force). Mặc dù OWASP khuyến nghị Argon2id cho ứng dụng mới, bcrypt cost=12 vẫn đủ an toàn và được chọn nhờ hệ sinh thái Node.js trưởng thành; Argon2id là hướng nâng cấp khi hệ thống mở rộng.
-
-\subsection{Zod -- Schema Validation}
-
-Zod~\cite{zod_docs} (validation schema cho TypeScript) validate dữ liệu đầu vào: mỗi endpoint có một schema riêng cho request body, query và path params; middleware \texttt{validateRequest} tự trả lỗi 400 chi tiết khi dữ liệu sai, loại bỏ code validation thủ công trong controller.
-
-\subsection{Nodemailer -- Gửi email giao dịch}
-
-Nodemailer~\cite{nodemailer_docs} kết nối Gmail SMTP gửi các email giao dịch: OTP xác thực tài khoản, đặt lại mật khẩu, xác nhận và cập nhật trạng thái đơn hàng, hủy đơn và thông báo cho quản trị viên; được chọn vì cấu hình SMTP đơn giản với Gmail App Password và connection pooling (\texttt{pool: true}) tái sử dụng kết nối khi gửi nhiều email.
-
-\subsection{Winston -- Ghi nhật ký hệ thống}
-
-TechStore dùng Winston~\cite{winston_docs} ghi nhật ký HTTP request, lỗi và sự kiện theo cấp độ (error/warn/info/debug) với định dạng có cấu trúc, phục vụ phân tích sự cố theo thời gian.
-
-\subsection{Multer và xử lý upload file}
-
-Multer~\cite{multer_docs} xử lý request \texttt{multipart/form-data} khi upload file: \texttt{diskStorage} đặt tên file bằng \texttt{uuid()}, \texttt{fileFilter} chỉ chấp nhận MIME ảnh (jpeg/png/webp), giới hạn 5\,MB và tối đa 10 file mỗi request. Vì header \texttt{Content-Type} có thể bị giả mạo, sau khi lưu file hệ thống còn xác minh \textbf{magic bytes} (đối chiếu chữ ký nhị phân đầu file với định dạng ảnh hợp lệ); không khớp thì xóa file và trả lỗi HTTP 400, bảo đảm nội dung thực sự là ảnh chứ không chỉ dựa vào header client khai báo.
+Zod~\cite{zod_docs} validate đầu vào qua middleware \texttt{validateRequest} (tự trả lỗi 400, bỏ validation thủ công trong controller). Nodemailer~\cite{nodemailer_docs} gửi các email giao dịch (OTP, đặt lại mật khẩu, xác nhận\slash cập nhật\slash hủy đơn, thông báo quản trị viên) qua Gmail SMTP với connection pooling. Winston~\cite{winston_docs} ghi log theo cấp độ (error/warn/info/debug). Multer~\cite{multer_docs} xử lý upload \texttt{multipart/form-data} (chỉ nhận ảnh jpeg/png/webp, giới hạn 5\,MB và 10 file mỗi request); vì header \texttt{Content-Type} có thể bị giả mạo, sau khi lưu hệ thống còn xác minh \textbf{magic bytes} (chữ ký nhị phân đầu file), không khớp thì xóa và trả lỗi 400 -- bảo đảm file thực sự là ảnh.
 
 \section{Công nghệ frontend}
 \label{sec:c2_frontend_tech}
 
-\subsection{React 19 và TypeScript}
+Giao diện xây bằng React~\cite{react_docs} 19 (Actions, \texttt{use()}, \texttt{useTransition}, \texttt{useOptimistic}) với TypeScript~\cite{typescript_handbook} cho kiểu tĩnh. Vite~\cite{vite_docs} (thay webpack\slash CRA) dùng ES modules gốc cho hot-reload nhanh và tự chia bundle theo feature qua \texttt{React.lazy}+\texttt{Suspense}. Client state dùng Zustand~\cite{zustand_docs} (6 store kết hợp Immer, gọn hơn Redux cho logic đơn giản), server state dùng TanStack Query~\cite{tanstack_query_docs} (cache tự động, staleTime 5 phút, gcTime 10 phút).
 
-Giao diện xây bằng React~\cite{react_docs} 19 (phiên bản 19.2.7) theo mô hình component-based, tận dụng các API mới như Actions, hook \texttt{use()}, \texttt{useTransition} và \texttt{useOptimistic} cho cập nhật bất đồng bộ và optimistic UI. TypeScript~\cite{typescript_handbook} bổ sung kiểu tĩnh giúp phát hiện lỗi sớm và tăng khả năng bảo trì codebase.
-
-\subsection{Vite và Code Splitting}
-
-Vite~\cite{vite_docs} được chọn thay webpack và Create React App vì hai công cụ đó bundle toàn bộ source trước mỗi lần reload (chậm khi codebase lớn), còn Vite dùng ES modules gốc, chỉ biên dịch module theo yêu cầu nên hot-reload gần như tức thì. Kết hợp \texttt{React.lazy} và \texttt{Suspense}, Vite tự chia nhỏ bundle (code splitting) theo từng feature, giảm kích thước tải ban đầu.
-
-\subsection{Zustand và TanStack Query}
-
-\textbf{Zustand}~\cite{zustand_docs} (quản lý client state, API tối giản) được chọn thay vì Redux vì Redux yêu cầu nhiều boilerplate (reducers, action creators, selectors) phù hợp cho state phức tạp; với 6 store độc lập và logic đơn giản của TechStore, Zustand gọn nhẹ hơn. Hệ thống dùng 6 Zustand store kết hợp Immer: auth-store, cart-store, chat-store, catalog-store, wishlist-store và ui-store. \textbf{TanStack Query}~\cite{tanstack_query_docs} quản lý server state với caching tự động, background refetching và xử lý loading/error, config mặc định staleTime 5 phút và gcTime 10 phút.
-
-\subsection{shadcn/ui và Tailwind CSS}
-
-shadcn/ui (component React trên nền Radix UI -- các primitive accessible, headless như Dialog, Dropdown, Popover -- kết hợp \texttt{cva} quản lý biến thể style) cung cấp source code trực tiếp vào dự án nên tùy chỉnh hoàn toàn, khác thư viện component đóng gói sẵn. TechStore kết hợp shadcn/ui cho component tương tác phức tạp với Tailwind CSS~\cite{tailwindcss_docs} 4.3.0 (utility-first) cho layout và tùy chỉnh chi tiết.
-
-\subsection{Framer Motion}
-
-Framer Motion~\cite{framer_motion_docs} (animation cho React với API khai báo) được dùng cho HeroSection trang chủ với hiệu ứng parallax (\texttt{useScroll}, \texttt{useTransform}) và animation khi cuộn trang. Lý do chọn: parallax cuộn đòi hỏi đồng bộ chính xác giữa scroll position và transform value, điều CSS transitions thuần không làm được nếu không viết JavaScript thủ công; Framer Motion đóng gói logic này theo cách khai báo, tách khỏi business logic.
-
-\subsection{React Router v7}
-
-React Router v7~\cite{react_router_docs} (phiên bản 7.17.0) được chọn thay vì TanStack Router vì hệ sinh thái trưởng thành, tài liệu phong phú và tích hợp sâu với React 19 (TanStack Router type-safe hơn nhưng chưa đủ ổn định cho dự án dài hạn). TechStore khai báo routes trong \texttt{AppRoutes.tsx} với \texttt{React.lazy} cho mỗi feature, kết hợp route bảo vệ (\texttt{ProtectedRoute}, \texttt{AdminRoute}) kiểm soát quyền truy cập.
-
-\subsection{i18next và react-i18next}
-
-i18next~\cite{i18next_docs} (quốc tế hóa cho JavaScript) được chọn thay vì react-intl vì API linh hoạt và hỗ trợ nhiều chiến lược nạp file dịch hơn. TechStore dùng react-i18next với static import để bundle file dịch cùng ứng dụng (phù hợp hai ngôn ngữ hiện tại), cho phép chuyển ngôn ngữ tức thì không cần request mạng; component dùng hook \texttt{useTranslation()} tách nội dung hiển thị khỏi logic.
-
-\subsection{Axios và cơ chế quản lý token}
-
-Axios~\cite{axios_docs} được dùng qua một instance dùng chung, tập trung cấu hình xác thực và xử lý lỗi vào một nơi. Hai interceptor xử lý vòng đời xác thực: request interceptor inject JWT (làm mới nếu hết hạn), response interceptor bắt lỗi 401 và điều hướng về trang đăng nhập. Đáng chú ý là cơ chế \textbf{khử trùng lặp (deduplication) khi refresh token}: nhiều request cùng nhận 401 lúc token hết hạn có thể gây race condition; TechStore dùng cờ trạng thái và hàng đợi để chỉ request đầu gọi refresh, các request sau xếp hàng nhận token mới.
+Giao diện kết hợp shadcn/ui (component trên nền Radix UI, đưa source thẳng vào dự án nên tùy chỉnh hoàn toàn) với Tailwind CSS~\cite{tailwindcss_docs} 4.3.0 utility-first. Framer Motion~\cite{framer_motion_docs} xử lý parallax và animation theo API khai báo (tách khỏi business logic). React Router v7~\cite{react_router_docs} (thay TanStack Router vì hệ sinh thái trưởng thành, tích hợp sâu React 19) quản lý routing với \texttt{React.lazy} và route guard (\texttt{ProtectedRoute}, \texttt{AdminRoute}). i18next~\cite{i18next_docs} (react-i18next, static import) cho song ngữ chuyển tức thì. Axios~\cite{axios_docs} dùng một instance chung với hai interceptor (inject JWT, bắt lỗi 401) và cơ chế \textbf{khử trùng lặp khi refresh token}: chỉ request đầu gọi refresh, các request 401 đồng thời xếp hàng nhận token mới, tránh race condition.
 
 \section{Xác thực, xử lý media và công cụ vận hành}
 \label{sec:c2_backend_extra}

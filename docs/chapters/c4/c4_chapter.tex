@@ -640,21 +640,6 @@ Bước tốn thời gian nhất là sinh phản hồi từ LLM (4--19 giây), p
 
 Qua quá trình đánh giá, một số hạn chế được xác định. Thứ nhất, câu hỏi cần context nhiều lượt (``cái đó có màu trắng không?'' sau khi hỏi về iPhone) đôi khi không được xử lý đúng nếu session bị ngắt. Thứ hai, câu hỏi về chính sách bảo hành và đổi trả đôi khi thiếu thông tin đầy đủ trong vector store vì chỉ index thông tin sản phẩm, không index tài liệu chính sách. Thứ ba, với catalog nhỏ (dưới 100 sản phẩm trong môi trường demo), chatbot đôi khi gợi ý sản phẩm không thực sự phù hợp do thiếu đa dạng.
 
-\section{Hướng dẫn triển khai}
-\label{sec:c4_deployment}
-
-\subsection{Yêu cầu hệ thống}
-
-Để triển khai TechStore, cần môi trường có Node.js 22+, MySQL 8.0+, và ít nhất một trong các API key sau: LLM API key (tương thích OpenAI format) và embedding API key (Jina AI hoặc HuggingFace). API key thanh toán (VNPay\slash MoMo) là tùy chọn -- hệ thống vẫn hoạt động với thanh toán COD nếu không cấu hình cổng thanh toán.
-
-\subsection{Quy trình triển khai backend}
-
-Sau khi clone repository và cài dependencies với \texttt{npm install}, tạo file \texttt{.env} từ template \texttt{.env.example} và điền các biến môi trường. Tiếp theo, tạo cơ sở dữ liệu MySQL và chạy migration với \texttt{npm run db:migrate}. Khi đã cấu hình xong biến môi trường, khởi động server với \texttt{npm start}. Lúc khởi động, hệ thống tự kiểm tra vector store và rebuild nếu cần (deviation $>5\%$ so với số sản phẩm active trong DB).
-
-\subsection{Quy trình triển khai frontend}
-
-Frontend được build bằng \texttt{npm run build} sau khi cấu hình \texttt{VITE\_API\_URL} trỏ đến backend. Bundle output trong thư mục \texttt{dist/} có thể phục vụ bởi bất kỳ static web server nào (Nginx, Vercel, Netlify). Kiểm tra bundle size không vượt 10MB là điều kiện bắt buộc trong CI pipeline.
-
 \section{Mô tả đóng góp của sinh viên}
 \label{sec:c4_contributions}
 
@@ -693,4 +678,4 @@ Phần cài đặt chatbot AI trình bày ba thành phần cốt lõi (dịch v�
 
 Phần demo trình bày 22 màn hình thực tế qua năm nhóm (người dùng cuối, luồng giao dịch, chatbot AI, quản trị viên chỉ xem và nhân viên CRUD đầy đủ), minh chứng trực quan cho mô hình phân quyền RBAC đã thiết kế ở Chương~3.
 
-Phần kiểm thử trình bày chiến lược 5 tầng với $\sim$7.579 ca kiểm thử trong 246 suites, coverage 100\% cả bốn chỉ số ở tầng unit, bổ sung mutation testing (Stryker), property-based testing (fast-check) và CI\slash CD bằng GitHub Actions. Phần đánh giá chatbot RAG qua 20 kịch bản xác nhận hệ thống xử lý đúng tìm kiếm ngữ nghĩa, tên model, viết tắt và từ chối off-topic, kèm các chỉ số truy xuất định lượng (Hit@k, MRR) và kiểm thử hiệu năng. Cuối chương phân tách đóng góp tự triển khai với phần tái sử dụng thư viện và hướng dẫn triển khai.
+Phần kiểm thử trình bày chiến lược 5 tầng với $\sim$7.579 ca kiểm thử trong 246 suites, coverage 100\% cả bốn chỉ số ở tầng unit, bổ sung mutation testing (Stryker), property-based testing (fast-check) và CI\slash CD bằng GitHub Actions. Phần đánh giá chatbot RAG qua 20 kịch bản xác nhận hệ thống xử lý đúng tìm kiếm ngữ nghĩa, tên model, viết tắt và từ chối off-topic, kèm các chỉ số truy xuất định lượng (Hit@k, MRR) và kiểm thử hiệu năng. Cuối chương phân tách rõ đóng góp tự triển khai với phần tái sử dụng thư viện; hướng dẫn cài đặt và triển khai chi tiết được trình bày ở Phụ lục~A.

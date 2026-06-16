@@ -62,7 +62,8 @@ else Token hợp lệ
         end note
         API -->> FE : 200 { token, user }
         note right of API
-          Set-Cookie: refreshToken (httpOnly, Secure)\nin HTTP response header
+          Set-Cookie: refreshToken (httpOnly, Secure)
+          in HTTP response header
         end note
         FE -->> User : Đăng nhập thành công
     end

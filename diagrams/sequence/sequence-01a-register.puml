@@ -49,7 +49,8 @@ else Email chưa tồn tại
     end note
     API ->> Mail : sendOtpEmail
     note right of Mail
-      Await trong try/catch — lỗi chỉ log,\nKHÔNG block register
+      Await trong try/catch — lỗi chỉ log,
+      KHÔNG block register
       → User nhận email OTP qua hộp thư
     end note
     API -->> FE : 201 { message: auth.registerSuccess }

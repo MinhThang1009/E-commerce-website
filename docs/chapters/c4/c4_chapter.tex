@@ -72,7 +72,7 @@ Hàm \texttt{hybridSearch} tìm kiếm hai pha song song rồi gộp kết quả
 \label{eq:hybrid_score}
 \end{equation}
 
-Trong đó $\text{score\_dense}(p)$ là cosine similarity (chỉ tính nếu $\geq 0.45$), $\text{score\_sparse}(p)$ là điểm BM25-inspired bằng tổng trọng số token khớp (name $\times 3$, text $\times 1$) nhân tỷ lệ token khớp trên tổng số token trong query, và $\Delta_{\text{overlap}} = 0.05$ nếu sản phẩm xuất hiện ở cả hai nguồn. Sản phẩm chỉ match keyword (không match semantic) được inject với score tối đa $0.45 + 0.05 = 0.50$ và đánh dấu \texttt{lowConfidence=true}, luôn thấp hơn mọi kết quả vector tốt. Kết quả cuối là tối đa 10 sản phẩm điểm cao nhất (topK=10). Nếu không sản phẩm nào vượt ngưỡng minScore=0.45, pipeline kích hoạt chế độ dự phòng: gọi lại \texttt{hybridSearch(finalQuery, 3, 0)} với minScore=0 để lấy tối đa 3 sản phẩm gần nhất và đánh dấu \texttt{lowConfidence=true}, cho phép LLM cảnh báo người dùng kết quả có thể không chính xác.
+Trong đó $\text{score\_dense}(p)$ là cosine similarity (chỉ tính nếu $\geq 0.45$), $\text{score\_sparse}(p)$ là điểm BM25-inspired bằng tổng trọng số token khớp (name $\times 3$, text $\times 1$) nhân tỷ lệ token khớp trên tổng số token trong query, và $\Delta_{\text{overlap}} = 0.05$ nếu sản phẩm xuất hiện ở cả hai nguồn. Sản phẩm chỉ match keyword (không match semantic) được inject với score tối đa $0.45 + 0.05 = 0.50$ và đánh dấu \texttt{lowConfidence=true}, luôn thấp hơn mọi kết quả vector tốt. Kết quả cuối là tối đa 10 sản phẩm điểm cao nhất (topK=10); cơ chế dự phòng khi không sản phẩm nào vượt ngưỡng được mô tả ở bước 5 của pipeline bên dưới.
 
 \subsection{Cài đặt RAG Pipeline và ChatbotService}
 
@@ -316,13 +316,7 @@ Khi nhân viên bán hàng đăng nhập, các trang nghiệp vụ không hiển
 
 Trang quản lý sản phẩm dành cho nhân viên (Hình~\ref{fig:screenshot_staff_products}) hiển thị nút ``+ Thêm sản phẩm'', đầy đủ bốn icon hành động trên mỗi dòng (xem, sửa, nhân bản, xóa) và dropdown chỉnh trạng thái nhanh inline.
 
-Trang quản lý danh mục (Hình~\ref{fig:screenshot_staff_categories}) có nút ``+ Thêm danh mục'' và hai icon sửa, xóa trên mỗi dòng.
-
-Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_staff_brands}) tương tự danh mục, có nút ``+ Thêm thương hiệu'' và icon sửa, xóa trên mỗi dòng.
-
-Trang quản lý đơn hàng (Hình~\ref{fig:screenshot_staff_orders}) cho phép nhân viên cập nhật trạng thái đơn qua icon chỉnh sửa bên cạnh icon xem chi tiết.
-
-Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_staff_discounts}) có nút ``+ Tạo mã giảm giá'' và icon sửa, xóa trên mỗi dòng, cho phép nhân viên quản lý toàn bộ vòng đời của mã giảm giá.
+Các trang quản lý danh mục (Hình~\ref{fig:screenshot_staff_categories}), thương hiệu (Hình~\ref{fig:screenshot_staff_brands}) và mã giảm giá (Hình~\ref{fig:screenshot_staff_discounts}) đều có nút thêm mới cùng cặp icon sửa, xóa trên mỗi dòng, cho phép nhân viên thao tác đầy đủ vòng đời dữ liệu; riêng trang quản lý đơn hàng (Hình~\ref{fig:screenshot_staff_orders}) chỉ cập nhật trạng thái đơn qua icon chỉnh sửa bên cạnh icon xem chi tiết.
 
 \begin{figure}[H]
   \centering
@@ -482,6 +476,8 @@ Phân tích này chỉ ra hướng tối ưu cụ thể: tách endpoint danh sá
 
 \section{Đánh giá hiệu quả chatbot RAG}
 \label{sec:c4_rag_evaluation}
+
+Tiếp nối phần demo giao diện chatbot và phần kiểm thử chức năng toàn hệ thống ở trên, mục này đánh giá chuyên sâu hiệu quả của chatbot RAG -- thành phần trọng tâm của khóa luận -- qua các chỉ số định lượng (chất lượng truy xuất, độ chính xác phân loại ý định, độ trễ pipeline) và 20 kịch bản định tính đại diện.
 
 \subsection{Đánh giá định lượng chất lượng truy xuất}
 \label{sec:c4_rag_quantitative}

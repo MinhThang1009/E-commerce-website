@@ -35,7 +35,7 @@ Hệ thống phục vụ bốn nhóm tác nhân với phạm vi quyền hạn ph
 
 Đầu vào đặc thù của thành phần chatbot AI là câu hỏi bằng ngôn ngữ tự nhiên tiếng Việt (hoặc tiếng Anh) của người dùng liên quan đến sản phẩm, cùng với ngữ cảnh hội thoại từ các lượt trước trong cùng phiên làm việc. Hệ thống đầu ra tương ứng là phản hồi tiếng Việt tự nhiên, kèm theo danh sách sản phẩm gợi ý phù hợp nhất với nhu cầu của người dùng.
 
-\subsection{Phạm vi và giả định}
+\subsection{Phạm vi bài toán và giả định}
 
 Hệ thống tập trung vào mảng bán lẻ thiết bị công nghệ tiêu dùng (laptop, điện thoại, đồng hồ thông minh, máy tính bảng, phụ kiện). Giao tiếp giữa người dùng và hệ thống thực hiện qua giao thức HTTP REST, dữ liệu sản phẩm được lưu trữ trong cơ sở dữ liệu quan hệ và đồng bộ vào vector store để phục vụ tìm kiếm ngữ nghĩa. Hệ thống giả định có kết nối đến ít nhất một nhà cung cấp dịch vụ embedding để vector hóa dữ liệu sản phẩm, và có thể triển khai với bất kỳ LLM API nào tương thích giao thức OpenAI.
 

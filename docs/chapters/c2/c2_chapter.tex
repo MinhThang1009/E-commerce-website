@@ -1,7 +1,7 @@
 \chapter{Nền tảng và công nghệ sử dụng}
 \label{chap:c2_theory}
 
-\section{Tổng quan thương mại điện tử}
+\section{Tổng quan thương mại điện tử và kiến trúc phần mềm}
 \label{sec:c2_ecommerce_overview}
 
 \subsection{Khái niệm và đặc điểm thương mại điện tử}
@@ -238,17 +238,14 @@ Backend dùng Node.js~\cite{tilkov2010node} 22 LTS (I/O không chặn) làm runt
 
 Zod~\cite{zod_docs} validate đầu vào qua middleware \texttt{validateRequest} (tự trả lỗi 400, bỏ validation thủ công trong controller). Nodemailer~\cite{nodemailer_docs} gửi các email giao dịch (OTP, đặt lại mật khẩu, xác nhận\slash cập nhật\slash hủy đơn, thông báo quản trị viên) qua Gmail SMTP với connection pooling. Winston~\cite{winston_docs} ghi log theo cấp độ (error/warn/info/debug). Multer~\cite{multer_docs} xử lý upload \texttt{multipart/form-data} (chỉ nhận ảnh jpeg/png/webp, giới hạn 5\,MB và 10 file mỗi request); vì header \texttt{Content-Type} có thể bị giả mạo, sau khi lưu hệ thống còn xác minh \textbf{magic bytes} (chữ ký nhị phân đầu file), không khớp thì xóa và trả lỗi 400 -- bảo đảm file thực sự là ảnh.
 
+Bốn công nghệ phụ trợ phía backend gồm: \textbf{Google OAuth 2.0}~\cite{google_oauth_docs} cho đăng nhập bằng tài khoản Google theo phương thức token exchange (backend xác minh Google ID token qua \texttt{google-auth-library} rồi phát JWT thống nhất với đăng nhập email, không lưu mật khẩu Google); \textbf{Sharp}~\cite{sharp_docs} chuẩn hóa ảnh sản phẩm sau upload (resize, tự xoay theo EXIF, chuyển JPEG\slash WebP, xóa metadata EXIF); \textbf{node-cron}~\cite{node_cron_docs} lập lịch các tác vụ dọn dẹp định kỳ hằng ngày và hằng tuần (chi tiết ở Chương~4); và \textbf{Swagger/OpenAPI}~\cite{swagger_docs} sinh tài liệu API (OpenAPI 3.0) tự động từ JSDoc, phục vụ giao diện tương tác tại \texttt{/api-docs}.
+
 \section{Công nghệ frontend}
 \label{sec:c2_frontend_tech}
 
 Giao diện xây bằng React~\cite{react_docs} 19 (Actions, \texttt{use()}, \texttt{useTransition}, \texttt{useOptimistic}) với TypeScript~\cite{typescript_handbook} cho kiểu tĩnh. Vite~\cite{vite_docs} (thay webpack\slash CRA) dùng ES modules gốc cho hot-reload nhanh và tự chia bundle theo feature qua \texttt{React.lazy}+\texttt{Suspense}. Client state dùng Zustand~\cite{zustand_docs} (6 store kết hợp Immer, gọn hơn Redux cho logic đơn giản), server state dùng TanStack Query~\cite{tanstack_query_docs} (cache tự động, staleTime 5 phút, gcTime 10 phút).
 
 Giao diện kết hợp shadcn/ui (component trên nền Radix UI, đưa source thẳng vào dự án nên tùy chỉnh hoàn toàn) với Tailwind CSS~\cite{tailwindcss_docs} 4.3.0 utility-first. Framer Motion~\cite{framer_motion_docs} xử lý parallax và animation theo API khai báo (tách khỏi business logic). React Router v7~\cite{react_router_docs} (thay TanStack Router vì hệ sinh thái trưởng thành, tích hợp sâu React 19) quản lý routing với \texttt{React.lazy} và route guard (\texttt{ProtectedRoute}, \texttt{AdminRoute}). i18next~\cite{i18next_docs} (react-i18next, static import) cho song ngữ chuyển tức thì. Axios~\cite{axios_docs} dùng một instance chung với hai interceptor (inject JWT, bắt lỗi 401) và cơ chế \textbf{khử trùng lặp khi refresh token}: chỉ request đầu gọi refresh, các request 401 đồng thời xếp hàng nhận token mới, tránh race condition.
-
-\section{Xác thực, xử lý media và công cụ vận hành}
-\label{sec:c2_backend_extra}
-
-Bốn công nghệ phụ trợ phía backend gồm: \textbf{Google OAuth 2.0}~\cite{google_oauth_docs} cho đăng nhập bằng tài khoản Google theo phương thức token exchange (backend xác minh Google ID token qua \texttt{google-auth-library} rồi phát JWT thống nhất với đăng nhập email, không lưu mật khẩu Google); \textbf{Sharp}~\cite{sharp_docs} chuẩn hóa ảnh sản phẩm sau upload (resize, tự xoay theo EXIF, chuyển JPEG\slash WebP, xóa metadata EXIF); \textbf{node-cron}~\cite{node_cron_docs} lập lịch các tác vụ dọn dẹp định kỳ hằng ngày và hằng tuần (chi tiết ở Chương~4); và \textbf{Swagger/OpenAPI}~\cite{swagger_docs} sinh tài liệu API (OpenAPI 3.0) tự động từ JSDoc, phục vụ giao diện tương tác tại \texttt{/api-docs}.
 
 \section{Kiểm thử và công cụ đảm bảo chất lượng}
 \label{sec:c2_quality}

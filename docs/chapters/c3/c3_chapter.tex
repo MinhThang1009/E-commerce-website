@@ -12,13 +12,9 @@ Hệ thống TechStore phục vụ bốn nhóm tác nhân chính. \textbf{Khách
 
 \subsection{Yêu cầu chức năng}
 
-Hệ thống chia thành bốn nhóm chức năng tương ứng bốn nhóm tác nhân.
+Hệ thống chia thành bốn nhóm chức năng tương ứng bốn nhóm tác nhân đã mô tả ở mục trên: chức năng người dùng cuối (khách vãng lai và khách hàng), chức năng chatbot AI, và chức năng back-office (nhân viên và quản trị viên). Bảng~\ref{tab:use_cases} liệt kê các ca sử dụng chính theo nhóm; ngoài ra hệ thống còn một số chức năng phụ trợ: khách vãng lai gửi phản hồi\slash liên hệ và xem mã giảm giá đang áp dụng, khách hàng xem\slash xóa lịch sử tìm kiếm và tải ảnh lên (avatar, ảnh đánh giá). Phần dưới chỉ nhấn mạnh nhóm chatbot AI vì đây là trọng tâm khóa luận.
 
-Nhóm chức năng người dùng cuối gồm hai mức. Khách vãng lai (guest) có thể duyệt danh mục với bộ lọc đa chiều (giá, hãng, cấu hình), tìm kiếm theo từ khóa, xem chi tiết sản phẩm kèm biến thể, thêm vào giỏ hàng tạm thời, tương tác với chatbot AI, và đăng ký hoặc đăng nhập tài khoản. Khách hàng đã đăng nhập (customer) có thêm quyền đặt hàng và chọn địa chỉ giao hàng, thanh toán qua MoMo, VNPay hoặc COD, theo dõi và hủy đơn hàng, viết đánh giá và quản lý danh sách yêu thích.
-
-Nhóm chức năng chatbot AI là trọng tâm khóa luận, có các yêu cầu đặc thù: tiếp nhận câu hỏi ngôn ngữ tự nhiên tiếng Việt và tiếng Anh, hiểu ý định người dùng kể cả khi viết tắt hoặc sai chính tả, truy xuất sản phẩm liên quan từ vector store, sinh phản hồi tiếng Việt tự nhiên kèm sản phẩm gợi ý, duy trì ngữ cảnh hội thoại trong phiên, thêm sản phẩm vào giỏ trực tiếp qua chat, và lịch sự từ chối câu hỏi không liên quan đến sản phẩm.
-
-Nhóm chức năng back-office chia theo hai mức quyền. Nhân viên thực hiện tác vụ nghiệp vụ hàng ngày: quản lý toàn bộ danh mục sản phẩm và biến thể (thêm, sửa, xóa mềm), quản lý tồn kho có ngăn race condition, xử lý đơn hàng và cập nhật trạng thái, kiểm duyệt đánh giá, xử lý hoàn tiền và quản lý mã giảm giá. Quản trị viên không trực tiếp thực hiện các tác vụ CRUD nêu trên mà độc quyền quản lý tài khoản người dùng và xem thống kê tăng trưởng -- các chức năng ảnh hưởng toàn hệ thống nên được kiểm soát chặt hơn. Bảng~\ref{tab:use_cases} liệt kê chi tiết các ca sử dụng theo nhóm.
+Nhóm chức năng chatbot AI có các yêu cầu đặc thù: tiếp nhận câu hỏi ngôn ngữ tự nhiên tiếng Việt và tiếng Anh, hiểu ý định người dùng kể cả khi viết tắt hoặc sai chính tả, truy xuất sản phẩm liên quan từ vector store, sinh phản hồi tiếng Việt tự nhiên kèm sản phẩm gợi ý, duy trì ngữ cảnh hội thoại trong phiên, thêm sản phẩm vào giỏ trực tiếp qua chat, và lịch sự từ chối câu hỏi không liên quan đến sản phẩm.
 
 \begin{longtable}{|l|p{6cm}|p{3.5cm}|l|}
   \caption{Danh sách ca sử dụng hệ thống TechStore}
@@ -115,13 +111,9 @@ Nhóm chức năng back-office chia theo hai mức quyền. Nhân viên thực h
 
 \subsection{Yêu cầu phi chức năng}
 
-Về hiệu năng, API phải phản hồi trong 200ms với dưới 100 người dùng đồng thời cho các thao tác CRUD thông thường. Chatbot AI có thể mất khoảng 6 đến 22 giây (trung bình khoảng 10 giây) tùy model LLM cấu hình và tải của nhà cung cấp; độ trễ này được chấp nhận và thông báo cho người dùng qua trạng thái loading. Vector store JSON phải phục vụ Hybrid Search trong 50ms cho catalog dưới 10.000 sản phẩm.
+Yêu cầu phi chức năng của TechStore chia thành bốn nhóm: hiệu năng, bảo mật, độ tin cậy và khả năng kiểm thử. Bảng~\ref{tab:nfr} (NFR-01 đến NFR-19) tổng hợp đầy đủ tiêu chí, giá trị mục tiêu và phương pháp đo; phần này chỉ giải thích thêm các điểm thiết kế đáng chú ý.
 
-Về bảo mật, hệ thống phải triển khai xác thực JWT dual-token với access token 7 ngày và refresh token 30 ngày, hash mật khẩu bằng bcrypt cost factor 12, chống CSRF qua httpOnly cookie với thuộc tính \texttt{SameSite=Strict}, và mã hóa HMAC cho callback từ cổng thanh toán. Rate limiting áp dụng theo từng nhóm endpoint: API chung 100 request/15 phút, xác thực 10 request/60 phút, OTP 5 request/15 phút mỗi email, và chatbot 20 request/60 giây mỗi IP.
-
-Về độ tin cậy, giao dịch đặt hàng và trừ tồn kho phải đảm bảo tính nguyên tử (ACID) để tránh overselling. Cơ chế idempotency cho IPN callback ngăn xử lý trùng lặp khi cổng thanh toán gửi lại thông báo. Chatbot phải có cơ chế dự phòng (fallback) khi LLM API không khả dụng, với chain fallback qua ba nhà cung cấp embedding để đảm bảo tính sẵn sàng cao.
-
-Về khả năng kiểm thử, cấu hình \texttt{coverageThreshold} (cả cục bộ trong \texttt{jest.config.js} lẫn bước kiểm tra trong CI) yêu cầu cả bốn chỉ số (statements, branches, functions, lines) đạt 100\%, đảm bảo mọi nhánh logic nghiệp vụ đều được kiểm tra. Mutation score $\geq$70\% (đo bằng Stryker) xác nhận các assertion trong test suite thực sự có giá trị phát hiện lỗi, không chỉ tăng coverage bề mặt. Bảng~\ref{tab:nfr} tổng hợp toàn bộ yêu cầu phi chức năng với giá trị mục tiêu cụ thể.
+Về hiệu năng, độ trễ chatbot 6--22 giây cao hơn nhiều so với ngưỡng 200ms của API CRUD thông thường, nhưng là đánh đổi chấp nhận được vì phụ thuộc model LLM và được thông báo cho người dùng qua trạng thái loading. Về độ tin cậy, giao dịch đặt hàng và trừ tồn kho dùng cơ chế nguyên tử (ACID, SELECT FOR UPDATE) tránh overselling, kết hợp idempotency cho IPN callback để chống xử lý trùng khi cổng thanh toán gửi lại thông báo. Về khả năng kiểm thử, bên cạnh coverage 100\% cả bốn chỉ số, mutation score $\geq$70\% (Stryker) xác nhận các assertion thực sự có giá trị phát hiện lỗi chứ không chỉ tăng coverage bề mặt.
 
 {\footnotesize
 \begin{longtable}{|l|p{4.5cm}|p{4.2cm}|p{3.3cm}|}
@@ -204,7 +196,7 @@ Hình~\ref{fig:usecase_overview_guest} mô tả các ca sử dụng của khách
   \label{fig:usecase_overview_guest}
 \end{figure}
 
-Khách vãng lai có thể duyệt toàn bộ catalog (danh mục, thương hiệu, tìm kiếm, lọc, chi tiết sản phẩm, đánh giá), thêm sản phẩm vào giỏ hàng tạm thời lưu trên trình duyệt, và đặc biệt là tương tác với chatbot AI mà không cần tài khoản. Mở chatbot cho guest nhằm hạ thấp rào cản tương tác, cho phép hệ thống thu thập tín hiệu quan tâm sản phẩm ngay từ lần truy cập đầu, qua đó tạo động lực chuyển đổi thành khách hàng. Nhóm này còn gồm đăng ký tài khoản (xác thực OTP), đăng nhập qua email\slash mật khẩu hoặc Google OAuth, gửi phản hồi\slash liên hệ, và xem mã giảm giá đang áp dụng.
+Điểm thiết kế đáng chú ý ở nhóm khách vãng lai là chatbot AI được mở cho cả người chưa đăng nhập: việc này hạ thấp rào cản tương tác, cho phép hệ thống thu thập tín hiệu quan tâm sản phẩm ngay từ lần truy cập đầu, qua đó tạo động lực chuyển đổi thành khách hàng.
 
 Hình~\ref{fig:usecase_overview_customer} mô tả các ca sử dụng mở rộng dành cho khách hàng đã đăng nhập.
 
@@ -215,7 +207,7 @@ Hình~\ref{fig:usecase_overview_customer} mô tả các ca sử dụng mở rộ
   \label{fig:usecase_overview_customer}
 \end{figure}
 
-Khách hàng kế thừa toàn bộ quyền của khách vãng lai và có thêm ba nhóm chức năng yêu cầu xác thực. Nhóm mua sắm bổ sung gồm xem sản phẩm đã xem gần đây, quản lý giỏ hàng (đồng bộ với server) và quản lý danh sách yêu thích. Nhóm đơn hàng gồm đặt hàng (checkout), áp mã giảm giá (ca sử dụng mở rộng -- extend -- từ checkout), thanh toán trực tuyến qua MoMo hoặc VNPay hoặc thủ công (COD, chuyển khoản, trả góp), thanh toán lại đơn chưa hoàn thành, và theo dõi đơn hàng (tra cứu, hủy, xác nhận đã nhận). Nhóm tài khoản và tương tác gồm quản lý hồ sơ và địa chỉ giao hàng, đánh giá sản phẩm (chỉ đơn đã mua), xem và xóa lịch sử tìm kiếm, tải ảnh lên (avatar và ảnh đánh giá).
+Khách hàng kế thừa toàn bộ quyền của khách vãng lai và bổ sung ba nhóm chức năng yêu cầu xác thực: mua sắm, đơn hàng, và tài khoản\slash tương tác. Hai điểm đáng chú ý về thiết kế: áp mã giảm giá là ca sử dụng mở rộng (\textit{extend}) từ đặt hàng (checkout), và thanh toán hỗ trợ cả trực tuyến (MoMo, VNPay) lẫn thủ công (COD, chuyển khoản, trả góp).
 
 Hình~\ref{fig:usecase_overview_admin} mô tả phân quyền back-office cho nhân viên và quản trị viên.
 
@@ -226,7 +218,7 @@ Hình~\ref{fig:usecase_overview_admin} mô tả phân quyền back-office cho nh
   \label{fig:usecase_overview_admin}
 \end{figure}
 
-Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều kế thừa vai ``Người dùng back-office'' với quyền xem chung (giám sát), gồm dashboard và thống kê, analytics kinh doanh kèm xuất báo cáo, danh sách đơn hàng\slash sản phẩm\slash tồn kho\slash đánh giá\slash mã giảm giá, và thống kê chatbot. Từ nền tảng đó, mỗi vai có thêm quyền riêng. Nhân viên (Staff) độc quyền thực hiện các tác vụ nghiệp vụ bán hàng: quản lý sản phẩm (CRUD), nhập hàng loạt qua CSV, quản lý danh mục và thương hiệu, cập nhật và hủy đơn hàng, nhập kho, quản lý mã giảm giá, duyệt\slash xóa đánh giá, quản lý thuộc tính sản phẩm, và hoàn tiền. Quản trị viên (Admin) độc quyền quản lý tài khoản người dùng (CRUD) và xem báo cáo tăng trưởng người dùng -- các chức năng ảnh hưởng toàn hệ thống nên được kiểm soát chặt hơn và không giao cho nhân viên.
+Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều kế thừa vai ``Người dùng back-office'' với quyền xem\slash giám sát chung (dashboard, thống kê, các danh sách nghiệp vụ), rồi mỗi vai có thêm quyền riêng. Nhân viên (Staff) độc quyền các tác vụ CRUD nghiệp vụ bán hàng, còn Quản trị viên (Admin) độc quyền quản lý tài khoản người dùng và xem báo cáo tăng trưởng -- chi tiết phân quyền trình bày ở Mục~\ref{sec:c3_rbac} và Bảng~\ref{tab:rbac}.
 
 \subsection{Đặc tả ca sử dụng}
 \label{sec:c3_usecase_spec}
@@ -352,7 +344,7 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \textbf{Ngoại lệ} & E1: người dùng không có vai trò \texttt{staff} → trả lỗi HTTP 403. \\ \hline
 \end{longtable}
 
-\section{Thiết kế kiến trúc hệ thống}
+\section{Thiết kế kiến trúc và phân quyền hệ thống}
 \label{sec:c3_architecture}
 
 \subsection{Kiến trúc tổng quan}
@@ -589,9 +581,9 @@ Hệ thống TechStore áp dụng mô hình phân quyền dựa trên vai trò (
   \end{tabular}
 \end{table}
 
-Phân tách quyền giữa staff và admin phản ánh hai vai trò vận hành khác nhau. Staff là nhân viên bán hàng, được trao quyền CRUD trên toàn bộ nghiệp vụ (tạo và chỉnh sửa sản phẩm, cập nhật trạng thái đơn hàng, nhập kho, áp mã giảm giá, duyệt đánh giá, hoàn tiền) nhưng không được truy cập thông tin tài khoản khách hàng. Admin ngược lại: có thể xem toàn bộ back-office và độc quyền quản lý tài khoản người dùng, nhưng không thực hiện CRUD nghiệp vụ -- tránh rủi ro admin vô tình thay đổi dữ liệu vận hành. Về kỹ thuật, middleware \texttt{adminAuthenticate} cho phép cả admin và staff vào back-office panel, còn \texttt{requireRole('staff')} và \texttt{requireSuperAdmin} (tương đương \texttt{requireRole('admin')}) phân quyền chi tiết từng route.
+Phân tách quyền giữa staff và admin phản ánh hai vai trò vận hành khác nhau. Staff là nhân viên bán hàng, được trao quyền CRUD trên toàn bộ nghiệp vụ (liệt kê đầy đủ ở Bảng~\ref{tab:rbac}) nhưng không được truy cập thông tin tài khoản khách hàng. Admin ngược lại: có thể xem toàn bộ back-office và độc quyền quản lý tài khoản người dùng, nhưng không thực hiện CRUD nghiệp vụ -- tránh rủi ro admin vô tình thay đổi dữ liệu vận hành. Về kỹ thuật, middleware \texttt{adminAuthenticate} cho phép cả admin và staff vào back-office panel, còn \texttt{requireRole('staff')} và \texttt{requireSuperAdmin} (tương đương \texttt{requireRole('admin')}) phân quyền chi tiết từng route.
 
-\section{Thiết kế cơ sở dữ liệu}
+\section{Thiết kế cơ sở dữ liệu và mô hình miền}
 \label{sec:c3_database}
 
 \subsection{Tổng quan cấu trúc}

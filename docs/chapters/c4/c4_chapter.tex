@@ -633,7 +633,7 @@ Bảng~\ref{tab:rag_latency} trình bày thời gian xử lý trung bình từng
   \end{tabular}
 \end{table}
 
-Bước tốn thời gian nhất là sinh phản hồi từ LLM (4--19 giây), phụ thuộc model LLM được cấu hình, tải của nhà cung cấp API và độ dài context. Nhờ chạy song song rewriteQuery và hybridSearch, thời gian xử lý tổng thể rút ngắn đáng kể so với tuần tự. Với cấu hình LLM hiện tại (gpt-5.5 qua API tương thích OpenAI), người dùng nhận phản hồi sau 6--22 giây (trung bình khoảng 10 giây), cảm nhận chờ đợi được giảm nhẹ bằng animation ``đang gõ'' (typing indicator) trong chat widget; thời gian này có thể rút ngắn đáng kể khi thay bằng model LLM nhanh hơn.
+Bước tốn thời gian nhất là sinh phản hồi từ LLM (4--19 giây), phụ thuộc model LLM được cấu hình, tải của nhà cung cấp API và độ dài context. Nhờ chạy song song rewriteQuery và hybridSearch, thời gian xử lý tổng thể rút ngắn đáng kể so với tuần tự. Với model LLM được cấu hình qua API tương thích OpenAI, người dùng nhận phản hồi sau 6--22 giây (trung bình khoảng 10 giây), cảm nhận chờ đợi được giảm nhẹ bằng animation ``đang gõ'' (typing indicator) trong chat widget; thời gian này có thể rút ngắn đáng kể khi thay bằng model LLM nhanh hơn.
 
 \subsection{Hạn chế của chatbot hiện tại}
 \label{sec:c4_rag_limitations}

@@ -252,7 +252,7 @@ Zod~\cite{zod_docs} (validation schema cho TypeScript) validate dữ liệu đ�
 
 \subsection{Nodemailer -- Gửi email giao dịch}
 
-Nodemailer~\cite{nodemailer_docs} kết nối Gmail SMTP gửi ba loại email giao dịch: OTP xác thực tài khoản, xác nhận đặt hàng và cập nhật trạng thái vận chuyển; được chọn vì hỗ trợ tốt cấu hình SMTP phức tạp (xác thực OAuth2 với Gmail, kiểm soát retry khi gửi thất bại).
+Nodemailer~\cite{nodemailer_docs} kết nối Gmail SMTP gửi ba loại email giao dịch: OTP xác thực tài khoản, xác nhận đặt hàng và cập nhật trạng thái vận chuyển; được chọn vì cấu hình SMTP đơn giản với Gmail App Password và connection pooling (\texttt{pool: true}) tái sử dụng kết nối khi gửi nhiều email.
 
 \subsection{Winston -- Ghi nhật ký hệ thống}
 

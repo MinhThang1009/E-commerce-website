@@ -9,7 +9,7 @@ Khóa luận đã hoàn thành mục tiêu đề ra là xây dựng hệ thống
 
 Thứ nhất, về thành phần trọng tâm là chatbot AI RAG, khóa luận đã nghiên cứu và cài đặt thành công pipeline RAG Hybrid gồm 7 bước với điểm đặc trưng là tìm kiếm kết hợp giữa cosine similarity (dense retrieval, ngưỡng 0.45) và BM25-inspired keyword scoring (sparse retrieval, trọng số tên sản phẩm nhân 3) cùng overlap boost +0.05. Chiến lược chain fallback qua ba nhà cung cấp embedding (Jina v3, HuggingFace e5-large-instruct, HuggingFace e5-large), tất cả tạo vector 1024 chiều, đảm bảo tính sẵn sàng cao. Pipeline hoạt động tốt cho các câu hỏi tìm kiếm ngữ nghĩa, tên model cụ thể và câu hỏi viết tắt tiếng Việt.
 
-Thứ hai, về kiến trúc backend, hệ thống được xây dựng theo Modular Monolith với 17 module nghiệp vụ độc lập, áp dụng Dependency Injection tường minh qua factory functions, EventBus pub/sub cho side effects bất đồng bộ, và UnitOfWork với SELECT FOR UPDATE để đảm bảo tính toàn vẹn dữ liệu trong các giao dịch đồng thời. Mô hình phân quyền RBAC 4 tác nhân (guest, customer, staff, admin) theo nguyên tắc least privilege được thực thi xuyên suốt ba tầng: middleware backend, route guard frontend và ẩn/hiện thao tác trên giao diện -- nhân viên bán hàng có toàn quyền CRUD nghiệp vụ trong khi quản trị viên độc quyền quản lý tài khoản người dùng.
+Thứ hai, về kiến trúc backend, hệ thống được xây dựng theo Modular Monolith với 17 module nghiệp vụ độc lập, áp dụng Dependency Injection tường minh qua factory functions, EventBus pub/sub cho các tác dụng phụ (side effects) bất đồng bộ, và UnitOfWork với SELECT FOR UPDATE để đảm bảo tính toàn vẹn dữ liệu trong các giao dịch đồng thời. Mô hình phân quyền RBAC 4 tác nhân (guest, customer, staff, admin) theo nguyên tắc đặc quyền tối thiểu (least privilege) được thực thi xuyên suốt ba tầng: middleware backend, route guard frontend và ẩn/hiện thao tác trên giao diện -- nhân viên bán hàng có toàn quyền CRUD nghiệp vụ trong khi quản trị viên độc quyền quản lý tài khoản người dùng.
 
 Thứ ba, về kiến trúc frontend, giao diện được phát triển theo mô hình Feature-Based với 13 feature riêng biệt, kết hợp TanStack Query quản lý server state và 6 Zustand store quản lý client state. Floating chat widget tích hợp chatbot AI trên mọi trang, cho phép người dùng thêm sản phẩm vào giỏ hàng trực tiếp qua giao diện chat.
 
@@ -22,16 +22,16 @@ Thứ năm, về chất lượng phần mềm, bộ kiểm thử gồm $\sim$7.5
 
 Bên cạnh những kết quả đạt được, hệ thống hiện tại còn một số hạn chế cần nhìn nhận thẳng thắn.
 
-Về chatbot AI, lịch sử hội thoại được lưu trong bộ nhớ server (in-memory Map) và mất khi server khởi động lại -- thiết kế này phù hợp với quy mô demo nhưng không phù hợp cho môi trường sản xuất nhiều instance. Chatbot chưa xử lý tốt các câu hỏi cần context nhiều lượt khi người dùng dùng đại từ thay thế. Ngoài ra, vector store dạng file JSON không tối ưu cho catalog lớn hơn 10.000 sản phẩm.
+Về chatbot AI, lịch sử hội thoại được lưu trong bộ nhớ server (in-memory Map) và mất khi server khởi động lại -- thiết kế này phù hợp với quy mô demo nhưng không phù hợp cho môi trường sản xuất nhiều tiến trình (instance). Chatbot chưa xử lý tốt các câu hỏi cần ngữ cảnh nhiều lượt khi người dùng dùng đại từ thay thế. Ngoài ra, vector store dạng file JSON không tối ưu cho danh mục lớn hơn 10.000 sản phẩm.
 
-Về hệ thống tổng thể, chưa tích hợp logistics thực tế và tracking đơn hàng từ đơn vị vận chuyển. Hệ thống gợi ý sản phẩm (collaborative filtering dựa trên lịch sử hành vi) chưa được triển khai -- chatbot RAG chỉ dựa trên truy vấn hiện tại mà không học từ hành vi người dùng. Quản lý kho hàng vật lý (physical warehouse management) cũng nằm ngoài phạm vi hiện tại.
+Về hệ thống tổng thể, chưa tích hợp hệ thống vận chuyển (logistics) thực tế và theo dõi (tracking) đơn hàng từ đơn vị vận chuyển. Hệ thống gợi ý sản phẩm (collaborative filtering dựa trên lịch sử hành vi) chưa được triển khai -- chatbot RAG chỉ dựa trên truy vấn hiện tại mà không học từ hành vi người dùng. Quản lý kho hàng vật lý (physical warehouse management) cũng nằm ngoài phạm vi hiện tại.
 
 \section*{Hướng phát triển trong tương lai}
 \addcontentsline{toc}{section}{Hướng phát triển trong tương lai}
 
 Dựa trên những hạn chế xác định ở trên, một số hướng mở rộng được đề xuất.
 
-Về nâng cấp chatbot AI, hướng ưu tiên nhất là chuyển vector store từ file JSON sang cơ sở dữ liệu vector chuyên dụng như Chroma, Qdrant hoặc pgvector (PostgreSQL extension) để hỗ trợ catalog lớn hơn với hiệu năng tốt hơn. Tích hợp conversation memory persistent vào MySQL cho phép lịch sử hội thoại duy trì qua nhiều phiên đăng nhập. Bổ sung khả năng multimodal -- người dùng gửi ảnh sản phẩm và chatbot nhận diện để tư vấn -- là hướng tiên tiến nhưng khả thi với các mô hình vision-language hiện đại.
+Về nâng cấp chatbot AI, hướng ưu tiên nhất là chuyển vector store từ file JSON sang cơ sở dữ liệu vector chuyên dụng như Chroma, Qdrant hoặc pgvector (PostgreSQL extension) để hỗ trợ catalog lớn hơn với hiệu năng tốt hơn. Tích hợp conversation memory persistent vào MySQL cho phép lịch sử hội thoại duy trì qua nhiều phiên đăng nhập. Bổ sung khả năng đa phương thức (multimodal) -- người dùng gửi ảnh sản phẩm và chatbot nhận diện để tư vấn -- là hướng tiên tiến nhưng khả thi với các mô hình thị giác-ngôn ngữ (vision-language) hiện đại.
 
 Về hệ thống gợi ý, kết hợp RAG với collaborative filtering tạo ra hệ thống hybrid recommendation có thể cá nhân hóa gợi ý dựa trên cả truy vấn hiện tại lẫn lịch sử hành vi. Phân tích log hội thoại từ bảng \texttt{chat\_messages} cũng mở ra khả năng fine-tuning prompt để cải thiện chất lượng phản hồi theo thời gian.
 

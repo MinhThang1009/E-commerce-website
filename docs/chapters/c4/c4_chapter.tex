@@ -51,7 +51,7 @@ Bảng~\ref{tab:dev_environment} liệt kê các công nghệ chính với phiê
 
 Dự án được tổ chức thành hai thư mục chính: \texttt{backend/} chứa toàn bộ API server và \texttt{frontend/} chứa ứng dụng React. Backend tuân theo cấu trúc Modular Monolith với mỗi module trong \texttt{src/modules/<tên>/} là một vertical slice độc lập. Các shared services (vector store, embedding, email) nằm trong \texttt{src/services/}. File \texttt{src/app.js} là điểm khởi tạo duy nhất, nơi toàn bộ DI (Dependency Injection) được thực hiện bằng cách truyền tường minh các phụ thuộc qua constructor.
 
-Frontend theo cấu trúc \texttt{src/features/<tên>/} cho mỗi trong 13 feature, với \texttt{src/shared/} chứa các UI components, hooks và utilities dùng chung. Quy tắc nghiêm ngặt là không được import trực tiếp từ feature khác, đảm bảo mỗi feature là một đơn vị độc lập.
+Frontend theo cấu trúc \texttt{src/features/<tên>/} cho mỗi feature trong số 13 feature, với \texttt{src/shared/} chứa các UI components, hooks và utilities dùng chung. Quy tắc nghiêm ngặt là không được import trực tiếp từ feature khác, đảm bảo mỗi feature là một đơn vị độc lập.
 
 \section{Cài đặt các thành phần trọng tâm}
 \label{sec:c4_key_impl}
@@ -60,7 +60,7 @@ Frontend theo cấu trúc \texttt{src/features/<tên>/} cho mỗi trong 13 featu
 
 Cơ chế DI của TechStore không dùng framework DI nào mà tự triển khai bằng factory functions thuần JavaScript. \texttt{src/app.js} là điểm wiring trung tâm: nó khởi tạo tất cả Sequelize models, rồi gọi các factory function \texttt{buildXxxModule(\{models, services\})} của từng module. Bên trong mỗi factory, repository, service và controller được tạo theo thứ tự từ tầng thấp đến cao. Cụ thể với module orders: \texttt{SequelizeOrdersRepository} được khởi tạo trước với 9 Sequelize models (Order, OrderItem, Cart, CartItem, Product, ProductVariant, User, DiscountCode, InventoryLog) và \texttt{sequelize} instance; tiếp theo \texttt{OrdersService} nhận repository cùng \texttt{emailGateway}, \texttt{eventBus}, \texttt{logger} và \texttt{constants}; cuối cùng \texttt{OrdersController} chỉ nhận đúng một dependency là \texttt{ordersService}.
 
-Cách tiếp cận này có ưu điểm là tường minh: mọi phụ thuộc đều được thấy rõ ở một chỗ duy nhất, không có ``magic'' hay decorator phức tạp. Nhược điểm là file \texttt{app.js} khá dài, nhưng điều này chấp nhận được vì file chỉ chứa wiring không có business logic.
+Cách tiếp cận này có ưu điểm là tường minh: mọi phụ thuộc đều được thấy rõ ở một chỗ duy nhất, không có cơ chế ẩn ngầm hay decorator phức tạp. Nhược điểm là file \texttt{app.js} khá dài, nhưng điều này chấp nhận được vì file chỉ chứa wiring không có business logic.
 
 \subsection{Cài đặt UnitOfWork cho giao dịch đồng thời}
 
@@ -125,7 +125,7 @@ Bước 6 dùng \texttt{Promise.race} giữa \texttt{augmentAndGenerate} và bud
 
 \subsection{Cài đặt session memory và catalog cache}
 
-\texttt{ChatbotService} là singleton được khởi tạo một lần khi server start. Hai cấu trúc dữ liệu trong memory đóng vai trò quan trọng:
+\texttt{ChatbotService} là singleton được khởi tạo một lần khi server khởi động. Hai cấu trúc dữ liệu trong memory đóng vai trò quan trọng:
 
 \textbf{Session Map:} Một \texttt{Map<sessionId, SessionData>} (trong đó \texttt{SessionData} gồm \texttt{messages} và \texttt{lastAccess}) lưu lịch sử hội thoại. Khi số session vượt quá 500, session có \texttt{lastAccess} cũ nhất (LRU) bị xóa trước. Dọn dẹp session hết hạn (TTL 30 phút) xảy ra tự động sau mỗi lần cập nhật hội thoại thông qua hàm \texttt{\_evictStaleSessions()}, không cần cron job riêng.
 
@@ -147,7 +147,7 @@ queryClient.invalidateQueries({ queryKey: ['orders'] });
 
 Frontend TechStore triển khai ba loại route guard để kiểm soát quyền truy cập, được định nghĩa trong thư mục \texttt{src/components/routing/}. \texttt{ProtectedRoute} kiểm tra trạng thái đăng nhập trong \texttt{auth-store}; nếu người dùng chưa xác thực thì chuyển hướng về \texttt{ROUTES.LOGIN} kèm theo \texttt{state=\{\{ from: location \}\}} để lưu lại trang đích ban đầu, giúp người dùng được redirect đúng trang sau khi đăng nhập thành công. \texttt{AdminRoute} kiểm tra thêm điều kiện role: nếu có token nhưng chưa có thông tin user thì tự động gọi \texttt{useGetCurrentUserQuery} để lấy dữ liệu từ server, nếu role không thuộc nhóm được phép (mặc định \texttt{admin} hoặc \texttt{staff} qua prop \texttt{allowedRoles}) thì chuyển hướng về \texttt{/unauthorized}, và nếu không có token thì chuyển về \texttt{/login}. \texttt{PublicOnlyRoute} hoạt động theo chiều ngược lại: nếu người dùng đã đăng nhập thì chuyển hướng về trang chủ (\texttt{ROUTES.HOME}), ngăn người dùng có phiên hợp lệ truy cập lại các trang đăng nhập và đăng ký.
 
-Toàn bộ 13 feature pages đều được lazy load bằng \texttt{React.lazy()} kết hợp \texttt{Suspense} với fallback hiển thị \texttt{LoadingSpinner fullScreen} bao trùm toàn bộ khu vực \texttt{Routes}. Khi người dùng điều hướng đến một trang lần đầu, chỉ bundle JavaScript của feature đó được tải xuống, giảm đáng kể kích thước bundle ban đầu và cải thiện tốc độ tải trang. Routes được khai báo tập trung trong \texttt{AppRoutes.tsx} với các hằng số đường dẫn lấy từ \texttt{paths.ts}, đảm bảo không có đường dẫn nào bị hardcode rải rác trong codebase; mọi thay đổi URL chỉ cần thực hiện ở một nơi duy nhất.
+Toàn bộ các trang được tải lười (lazy load) bằng \texttt{React.lazy()} kết hợp \texttt{Suspense} với fallback hiển thị \texttt{LoadingSpinner fullScreen} bao trùm toàn bộ khu vực \texttt{Routes}. Khi người dùng điều hướng đến một trang lần đầu, chỉ bundle JavaScript của feature đó được tải xuống, giảm đáng kể kích thước bundle ban đầu và cải thiện tốc độ tải trang. Routes được khai báo tập trung trong \texttt{AppRoutes.tsx} với các hằng số đường dẫn lấy từ \texttt{paths.ts}, đảm bảo không có đường dẫn nào bị hardcode rải rác trong codebase; mọi thay đổi URL chỉ cần thực hiện ở một nơi duy nhất.
 
 \subsection{Floating chat widget}
 
@@ -191,7 +191,7 @@ Trang chi tiết sản phẩm (Hình~\ref{fig:screenshot_product_detail}) tập 
 
 \subsection{Giỏ hàng, thanh toán và đơn hàng}
 
-Trang giỏ hàng (Hình~\ref{fig:screenshot_cart}) hiển thị danh sách sản phẩm với đầy đủ thông tin biến thể đã chọn (dung lượng, màu sắc), bộ điều chỉnh số lượng và nút xóa từng sản phẩm. Banner xanh phía trên thông báo ``Giỏ hàng đã đồng bộ với tài khoản'', xác nhận cơ chế merge cart đã hoàn thành sau khi đăng nhập. Panel ``Tóm tắt đơn hàng'' bên phải cho thấy mã giảm giá SUMMER2026 đã được áp dụng thành công với khoản giảm 21.995.000đ, hiển thị tạm tính, dòng giảm giá và tổng cộng rõ ràng. Hai nút hành động cuối trang là ``Tiến hành thanh toán'' và ``Tiếp tục mua sắm'' để quay lại cửa hàng.
+Trang giỏ hàng (Hình~\ref{fig:screenshot_cart}) hiển thị danh sách sản phẩm với đầy đủ thông tin biến thể đã chọn (dung lượng, màu sắc), bộ điều chỉnh số lượng và nút xóa từng sản phẩm. Banner xanh phía trên thông báo ``Giỏ hàng đã đồng bộ với tài khoản'', xác nhận cơ chế gộp giỏ hàng (merge cart) đã hoàn thành sau khi đăng nhập. Panel ``Tóm tắt đơn hàng'' bên phải cho thấy mã giảm giá SUMMER2026 đã được áp dụng thành công với khoản giảm 21.995.000đ, hiển thị tạm tính, dòng giảm giá và tổng cộng rõ ràng. Hai nút hành động cuối trang là ``Tiến hành thanh toán'' và ``Tiếp tục mua sắm'' để quay lại cửa hàng.
 
 \begin{figure}[H]
   \centering
@@ -317,7 +317,7 @@ Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) có bann
 \begin{figure}[H]
   \centering
   \fitfig{figures/c4/screenshot_admin_inventory.png}
-  \caption{Trang quản lý kho hàng với 3 card thống kê, expandable rows và progress bar tồn kho}
+  \caption{Trang quản lý kho hàng với 3 thẻ thống kê, dòng mở rộng (expandable rows) và thanh tiến trình (progress bar) tồn kho}
   \label{fig:screenshot_admin_inventory}
 \end{figure}
 
@@ -411,9 +411,9 @@ Bảng~\ref{tab:test_results} trình bày kết quả kiểm thử chi tiết th
   \normalsize
 \end{table}
 
-\textbf{Tầng E2E Test (100 ca kiểm thử, 5 suites):} Mỗi test file là một user flow hoàn chỉnh: (1) Đăng ký - xác thực OTP - đăng nhập, (2) Mua hàng từ browse đến checkout, (3) Quản trị sản phẩm và tồn kho, (4) Luồng đơn hàng đến DELIVERED, (5) Quản lý wishlist và profile người dùng.
+\textbf{Tầng E2E Test (100 ca kiểm thử, 5 suites):} Mỗi test file là một user flow hoàn chỉnh: (1) Đăng ký - xác thực OTP - đăng nhập, (2) Mua hàng từ bước duyệt đến thanh toán, (3) Quản trị sản phẩm và tồn kho, (4) Luồng đơn hàng đến DELIVERED, (5) Quản lý wishlist và profile người dùng.
 
-\textbf{Tầng API HTTP Test (675 ca kiểm thử, 18 suites):} Gửi real HTTP request đến Express app qua Supertest. Bao gồm kiểm tra đầy đủ các mã phản hồi HTTP (thành công: 200, 201; lỗi client: 400, 401, 403, 404, 409), cấu trúc response JSON, behavior của rate limiting, và kiểm tra header.
+\textbf{Tầng API HTTP Test (675 ca kiểm thử, 18 suites):} Gửi HTTP request thật đến ứng dụng Express qua Supertest. Bao gồm kiểm tra đầy đủ các mã phản hồi HTTP (thành công: 200, 201; lỗi client: 400, 401, 403, 404, 409), cấu trúc response JSON, hành vi của rate limiting, và kiểm tra header.
 
 \textbf{Tầng Integration Test (227 ca kiểm thử, 21 suites):} Kiểm tra Service và Repository layer với MySQL thật (\texttt{techstore\_test}). Đặc biệt, tầng này có test cho race condition trong trừ tồn kho: hai request đồng thời mua cùng một sản phẩm, chỉ một request thành công, request còn lại nhận lỗi hết hàng. Test data được tạo với prefix \texttt{\_\_INT\_TEST\_} và tự dọn dẹp trong \texttt{afterAll}.
 
@@ -452,7 +452,7 @@ Coverage đạt 100\% cho cả bốn chỉ số (statements 7.104/7.104, branche
 
 \subsection{CI/CD Pipeline}
 
-GitHub Actions workflow được cấu hình để chạy tự động khi có push hoặc pull request vào các nhánh \texttt{main}, \texttt{phase-*}, \texttt{feat/*}, \texttt{fix/*}. Pipeline backend gồm các bước: cài đặt dependencies (\texttt{npm ci}), lint strict (ESLint zero warnings), kiểm tra migration files có rollback function, security audit, và chạy unit tests với coverage enforcement (cả bốn chỉ số Statements, Lines, Branches, Functions đều phải đạt 100\%). Pipeline frontend gồm lint, TypeScript typecheck (\texttt{tsc --noEmit}), production build, và kiểm tra bundle size không vượt 10MB.
+GitHub Actions workflow được cấu hình để chạy tự động khi push vào các nhánh \texttt{main}, \texttt{phase-*}, \texttt{feat/*}, \texttt{fix/*}, \texttt{refactor/*}, hoặc khi mở pull request vào nhánh \texttt{main}. Pipeline backend gồm các bước: cài đặt dependencies (\texttt{npm ci}), lint strict (ESLint zero warnings), kiểm tra migration files có rollback function, security audit, và chạy unit tests với coverage enforcement (cả bốn chỉ số Statements, Lines, Branches, Functions đều phải đạt 100\%). Pipeline frontend gồm lint, TypeScript typecheck (\texttt{tsc --noEmit}), production build, và kiểm tra bundle size không vượt 10MB.
 
 Husky pre-commit hooks chạy trước mỗi commit: quét secret key trong staged files (AWS keys, GitHub tokens, private keys), kiểm tra kiến trúc (service không import Sequelize trực tiếp, controller không touch ORM), TypeScript typecheck (\texttt{tsc --noEmit}), và lint-staged cho cả backend lẫn frontend. Cơ chế này phát hiện vi phạm kiến trúc và lỗi type sớm thay vì để đến code review.
 
@@ -655,7 +655,7 @@ Qua quá trình đánh giá, một số hạn chế được xác định. Thứ
 
 \subsection{Quy trình triển khai backend}
 
-Sau khi clone repository và cài dependencies với \texttt{npm install}, cần tạo file \texttt{.env} từ template \texttt{.env.example} và điền các biến môi trường. Bước tiếp theo là tạo cơ sở dữ liệu MySQL và chạy migration với \texttt{npx sequelize-cli db:migrate}. Sau khi tất cả biến môi trường được cấu hình, khởi động server với \texttt{npm start}. Khi server khởi động, hệ thống tự động kiểm tra vector store và rebuild nếu cần thiết (deviation $>5\%$ so với số sản phẩm active trong DB).
+Sau khi clone repository và cài dependencies với \texttt{npm install}, cần tạo file \texttt{.env} từ template \texttt{.env.example} và điền các biến môi trường. Bước tiếp theo là tạo cơ sở dữ liệu MySQL và chạy migration với \texttt{npm run db:migrate}. Sau khi tất cả biến môi trường được cấu hình, khởi động server với \texttt{npm start}. Khi server khởi động, hệ thống tự động kiểm tra vector store và rebuild nếu cần thiết (deviation $>5\%$ so với số sản phẩm active trong DB).
 
 \subsection{Quy trình triển khai frontend}
 
@@ -686,7 +686,7 @@ Sinh viên nghiên cứu và tự triển khai các thành phần sau đây, chi
 
 Dự án sử dụng các thư viện và framework mã nguồn mở theo đúng mục đích thiết kế của chúng, không tự tái phát minh các chức năng đã có giải pháp tốt.
 
-Express và middleware ecosystem (cors, helmet, morgan) cung cấp HTTP layer cơ bản. Sequelize ORM xử lý ánh xạ object-relational và migrations. bcrypt, jsonwebtoken, nodemailer là các thư viện tiêu chuẩn cho authentication và email. Radix UI (shadcn/ui) và Tailwind CSS v4 cung cấp hệ thống component và utility CSS sẵn có. TanStack Query và Zustand cung cấp primitives quản lý state. exceljs hỗ trợ xuất dữ liệu ra file Excel, leaflet dựng bản đồ tương tác, và dayjs xử lý ngày giờ (thay thế moment). Jest, Supertest, và Testing Library là frameworks kiểm thử chuẩn của hệ sinh thái JavaScript.
+Express và middleware ecosystem (cors, helmet, morgan) cung cấp HTTP layer cơ bản. Sequelize ORM xử lý ánh xạ object-relational và migrations. bcrypt, jsonwebtoken, nodemailer là các thư viện tiêu chuẩn cho authentication và email. Radix UI (shadcn/ui) và Tailwind CSS v4 cung cấp hệ thống component và utility CSS sẵn có. TanStack Query và Zustand cung cấp các thành phần cơ bản (primitive) để quản lý state. exceljs hỗ trợ xuất dữ liệu ra file Excel, leaflet dựng bản đồ tương tác, và dayjs xử lý ngày giờ ở hầu hết module (moment vẫn được dùng trong tích hợp VNPay). Jest, Supertest, và Testing Library là các framework kiểm thử chuẩn của hệ sinh thái JavaScript.
 
 \section{Tóm tắt chương}
 \label{sec:c4_summary}

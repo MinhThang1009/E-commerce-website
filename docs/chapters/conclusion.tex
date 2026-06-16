@@ -15,7 +15,7 @@ Thứ ba, về kiến trúc frontend, giao diện được phát triển theo m�
 
 Thứ tư, về tích hợp thanh toán, hệ thống tích hợp đầy đủ hai cổng VNPay (HMAC-SHA512) và MoMo (HMAC-SHA256) với luồng IPN callback đúng chuẩn và cơ chế idempotency ngăn xử lý trùng lặp. Máy trạng thái đơn hàng (FSM) đảm bảo tính nhất quán dữ liệu xuyên suốt vòng đời đơn hàng.
 
-Thứ năm, về chất lượng phần mềm, bộ kiểm thử gồm $\sim$7.579 test cases phân bố trên 5 tầng (unit 5.640, integration 227, API HTTP 675, E2E 100, FE component 937) với coverage 100\% cả bốn chỉ số (statements, branches, functions, lines) của unit tests. Bổ sung mutation testing (Stryker, ngưỡng 70\%) và property-based testing (fast-check, 25 business invariants) đảm bảo chất lượng assertion vượt coverage đơn thuần. CI/CD pipeline tự động hóa quy trình kiểm tra, Husky pre-commit hooks kiểm tra kiến trúc và phát hiện secret key trước mỗi commit.
+Thứ năm, về chất lượng phần mềm, bộ kiểm thử gồm $\sim$7.579 ca kiểm thử phân bố trên 5 tầng (unit 5.640, integration 227, API HTTP 675, E2E 100, FE component 937) với coverage 100\% cả bốn chỉ số (statements, branches, functions, lines) của unit tests. Bổ sung mutation testing (Stryker, ngưỡng 70\%) và property-based testing (fast-check, 25 business invariants) đảm bảo chất lượng assertion vượt coverage đơn thuần. CI/CD pipeline tự động hóa quy trình kiểm tra, Husky pre-commit hooks kiểm tra kiến trúc và phát hiện secret key trước mỗi commit.
 
 \section*{Hạn chế của hệ thống}
 \addcontentsline{toc}{section}{Hạn chế của hệ thống}

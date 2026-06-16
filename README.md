@@ -28,7 +28,7 @@
 **Điểm nổi bật:**
 - Kiến trúc Modular Monolith — 17 backend modules, DI pattern, Event-Driven Communication
 - AI Chatbot với Hybrid RAG (cosine similarity + BM25 keyword, 1024-dim vectors)
-- **~7.578 test cases** (246 suites, 5 tầng), coverage 100% statements/branches/functions/lines (BE local), CI/CD với GitHub Actions
+- **~7.579 test cases** (246 suites, 5 tầng), coverage 100% statements/branches/functions/lines (BE local), CI/CD với GitHub Actions
 - Hỗ trợ đa ngôn ngữ (vi/en), dark mode, responsive
 
 ---
@@ -60,8 +60,8 @@ Route → Page (lazy-loaded) → Components
 
 | Biện pháp | Chi tiết |
 |---|---|
-| **~7.578 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
-| **Coverage thresholds** | Statements ≥97%, Lines ≥97%, Branches ≥85%, Functions ≥95% |
+| **~7.579 test cases** | 5 tầng: Unit → Integration → API HTTP → E2E → Component |
+| **Coverage thresholds** | 100% statements/lines/branches/functions (BE, enforce trong CI) |
 | **ESLint strict** | `--max-warnings 0` — không cho phép warning tồn tại |
 | **Pre-commit hooks** | Secret scan + architecture audit (chặn service import ORM trực tiếp) + lint-staged |
 | **CI/CD** | GitHub Actions: lint + typecheck + build + test trên mỗi push |
@@ -243,12 +243,12 @@ validate → normalize (expandAbbreviations) → injection/off-topic check
 
 | Suite | Suites | Tests | DB | Runtime |
 |---|---|---|---|---|
-| BE Unit Tests | 174 | 5.639 | Mock | ~13s |
+| BE Unit Tests | 174 | 5.640 | Mock | ~13s |
 | BE Integration Tests | 21 | 227 | MySQL thật | ~60s |
 | BE API HTTP Tests | 18 | 675 | MySQL thật | ~160s |
 | BE E2E Tests | 5 | 100 | MySQL thật | ~22s |
 | FE Component Tests | 28 | 937 | jsdom | ~14s |
-| **Tổng** | **246** | **~7.578** | | |
+| **Tổng** | **246** | **~7.579** | | |
 
 Coverage threshold (CI): Statements >= 97%, Lines >= 97%, Branches >= 85%, Functions >= 95%.
 Coverage threshold (local): 100% Statements/Branches/Functions/Lines.

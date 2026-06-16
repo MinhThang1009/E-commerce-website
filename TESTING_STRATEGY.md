@@ -429,12 +429,12 @@ npm run build
 
 | Suite | Suites | Tests | Runtime |
 |---|---|---|---|
-| BE Unit Tests | 174 | 5.639 | ~13s |
+| BE Unit Tests | 174 | 5.640 | ~13s |
 | BE Integration Tests | 21 | 227 | ~60s |
 | BE API HTTP Tests | 18 | 675 | ~160s |
 | BE E2E Tests | 5 | 100 | ~22s |
 | FE Component Tests | 28 | 937 | ~12s |
-| **Tổng** | **246** | **~7.578** | |
+| **Tổng** | **246** | **~7.579** | |
 
 **Coverage (local unit tests)**:
 - Statements: **100%** (threshold 100%)

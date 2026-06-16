@@ -227,7 +227,7 @@ Hình~\ref{fig:screenshot_chatbot_offtopic} thể hiện cơ chế từ chối c
 
 \subsection{Giao diện quản trị}
 
-Hệ thống thể hiện phân quyền RBAC ngay tại tầng giao diện: ở hầu hết các trang nghiệp vụ back-office, khi quản trị viên (admin) đăng nhập sẽ thấy banner ``Chế độ xem'' màu xanh thông báo quyền xem-only và các nút thao tác nghiệp vụ bị ẩn (cột Hành động chỉ còn icon xem chi tiết). Các mô tả trang dưới đây không lặp lại chi tiết này.
+Hệ thống thể hiện phân quyền RBAC ngay tại tầng giao diện: ở hầu hết các trang nghiệp vụ back-office, khi quản trị viên (admin) đăng nhập sẽ thấy banner \mbox{``Chế độ xem''} màu xanh thông báo quyền chỉ xem và các nút thao tác nghiệp vụ bị ẩn (cột Hành động chỉ còn icon xem chi tiết). Các mô tả trang dưới đây không lặp lại chi tiết này.
 
 Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) cung cấp cái nhìn tổng quan về vận hành cửa hàng: khu vực \textbf{Hành động nhanh}, các chỉ số doanh thu kèm sparkline, chỉ số người dùng/đơn hàng kèm tỷ lệ thay đổi so với kỳ trước, cùng bộ lọc thời gian (7/30/90 ngày), chế độ so sánh kỳ và biểu đồ doanh thu theo ngày.
 
@@ -278,7 +278,7 @@ Trang quản lý đơn hàng back-office (Hình~\ref{fig:screenshot_admin_orders
   \label{fig:screenshot_admin_list}
 \end{figure}
 
-Trang quản lý người dùng (Hình~\ref{fig:screenshot_admin_users}) là trang admin độc quyền nên không có banner ``Chế độ xem'' và mở đầy đủ thao tác CRUD vì quản trị viên có toàn quyền trên tài khoản. Trang gồm bốn card thống kê, bộ lọc theo vai trò và bảng danh sách kèm badge vai trò (quản trị viên, nhân viên bán hàng, khách hàng).
+Trang quản lý người dùng (Hình~\ref{fig:screenshot_admin_users}) là trang admin độc quyền nên không có banner \mbox{``Chế độ xem''} và mở đầy đủ thao tác CRUD vì quản trị viên có toàn quyền trên tài khoản. Trang gồm bốn card thống kê, bộ lọc theo vai trò và bảng danh sách kèm badge vai trò (quản trị viên, nhân viên bán hàng, khách hàng).
 
 Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_admin_discounts}) hiển thị ba card thống kê (đang chạy, hết hạn, tổng lượt dùng) và bảng các mã kèm loại giảm, đơn tối thiểu, thời hạn và số lượt sử dụng.
 
@@ -312,7 +312,7 @@ Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) hiển t
 
 \subsection{Giao diện nhân viên bán hàng}
 
-Khi nhân viên bán hàng đăng nhập, các trang nghiệp vụ không hiển thị banner ``Chế độ xem'' và kích hoạt đầy đủ các thao tác CRUD. Năm trang nghiệp vụ có sự khác biệt rõ nhất được minh họa dưới đây.
+Khi nhân viên bán hàng đăng nhập, các trang nghiệp vụ không hiển thị banner \mbox{``Chế độ xem''} và kích hoạt đầy đủ các thao tác CRUD. Năm trang nghiệp vụ có sự khác biệt rõ nhất được minh họa dưới đây.
 
 Trang quản lý sản phẩm dành cho nhân viên (Hình~\ref{fig:screenshot_staff_products}) hiển thị nút ``+ Thêm sản phẩm'', đầy đủ bốn icon hành động trên mỗi dòng (xem, sửa, nhân bản, xóa) và dropdown chỉnh trạng thái nhanh inline.
 
@@ -691,6 +691,6 @@ Chương này trình bày cài đặt, kiểm thử và đánh giá hệ thống
 Phần cài đặt chatbot AI trình bày ba thành phần cốt lõi (dịch vụ embedding chain fallback, kho vector Hybrid Search, và bộ điều phối pipeline RAG 7 bước với session memory và catalog cache), cùng route guard ba lớp và lazy loading phía frontend.
 \end{sloppypar}
 
-Phần demo trình bày 22 màn hình thực tế qua năm nhóm (người dùng cuối, luồng giao dịch, chatbot AI, quản trị viên xem-only và nhân viên CRUD đầy đủ), minh chứng trực quan cho mô hình phân quyền RBAC đã thiết kế ở Chương~3.
+Phần demo trình bày 22 màn hình thực tế qua năm nhóm (người dùng cuối, luồng giao dịch, chatbot AI, quản trị viên chỉ xem và nhân viên CRUD đầy đủ), minh chứng trực quan cho mô hình phân quyền RBAC đã thiết kế ở Chương~3.
 
 Phần kiểm thử trình bày chiến lược 5 tầng với $\sim$7.579 ca kiểm thử trong 246 suites, coverage 100\% cả bốn chỉ số ở tầng unit, bổ sung mutation testing (Stryker) và property-based testing (fast-check) và CI\slash CD bằng GitHub Actions. Phần đánh giá chatbot RAG qua 20 kịch bản xác nhận hệ thống xử lý đúng tìm kiếm ngữ nghĩa, tên model, viết tắt và từ chối off-topic, kèm các chỉ số truy xuất định lượng (Hit@k, MRR) và kiểm thử hiệu năng. Cuối chương phân tách đóng góp tự triển khai với phần tái sử dụng thư viện và hướng dẫn triển khai.

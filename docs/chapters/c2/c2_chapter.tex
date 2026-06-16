@@ -300,21 +300,7 @@ Axios~\cite{axios_docs} được dùng qua một instance dùng chung, tập tru
 \section{Xác thực, xử lý media và công cụ vận hành}
 \label{sec:c2_backend_extra}
 
-\subsection{Google OAuth 2.0}
-
-Google OAuth 2.0~\cite{google_oauth_docs} cho phép đăng nhập bằng tài khoản Google. Luồng theo phương thức token exchange: frontend nhận Google ID token từ Google Sign-In SDK gửi lên backend, backend dùng \texttt{google-auth-library} xác minh token với Google API rồi tạo hoặc tra cứu tài khoản TechStore và phát hành JWT theo cơ chế thống nhất với đăng nhập email. Cách này tránh lưu mật khẩu Google và để Google chịu trách nhiệm xác thực danh tính.
-
-\subsection{Sharp -- Xử lý ảnh phía server}
-
-Sharp~\cite{sharp_docs} (xử lý ảnh hiệu năng cao trên nền libvips) được dùng trong module \texttt{image} để chuẩn hóa ảnh sản phẩm sau upload: resize, tự xoay theo EXIF, chuyển sang JPEG/WebP với chất lượng kiểm soát và xóa metadata EXIF (bảo vệ quyền riêng tư), đảm bảo ảnh hiển thị nhất quán và tối ưu kích thước.
-
-\subsection{node-cron -- Tác vụ định kỳ}
-
-node-cron~\cite{node_cron_docs} lập lịch hai cron job trong \texttt{src/jobs/cleanup.js}: job hằng ngày 2 giờ sáng (\texttt{0 2 * * *}) dọn giỏ hàng bỏ dở, OTP và token reset hết hạn, discount hết hạn, lưu trữ tin nhắn chatbot cũ (sau 90 ngày); job hằng tuần 3 giờ sáng Chủ nhật (\texttt{0 3 * * 0}) dọn file ảnh mồ côi. Các tác vụ nền này giúp hệ thống tự duy trì dữ liệu gọn gàng.
-
-\subsection{Swagger/OpenAPI -- Tài liệu API tự động}
-
-Swagger/OpenAPI~\cite{swagger_docs} (chuẩn mô tả API RESTful) được tích hợp qua \texttt{swagger-jsdoc} sinh tài liệu OpenAPI 3.0 từ JSDoc comment trong file route, và \texttt{swagger-ui-express} phục vụ giao diện tương tác tại \texttt{/api-docs}. Tài liệu luôn đồng bộ với code vì sinh tự động từ source, đồng thời cho phép kiểm thử API qua trình duyệt mà không cần Postman.
+Bốn công nghệ phụ trợ phía backend gồm: \textbf{Google OAuth 2.0}~\cite{google_oauth_docs} cho đăng nhập bằng tài khoản Google theo phương thức token exchange (backend xác minh Google ID token qua \texttt{google-auth-library} rồi phát JWT thống nhất với đăng nhập email, không lưu mật khẩu Google); \textbf{Sharp}~\cite{sharp_docs} chuẩn hóa ảnh sản phẩm sau upload (resize, tự xoay theo EXIF, chuyển JPEG\slash WebP, xóa metadata EXIF); \textbf{node-cron}~\cite{node_cron_docs} lập lịch các tác vụ dọn dẹp định kỳ hằng ngày và hằng tuần (chi tiết ở Chương~4); và \textbf{Swagger/OpenAPI}~\cite{swagger_docs} sinh tài liệu API (OpenAPI 3.0) tự động từ JSDoc, phục vụ giao diện tương tác tại \texttt{/api-docs}.
 
 \section{Kiểm thử và công cụ đảm bảo chất lượng}
 \label{sec:c2_quality}
@@ -323,13 +309,7 @@ Swagger/OpenAPI~\cite{swagger_docs} (chuẩn mô tả API RESTful) được tíc
 
 Test Pyramid~\cite{fowler2012test_pyramid} là mô hình tổ chức kiểm thử trong đó unit tests (tầng dưới cùng, nhiều nhất) kiểm tra logic trong isolation, integration tests kiểm tra sự phối hợp giữa các component với database thật, và E2E tests (tầng trên cùng, ít nhất) kiểm tra luồng người dùng hoàn chỉnh. TechStore triển khai đầy đủ 5 tầng: unit, integration, API HTTP, E2E và component test.
 
-\subsection{Jest 29 và Supertest}
-
-Jest~\cite{jest_docs} là framework kiểm thử JavaScript hỗ trợ mocking, snapshot testing và coverage. Supertest~\cite{supertest_docs} là thư viện gửi HTTP request đến Express app trong môi trường test. Trong TechStore, integration tests và API HTTP tests sử dụng Supertest với MySQL database thật (\texttt{techstore\_test}), đảm bảo test phản ánh đúng hành vi thực tế.
-
-\subsection{GitHub Actions và Husky}
-
-GitHub Actions~\cite{github_actions_docs} cung cấp CI/CD pipeline tự động: mỗi push hoặc pull request kích hoạt quy trình lint, typecheck, build và unit test. Husky~\cite{husky_docs} quản lý Git hooks pre-commit: tự động quét secret, kiểm tra kiến trúc (service không import Sequelize trực tiếp, controller không touch ORM) và chạy lint-staged trước mỗi commit.
+Bộ công cụ kiểm thử và đảm bảo chất lượng gồm Jest~\cite{jest_docs} và Supertest~\cite{supertest_docs} (chạy test trên MySQL thật), GitHub Actions~\cite{github_actions_docs} cho CI\slash CD, Husky~\cite{husky_docs} cho pre-commit hook, cùng ESLint~\cite{eslint_docs}, Prettier~\cite{prettier_docs} và \texttt{module-alias}~\cite{module_alias_docs}; cấu hình chi tiết được trình bày ở Chương~4.
 
 \subsection{Kiểm thử đột biến (Mutation Testing)}
 
@@ -343,6 +323,3 @@ Kiểm thử dựa trên thuộc tính (property-based testing) là phương ph�
 
 TechStore sử dụng fast-check~\cite{fastcheck_docs} để kiểm tra các bất biến nghiệp vụ quan trọng, bao gồm các ràng buộc về tồn kho, giá sản phẩm và trạng thái đơn hàng, bổ sung cho bộ unit test truyền thống theo hướng example-based.
 
-\subsection{ESLint, Prettier và module-alias}
-
-ESLint~\cite{eslint_docs} phân tích tĩnh code phát hiện lỗi tiềm ẩn và vi phạm quy ước. Prettier~\cite{prettier_docs} định dạng code tự động. \texttt{module-alias}~\cite{module_alias_docs} cho phép sử dụng alias ngắn gọn (\texttt{@models}, \texttt{@shared}, \texttt{@services}) thay vì đường dẫn tương đối dài trong codebase backend.

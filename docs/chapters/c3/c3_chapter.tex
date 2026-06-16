@@ -238,6 +238,7 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \label{tab:uc_spec_05} \\
   \hline
   \textbf{Mã ca sử dụng} & UC-05 \\ \hline
+  \textbf{Tên ca sử dụng} & Đăng ký tài khoản và xác thực OTP \\ \hline
   \textbf{Tác nhân chính} & Khách vãng lai (Guest) \\ \hline
   \textbf{Mô tả} & Tạo tài khoản mới bằng email\slash mật khẩu và xác thực quyền sở hữu email qua mã OTP 6 chữ số. \\ \hline
   \textbf{Tiền điều kiện} & Người dùng chưa có tài khoản với email đăng ký; email đúng định dạng. \\ \hline
@@ -245,11 +246,11 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \textbf{Luồng sự kiện chính} &
   1. Người dùng nhập email, mật khẩu, họ tên và gửi yêu cầu đăng ký. \newline
   2. Hệ thống kiểm tra email chưa tồn tại trong cơ sở dữ liệu. \newline
-  3. Hệ thống băm mật khẩu bằng bcrypt (cost=12) qua hook \texttt{beforeCreate}. \newline
-  4. Hệ thống tạo bản ghi người dùng với \texttt{isEmailVerified=false}, sinh mã OTP 6 chữ số bằng \texttt{crypto.randomInt}, hết hạn sau 10 phút. \newline
+  3. Hệ thống băm mật khẩu bằng bcrypt (cost=12) trước khi lưu bản ghi. \newline
+  4. Hệ thống tạo bản ghi người dùng với \texttt{isEmailVerified=false}, sinh mã OTP 6 chữ số ngẫu nhiên an toàn, hết hạn sau 10 phút. \newline
   5. Hệ thống gửi email chứa OTP qua Gmail SMTP và trả về thông báo đăng ký thành công. \newline
   6. Người dùng nhập mã OTP nhận được. \newline
-  7. Hệ thống so khớp OTP bằng \texttt{crypto.timingSafeEqual}; nếu đúng và còn hạn thì đặt \texttt{isEmailVerified=true} và xóa OTP. \\ \hline
+  7. Hệ thống so khớp OTP theo cơ chế thời gian hằng định (chống timing attack); nếu đúng và còn hạn thì đặt \texttt{isEmailVerified=true} và xóa OTP. \\ \hline
   \textbf{Luồng thay thế} & 4a. Gửi email OTP thất bại: lỗi chỉ được ghi log, không chặn phản hồi đăng ký; người dùng có thể yêu cầu gửi lại OTP. \\ \hline
   \textbf{Ngoại lệ} &
   - E1 (bước 2): email đã tồn tại → trả lỗi HTTP 400 \texttt{auth.emailInUse}. \newline
@@ -262,6 +263,7 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \label{tab:uc_spec_13} \\
   \hline
   \textbf{Mã ca sử dụng} & UC-13 \\ \hline
+  \textbf{Tên ca sử dụng} & Đặt hàng và áp mã giảm giá \\ \hline
   \textbf{Tác nhân chính} & Khách hàng (Customer) \\ \hline
   \textbf{Mô tả} & Tạo đơn hàng từ giỏ hàng, áp mã giảm giá (tùy chọn) và chốt thông tin giao hàng. \\ \hline
   \textbf{Tiền điều kiện} & Khách đã đăng nhập; giỏ hàng có ít nhất một sản phẩm còn kinh doanh (\texttt{status=active}). \\ \hline
@@ -272,7 +274,7 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   3. Với mỗi biến thể: thực hiện \texttt{SELECT FOR UPDATE} khóa hàng, kiểm tra tồn kho đủ, trừ tồn kho và ghi \texttt{inventory\_logs}. \newline
   4. Nếu có mã giảm giá: khóa bản ghi mã bằng \texttt{SELECT FOR UPDATE}, kiểm tra điều kiện (còn lượt, chưa hết hạn, đạt giá trị đơn tối thiểu) rồi áp giảm. \newline
   5. Tạo đơn hàng với \texttt{order\_items} lưu snapshot giá tại thời điểm mua. \newline
-  6. Với thanh toán thủ công (COD\slash chuyển khoản): xóa giỏ, tăng \texttt{usedCount} mã, COMMIT và gửi email xác nhận bất đồng bộ. Với thanh toán online: giữ giỏ và mã chờ IPN. \\ \hline
+  6. Với thanh toán thủ công (COD\slash chuyển khoản): xóa giỏ, tăng bộ đếm lượt dùng mã, COMMIT và gửi email xác nhận bất đồng bộ. Với thanh toán online: giữ giỏ và mã chờ IPN. \\ \hline
   \textbf{Luồng thay thế} & 6a. Phương thức online (MoMo\slash VNPay): chuyển sang UC-14 để sinh URL thanh toán; giỏ hàng và bộ đếm mã giảm giá được giữ lại đến khi IPN xác nhận. \\ \hline
   \textbf{Ngoại lệ} &
   - E1 (bước 3): sản phẩm hết hàng hoặc ngừng kinh doanh → rollback toàn bộ transaction, trả lỗi nghiệp vụ. \newline
@@ -284,6 +286,7 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \label{tab:uc_spec_14} \\
   \hline
   \textbf{Mã ca sử dụng} & UC-14 \\ \hline
+  \textbf{Tên ca sử dụng} & Thanh toán trực tuyến qua MoMo\slash VNPay \\ \hline
   \textbf{Tác nhân chính} & Khách hàng (Customer); tác nhân phụ: cổng thanh toán (MoMo\slash VNPay) \\ \hline
   \textbf{Mô tả} & Sinh URL thanh toán và xử lý kết quả giao dịch qua IPN callback theo cơ chế idempotency. \\ \hline
   \textbf{Tiền điều kiện} & Đơn hàng tồn tại ở \texttt{paymentStatus=pending} với phương thức thanh toán online. \\ \hline
@@ -292,9 +295,9 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   1. Khách yêu cầu thanh toán; hệ thống ký URL bằng HMAC (MoMo dùng SHA256, VNPay dùng SHA512) và trả về liên kết cổng. \newline
   2. Khách hoàn tất thanh toán trên cổng; cổng gửi IPN callback theo kênh server-to-server. \newline
   3. Hệ thống xác thực chữ ký HMAC của callback. \newline
-  4. Mở transaction, \texttt{SELECT FOR UPDATE} đơn hàng; kiểm tra tuần tự: đơn chưa hủy, số tiền khớp (dung sai 0.01đ), giao dịch chưa được xử lý (idempotency theo \texttt{paymentTransactionId}). \newline
-  5. Cập nhật \texttt{paymentStatus=paid}, \texttt{status=processing}, lưu \texttt{paymentTransactionId} và COMMIT. \newline
-  6. Sau COMMIT (fire-and-forget): tăng \texttt{usedCount} mã giảm giá, xóa giỏ hàng và gửi email xác nhận. \\ \hline
+  4. Mở transaction, \texttt{SELECT FOR UPDATE} đơn hàng; kiểm tra tuần tự: đơn chưa hủy, số tiền khớp (dung sai 0.01đ), giao dịch chưa được xử lý (idempotency theo mã giao dịch). \newline
+  5. Cập nhật \texttt{paymentStatus=paid}, \texttt{status=processing}, lưu mã giao dịch và COMMIT. \newline
+  6. Sau COMMIT (fire-and-forget): tăng bộ đếm lượt dùng mã giảm giá, xóa giỏ hàng và gửi email xác nhận. \\ \hline
   \textbf{Luồng thay thế} & 2a. Return URL: MoMo chỉ điều hướng trình duyệt (không đổi trạng thái, IPN là kênh chính thức); VNPay vừa verify vừa đánh dấu \texttt{paid} idempotent trước khi điều hướng. \\ \hline
   \textbf{Ngoại lệ} &
   - E1 (bước 3): chữ ký HMAC sai → từ chối callback (HTTP 400 hoặc mã lỗi tương ứng). \newline
@@ -307,21 +310,22 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \label{tab:uc_spec_18} \\
   \hline
   \textbf{Mã ca sử dụng} & UC-18 \\ \hline
+  \textbf{Tên ca sử dụng} & Tư vấn sản phẩm với chatbot AI \\ \hline
   \textbf{Tác nhân chính} & Khách vãng lai (Guest), Khách hàng (Customer) \\ \hline
   \textbf{Mô tả} & Tư vấn sản phẩm bằng ngôn ngữ tự nhiên tiếng Việt thông qua pipeline RAG, trả về phản hồi kèm danh sách sản phẩm gợi ý. \\ \hline
   \textbf{Tiền điều kiện} & Không yêu cầu đăng nhập; rate limiter cho phép (20 yêu cầu\slash 60 giây mỗi IP). \\ \hline
   \textbf{Hậu điều kiện} & Trả phản hồi tiếng Việt kèm sản phẩm gợi ý; cặp tin nhắn được lưu vào bộ nhớ phiên và cơ sở dữ liệu. \\ \hline
   \textbf{Luồng sự kiện chính} &
   1. Xác thực đầu vào: tin nhắn không rỗng, không quá 500 ký tự, chứa ít nhất một chữ cái hoặc chữ số. \newline
-  2. Chuẩn hóa truy vấn (\texttt{expandAbbreviations}, 73 mẫu regex) và phân loại ý định vào một trong 6 nhóm. \newline
+  2. Chuẩn hóa truy vấn (73 mẫu regex chuẩn hóa viết tắt) và phân loại ý định vào một trong 6 nhóm. \newline
   3. Kiểm tra bảo mật: phát hiện prompt injection (24 mẫu regex) và lọc câu hỏi ngoài phạm vi. \newline
   4. Tải lịch sử phiên từ bộ nhớ (tối đa 10 lượt) và bổ sung ngữ cảnh cho truy vấn. \newline
   5. Truy xuất sản phẩm bằng Hybrid Search (cosine $\geq$0.45 kết hợp tìm kiếm từ khóa) chạy song song với viết lại truy vấn bằng LLM. \newline
   6. Sinh phản hồi: LLM tổng hợp câu trả lời từ ngữ cảnh sản phẩm truy xuất được. \newline
-  7. Lưu lịch sử hội thoại (bộ nhớ phiên + \texttt{ChatMessage}) theo kiểu fire-and-forget. \\ \hline
+  7. Lưu lịch sử hội thoại (bộ nhớ phiên và cơ sở dữ liệu) theo kiểu fire-and-forget. \\ \hline
   \textbf{Luồng thay thế} &
-  - 5a. Không có sản phẩm nào vượt ngưỡng cosine: lấy 3 sản phẩm gần nhất, đánh dấu \texttt{lowConfidence=true}. \newline
-  - 6a. LLM không khả dụng hoặc hết thời gian: kích hoạt \texttt{simpleKeywordMatch} làm phương án dự phòng. \\ \hline
+  - 5a. Không có sản phẩm nào vượt ngưỡng cosine: lấy 3 sản phẩm gần nhất và đánh dấu là kết quả độ tin cậy thấp. \newline
+  - 6a. LLM không khả dụng hoặc hết thời gian: kích hoạt phương án dự phòng tìm kiếm từ khóa. \\ \hline
   \textbf{Ngoại lệ} &
   - E1 (bước 1): tin nhắn không hợp lệ → trả lỗi HTTP 400. \newline
   - E2 (bước 3): phát hiện injection hoặc câu hỏi ngoài phạm vi → từ chối lịch sự, không gọi LLM (tiết kiệm chi phí). \\ \hline
@@ -332,9 +336,10 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   \label{tab:uc_spec_20} \\
   \hline
   \textbf{Mã ca sử dụng} & UC-20 \\ \hline
+  \textbf{Tên ca sử dụng} & Quản lý sản phẩm \\ \hline
   \textbf{Tác nhân chính} & Nhân viên (Staff) \\ \hline
   \textbf{Mô tả} & Thêm, sửa, xóa, nhân bản sản phẩm và biến thể qua giao diện back-office. \\ \hline
-  \textbf{Tiền điều kiện} & Người dùng đăng nhập với vai trò \texttt{staff} (qua \texttt{adminAuthenticate} + \texttt{requireRole('staff')}). \\ \hline
+  \textbf{Tiền điều kiện} & Người dùng đăng nhập với vai trò \texttt{staff} (qua middleware xác thực back-office và kiểm tra quyền). \\ \hline
   \textbf{Hậu điều kiện} & Danh mục sản phẩm được cập nhật; thay đổi đồng bộ vào vector store phục vụ chatbot. \\ \hline
   \textbf{Luồng sự kiện chính} &
   1. Nhân viên truy cập trang quản lý sản phẩm trong back-office. \newline
@@ -342,7 +347,7 @@ Back-office áp dụng mô hình kế thừa actor: cả Admin và Staff đều 
   3. Sửa thông tin và biến thể (\texttt{updateProduct}); chuyển trạng thái qua \texttt{toggleProductStatus} giữa \texttt{active}, \texttt{inactive}, \texttt{draft}. \newline
   4. Nhân bản sản phẩm (\texttt{cloneProduct}) -- trạng thái \texttt{draft} để tránh publish nhầm bản chưa kiểm tra. \newline
   5. Xóa sản phẩm theo cơ chế soft delete (đặt \texttt{deletedAt}), giữ dữ liệu phục vụ lịch sử đơn hàng. \newline
-  6. Mọi thay đổi kích hoạt Sequelize hook tự động cập nhật (upsert\slash xóa) vector store. \\ \hline
+  6. Mọi thay đổi tự động đồng bộ (thêm\slash xóa) vào vector store. \\ \hline
   \textbf{Luồng thay thế} & 1a. Quản trị viên (Admin) truy cập trang này chỉ ở chế độ xem (không thực hiện CRUD nghiệp vụ). \\ \hline
   \textbf{Ngoại lệ} & E1: người dùng không có vai trò \texttt{staff} → trả lỗi HTTP 403. \\ \hline
 \end{longtable}
@@ -413,7 +418,7 @@ Mỗi module trong hệ thống là một vertical slice khép kín, bao gồm: 
 
 Hạ tầng dùng chung (\textbf{Shared Infrastructure}) gồm EventBus, UnitOfWork, emailService và vectorStoreService được inject vào các module cần thiết. Kết nối giữa các module được thực hiện qua ba cơ chế. Thứ nhất là \textbf{Dependency Injection (DI)}: toàn bộ các phụ thuộc (service, repository, shared services) được khởi tạo một lần trong \texttt{src/app.js} và truyền vào constructor của từng lớp -- không có singleton tự tạo hay global state ngoài EventBus. Thứ hai là \textbf{EventBus (pub/sub nội bộ)}~\cite{hohpe2004enterprise}: khi một sự kiện quan trọng xảy ra (ví dụ \texttt{order.cancelled} do module orders phát), module inventory lắng nghe và ghi log mà không cần coupling trực tiếp. EventBus dùng \texttt{Promise.allSettled} để đảm bảo lỗi của một handler không ảnh hưởng các handler còn lại. Thứ ba là \textbf{Shared Models}: khi module B cần đọc dữ liệu từ module A, model của A được inject vào B thay vì gọi API nội bộ, tránh chi phí HTTP và vẫn đảm bảo transaction đồng nhất. Ví dụ điển hình: module cart nhận inject Product và ProductVariant từ catalog để đọc thông tin sản phẩm; module ai nhận inject Product, ProductVariant và Category từ catalog để phục vụ vector search.
 
-Cơ chế \textbf{UnitOfWork}~\cite{fowler2003patterns} đặc biệt quan trọng trong luồng đặt hàng. Pattern này bọc toàn bộ chuỗi thao tác (tạo order, tạo order items, trừ tồn kho) trong một transaction duy nhất với \texttt{runInTransaction}. Khi cần trừ tồn kho, \texttt{lockRow} thực thi câu lệnh \texttt{SELECT FOR UPDATE} để khóa hàng dữ liệu, ngăn hai request đồng thời cùng mua sản phẩm cuối cùng trong kho (race condition phổ biến trong hệ thống thương mại điện tử).
+Cơ chế \textbf{UnitOfWork}~\cite{fowler2003patterns} đặc biệt quan trọng trong luồng đặt hàng. Pattern này bọc toàn bộ chuỗi thao tác (tạo order, tạo order items, trừ tồn kho) trong một transaction duy nhất. Khi cần trừ tồn kho, hệ thống thực thi câu lệnh \texttt{SELECT FOR UPDATE} để khóa hàng dữ liệu, ngăn hai request đồng thời cùng mua sản phẩm cuối cùng trong kho (race condition phổ biến trong hệ thống thương mại điện tử).
 
 17 module backend được chia thành hai nhóm theo kiểu DI. Nhóm \textbf{12 Full DI modules} nhận toàn bộ phụ thuộc qua constructor, đảm bảo isolation và dễ test: nhóm Storefront gồm \textit{auth} (xác thực, JWT, Google OAuth, OTP), \textit{users} (tài khoản và địa chỉ), \textit{catalog} (sản phẩm, danh mục, thương hiệu), \textit{cart} (giỏ hàng); nhóm Commerce gồm \textit{orders} (đặt hàng, sử dụng emailService gửi xác nhận), \textit{payment} (MoMo, VNPay, sử dụng ordersService và emailService), \textit{inventory} (tồn kho); nhóm Engagement gồm \textit{ai} (chatbot RAG, sử dụng vectorStoreService cho RAG search), \textit{reviews} (đánh giá), \textit{wishlist} (yêu thích), \textit{content} (feedback), \textit{upload} (upload file). Nhóm \textbf{5 Singleton\slash Thin Wrapper modules} là các wrapper mỏng, không cần isolation test: \textit{admin} (thống kê, delegate qua ordersService), \textit{attribute} (thuộc tính sản phẩm), \textit{image} (xử lý ảnh), \textit{search-history} (lịch sử tìm kiếm), \textit{discount-code} (mã giảm giá).
 
@@ -434,9 +439,9 @@ Frontend TechStore được xây dựng bằng React 19 và TypeScript theo mô 
 
 Tầng quản lý state được chia thành hai lớp. \textbf{TanStack Query v5} quản lý server state (dữ liệu từ API) với staleTime 5 phút và gcTime 10 phút, giúp cache tự động và tránh fetch trùng lặp. \textbf{6 Zustand stores + Immer} quản lý client state theo domain: auth-store (user, token, justLoggedIn), cart-store (items, serverCart, isOpen), chat-store (messages, sessionId, chatHistory), catalog-store (recentlyViewed max 10, compareList max 4, filters), wishlist-store (items[]), và ui-store (notifications, theme, isSearchOpen).
 
-Tầng Shared Infrastructure gồm \texttt{src/components/} (common, layout, routing, ui, icons, sections), \texttt{src/hooks/} (5 hooks dùng chung: useApiState, useDebounce, useNotifications, useScrollToTop, useTokenRefresh) và \texttt{src/utils/} (13 utility functions: format, price-utils, token-manager, auth-utils...).
+Tầng Shared Infrastructure gồm \texttt{src/components/} (common, layout, routing, ui, icons, sections), \texttt{src/hooks/} (5 hook dùng chung) và \texttt{src/utils/} (13 hàm tiện ích cho định dạng, xử lý giá, quản lý token, xác thực...).
 
-Tầng API Client là Axios singleton (\texttt{src/lib/api-client.ts}) với hai interceptor: request interceptor đính kèm Bearer token qua \texttt{getValidToken()}, và response interceptor bắt lỗi 401 để gọi \texttt{handleUnauthorizedError} (logout và redirect về trang đăng nhập).
+Tầng API Client là Axios singleton (\texttt{src/lib/api-client.ts}) với hai interceptor: request interceptor đính kèm Bearer token, và response interceptor bắt lỗi 401 để tự động đăng xuất và chuyển về trang đăng nhập.
 
 \subsection{Tóm tắt API endpoints chính}
 \label{sec:c3_api_summary}
@@ -731,7 +736,7 @@ Vòng đời của đơn hàng trong TechStore được mô hình hóa như mộ
 
 Đơn hàng bắt đầu ở trạng thái \texttt{pending} ngay sau khi tạo, chờ xác nhận thanh toán từ cổng (trường \texttt{paymentStatus=pending}). Khi nhận IPN callback thành công, đơn hàng chuyển sang \texttt{processing}, cho biết thanh toán đã được xác nhận và hệ thống đang chuẩn bị hàng. Nhân viên sau đó gán mã vận đơn để đẩy sang trạng thái \texttt{shipped}. Khi khách nhận hàng và xác nhận, đơn hàng hoàn thành (\texttt{delivered}). Ngoài ra, khách hàng có thể xác nhận nhận hàng sớm trực tiếp từ trạng thái \texttt{processing} mà không cần qua \texttt{shipped}.
 
-Đơn hàng có thể bị hủy (\texttt{cancelled}) từ ba trạng thái: \texttt{pending} (thanh toán thất bại, hết timeout, khách hủy chủ động, hoặc nhân viên hủy -- kèm hoàn tồn kho), \texttt{processing} (khách hủy hoặc nhân viên hủy vì lý do vận hành -- kèm hoàn tồn kho), và \texttt{shipped} (nhân viên hủy sau khi giao -- không hoàn tồn kho vì hàng đã xuất). Khi hủy, Order Service khôi phục tồn kho \textbf{trực tiếp ngay trong transaction} (qua \texttt{restoreVariantStock}/\texttt{restoreProductStock}) \textit{trước khi} phát sự kiện \texttt{order.cancelled} qua EventBus. Inventory Service lắng nghe sự kiện này chỉ để ghi lại \texttt{inventory\_log} (với \texttt{previousStock}/\texttt{newStock=0} dạng placeholder phục vụ truy vết), chứ không thực hiện khôi phục tồn kho.
+Đơn hàng có thể bị hủy (\texttt{cancelled}) từ ba trạng thái: \texttt{pending} (thanh toán thất bại, hết timeout, khách hủy chủ động, hoặc nhân viên hủy -- kèm hoàn tồn kho), \texttt{processing} (khách hủy hoặc nhân viên hủy vì lý do vận hành -- kèm hoàn tồn kho), và \texttt{shipped} (nhân viên hủy sau khi giao -- không hoàn tồn kho vì hàng đã xuất). Khi hủy, Order Service khôi phục tồn kho \textbf{trực tiếp ngay trong transaction} \textit{trước khi} phát sự kiện \texttt{order.cancelled} qua EventBus. Inventory Service lắng nghe sự kiện này chỉ để ghi lại \texttt{inventory\_log} (với giá trị tồn kho dạng placeholder phục vụ truy vết), chứ không thực hiện khôi phục tồn kho.
 
 Thiết kế sơ đồ trạng thái đơn hàng có một đặc điểm quan trọng: các chuyển trạng thái quan trọng đều được Order Service kiểm soát bằng guard -- chặn những chuyển không hợp lệ (ví dụ không cho hủy đơn đã \texttt{delivered}, không cho chuyển ra khỏi trạng thái \texttt{cancelled} đã kết thúc) trước khi thực hiện, tránh tình trạng đơn hàng đã giao lại bị chuyển về \texttt{pending} do lỗi logic.
 
@@ -752,7 +757,7 @@ Thanh toán bắt đầu ở trạng thái \texttt{pending} ngay khi đơn hàng
 
 Trạng thái \texttt{refunded} là trạng thái cuối cùng, chỉ áp dụng khi admin hoặc staff thực hiện hoàn tiền qua VNPay (cổng MoMo chưa hỗ trợ API hoàn tiền tại thời điểm phát triển). Trước khi gọi API hoàn tiền, hệ thống kiểm tra điều kiện: đơn hàng phải đang ở \texttt{paymentStatus=paid}, phải có \texttt{paymentTransactionId}, và \texttt{paymentProvider} phải là \texttt{vnpay}; vi phạm bất kỳ điều kiện nào đều trả về lỗi nghiệp vụ cụ thể.
 
-Cơ chế idempotency được triển khai trong hàm \texttt{\_canProcessPayment}: trước khi cập nhật bất kỳ trạng thái nào, hàm kiểm tra đồng thời \texttt{paymentStatus !== 'paid'} và transaction ID chưa được xử lý. Điều này ngăn việc xử lý trùng lặp khi cổng thanh toán gửi lại IPN callback nhiều lần do timeout -- một tình huống phổ biến trong thực tế vận hành cổng thanh toán.
+Cơ chế idempotency được triển khai ở bước kiểm tra trước khi cập nhật bất kỳ trạng thái nào: hệ thống xác minh đồng thời trạng thái thanh toán chưa phải \texttt{paid} và mã giao dịch chưa được xử lý. Điều này ngăn việc xử lý trùng lặp khi cổng thanh toán gửi lại IPN callback nhiều lần do timeout -- một tình huống phổ biến trong thực tế vận hành cổng thanh toán.
 
 \subsection{Trạng thái sản phẩm}
 \label{sec:c3_product_states}
@@ -767,7 +772,7 @@ Mỗi sản phẩm trong TechStore có trường \texttt{status} dạng ENUM v�
   \label{fig:product_states}
 \end{figure}
 
-Khi nhân viên tạo sản phẩm mới qua \texttt{createProduct}, trạng thái mặc định là \texttt{active}. Khi nhân bản sản phẩm qua \texttt{cloneProduct}, trạng thái luôn là \texttt{draft} để tránh vô tình publish sản phẩm trùng lặp chưa được kiểm tra. Ba trạng thái có thể chuyển đổi tự do qua lại thông qua \texttt{toggleProductStatus} hoặc \texttt{updateProduct} -- không có ràng buộc thứ tự chuyển trạng thái. Điểm quan trọng trong thiết kế là chỉ sản phẩm \texttt{active} mới được phép đặt hàng: Order Service kiểm tra điều kiện này ngay trong transaction tạo đơn và trả về lỗi cụ thể nếu sản phẩm không còn kinh doanh. Xóa sản phẩm là soft delete (đặt \texttt{deletedAt}) từ bất kỳ trạng thái nào, dữ liệu vẫn được giữ lại trong database để bảo toàn lịch sử đơn hàng và báo cáo.
+Khi nhân viên tạo sản phẩm mới, trạng thái mặc định là \texttt{active}. Khi nhân bản sản phẩm, trạng thái luôn là \texttt{draft} để tránh vô tình đăng bán sản phẩm trùng lặp chưa được kiểm tra. Ba trạng thái có thể chuyển đổi tự do qua lại qua thao tác đổi trạng thái -- không có ràng buộc thứ tự chuyển trạng thái. Điểm quan trọng trong thiết kế là chỉ sản phẩm \texttt{active} mới được phép đặt hàng: Order Service kiểm tra điều kiện này ngay trong transaction tạo đơn và trả về lỗi cụ thể nếu sản phẩm không còn kinh doanh. Xóa sản phẩm là soft delete (đặt \texttt{deletedAt}) từ bất kỳ trạng thái nào, dữ liệu vẫn được giữ lại trong database để bảo toàn lịch sử đơn hàng và báo cáo.
 
 \subsection{Vòng đời tài khoản người dùng}
 \label{sec:c3_user_states}
@@ -801,9 +806,9 @@ Hình~\ref{fig:seq_auth_register} mô tả hai luồng đầu tiên -- đăng k�
   \label{fig:seq_auth_register}
 \end{figure}
 
-Trong luồng đăng ký, người dùng gửi email, mật khẩu và họ tên; Auth Service kiểm tra email chưa tồn tại, hash mật khẩu bằng bcrypt với cost factor 12 (thực thi qua \texttt{beforeCreate} hook của Sequelize), tạo tài khoản với \texttt{isEmailVerified=false}, sinh mã OTP 6 chữ số bằng \texttt{crypto.randomInt} với thời hạn 10 phút, và gửi email qua Gmail SMTP. OTP được lưu trực tiếp vào hai trường \texttt{otpCode} và \texttt{otpExpires} trong bảng \texttt{users}, tận dụng transaction đang mở và tránh JOIN thêm bảng phụ. Lỗi gửi email chỉ được ghi log mà không block phản hồi trả về, đảm bảo người dùng vẫn nhận được thông báo đăng ký thành công ngay cả khi SMTP tạm thời gặp sự cố.
+Trong luồng đăng ký, người dùng gửi email, mật khẩu và họ tên; Auth Service kiểm tra email chưa tồn tại, hash mật khẩu bằng bcrypt với cost factor 12 (thực thi qua hook của Sequelize trước khi tạo bản ghi), tạo tài khoản với \texttt{isEmailVerified=false}, sinh mã OTP 6 chữ số ngẫu nhiên an toàn với thời hạn 10 phút, và gửi email qua Gmail SMTP. OTP được lưu trực tiếp vào hai trường \texttt{otpCode} và \texttt{otpExpires} trong bảng \texttt{users}, tận dụng transaction đang mở và tránh JOIN thêm bảng phụ. Lỗi gửi email chỉ được ghi log mà không block phản hồi trả về, đảm bảo người dùng vẫn nhận được thông báo đăng ký thành công ngay cả khi SMTP tạm thời gặp sự cố.
 
-Trong luồng xác thực OTP, hệ thống dùng \texttt{crypto.timingSafeEqual} để so sánh mã, tránh timing attack. Các trường hợp thất bại không phân biệt được (OTP sai, người dùng không tồn tại, đã xác thực) đều trả về cùng một thông báo lỗi chung nhằm ngăn kẻ tấn công suy ra sự tồn tại của tài khoản (user enumeration); riêng trường hợp OTP đúng nhưng hết hạn trả về lỗi riêng biệt để hướng dẫn người dùng yêu cầu OTP mới. Khi OTP hợp lệ, hệ thống cập nhật \texttt{isEmailVerified=true} và xóa \texttt{otpCode}, \texttt{otpExpires} để vô hiệu hóa OTP vĩnh viễn.
+Trong luồng xác thực OTP, hệ thống so sánh mã theo cơ chế thời gian hằng định (constant-time) để tránh timing attack. Các trường hợp thất bại không phân biệt được (OTP sai, người dùng không tồn tại, đã xác thực) đều trả về cùng một thông báo lỗi chung nhằm ngăn kẻ tấn công suy ra sự tồn tại của tài khoản (user enumeration); riêng trường hợp OTP đúng nhưng hết hạn trả về lỗi riêng biệt để hướng dẫn người dùng yêu cầu OTP mới. Khi OTP hợp lệ, hệ thống cập nhật \texttt{isEmailVerified=true} và xóa \texttt{otpCode}, \texttt{otpExpires} để vô hiệu hóa OTP vĩnh viễn.
 
 \clearpage
 Hình~\ref{fig:seq_auth_login} mô tả luồng đăng nhập bằng email\slash mật khẩu.
@@ -836,12 +841,12 @@ Trong luồng Google OAuth, frontend gửi \texttt{googleIdToken} từ Google Id
 
 Giỏ hàng trong TechStore được thiết kế để phục vụ cả khách vãng lai và khách hàng đã đăng nhập với trải nghiệm liền mạch, đặc biệt khi người dùng chuyển từ trạng thái guest sang đã đăng nhập.
 
-Với \textbf{khách vãng lai}, giỏ hàng được lưu trên trình duyệt thông qua localStorage (key \texttt{cartItems}) do Zustand \texttt{cart-store} quản lý, đảm bảo dữ liệu tồn tại qua các lần tải lại trang. Đồng thời, một cookie \texttt{sessionId} (chuỗi UUID) được sinh và lưu phía server khi khách thêm sản phẩm đầu tiên, tạo bản ghi \texttt{Cart} trong database với trường \texttt{session\_id} tương ứng. Cơ chế hai lớp này cho phép server theo dõi giỏ hàng ẩn danh mà không yêu cầu xác thực.
+Với \textbf{khách vãng lai}, giỏ hàng được lưu trên trình duyệt bằng localStorage do Zustand quản lý, đảm bảo dữ liệu tồn tại qua các lần tải lại trang. Đồng thời, một cookie phiên (chuỗi UUID) được sinh và lưu phía server khi khách thêm sản phẩm đầu tiên, tạo bản ghi giỏ hàng trong database gắn với phiên đó. Cơ chế hai lớp này cho phép server theo dõi giỏ hàng ẩn danh mà không yêu cầu xác thực.
 
-Với \textbf{khách hàng đã đăng nhập}, mọi thao tác thêm, sửa, xóa sản phẩm đều được đồng bộ tức thì với server thông qua các endpoint REST tương ứng (\texttt{POST /api/cart}, \texttt{PUT /api/cart/items/:id}, \texttt{DELETE /api/cart/items/:id}), kết quả được cache bởi TanStack Query và invalidate ngay sau mỗi mutation để giao diện luôn phản ánh trạng thái mới nhất.
+Với \textbf{khách hàng đã đăng nhập}, mọi thao tác thêm, sửa, xóa sản phẩm đều được đồng bộ tức thì với server qua các endpoint REST tương ứng, kết quả được cache bởi TanStack Query và làm mới ngay sau mỗi thao tác thay đổi để giao diện luôn phản ánh trạng thái mới nhất.
 
 \begin{sloppypar}
-Cơ chế quan trọng nhất là \textbf{merge giỏ hàng khi đăng nhập}. Hình~\ref{fig:seq_cart_merge} mô tả luồng này chi tiết. Khi đăng nhập thành công, cờ \texttt{justLoggedIn} trong \texttt{authStore} được bật. Hook \texttt{useCartMerge} phát hiện cờ và thực hiện theo hai chiến lược: nếu localStorage có item, hook gọi \texttt{GET /api/cart} để đồng bộ trạng thái server trước, sau đó gọi \texttt{POST /api/cart} tuần tự cho từng item (lý do dùng \texttt{addToCart} thay vì \texttt{syncCart}: \texttt{syncCart} ghi đè toàn bộ server cart, còn \texttt{addToCart} cộng dồn vào cart hiện có, bảo toàn items đã thêm từ thiết bị khác), cuối cùng gọi \texttt{GET /api/cart} lần hai để lấy trạng thái giỏ hàng mới nhất; nếu không có item local, hook gọi \texttt{POST /api/cart/merge} để server tự gộp guest session cart vào tài khoản. Server thực hiện merge trong một transaction với \texttt{SELECT FOR UPDATE} để chống race condition, cộng dồn quantity cho items trùng \texttt{productId} và \texttt{variantId}, cập nhật giá hiện tại, đặt guest cart sang trạng thái \texttt{merged}, rồi xóa session cookie. Sau khi hoàn tất, localStorage được xóa và \texttt{justLoggedIn} được reset để tránh merge lại ở các re-render tiếp theo.
+Cơ chế quan trọng nhất là \textbf{merge giỏ hàng khi đăng nhập}. Hình~\ref{fig:seq_cart_merge} mô tả luồng này. Ngay khi đăng nhập thành công, phía client kích hoạt hợp nhất theo hai chiến lược: nếu giỏ hàng cục bộ (localStorage) có sản phẩm, client lần lượt thêm từng sản phẩm vào giỏ trên server theo kiểu \textit{cộng dồn} thay vì ghi đè, nhằm bảo toàn cả sản phẩm đã thêm từ thiết bị khác; nếu giỏ cục bộ rỗng, server tự gộp giỏ hàng phiên khách vãng lai vào tài khoản. Việc hợp nhất chạy trong một transaction với khóa \texttt{SELECT FOR UPDATE} để chống race condition: cộng dồn số lượng cho các dòng trùng sản phẩm và biến thể, cập nhật giá hiện tại, chuyển giỏ hàng khách vãng lai sang trạng thái \texttt{merged} rồi xóa cookie phiên. Sau khi hoàn tất, dữ liệu giỏ hàng cục bộ được xóa để tránh hợp nhất lặp lại ở các lần tải lại sau.
 \end{sloppypar}
 
 \begin{figure}[H]
@@ -905,7 +910,7 @@ Khi nhận IPN callback, Payment Service trước tiên xác thực chữ ký HM
 
 \begin{figure}[H]
   \centering
-  \fitfig[0.7]{figures/c3/activity_checkout_1.pdf}
+  \fitfig[0.88]{figures/c3/activity_checkout_1.pdf}
   \caption{Biểu đồ hoạt động đặt hàng -- Phần 1: tạo đơn trong transaction}
   \label{fig:activity_checkout_1}
 \end{figure}
@@ -953,14 +958,14 @@ Toàn bộ luồng xử lý 7 bước của pipeline RAG TechStore, từ xác th
 
 \begin{figure}[H]
   \centering
-  \fitfig[0.62]{figures/c3/rag_pipeline_flow_1.pdf}
+  \fitfig[0.88]{figures/c3/rag_pipeline_flow_1.pdf}
   \caption{Luồng pipeline RAG -- Phần 1: tiền xử lý và kiểm soát đầu vào (bước 1--4)}
   \label{fig:rag_pipeline_flow_1}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \fitfig[0.62]{figures/c3/rag_pipeline_flow_2.pdf}
+  \fitfig[0.88]{figures/c3/rag_pipeline_flow_2.pdf}
   \caption{Luồng pipeline RAG -- Phần 2: truy xuất, sinh phản hồi và lưu trữ (bước 5--7)}
   \label{fig:rag_pipeline_flow_2}
 \end{figure}

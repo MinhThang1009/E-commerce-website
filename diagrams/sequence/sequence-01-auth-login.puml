@@ -104,7 +104,7 @@ else Đăng nhập thành công
       signAccessToken — TTL = JWT_EXPIRES_IN
       signRefreshToken — stateless JWT
     end note
-    API -->> FE : 200 { token, refreshToken, user }
+    API -->> FE : 200 { token, user }
     note right of API
       Set-Cookie: refreshToken (httpOnly, Secure)\nin HTTP response header
     end note
@@ -145,7 +145,7 @@ else Token hợp lệ
         note right of API
           signAccessToken + signRefreshToken
         end note
-        API -->> FE : 200 { token, refreshToken, user }
+        API -->> FE : 200 { token, user }
         note right of FE
           Set-Cookie: refreshToken (httpOnly, Secure)
         end note

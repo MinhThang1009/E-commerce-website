@@ -164,87 +164,102 @@ Phần này trình bày kết quả thực tế của hệ thống TechStore qua
 
 Trang chủ (Hình~\ref{fig:screenshot_home}) là điểm tiếp xúc đầu tiên giữa người dùng và hệ thống, được thiết kế để truyền đạt giá trị thương hiệu và dẫn dắt vào luồng mua sắm. Hero banner nổi bật với tagline ``Công nghệ Cao cấp Cho bạn'' kèm slide ảnh đại diện cho bốn danh mục sản phẩm chính (Điện thoại, Laptop, Smartwatch, Tablet). Phía dưới hero là ba con số thống kê nhanh (60+ sản phẩm, 12 thương hiệu, giao hàng 24h) cùng chỉ số đánh giá 4.8 sao, tạo tín hiệu tin cậy cho người dùng lần đầu. Hai nút kêu gọi hành động ``Mua sắm ngay'' và ``Khám phá danh mục'' dẫn thẳng vào trang cửa hàng.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_home.png}
-  \caption{Trang chủ TechStore với hero banner, thống kê nhanh và danh mục sản phẩm}
-  \label{fig:screenshot_home}
-\end{figure}
-
 Trang danh sách sản phẩm (Hình~\ref{fig:screenshot_shop}) cung cấp bộ lọc đa chiều để người dùng thu hẹp kết quả tìm kiếm. Sidebar bên trái gồm ba nhóm bộ lọc: khoảng giá theo thanh trượt, danh mục với checkbox cho từng loại (Điện thoại, Laptop, Smartwatch, Tablet), và thương hiệu. Khu vực chính hiển thị lưới sản phẩm kèm thông báo số lượng kết quả và thanh sắp xếp theo giá hoặc thời gian. Mỗi card sản phẩm có ảnh thumbnail, tên, giá và nút ``Xem ngay'' dẫn vào trang chi tiết.
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_shop.png}
-  \caption{Trang cửa hàng với bộ lọc đa chiều và lưới sản phẩm}
-  \label{fig:screenshot_shop}
-\end{figure}
 
 Trang chi tiết sản phẩm (Hình~\ref{fig:screenshot_product_detail}) tập trung vào việc cung cấp đầy đủ thông tin để người dùng đưa ra quyết định mua hàng. Phần ảnh hiển thị ảnh sản phẩm lớn với bốn thumbnail gallery bên dưới để xem các góc độ khác nhau. Phần thông tin bên phải hiển thị tên sản phẩm (iPhone 17 Pro Max), giá gốc kèm badge giảm giá 5\%, nhãn tình trạng tồn kho, khu vực chọn biến thể dung lượng (256GB, 512GB, 1TB, 2TB) và màu sắc (Đen, Xanh đậm, Cam Vũ Trụ) theo thiết kế attribute system. Bộ chọn số lượng và nút ``Mua ngay'' được đặt nổi bật để giảm số thao tác đến khi đặt hàng. Phía dưới là hai tab ``Mô tả'' và ``Thông số kỹ thuật'' với bảng thông số chi tiết.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \fitfig{figures/c4/screenshot_product_detail.png}
-  \caption{Trang chi tiết sản phẩm với gallery ảnh, chọn biến thể và thông số kỹ thuật}
-  \label{fig:screenshot_product_detail}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_home.png}
+    \caption{Trang chủ}
+    \label{fig:screenshot_home}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_shop.png}
+    \caption{Cửa hàng}
+    \label{fig:screenshot_shop}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_product_detail.png}
+    \caption{Chi tiết sản phẩm}
+    \label{fig:screenshot_product_detail}
+  \end{subfigure}
+  \caption{Giao diện người dùng cuối: (a) trang chủ, (b) cửa hàng, (c) chi tiết sản phẩm}
+  \label{fig:screenshot_enduser}
 \end{figure}
 
 \subsection{Giỏ hàng, thanh toán và đơn hàng}
 
 Trang giỏ hàng (Hình~\ref{fig:screenshot_cart}) hiển thị danh sách sản phẩm với đầy đủ thông tin biến thể đã chọn (dung lượng, màu sắc), bộ điều chỉnh số lượng và nút xóa từng sản phẩm. Banner xanh phía trên thông báo ``Giỏ hàng đã đồng bộ với tài khoản'', xác nhận cơ chế gộp giỏ hàng (merge cart) đã hoàn thành sau khi đăng nhập. Panel ``Tóm tắt đơn hàng'' bên phải cho thấy mã giảm giá SUMMER2026 đã được áp dụng thành công với khoản giảm 21.995.000đ, hiển thị tạm tính, dòng giảm giá và tổng cộng rõ ràng. Hai nút hành động cuối trang là ``Tiến hành thanh toán'' và ``Tiếp tục mua sắm'' để quay lại cửa hàng.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_cart.png}
-  \caption{Trang giỏ hàng với mã giảm giá SUMMER2026 đã áp dụng và tóm tắt đơn hàng}
-  \label{fig:screenshot_cart}
-\end{figure}
-
 Trang thanh toán (Hình~\ref{fig:screenshot_checkout}) trình bày form nhập thông tin giao hàng với các trường Tên, Họ, địa chỉ email, số điện thoại, và địa chỉ giao hàng ba cấp (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã) thông qua dropdown phân cấp, cùng trường số nhà và tên đường. Địa chỉ đầy đủ được hiển thị tức thì ngay bên dưới form khi người dùng hoàn thành các trường địa chỉ. Panel tóm tắt đơn bên phải giữ nguyên thông tin mã giảm giá và tổng tiền từ trang giỏ hàng. Nút ``Tiếp tục thanh toán'' đưa người dùng đến bước tiếp theo để chọn phương thức thanh toán (COD, VNPay hoặc MoMo).
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_checkout.png}
-  \caption{Trang thanh toán với form thông tin giao hàng địa chỉ ba cấp}
-  \label{fig:screenshot_checkout}
-\end{figure}
 
 Trang đơn hàng của khách (Hình~\ref{fig:screenshot_orders}) liệt kê lịch sử đặt hàng. Mỗi đơn hàng hiển thị mã đơn theo định dạng \texttt{\#ORD-YYYYMMDD-XXXX} (ví dụ \texttt{\#ORD-20260523-7055}), ngày giờ đặt, tổng tiền, badge trạng thái đơn hàng (``Chờ xử lý'') và badge trạng thái thanh toán (``Thanh toán khi nhận''). Nút ``Xem chi tiết'' dẫn vào trang thông tin đầy đủ và nút ``Hủy'' cho phép khách hủy đơn khi đơn còn ở trạng thái cho phép.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \fitfig{figures/c4/screenshot_orders.png}
-  \caption{Trang đơn hàng của khách với badge trạng thái đơn hàng và thanh toán}
-  \label{fig:screenshot_orders}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_cart.png}
+    \caption{Giỏ hàng}
+    \label{fig:screenshot_cart}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_checkout.png}
+    \caption{Thanh toán}
+    \label{fig:screenshot_checkout}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_orders.png}
+    \caption{Đơn hàng của tôi}
+    \label{fig:screenshot_orders}
+  \end{subfigure}
+  \caption{Luồng giao dịch của khách hàng: (a) giỏ hàng, (b) thanh toán, (c) đơn hàng}
+  \label{fig:screenshot_transaction}
 \end{figure}
 
 \subsection{Chatbot AI tư vấn sản phẩm}
 
 Chat widget AI (Hình~\ref{fig:screenshot_chatbot}) xuất hiện cố định ở góc phải dưới màn hình trên mọi trang của ứng dụng. Khi người dùng nhấn vào bubble chat, cửa sổ ``Trợ lý mua sắm AI'' mở ra ngay trên trang hiện tại nhờ cơ chế React Portal, không làm gián đoạn việc duyệt web. Chatbot nhận câu hỏi tư vấn sản phẩm và trả về phản hồi kèm danh sách card gợi ý có thể cuộn ngang; mỗi card hiển thị ảnh thumbnail, tên sản phẩm, giá và nút thêm vào giỏ hàng trực tiếp từ chat mà không cần rời khỏi trang hiện tại.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_chatbot.png}
-  \caption{Chat widget AI tư vấn sản phẩm với card gợi ý kèm ảnh, giá và nút thêm giỏ hàng}
-  \label{fig:screenshot_chatbot}
-\end{figure}
-
 Hình~\ref{fig:screenshot_chatbot_abbrev} minh họa khả năng xử lý viết tắt của chatbot. Hàm \texttt{expandAbbreviations} trong \texttt{ai-policy.js} sử dụng bảng \texttt{ABBREV\_MAP} gồm 16 mẫu regex cho viết tắt thương hiệu\slash model và câu hỏi thông dụng (trong tổng ABBREV\_MAP 73 pattern) để chuyển đổi viết tắt thông dụng trước khi đưa query vào vector search: các mẫu bao gồm ``ip'' (iPhone), ``ss'' (Samsung), ``mb'' (MacBook), ``pm'' (Pro Max), ``op'' (OPPO), ``rl'' (realme), ``r5'' (AMD Ryzen 5), ``r7'' (AMD Ryzen 7), ``bnh'' (bao nhiêu) và ``bh'' (bảo hành). Cơ chế này giúp pipeline RAG truy xuất đúng sản phẩm ngay cả khi người dùng nhắn theo phong cách viết tắt thông thường, ví dụ ``ip17 pm bnh'' được mở rộng thành ``iPhone 17 Pro Max bao nhiêu'' trước khi embedding.
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_chatbot_abbrev.png}
-  \caption{Chatbot xử lý thành công câu hỏi viết tắt nhờ cơ chế expandAbbreviations với 73 mẫu regex}
-  \label{fig:screenshot_chatbot_abbrev}
-\end{figure}
 
 Hình~\ref{fig:screenshot_chatbot_offtopic} thể hiện cơ chế từ chối câu hỏi ngoài phạm vi. Khi người dùng đặt câu hỏi không liên quan đến sản phẩm công nghệ, hàm \texttt{isOffTopic} kiểm tra tin nhắn với regex \texttt{OFF\_TOPIC\_PATTERN} bao gồm các từ khóa tiếng Việt (thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức) và tiếng Anh (weather, football, soccer, music, movie, cooking, health, news). Nhờ sử dụng regex thuần thay vì gọi LLM, bước phát hiện off-topic hoàn thành trong dưới 10ms; chatbot phản hồi từ chối lịch sự và hướng dẫn người dùng trở về chủ đề tư vấn sản phẩm mà không tiêu tốn quota API.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \fitfig{figures/c4/screenshot_chatbot_offtopic.png}
-  \caption{Chatbot từ chối lịch sự câu hỏi ngoài phạm vi nhờ cơ chế isOffTopic dùng regex thuần}
-  \label{fig:screenshot_chatbot_offtopic}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_chatbot.png}
+    \caption{Tư vấn sản phẩm}
+    \label{fig:screenshot_chatbot}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_chatbot_abbrev.png}
+    \caption{Xử lý viết tắt}
+    \label{fig:screenshot_chatbot_abbrev}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_chatbot_offtopic.png}
+    \caption{Từ chối off-topic}
+    \label{fig:screenshot_chatbot_offtopic}
+  \end{subfigure}
+  \caption{Chatbot AI: (a) tư vấn sản phẩm, (b) xử lý viết tắt tiếng Việt, (c) từ chối câu hỏi ngoài phạm vi}
+  \label{fig:screenshot_chatbot_grid}
 \end{figure}
 
 \subsection{Giao diện quản trị}
@@ -260,65 +275,74 @@ Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) cung c
 
 Trang quản lý sản phẩm (Hình~\ref{fig:screenshot_admin_products}) hiển thị toàn bộ 60 sản phẩm (6 trang) trong hệ thống. Phía trên có bốn card thống kê nhanh: Tổng sản phẩm (60), Đang bán (60), Sắp hết hàng (1) và Hết hàng (0). Khi quản trị viên đăng nhập, hệ thống hiển thị banner ``Chế độ xem'' màu xanh thông báo quyền xem-only và ẩn các nút thao tác nghiệp vụ, thể hiện rõ phân quyền RBAC tại tầng giao diện. Bảng danh sách gồm các cột Hình ảnh, Tên sản phẩm, Danh mục (badge màu), Giá, Kho, Trạng thái và Hành động -- ở chế độ xem, cột Hành động chỉ hiện icon xem chi tiết. Thanh lọc gồm ô tìm kiếm theo tên sản phẩm, dropdown lọc theo danh mục và dropdown lọc theo trạng thái; nút ``Xuất dữ liệu'' đặt ở header trang.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_admin_products.png}
-  \caption{Trang quản lý sản phẩm với banner chế độ xem, 4 card thống kê và bộ lọc}
-  \label{fig:screenshot_admin_products}
-\end{figure}
-
 Trang quản lý danh mục (Hình~\ref{fig:screenshot_admin_categories}) hiển thị danh sách danh mục sản phẩm của cửa hàng, tương tự trang sản phẩm, có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Bảng có các cột Hình ảnh, Tên danh mục kèm slug bên dưới (ví dụ ``Điện thoại'' / \texttt{dien-thoai}), Mô tả ngắn, Danh mục cha (badge ``Danh mục gốc'' cho các danh mục cấp cao nhất), Trạng thái (badge ``Hoạt động''), Thứ tự sắp xếp và cột Thao tác -- cột Thao tác bị ẩn ở chế độ xem. Nút ``Làm mới'' đặt ở header trang; footer hiển thị tổng số ``5 danh mục''.
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_admin_categories.png}
-  \caption{Trang quản lý danh mục với banner chế độ xem, badge ``Danh mục gốc'' và slug}
-  \label{fig:screenshot_admin_categories}
-\end{figure}
 
 Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_admin_brands}) liệt kê các thương hiệu sản phẩm, tương tự có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Bảng gồm các cột Logo (ảnh thumbnail thương hiệu), Tên thương hiệu kèm slug bên dưới (Acer/\texttt{acer}, Apple/\texttt{apple}, Asus/\texttt{asus}, CASIO/\texttt{casio}, CITIZEN/\texttt{citizen}, Dell/\texttt{dell}, HP/\texttt{hp}...), Website (hiển thị dấu gạch khi chưa cập nhật), Trạng thái (badge ``Hoạt động'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Nút ``Làm mới'' đặt ở header trang.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_admin_brands.png}
-  \caption{Trang quản lý thương hiệu với banner chế độ xem, logo, slug và trạng thái}
-  \label{fig:screenshot_admin_brands}
-\end{figure}
-
 Trang quản lý đơn hàng back-office (Hình~\ref{fig:screenshot_admin_orders}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có năm card thống kê: Chờ xử lý, Đang xử lý, Đã giao hàng, Đã hủy và Tổng doanh thu. Bảng gồm các cột Đơn hàng (mã định dạng \texttt{ORD-YYYYMMDD-XXXX} kèm số sản phẩm), Khách hàng (tên và email), Ngày đặt, Tổng tiền, Trạng thái đơn hàng (badge màu theo trạng thái: ``Đã giao hàng'', ``Đã hủy''...) và Trạng thái thanh toán (``Đã thanh toán'', ``Chờ thanh toán''...). Bộ lọc gồm ô tìm kiếm theo mã đơn, tên khách hàng hoặc email kết hợp dropdown chọn trạng thái; cột Thao tác chỉ hiện icon xem chi tiết ở chế độ xem.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \fitfig{figures/c4/screenshot_admin_orders.png}
-  \caption{Trang quản lý đơn hàng back-office với 5 card thống kê, bộ lọc và badge trạng thái}
-  \label{fig:screenshot_admin_orders}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_products.png}
+    \caption{Quản lý sản phẩm}
+    \label{fig:screenshot_admin_products}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_categories.png}
+    \caption{Quản lý danh mục}
+    \label{fig:screenshot_admin_categories}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_brands.png}
+    \caption{Quản lý thương hiệu}
+    \label{fig:screenshot_admin_brands}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_orders.png}
+    \caption{Quản lý đơn hàng}
+    \label{fig:screenshot_admin_orders}
+  \end{subfigure}
+  \caption{Các trang quản trị back-office dạng danh sách (chế độ xem của admin): (a) sản phẩm, (b) danh mục, (c) thương hiệu, (d) đơn hàng}
+  \label{fig:screenshot_admin_list}
 \end{figure}
 
 Trang quản lý người dùng (Hình~\ref{fig:screenshot_admin_users}) là trang admin độc quyền -- không có banner ``Chế độ xem'' vì quản trị viên có toàn quyền CRUD trên tài khoản. Phía trên có bốn card thống kê: Tổng người dùng, Quản trị viên, Khách hàng và Đã xác minh email. Bộ lọc gồm ô tìm kiếm theo tên, email hoặc số điện thoại kết hợp dropdown lọc vai trò, dropdown sắp xếp và dropdown thứ tự; nút ``Làm mới'' đặt ở header trang. Bảng danh sách có cột Người dùng (avatar, tên, email và số điện thoại gộp lại), Vai trò (badge ``Quản trị viên'', ``Nhân viên bán hàng'' hoặc ``Khách hàng''), Trạng thái (badge ``Hoạt động'' và ``Email đã xác minh''), Ngày đăng ký và Thao tác (ba icon xem, sửa, xóa).
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_admin_users.png}
-  \caption{Trang quản lý người dùng với thống kê, bộ lọc đa chiều và danh sách}
-  \label{fig:screenshot_admin_users}
-\end{figure}
-
 Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_admin_discounts}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có ba card thống kê: Đang chạy, Hết hạn và Tổng lượt dùng. Bảng gồm các cột Mã (badge màu nổi bật, ví dụ ``SUMMER2026''), Loại (``\% 10.00\%'' cho loại phần trăm), Đơn tối thiểu, Thời hạn (``Từ: Vô thời hạn / Đến: Vô thời hạn'' khi không đặt giới hạn), Sử dụng (ví dụ ``4 / $\infty$'' khi không giới hạn lượt dùng), Trạng thái (badge ``Hoạt động'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Ô tìm kiếm lọc theo mã hoặc mô tả.
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_admin_discounts.png}
-  \caption{Trang quản lý mã giảm giá với 3 card thống kê, cột thời hạn và lượt dùng}
-  \label{fig:screenshot_admin_discounts}
-\end{figure}
 
 Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có ba card thống kê: Tổng tồn kho, Sắp hết và Hết hàng. Bảng hiển thị tồn kho tổng hợp theo sản phẩm với các cột Sản phẩm, SKU (số lượng biến thể, ví dụ ``2 biến thể''), Tồn kho (số lượng kèm progress bar màu), Trạng thái (badge ``Còn hàng'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Mỗi dòng sản phẩm có mũi tên (\texttt{>}) để mở rộng: khi mở rộng hiện bảng con với từng biến thể gồm SKU riêng, tồn kho và badge trạng thái. Ô tìm kiếm phía trên cho phép lọc sản phẩm theo tên.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \fitfig{figures/c4/screenshot_admin_inventory.png}
-  \caption{Trang quản lý kho hàng với 3 thẻ thống kê, dòng mở rộng (expandable rows) và thanh tiến trình (progress bar) tồn kho}
-  \label{fig:screenshot_admin_inventory}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_users.png}
+    \caption{Quản lý người dùng}
+    \label{fig:screenshot_admin_users}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_discounts.png}
+    \caption{Quản lý mã giảm giá}
+    \label{fig:screenshot_admin_discounts}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_admin_inventory.png}
+    \caption{Quản lý kho}
+    \label{fig:screenshot_admin_inventory}
+  \end{subfigure}
+  \caption{Các trang quản trị độc quyền của admin: (a) quản lý người dùng, (b) mã giảm giá, (c) kho hàng}
+  \label{fig:screenshot_admin_grid2}
 \end{figure}
 
 \subsection{Giao diện nhân viên bán hàng}
@@ -327,47 +351,52 @@ Khi nhân viên bán hàng đăng nhập, các trang nghiệp vụ không hiển
 
 Trang quản lý sản phẩm dành cho nhân viên (Hình~\ref{fig:screenshot_staff_products}) không có banner ``Chế độ xem'': header hiển thị đồng thời nút ``Xuất dữ liệu'' và nút ``+ Thêm sản phẩm'' (màu xanh ngọc). Mỗi dòng sản phẩm trong bảng có đầy đủ bốn icon hành động -- xem chi tiết, sửa, nhân bản và xóa -- cùng dropdown chỉnh trạng thái nhanh inline trong cột Trạng thái, thay vì chỉ có icon xem duy nhất như ở chế độ quản trị viên.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_staff_products.png}
-  \caption{Trang quản lý sản phẩm (nhân viên bán hàng) với nút thêm mới và đầy đủ 4 icon CRUD}
-  \label{fig:screenshot_staff_products}
-\end{figure}
-
 Trang quản lý danh mục (Hình~\ref{fig:screenshot_staff_categories}) không có banner ``Chế độ xem'': header có nút ``Làm mới'' và nút ``+ Thêm danh mục'' (màu xanh ngọc). Cột Thao tác hiển thị hai icon sửa và xóa trên mỗi dòng, thay vì bị ẩn như ở chế độ quản trị viên. Footer vẫn hiển thị tổng số ``5 danh mục''.
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_staff_categories.png}
-  \caption{Trang quản lý danh mục (nhân viên bán hàng) với nút thêm mới và icon sửa/xóa}
-  \label{fig:screenshot_staff_categories}
-\end{figure}
 
 Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_staff_brands}) có cấu trúc tương tự danh mục: header có nút ``Làm mới'' và ``+ Thêm thương hiệu'', cột Thao tác hiển thị icon sửa và xóa trên mỗi dòng.
 
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_staff_brands.png}
-  \caption{Trang quản lý thương hiệu (nhân viên bán hàng) với nút thêm mới và icon sửa/xóa}
-  \label{fig:screenshot_staff_brands}
-\end{figure}
-
 Trang quản lý đơn hàng (Hình~\ref{fig:screenshot_staff_orders}) không có banner ``Chế độ xem''. Cột Thao tác hiển thị hai icon -- xem chi tiết và chỉnh sửa/cập nhật trạng thái -- thay vì chỉ có icon xem như ở chế độ quản trị viên. Nhân viên có thể cập nhật trạng thái đơn hàng qua icon chỉnh sửa. Các thống kê và bộ lọc giống với chế độ quản trị viên.
-
-\begin{figure}[H]
-  \centering
-  \fitfig{figures/c4/screenshot_staff_orders.png}
-  \caption{Trang quản lý đơn hàng (nhân viên bán hàng) với icon xem và chỉnh sửa trạng thái}
-  \label{fig:screenshot_staff_orders}
-\end{figure}
 
 Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_staff_discounts}) không có banner ``Chế độ xem'': header hiển thị nút ``+ Tạo mã giảm giá'' (màu xanh ngọc) để tạo chương trình khuyến mãi mới. Cột Thao tác kích hoạt icon sửa và xóa trên mỗi dòng mã, cho phép nhân viên quản lý toàn bộ vòng đời của mã giảm giá.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
-  \fitfig{figures/c4/screenshot_staff_discounts.png}
-  \caption{Trang quản lý mã giảm giá (nhân viên bán hàng) với nút tạo mới và icon sửa/xóa}
-  \label{fig:screenshot_staff_discounts}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_staff_products.png}
+    \caption{Sản phẩm}
+    \label{fig:screenshot_staff_products}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_staff_categories.png}
+    \caption{Danh mục}
+    \label{fig:screenshot_staff_categories}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_staff_brands.png}
+    \caption{Thương hiệu}
+    \label{fig:screenshot_staff_brands}
+  \end{subfigure}\hfill
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_staff_orders.png}
+    \caption{Đơn hàng}
+    \label{fig:screenshot_staff_orders}
+  \end{subfigure}
+
+  \vspace{0.8em}
+  \begin{subfigure}{0.48\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/c4/screenshot_staff_discounts.png}
+    \caption{Mã giảm giá}
+    \label{fig:screenshot_staff_discounts}
+  \end{subfigure}
+  \caption{Giao diện nhân viên bán hàng (đầy đủ CRUD): (a) sản phẩm, (b) danh mục, (c) thương hiệu, (d) đơn hàng, (e) mã giảm giá}
+  \label{fig:screenshot_staff}
 \end{figure}
 
 \section{Kiểm thử hệ thống}
@@ -691,12 +720,12 @@ Express và middleware ecosystem (cors, helmet, morgan) cung cấp HTTP layer c�
 \section{Tóm tắt chương}
 \label{sec:c4_summary}
 
-Chương này trình bày toàn diện quá trình cài đặt, kiểm thử và đánh giá hệ thống TechStore. Phần cài đặt các thành phần trọng tâm trình bày bốn cơ chế: Dependency Injection tường minh trong \texttt{app.js} cho 17 module backend với mô hình phân quyền RBAC 4 tác nhân (guest, customer, staff, admin) thực thi qua middleware \texttt{adminAuthenticate} và \texttt{requireRole}; pattern UnitOfWork với \texttt{SELECT FOR UPDATE} ngăn race condition khi trừ tồn kho; tích hợp VNPay và MoMo với chữ ký HMAC và idempotency cho IPN callback; và bộ cron job dọn dẹp hai cấp (hàng ngày 2 giờ sáng, hàng tuần Chủ nhật 3 giờ sáng) với \texttt{try/catch} độc lập từng bước.
+Chương này trình bày cài đặt, kiểm thử và đánh giá hệ thống TechStore. Phần cài đặt trọng tâm gồm bốn cơ chế: Dependency Injection tường minh cho 17 module với phân quyền RBAC bốn tác nhân; UnitOfWork với \texttt{SELECT FOR UPDATE} chống race condition khi trừ tồn kho; tích hợp VNPay/MoMo với chữ ký HMAC và idempotency cho IPN callback; và cron job dọn dẹp hai cấp.
 
 \begin{sloppypar}
-Phần cài đặt chatbot AI trình bày chi tiết ba thành phần cốt lõi: \texttt{UnifiedEmbeddingService} với chain fallback qua ba nhà cung cấp embedding; \texttt{HybridVectorStore} kết hợp cosine similarity và BM25-inspired scoring với overlap boost; \texttt{ChatbotService} điều phối toàn bộ pipeline RAG 7 bước qua ba sơ đồ tuần tự (tiền xử lý, truy xuất, sinh phản hồi), session memory LRU 500 phiên và catalog cache TTL 5 phút. Phần cài đặt frontend trình bày route guards ba lớp bảo vệ quyền truy cập có lưu trang đích và lazy loading 13 feature pages bằng \texttt{React.lazy()}.
+Phần cài đặt chatbot AI trình bày ba thành phần cốt lõi (dịch vụ embedding chain fallback, kho vector Hybrid Search, và bộ điều phối pipeline RAG 7 bước với session memory và catalog cache), cùng route guard ba lớp và lazy loading phía frontend.
 \end{sloppypar}
 
-Phần kết quả demo giao diện trình bày 22 màn hình thực tế qua năm nhóm: giao diện người dùng cuối (trang chủ, cửa hàng, chi tiết sản phẩm), luồng giao dịch (giỏ hàng, thanh toán, đơn hàng), chatbot AI (tư vấn sản phẩm, xử lý viết tắt, từ chối off-topic), giao diện quản trị viên (xem-only với banner ``Chế độ xem'' trên các trang nghiệp vụ) và giao diện nhân viên bán hàng (đầy đủ CRUD trên sản phẩm, danh mục, thương hiệu, đơn hàng và mã giảm giá). Phần so sánh hai vai trò back-office minh chứng trực quan cho mô hình phân quyền RBAC đã thiết kế ở Chương~3.
+Phần demo trình bày 22 màn hình thực tế qua năm nhóm (người dùng cuối, luồng giao dịch, chatbot AI, quản trị viên xem-only và nhân viên CRUD đầy đủ), minh chứng trực quan cho mô hình phân quyền RBAC đã thiết kế ở Chương~3.
 
-Phần kiểm thử trình bày chiến lược 5 tầng với $\sim$7.579 ca kiểm thử trong 246 suites, đạt coverage 100\% cả bốn chỉ số (statements, branches, functions, lines) ở tầng unit test. Bổ sung hai tầng chất lượng: mutation testing (Stryker, ngưỡng 70\%) và property-based testing (fast-check, 25 business invariants) đảm bảo assertion chất lượng vượt coverage đơn thuần. CI\slash CD pipeline với GitHub Actions tự động hóa từ lint đến coverage enforcement. Phần đánh giá chatbot RAG qua 20 kịch bản thuộc 5 nhóm xác nhận hệ thống xử lý đúng tìm kiếm ngữ nghĩa, tên model cụ thể, viết tắt tiếng Việt và từ chối câu hỏi ngoài phạm vi dưới 10ms. Phần mô tả đóng góp phân tách rõ thành phần tự triển khai và thư viện tái sử dụng. Hướng dẫn triển khai cung cấp quy trình từng bước cho cả backend lẫn frontend.
+Phần kiểm thử trình bày chiến lược 5 tầng với $\sim$7.579 ca kiểm thử trong 246 suites, coverage 100\% cả bốn chỉ số ở tầng unit, bổ sung mutation testing (Stryker) và property-based testing (fast-check) và CI\slash CD bằng GitHub Actions. Phần đánh giá chatbot RAG qua 20 kịch bản xác nhận hệ thống xử lý đúng tìm kiếm ngữ nghĩa, tên model, viết tắt và từ chối off-topic, kèm các chỉ số truy xuất định lượng (Hit@k, MRR) và kiểm thử hiệu năng. Cuối chương phân tách đóng góp tự triển khai với phần tái sử dụng thư viện và hướng dẫn triển khai.

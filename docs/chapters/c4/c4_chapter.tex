@@ -162,11 +162,11 @@ Phần này trình bày kết quả thực tế của hệ thống TechStore qua
 
 \subsection{Giao diện người dùng cuối}
 
-Trang chủ (Hình~\ref{fig:screenshot_home}) là điểm tiếp xúc đầu tiên giữa người dùng và hệ thống, được thiết kế để truyền đạt giá trị thương hiệu và dẫn dắt vào luồng mua sắm. Hero banner nổi bật với tagline ``Công nghệ Cao cấp Cho bạn'' kèm slide ảnh đại diện cho bốn danh mục sản phẩm chính (Điện thoại, Laptop, Smartwatch, Tablet). Phía dưới hero là ba con số thống kê nhanh (60+ sản phẩm, 12 thương hiệu, giao hàng 24h) cùng chỉ số đánh giá 4.8 sao, tạo tín hiệu tin cậy cho người dùng lần đầu. Hai nút kêu gọi hành động ``Mua sắm ngay'' và ``Khám phá danh mục'' dẫn thẳng vào trang cửa hàng.
+Trang chủ (Hình~\ref{fig:screenshot_home}) là điểm tiếp xúc đầu tiên, dẫn dắt người dùng vào luồng mua sắm qua hero banner kèm slide bốn danh mục chính và các nút kêu gọi hành động. Các con số thống kê nhanh (60+ sản phẩm, 12 thương hiệu, giao hàng 24h) cùng đánh giá 4.8 sao tạo tín hiệu tin cậy cho người dùng lần đầu.
 
-Trang danh sách sản phẩm (Hình~\ref{fig:screenshot_shop}) cung cấp bộ lọc đa chiều để người dùng thu hẹp kết quả tìm kiếm. Sidebar bên trái gồm ba nhóm bộ lọc: khoảng giá theo thanh trượt, danh mục với checkbox cho từng loại (Điện thoại, Laptop, Smartwatch, Tablet), và thương hiệu. Khu vực chính hiển thị lưới sản phẩm kèm thông báo số lượng kết quả và thanh sắp xếp theo giá hoặc thời gian. Mỗi card sản phẩm có ảnh thumbnail, tên, giá và nút ``Xem ngay'' dẫn vào trang chi tiết.
+Trang danh sách sản phẩm (Hình~\ref{fig:screenshot_shop}) cung cấp bộ lọc đa chiều (khoảng giá, danh mục, thương hiệu) cùng thanh sắp xếp để người dùng thu hẹp kết quả. Khu vực chính hiển thị lưới card sản phẩm dẫn vào trang chi tiết.
 
-Trang chi tiết sản phẩm (Hình~\ref{fig:screenshot_product_detail}) tập trung vào việc cung cấp đầy đủ thông tin để người dùng đưa ra quyết định mua hàng. Phần ảnh hiển thị ảnh sản phẩm lớn với bốn thumbnail gallery bên dưới để xem các góc độ khác nhau. Phần thông tin bên phải hiển thị tên sản phẩm (iPhone 17 Pro Max), giá gốc kèm badge giảm giá 5\%, nhãn tình trạng tồn kho, khu vực chọn biến thể dung lượng (256GB, 512GB, 1TB, 2TB) và màu sắc (Đen, Xanh đậm, Cam Vũ Trụ) theo thiết kế attribute system. Bộ chọn số lượng và nút ``Mua ngay'' được đặt nổi bật để giảm số thao tác đến khi đặt hàng. Phía dưới là hai tab ``Mô tả'' và ``Thông số kỹ thuật'' với bảng thông số chi tiết.
+Trang chi tiết sản phẩm (Hình~\ref{fig:screenshot_product_detail}) cung cấp đầy đủ thông tin để người dùng quyết định mua hàng: gallery ảnh, giá kèm badge giảm giá và khu vực chọn biến thể dung lượng, màu sắc theo attribute system. Nút ``Mua ngay'' được đặt nổi bật nhằm giảm số thao tác đến khi đặt hàng.
 
 \begin{figure}[htbp]
   \centering
@@ -196,11 +196,11 @@ Trang chi tiết sản phẩm (Hình~\ref{fig:screenshot_product_detail}) tập 
 
 \subsection{Giỏ hàng, thanh toán và đơn hàng}
 
-Trang giỏ hàng (Hình~\ref{fig:screenshot_cart}) hiển thị danh sách sản phẩm với đầy đủ thông tin biến thể đã chọn (dung lượng, màu sắc), bộ điều chỉnh số lượng và nút xóa từng sản phẩm. Banner xanh phía trên thông báo ``Giỏ hàng đã đồng bộ với tài khoản'', xác nhận cơ chế gộp giỏ hàng (merge cart) đã hoàn thành sau khi đăng nhập. Panel ``Tóm tắt đơn hàng'' bên phải cho thấy mã giảm giá SUMMER2026 đã được áp dụng thành công với khoản giảm 21.995.000đ, hiển thị tạm tính, dòng giảm giá và tổng cộng rõ ràng. Hai nút hành động cuối trang là ``Tiến hành thanh toán'' và ``Tiếp tục mua sắm'' để quay lại cửa hàng.
+Trang giỏ hàng (Hình~\ref{fig:screenshot_cart}) hiển thị sản phẩm kèm biến thể đã chọn, bộ điều chỉnh số lượng và panel tóm tắt đơn hàng có áp dụng mã giảm giá. Banner ``Giỏ hàng đã đồng bộ với tài khoản'' xác nhận cơ chế gộp giỏ hàng (merge cart) sau khi đăng nhập.
 
-Trang thanh toán (Hình~\ref{fig:screenshot_checkout}) trình bày form nhập thông tin giao hàng với các trường Tên, Họ, địa chỉ email, số điện thoại, và địa chỉ giao hàng ba cấp (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã) thông qua dropdown phân cấp, cùng trường số nhà và tên đường. Địa chỉ đầy đủ được hiển thị tức thì ngay bên dưới form khi người dùng hoàn thành các trường địa chỉ. Panel tóm tắt đơn bên phải giữ nguyên thông tin mã giảm giá và tổng tiền từ trang giỏ hàng. Nút ``Tiếp tục thanh toán'' đưa người dùng đến bước tiếp theo để chọn phương thức thanh toán (COD, VNPay hoặc MoMo).
+Trang thanh toán (Hình~\ref{fig:screenshot_checkout}) trình bày form nhập thông tin giao hàng với địa chỉ ba cấp (Tỉnh/Thành phố, Quận/Huyện, Phường/Xã) qua dropdown phân cấp và panel tóm tắt đơn giữ nguyên từ giỏ hàng. Bước kế tiếp cho phép chọn phương thức thanh toán COD, VNPay hoặc MoMo.
 
-Trang đơn hàng của khách (Hình~\ref{fig:screenshot_orders}) liệt kê lịch sử đặt hàng. Mỗi đơn hàng hiển thị mã đơn theo định dạng \texttt{\#ORD-YYYYMMDD-XXXX} (ví dụ \texttt{\#ORD-20260523-7055}), ngày giờ đặt, tổng tiền, badge trạng thái đơn hàng (``Chờ xử lý'') và badge trạng thái thanh toán (``Thanh toán khi nhận''). Nút ``Xem chi tiết'' dẫn vào trang thông tin đầy đủ và nút ``Hủy'' cho phép khách hủy đơn khi đơn còn ở trạng thái cho phép.
+Trang đơn hàng của khách (Hình~\ref{fig:screenshot_orders}) liệt kê lịch sử đặt hàng với mã đơn định dạng \texttt{\#ORD-YYYYMMDD-XXXX}, badge trạng thái đơn và thanh toán. Khách có thể xem chi tiết hoặc hủy đơn khi đơn còn ở trạng thái cho phép.
 
 \begin{figure}[htbp]
   \centering
@@ -230,11 +230,11 @@ Trang đơn hàng của khách (Hình~\ref{fig:screenshot_orders}) liệt kê l�
 
 \subsection{Chatbot AI tư vấn sản phẩm}
 
-Chat widget AI (Hình~\ref{fig:screenshot_chatbot}) xuất hiện cố định ở góc phải dưới màn hình trên mọi trang của ứng dụng. Khi người dùng nhấn vào bubble chat, cửa sổ ``Trợ lý mua sắm AI'' mở ra ngay trên trang hiện tại nhờ cơ chế React Portal, không làm gián đoạn việc duyệt web. Chatbot nhận câu hỏi tư vấn sản phẩm và trả về phản hồi kèm danh sách card gợi ý có thể cuộn ngang; mỗi card hiển thị ảnh thumbnail, tên sản phẩm, giá và nút thêm vào giỏ hàng trực tiếp từ chat mà không cần rời khỏi trang hiện tại.
+Chat widget AI (Hình~\ref{fig:screenshot_chatbot}) cố định ở góc phải dưới mọi trang, mở cửa sổ ``Trợ lý mua sắm AI'' ngay trên trang hiện tại nhờ React Portal mà không gián đoạn việc duyệt web. Chatbot trả về phản hồi kèm các card gợi ý sản phẩm cho phép thêm vào giỏ hàng trực tiếp từ chat.
 
-Hình~\ref{fig:screenshot_chatbot_abbrev} minh họa khả năng xử lý viết tắt của chatbot. Hàm \texttt{expandAbbreviations} trong \texttt{ai-policy.js} sử dụng bảng \texttt{ABBREV\_MAP} gồm 16 mẫu regex cho viết tắt thương hiệu\slash model và câu hỏi thông dụng (trong tổng ABBREV\_MAP 73 pattern) để chuyển đổi viết tắt thông dụng trước khi đưa query vào vector search: các mẫu bao gồm ``ip'' (iPhone), ``ss'' (Samsung), ``mb'' (MacBook), ``pm'' (Pro Max), ``op'' (OPPO), ``rl'' (realme), ``r5'' (AMD Ryzen 5), ``r7'' (AMD Ryzen 7), ``bnh'' (bao nhiêu) và ``bh'' (bảo hành). Cơ chế này giúp pipeline RAG truy xuất đúng sản phẩm ngay cả khi người dùng nhắn theo phong cách viết tắt thông thường, ví dụ ``ip17 pm bnh'' được mở rộng thành ``iPhone 17 Pro Max bao nhiêu'' trước khi embedding.
+Hình~\ref{fig:screenshot_chatbot_abbrev} minh họa khả năng xử lý viết tắt: hàm \texttt{expandAbbreviations} trong \texttt{ai-policy.js} dùng bảng \texttt{ABBREV\_MAP} (73 pattern regex) để mở rộng viết tắt trước khi đưa query vào vector search, ví dụ ``ip17 pm bnh'' thành ``iPhone 17 Pro Max bao nhiêu''. Cơ chế này giúp pipeline RAG truy xuất đúng sản phẩm dù người dùng nhắn theo phong cách viết tắt.
 
-Hình~\ref{fig:screenshot_chatbot_offtopic} thể hiện cơ chế từ chối câu hỏi ngoài phạm vi. Khi người dùng đặt câu hỏi không liên quan đến sản phẩm công nghệ, hàm \texttt{isOffTopic} kiểm tra tin nhắn với regex \texttt{OFF\_TOPIC\_PATTERN} bao gồm các từ khóa tiếng Việt (thời tiết, bóng đá, âm nhạc, phim, nấu ăn, sức khỏe, tin tức) và tiếng Anh (weather, football, soccer, music, movie, cooking, health, news). Nhờ sử dụng regex thuần thay vì gọi LLM, bước phát hiện off-topic hoàn thành trong dưới 10ms; chatbot phản hồi từ chối lịch sự và hướng dẫn người dùng trở về chủ đề tư vấn sản phẩm mà không tiêu tốn quota API.
+Hình~\ref{fig:screenshot_chatbot_offtopic} thể hiện cơ chế từ chối câu hỏi ngoài phạm vi: hàm \texttt{isOffTopic} kiểm tra tin nhắn bằng regex \texttt{OFF\_TOPIC\_PATTERN} (từ khóa tiếng Việt và tiếng Anh). Nhờ dùng regex thuần thay vì gọi LLM, bước này hoàn thành dưới 10ms và từ chối lịch sự mà không tiêu tốn quota API.
 
 \begin{figure}[htbp]
   \centering
@@ -264,7 +264,9 @@ Hình~\ref{fig:screenshot_chatbot_offtopic} thể hiện cơ chế từ chối c
 
 \subsection{Giao diện quản trị}
 
-Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) cung cấp cái nhìn tổng quan về tình trạng vận hành cửa hàng. Phần đầu có khu vực \textbf{Hành động nhanh} gồm năm nút truy cập nhanh: Thêm sản phẩm, Tạo mã giảm giá, Đơn chờ xử lý, Quản lý kho và Người dùng. Phía dưới là bố cục hai cột: cột trái hiển thị tổng doanh thu kèm sparkline chart và hai chỉ số phụ (giá trị trung bình đơn hàng GTTB và tổng sản phẩm đang hoạt động); cột phải tổng hợp các chỉ số người dùng và vận hành gồm tổng đơn hàng, tổng người dùng, đơn hủy tháng này và số sản phẩm sắp hết hàng, kèm nút ``Quản lý người dùng'' dẫn thẳng vào trang quản lý tài khoản. Mỗi chỉ số hiển thị tỷ lệ thay đổi so với kỳ trước. Phía dưới là bộ lọc thời gian (7/30/90 ngày) với tùy chỉnh tự do, chế độ so sánh kỳ và biểu đồ doanh thu theo ngày, cùng nút xuất dữ liệu đơn hàng và sản phẩm.
+Hệ thống thể hiện phân quyền RBAC ngay tại tầng giao diện: ở hầu hết các trang nghiệp vụ back-office, khi quản trị viên (admin) đăng nhập sẽ thấy banner ``Chế độ xem'' màu xanh thông báo quyền xem-only và các nút thao tác nghiệp vụ bị ẩn (cột Hành động chỉ còn icon xem chi tiết). Các mô tả trang dưới đây không lặp lại chi tiết này.
+
+Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) cung cấp cái nhìn tổng quan về vận hành cửa hàng: khu vực \textbf{Hành động nhanh}, các chỉ số doanh thu kèm sparkline, chỉ số người dùng/đơn hàng kèm tỷ lệ thay đổi so với kỳ trước, cùng bộ lọc thời gian (7/30/90 ngày), chế độ so sánh kỳ và biểu đồ doanh thu theo ngày.
 
 \begin{figure}[H]
   \centering
@@ -273,13 +275,13 @@ Bảng điều khiển admin (Hình~\ref{fig:screenshot_admin_dashboard}) cung c
   \label{fig:screenshot_admin_dashboard}
 \end{figure}
 
-Trang quản lý sản phẩm (Hình~\ref{fig:screenshot_admin_products}) hiển thị toàn bộ 60 sản phẩm (6 trang) trong hệ thống. Phía trên có bốn card thống kê nhanh: Tổng sản phẩm (60), Đang bán (60), Sắp hết hàng (1) và Hết hàng (0). Khi quản trị viên đăng nhập, hệ thống hiển thị banner ``Chế độ xem'' màu xanh thông báo quyền xem-only và ẩn các nút thao tác nghiệp vụ, thể hiện rõ phân quyền RBAC tại tầng giao diện. Bảng danh sách gồm các cột Hình ảnh, Tên sản phẩm, Danh mục (badge màu), Giá, Kho, Trạng thái và Hành động -- ở chế độ xem, cột Hành động chỉ hiện icon xem chi tiết. Thanh lọc gồm ô tìm kiếm theo tên sản phẩm, dropdown lọc theo danh mục và dropdown lọc theo trạng thái; nút ``Xuất dữ liệu'' đặt ở header trang.
+Trang quản lý sản phẩm (Hình~\ref{fig:screenshot_admin_products}) liệt kê 60 sản phẩm kèm bốn card thống kê (tổng, đang bán, sắp/hết hàng) và bộ lọc theo tên, danh mục, trạng thái.
 
-Trang quản lý danh mục (Hình~\ref{fig:screenshot_admin_categories}) hiển thị danh sách danh mục sản phẩm của cửa hàng, tương tự trang sản phẩm, có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Bảng có các cột Hình ảnh, Tên danh mục kèm slug bên dưới (ví dụ ``Điện thoại'' / \texttt{dien-thoai}), Mô tả ngắn, Danh mục cha (badge ``Danh mục gốc'' cho các danh mục cấp cao nhất), Trạng thái (badge ``Hoạt động''), Thứ tự sắp xếp và cột Thao tác -- cột Thao tác bị ẩn ở chế độ xem. Nút ``Làm mới'' đặt ở header trang; footer hiển thị tổng số ``5 danh mục''.
+Trang quản lý danh mục (Hình~\ref{fig:screenshot_admin_categories}) hiển thị danh sách 5 danh mục kèm slug, danh mục cha và thứ tự sắp xếp.
 
-Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_admin_brands}) liệt kê các thương hiệu sản phẩm, tương tự có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Bảng gồm các cột Logo (ảnh thumbnail thương hiệu), Tên thương hiệu kèm slug bên dưới (Acer/\texttt{acer}, Apple/\texttt{apple}, Asus/\texttt{asus}, CASIO/\texttt{casio}, CITIZEN/\texttt{citizen}, Dell/\texttt{dell}, HP/\texttt{hp}...), Website (hiển thị dấu gạch khi chưa cập nhật), Trạng thái (badge ``Hoạt động'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Nút ``Làm mới'' đặt ở header trang.
+Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_admin_brands}) liệt kê các thương hiệu kèm logo, slug, website và trạng thái.
 
-Trang quản lý đơn hàng back-office (Hình~\ref{fig:screenshot_admin_orders}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có năm card thống kê: Chờ xử lý, Đang xử lý, Đã giao hàng, Đã hủy và Tổng doanh thu. Bảng gồm các cột Đơn hàng (mã định dạng \texttt{ORD-YYYYMMDD-XXXX} kèm số sản phẩm), Khách hàng (tên và email), Ngày đặt, Tổng tiền, Trạng thái đơn hàng (badge màu theo trạng thái: ``Đã giao hàng'', ``Đã hủy''...) và Trạng thái thanh toán (``Đã thanh toán'', ``Chờ thanh toán''...). Bộ lọc gồm ô tìm kiếm theo mã đơn, tên khách hàng hoặc email kết hợp dropdown chọn trạng thái; cột Thao tác chỉ hiện icon xem chi tiết ở chế độ xem.
+Trang quản lý đơn hàng back-office (Hình~\ref{fig:screenshot_admin_orders}) hiển thị năm card thống kê (chờ xử lý, đang xử lý, đã giao, đã hủy, tổng doanh thu), bảng đơn hàng kèm badge trạng thái đơn và thanh toán, cùng bộ lọc theo mã đơn, khách hàng và trạng thái.
 
 \begin{figure}[htbp]
   \centering
@@ -313,11 +315,11 @@ Trang quản lý đơn hàng back-office (Hình~\ref{fig:screenshot_admin_orders
   \label{fig:screenshot_admin_list}
 \end{figure}
 
-Trang quản lý người dùng (Hình~\ref{fig:screenshot_admin_users}) là trang admin độc quyền -- không có banner ``Chế độ xem'' vì quản trị viên có toàn quyền CRUD trên tài khoản. Phía trên có bốn card thống kê: Tổng người dùng, Quản trị viên, Khách hàng và Đã xác minh email. Bộ lọc gồm ô tìm kiếm theo tên, email hoặc số điện thoại kết hợp dropdown lọc vai trò, dropdown sắp xếp và dropdown thứ tự; nút ``Làm mới'' đặt ở header trang. Bảng danh sách có cột Người dùng (avatar, tên, email và số điện thoại gộp lại), Vai trò (badge ``Quản trị viên'', ``Nhân viên bán hàng'' hoặc ``Khách hàng''), Trạng thái (badge ``Hoạt động'' và ``Email đã xác minh''), Ngày đăng ký và Thao tác (ba icon xem, sửa, xóa).
+Trang quản lý người dùng (Hình~\ref{fig:screenshot_admin_users}) là trang admin độc quyền nên không có banner ``Chế độ xem'' và mở đầy đủ thao tác CRUD vì quản trị viên có toàn quyền trên tài khoản. Trang gồm bốn card thống kê, bộ lọc theo vai trò và bảng danh sách kèm badge vai trò (quản trị viên, nhân viên bán hàng, khách hàng).
 
-Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_admin_discounts}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có ba card thống kê: Đang chạy, Hết hạn và Tổng lượt dùng. Bảng gồm các cột Mã (badge màu nổi bật, ví dụ ``SUMMER2026''), Loại (``\% 10.00\%'' cho loại phần trăm), Đơn tối thiểu, Thời hạn (``Từ: Vô thời hạn / Đến: Vô thời hạn'' khi không đặt giới hạn), Sử dụng (ví dụ ``4 / $\infty$'' khi không giới hạn lượt dùng), Trạng thái (badge ``Hoạt động'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Ô tìm kiếm lọc theo mã hoặc mô tả.
+Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_admin_discounts}) hiển thị ba card thống kê (đang chạy, hết hạn, tổng lượt dùng) và bảng các mã kèm loại giảm, đơn tối thiểu, thời hạn và số lượt sử dụng.
 
-Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) có banner ``Chế độ xem'' màu xanh khi quản trị viên đăng nhập. Phía trên có ba card thống kê: Tổng tồn kho, Sắp hết và Hết hàng. Bảng hiển thị tồn kho tổng hợp theo sản phẩm với các cột Sản phẩm, SKU (số lượng biến thể, ví dụ ``2 biến thể''), Tồn kho (số lượng kèm progress bar màu), Trạng thái (badge ``Còn hàng'') và Thao tác -- cột Thao tác ẩn ở chế độ xem. Mỗi dòng sản phẩm có mũi tên (\texttt{>}) để mở rộng: khi mở rộng hiện bảng con với từng biến thể gồm SKU riêng, tồn kho và badge trạng thái. Ô tìm kiếm phía trên cho phép lọc sản phẩm theo tên.
+Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) hiển thị ba card thống kê (tổng tồn kho, sắp hết, hết hàng) và bảng tồn kho tổng hợp theo sản phẩm. Mỗi dòng có thể mở rộng để hiện bảng con tồn kho theo từng biến thể.
 
 \begin{figure}[htbp]
   \centering
@@ -349,15 +351,15 @@ Trang quản lý kho hàng (Hình~\ref{fig:screenshot_admin_inventory}) có bann
 
 Khi nhân viên bán hàng đăng nhập, các trang nghiệp vụ không hiển thị banner ``Chế độ xem'' và kích hoạt đầy đủ các thao tác CRUD. Năm trang nghiệp vụ có sự khác biệt rõ nhất được minh họa dưới đây.
 
-Trang quản lý sản phẩm dành cho nhân viên (Hình~\ref{fig:screenshot_staff_products}) không có banner ``Chế độ xem'': header hiển thị đồng thời nút ``Xuất dữ liệu'' và nút ``+ Thêm sản phẩm'' (màu xanh ngọc). Mỗi dòng sản phẩm trong bảng có đầy đủ bốn icon hành động -- xem chi tiết, sửa, nhân bản và xóa -- cùng dropdown chỉnh trạng thái nhanh inline trong cột Trạng thái, thay vì chỉ có icon xem duy nhất như ở chế độ quản trị viên.
+Trang quản lý sản phẩm dành cho nhân viên (Hình~\ref{fig:screenshot_staff_products}) hiển thị nút ``+ Thêm sản phẩm'', đầy đủ bốn icon hành động trên mỗi dòng (xem, sửa, nhân bản, xóa) và dropdown chỉnh trạng thái nhanh inline.
 
-Trang quản lý danh mục (Hình~\ref{fig:screenshot_staff_categories}) không có banner ``Chế độ xem'': header có nút ``Làm mới'' và nút ``+ Thêm danh mục'' (màu xanh ngọc). Cột Thao tác hiển thị hai icon sửa và xóa trên mỗi dòng, thay vì bị ẩn như ở chế độ quản trị viên. Footer vẫn hiển thị tổng số ``5 danh mục''.
+Trang quản lý danh mục (Hình~\ref{fig:screenshot_staff_categories}) có nút ``+ Thêm danh mục'' và hai icon sửa, xóa trên mỗi dòng.
 
-Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_staff_brands}) có cấu trúc tương tự danh mục: header có nút ``Làm mới'' và ``+ Thêm thương hiệu'', cột Thao tác hiển thị icon sửa và xóa trên mỗi dòng.
+Trang quản lý thương hiệu (Hình~\ref{fig:screenshot_staff_brands}) tương tự danh mục, có nút ``+ Thêm thương hiệu'' và icon sửa, xóa trên mỗi dòng.
 
-Trang quản lý đơn hàng (Hình~\ref{fig:screenshot_staff_orders}) không có banner ``Chế độ xem''. Cột Thao tác hiển thị hai icon -- xem chi tiết và chỉnh sửa/cập nhật trạng thái -- thay vì chỉ có icon xem như ở chế độ quản trị viên. Nhân viên có thể cập nhật trạng thái đơn hàng qua icon chỉnh sửa. Các thống kê và bộ lọc giống với chế độ quản trị viên.
+Trang quản lý đơn hàng (Hình~\ref{fig:screenshot_staff_orders}) cho phép nhân viên cập nhật trạng thái đơn qua icon chỉnh sửa bên cạnh icon xem chi tiết.
 
-Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_staff_discounts}) không có banner ``Chế độ xem'': header hiển thị nút ``+ Tạo mã giảm giá'' (màu xanh ngọc) để tạo chương trình khuyến mãi mới. Cột Thao tác kích hoạt icon sửa và xóa trên mỗi dòng mã, cho phép nhân viên quản lý toàn bộ vòng đời của mã giảm giá.
+Trang quản lý mã giảm giá (Hình~\ref{fig:screenshot_staff_discounts}) có nút ``+ Tạo mã giảm giá'' và icon sửa, xóa trên mỗi dòng, cho phép nhân viên quản lý toàn bộ vòng đời của mã giảm giá.
 
 \begin{figure}[htbp]
   \centering

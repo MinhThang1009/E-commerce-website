@@ -61,3 +61,46 @@ describe('rate-limiter handler callbacks — branch coverage', () => {
     expect(res.status).toHaveBeenCalledWith(429);
   });
 });
+
+describe('apiLimiter — RATE_LIMIT_MAX override (branch coverage)', () => {
+  const originalMax = process.env.RATE_LIMIT_MAX;
+  let capturedOptions;
+
+  beforeAll(() => {
+    jest.resetModules();
+    capturedOptions = [];
+    // Bật override để cover nhánh truthy của process.env.RATE_LIMIT_MAX
+    process.env.RATE_LIMIT_MAX = '5000';
+
+    jest.doMock('express-rate-limit', () =>
+      jest.fn().mockImplementation((options) => {
+        capturedOptions.push(options);
+        if (options?.store?.init) options.store.init({ windowMs: options.windowMs || 60000 });
+        const mw = jest.fn();
+        mw.resetKey = jest.fn();
+        return mw;
+      }),
+    );
+    jest.doMock('@utils/logger', () => ({
+      info: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+    }));
+    jest.doMock('@utils/i18n', () => ({ t: (key) => key }));
+
+    require('./rate-limiter');
+  });
+
+  afterAll(() => {
+    if (originalMax === undefined) delete process.env.RATE_LIMIT_MAX;
+    else process.env.RATE_LIMIT_MAX = originalMax;
+    jest.resetModules();
+  });
+
+  test('apiLimiter dùng max = RATE_LIMIT_MAX khi biến môi trường được set', () => {
+    const apiOpts = capturedOptions.find((o) => o.windowMs === 15 * 60 * 1000);
+    expect(apiOpts).toBeDefined();
+    expect(apiOpts.max).toBe(5000);
+  });
+});
